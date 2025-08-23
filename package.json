@@ -1,0 +1,37 @@
+{
+  "name": "ai-ppt-editor",
+  "version": "1.0.0",
+  "description": "AI-powered PPT editor with React frontend and Node.js backend",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && npm run dev",
+    "build": "npm run build:frontend && npm run build:backend",
+    "build:frontend": "cd frontend && npm run build",
+    "build:backend": "cd backend && npm run build",
+    "start": "cd backend && npm start",
+    "setup": "npm install && cd frontend && npm install && cd ../backend && npm install"
+  },
+  "keywords": [
+    "ai",
+    "ppt",
+    "editor",
+    "react",
+    "typescript",
+    "presentation"
+  ],
+  "author": "jeffkit <bbmyth@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jeffkit/ai-ppt-editor.git"
+  },
+  "homepage": "https://github.com/jeffkit/ai-ppt-editor#readme",
+  "bugs": {
+    "url": "https://github.com/jeffkit/ai-ppt-editor/issues"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
