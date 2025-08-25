@@ -17,25 +17,69 @@ export const useAIModels = () => {
   });
 };
 
-// AI Chat
+// AI Chat with SSE streaming
 export const useAIChat = () => {
-  return useMutation({
-    mutationFn: async ({ message, context }: { message: string; context?: ChatContext }) => {
-      const response = await fetch(`${API_BASE}/ai/chat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ message, context })
-      });
+  return {
+    mutateAsync: async ({ 
+      message, 
+      context, 
+      sessionId, 
+      onMessage, 
+      onError 
+    }: { 
+      message: string; 
+      context?: ChatContext; 
+      sessionId?: string | null;
+      onMessage?: (data: unknown) => void;
+      onError?: (error: unknown) => void;
+    }) => {
+      try {
+        const response = await fetch(`${API_BASE}/ai/chat`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ message, context, sessionId })
+        });
 
-      if (!response.ok) {
-        throw new Error('AI chat request failed');
+        if (!response.ok) {
+          throw new Error('AI chat request failed');
+        }
+
+        // Create EventSource for SSE
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
+
+        if (!reader) {
+          throw new Error('No response body');
+        }
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                onMessage?.(data);
+              } catch {
+                console.warn('Failed to parse SSE data:', line);
+              }
+            }
+          }
+        }
+
+      } catch (error) {
+        console.error('SSE error:', error);
+        onError?.(error);
+        throw error;
       }
-
-      return response;
     }
-  });
+  };
 };
 
 // AI Edit Slide
@@ -103,6 +147,56 @@ export const useAIGenerateSlide = () => {
       }
 
       return response;
+    }
+  });
+};
+
+// Session management hooks
+export const useSessions = () => {
+  return useQuery({
+    queryKey: ['sessions'],
+    queryFn: async () => {
+      const response = await fetch(`${API_BASE}/ai/sessions`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch sessions');
+      }
+      return response.json();
+    }
+  });
+};
+
+export const useCreateSession = () => {
+  return useMutation({
+    mutationFn: async (title?: string) => {
+      const response = await fetch(`${API_BASE}/ai/sessions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ title })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create session');
+      }
+
+      return response.json();
+    }
+  });
+};
+
+export const useDeleteSession = () => {
+  return useMutation({
+    mutationFn: async (sessionId: string) => {
+      const response = await fetch(`${API_BASE}/ai/sessions/${sessionId}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete session');
+      }
+
+      return response.json();
     }
   });
 };

@@ -1,7 +1,10 @@
 export * from './streamReader';
 
-export function cn(...classes: (string | undefined | null | boolean)[]): string {
-  return classes.filter(Boolean).join(' ');
+import { clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+export function cn(...inputs: (string | undefined | null | boolean | object)[]): string {
+  return twMerge(clsx(inputs));
 }
 
 export function generateId(): string {
@@ -17,7 +20,7 @@ export function formatTimestamp(timestamp: string): string {
   });
 }
 
-export function debounce<T extends (...args: any[]) => any>(
+export function debounce<T extends (...args: unknown[]) => unknown>(
   func: T,
   delay: number
 ): (...args: Parameters<T>) => void {
@@ -25,6 +28,6 @@ export function debounce<T extends (...args: any[]) => any>(
   
   return (...args: Parameters<T>) => {
     clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => func.apply(null, args), delay);
+    timeoutId = setTimeout(() => func(...args), delay);
   };
 }

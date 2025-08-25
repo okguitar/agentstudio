@@ -33,5 +33,10 @@
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-code": "^1.0.89",
+    "tsx": "^4.20.4",
+    "typescript": "^5.9.2"
   }
 }

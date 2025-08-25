@@ -17,15 +17,34 @@ export interface SlideContent {
   index: number;
 }
 
+export interface ToolUsageData {
+  id: string;
+  toolName: string;
+  toolInput: Record<string, unknown>;
+  toolResult?: string;
+  isError?: boolean;
+  isExecuting?: boolean;
+}
+
+export interface MessagePart {
+  id: string;
+  type: 'text' | 'tool';
+  content?: string;
+  toolData?: ToolUsageData;
+  order: number;
+}
+
 export interface ChatMessage {
   id: string;
   content: string;
   role: 'user' | 'assistant';
   timestamp: Date;
+  toolUsage?: ToolUsageData[];
+  messageParts?: MessagePart[];
 }
 
 export interface ChatContext {
-  currentSlide?: number;
+  currentSlide?: number | null;
   slideContent?: string;
   allSlides?: Slide[];
 }
