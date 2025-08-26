@@ -9,6 +9,7 @@ import { SessionsDropdown } from './SessionsDropdown';
 export const ChatPanel: React.FC = () => {
   const [inputMessage, setInputMessage] = useState('');
   const [showSessions, setShowSessions] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -32,7 +33,7 @@ export const ChatPanel: React.FC = () => {
   
   const queryClient = useQueryClient();
   const aiChatMutation = useAIChat();
-  const { data: sessionsData } = useSessions();
+  const { data: sessionsData } = useSessions(searchTerm);
   const createSession = useCreateSession();
   const deleteSession = useDeleteSession();
   const fixStuckTools = useFixStuckTools();
@@ -305,6 +306,17 @@ export const ChatPanel: React.FC = () => {
 
   const handleDeleteSession = async (sessionId: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    
+    // Find session title for confirmation
+    const sessionToDelete = sessionsData?.sessions?.find(s => s.id === sessionId);
+    const sessionTitle = sessionToDelete?.title || '未知会话';
+    
+    // Show confirmation dialog
+    const confirmed = window.confirm(`确定要删除会话"${sessionTitle}"吗？\n\n此操作无法撤销。`);
+    if (!confirmed) {
+      return;
+    }
+    
     try {
       await deleteSession.mutateAsync(sessionId);
       if (currentSessionId === sessionId) {
@@ -314,27 +326,7 @@ export const ChatPanel: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['sessions'] });
     } catch (error) {
       console.error('Failed to delete session:', error);
-    }
-  };
-
-  const handleFixTools = async () => {
-    try {
-      const result = await fixStuckTools.mutateAsync();
-      console.log('Fixed tools result:', result);
-      
-      // Refresh all session messages
-      queryClient.invalidateQueries({ queryKey: ['session-messages'] });
-      queryClient.invalidateQueries({ queryKey: ['sessions'] });
-      
-      // If we're currently viewing a session, reload its messages
-      if (currentSessionId) {
-        queryClient.invalidateQueries({ queryKey: ['session-messages', currentSessionId] });
-      }
-      
-      alert(`修复完成！已修复 ${result.message || '一些'} 卡住的工具。`);
-    } catch (error) {
-      console.error('Failed to fix tools:', error);
-      alert('修复工具时出现错误，请稍后再试。');
+      alert('删除会话失败，请重试。');
     }
   };
 
@@ -372,7 +364,10 @@ export const ChatPanel: React.FC = () => {
           <div className="flex-1">
             <h1 className="text-lg font-semibold mb-1">AI PPT助手</h1>
             <p className="text-sm opacity-90">
-              {currentSessionId ? `会话: ${currentSessionId}` : '与AI聊天来编辑你的演示文稿'}
+              {currentSessionId ? 
+                (sessionsData?.sessions?.find(s => s.id === currentSessionId)?.title || '当前会话') : 
+                '与AI聊天来编辑你的演示文稿'
+              }
             </p>
           </div>
           <div className="flex space-x-2 relative">
@@ -400,8 +395,9 @@ export const ChatPanel: React.FC = () => {
               onSwitchSession={handleSwitchSession}
               onNewSession={handleNewSession}
               onDeleteSession={handleDeleteSession}
-              onFixTools={handleFixTools}
               isLoading={false}
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
             />
           </div>
         </div>

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Clock, Plus, Trash2, Search, Wrench } from 'lucide-react';
+import { Clock, Plus, Trash2, Search } from 'lucide-react';
 
 interface Session {
   id: string;
@@ -16,8 +16,9 @@ interface SessionsDropdownProps {
   onSwitchSession: (sessionId: string) => void;
   onNewSession: () => void;
   onDeleteSession: (sessionId: string, e: React.MouseEvent) => void;
-  onFixTools?: () => void;
   isLoading?: boolean;
+  searchTerm: string;
+  onSearchChange: (term: string) => void;
 }
 
 export const SessionsDropdown: React.FC<SessionsDropdownProps> = ({
@@ -28,10 +29,11 @@ export const SessionsDropdown: React.FC<SessionsDropdownProps> = ({
   onSwitchSession,
   onNewSession,
   onDeleteSession,
-  onFixTools,
-  isLoading = false
+  isLoading = false,
+  searchTerm,
+  onSearchChange
 }) => {
-  const [searchTerm, setSearchTerm] = useState('');
+  // Remove local searchTerm state since it's now passed as props
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -59,10 +61,8 @@ export const SessionsDropdown: React.FC<SessionsDropdownProps> = ({
     }
   }, [isOpen]);
 
-  // Filter sessions based on search term
-  const filteredSessions = sessions.filter(session =>
-    session.title.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Sessions are already filtered by backend, no need for client-side filtering
+  const filteredSessions = sessions;
 
   if (!isOpen) return null;
 
@@ -85,15 +85,6 @@ export const SessionsDropdown: React.FC<SessionsDropdownProps> = ({
           >
             <Plus className="w-4 h-4" />
           </button>
-          {onFixTools && (
-            <button
-              onClick={onFixTools}
-              className="p-1 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded transition-colors"
-              title="修复卡住的工具"
-            >
-              <Wrench className="w-4 h-4" />
-            </button>
-          )}
         </div>
       </div>
 
@@ -105,9 +96,9 @@ export const SessionsDropdown: React.FC<SessionsDropdownProps> = ({
             ref={searchInputRef}
             type="text"
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => onSearchChange(e.target.value)}
             placeholder="搜索会话..."
-            className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full pl-9 pr-3 py-2 text-sm text-gray-900 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-500"
           />
         </div>
       </div>

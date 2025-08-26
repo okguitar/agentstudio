@@ -161,9 +161,118 @@ class SessionManager {
 
     session.messages.push(newMessage);
     session.lastUpdated = Date.now();
+    
+    // Save session first, then update title asynchronously
     this.saveSession(session);
     
+    // Update session title based on first user message (async, doesn't block)
+    if (message.role === 'user' && session.title.startsWith('AI编辑会话')) {
+      this.updateSessionTitle(session).then(() => {
+        // Save again after title is updated
+        this.saveSession(session);
+        console.log(`Session title updated to: "${session.title}"`);
+      }).catch(err => {
+        console.error('Failed to update session title:', err);
+      });
+    }
+    
     return newMessage;
+  }
+
+  // Generate intelligent session title based on first user message using Claude Code SDK
+  async updateSessionTitle(session: SessionData): Promise<void> {
+    // Only update if it's still the default title
+    if (!session.title.startsWith('AI编辑会话')) {
+      return;
+    }
+    
+    // Find the first user message
+    const firstUserMessage = session.messages.find(msg => msg.role === 'user');
+    if (!firstUserMessage) {
+      return;
+    }
+    
+    let userQuestion = firstUserMessage.content;
+    
+    // If no content in main field, check message parts
+    if (!userQuestion && firstUserMessage.messageParts) {
+      const textPart = firstUserMessage.messageParts.find(part => part.type === 'text' && part.content);
+      userQuestion = textPart?.content || '';
+    }
+    
+    if (userQuestion) {
+      try {
+        // Use Claude Code SDK to generate a concise title
+        const titlePrompt = `请为以下用户问题生成一个简洁的标题（不超过25个字符），用于会话列表显示：
+
+用户问题：${userQuestion}
+
+要求：
+1. 提取问题的核心要点
+2. 使用简洁明了的中文
+3. 不超过25个字符
+4. 不需要引号或其他标点符号
+5. 直接输出标题内容，不要任何前缀或后缀`;
+
+        const queryOptions: Options = {
+          customSystemPrompt: "你是一个专门生成简洁标题的助手。请直接输出标题内容，不要任何解释或格式化。",
+          allowedTools: [],  // No tools needed for title generation
+          maxTurns: 1,
+          cwd: process.cwd()
+        };
+
+        let generatedTitle = '';
+        
+        for await (const sdkMessage of query({
+          prompt: titlePrompt,
+          options: queryOptions
+        })) {
+          if (sdkMessage.type === 'assistant' && sdkMessage.message?.content) {
+            for (const block of sdkMessage.message.content) {
+              if (block.type === 'text') {
+                generatedTitle += block.text;
+              }
+            }
+          }
+        }
+        
+        if (generatedTitle.trim()) {
+          // Clean the generated title
+          let cleanTitle = generatedTitle.trim()
+            .replace(/^["'"']|["'"']$/g, '') // Remove quotes
+            .replace(/\n/g, ' ') // Replace newlines
+            .replace(/\s+/g, ' '); // Collapse spaces
+          
+          // Ensure it's not too long
+          if (cleanTitle.length > 30) {
+            cleanTitle = cleanTitle.substring(0, 27) + '...';
+          }
+          
+          session.title = cleanTitle;
+          console.log(`Generated title for session ${session.id}: "${cleanTitle}"`);
+        } else {
+          // Fallback to simple truncation if AI generation fails
+          this.fallbackTitleGeneration(session, userQuestion);
+        }
+      } catch (error) {
+        console.error('Failed to generate AI title, using fallback:', error);
+        this.fallbackTitleGeneration(session, userQuestion);
+      }
+    }
+  }
+  
+  // Fallback title generation method
+  private fallbackTitleGeneration(session: SessionData, userQuestion: string): void {
+    let newTitle = userQuestion.trim()
+      .replace(/\n/g, ' ')  // Replace newlines with spaces
+      .replace(/\s+/g, ' '); // Collapse multiple spaces
+    
+    // Truncate if too long
+    if (newTitle.length > 30) {
+      newTitle = newTitle.substring(0, 27) + '...';
+    }
+    
+    session.title = newTitle;
   }
 
   // Fix existing sessions with stuck tools
@@ -204,8 +313,54 @@ const sessionManager = new SessionManager();
 // Session routes
 router.get('/sessions', (req, res) => {
   try {
+    const { search } = req.query;
     const sessions = sessionManager.getAllSessions();
-    const sessionList = sessions.map(session => ({
+    
+    let filteredSessions = sessions;
+    
+    // If search term is provided, filter sessions by title and message content
+    if (search && typeof search === 'string' && search.trim()) {
+      const searchTerm = search.trim().toLowerCase();
+      filteredSessions = sessions.filter(session => {
+        // Search in title
+        if (session.title.toLowerCase().includes(searchTerm)) {
+          return true;
+        }
+        
+        // Search in message content
+        return session.messages.some(message => {
+          // Search in main content
+          if (message.content && message.content.toLowerCase().includes(searchTerm)) {
+            return true;
+          }
+          
+          // Search in message parts content
+          if (message.messageParts) {
+            return message.messageParts.some(part => {
+              if (part.type === 'text' && part.content && part.content.toLowerCase().includes(searchTerm)) {
+                return true;
+              }
+              // Also search in tool names and inputs
+              if (part.type === 'tool' && part.toolData) {
+                if (part.toolData.toolName.toLowerCase().includes(searchTerm)) {
+                  return true;
+                }
+                // Search in tool input values
+                const inputStr = JSON.stringify(part.toolData.toolInput).toLowerCase();
+                if (inputStr.includes(searchTerm)) {
+                  return true;
+                }
+              }
+              return false;
+            });
+          }
+          
+          return false;
+        });
+      });
+    }
+    
+    const sessionList = filteredSessions.map(session => ({
       id: session.id,
       title: session.title,
       createdAt: session.createdAt,
@@ -273,6 +428,34 @@ router.post('/sessions/fix-tools', (req, res) => {
   } catch (error) {
     console.error('Failed to fix stuck tools:', error);
     res.status(500).json({ error: 'Failed to fix stuck tools' });
+  }
+});
+
+// Generate AI titles for sessions with default titles
+router.post('/sessions/generate-titles', async (req, res) => {
+  try {
+    const sessions = sessionManager.getAllSessions();
+    let updatedCount = 0;
+    
+    for (const session of sessions) {
+      if (session.title.startsWith('AI编辑会话')) {
+        try {
+          await sessionManager.updateSessionTitle(session);
+          sessionManager.saveSession(session);
+          updatedCount++;
+        } catch (error) {
+          console.error(`Failed to update title for session ${session.id}:`, error);
+        }
+      }
+    }
+    
+    res.json({ 
+      success: true, 
+      message: `Updated ${updatedCount} session titles` 
+    });
+  } catch (error) {
+    console.error('Failed to generate session titles:', error);
+    res.status(500).json({ error: 'Failed to generate session titles' });
   }
 });
 
@@ -393,6 +576,8 @@ Please respond in Chinese.`;
         options: queryOptions
       })) {
         
+        console.log('🔄 SDK Message type:', sdkMessage.type, sdkMessage.subtype || '');
+        
         // Store Claude session ID from first message
         if (sdkMessage.type === 'system' && sdkMessage.subtype === 'init') {
           currentSession.claudeSessionId = sdkMessage.session_id;
@@ -409,7 +594,10 @@ Please respond in Chinese.`;
         
         // Accumulate assistant messages
         if (sdkMessage.type === 'assistant' && sdkMessage.message?.content) {
+          console.log('📝 Processing assistant message with', sdkMessage.message.content.length, 'content blocks');
+          
           if (!currentAssistantMessage) {
+            console.log('🆕 Creating new assistant message');
             currentAssistantMessage = {
               role: 'assistant' as const,
               content: '',
@@ -419,6 +607,8 @@ Please respond in Chinese.`;
           
           // Process content blocks and accumulate
           for (const block of sdkMessage.message.content) {
+            console.log('📄 Processing block:', block.type, block.type === 'text' ? `"${block.text?.substring(0, 50)}..."` : block.name);
+            
             if (block.type === 'text') {
               currentAssistantMessage.messageParts.push({
                 id: `part_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -427,6 +617,7 @@ Please respond in Chinese.`;
                 order: currentAssistantMessage.messageParts.length
               });
               currentAssistantMessage.content += block.text;
+              console.log('✅ Added text part, total parts:', currentAssistantMessage.messageParts.length);
             } else if (block.type === 'tool_use') {
               currentAssistantMessage.messageParts.push({
                 id: `part_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -440,6 +631,7 @@ Please respond in Chinese.`;
                 },
                 order: currentAssistantMessage.messageParts.length
               });
+              console.log('✅ Added tool part, total parts:', currentAssistantMessage.messageParts.length);
             }
           }
         }
@@ -497,25 +689,47 @@ Please respond in Chinese.`;
         
         // If it's the final result, save the accumulated assistant message
         if (sdkMessage.type === 'result') {
-          if (currentAssistantMessage && currentAssistantMessage.messageParts.length > 0) {
-            // Ensure all tools are marked as completed
-            console.log('🔍 Final tool status check:');
-            currentAssistantMessage.messageParts.forEach((part: any, index: any) => {
-              if (part.type === 'tool' && part.toolData) {
-                console.log(`Tool ${index} (${part.toolData.toolName}): executing=${part.toolData.isExecuting}, hasResult=${!!part.toolData.toolResult}, claudeId=${part.toolData.claudeId}`);
-                console.log(`  Result preview: "${(part.toolData.toolResult || 'none').substring(0, 150)}"`);
-                if (part.toolData.isExecuting) {
-                  part.toolData.isExecuting = false;
-                  // Only set default result if truly no result was provided
-                  if (!part.toolData.toolResult) {
-                    console.log(`⚠️  Setting default result for ${part.toolData.toolName} because no result was found`);
-                    part.toolData.toolResult = '执行完成，无输出结果';
+          if (currentAssistantMessage) {
+            console.log('💾 Saving assistant message with parts:', currentAssistantMessage.messageParts.length);
+            
+            if (currentAssistantMessage.messageParts.length > 0) {
+              // Ensure all tools are marked as completed
+              console.log('🔍 Final tool status check:');
+              currentAssistantMessage.messageParts.forEach((part: any, index: any) => {
+                if (part.type === 'tool' && part.toolData) {
+                  console.log(`Tool ${index} (${part.toolData.toolName}): executing=${part.toolData.isExecuting}, hasResult=${!!part.toolData.toolResult}, claudeId=${part.toolData.claudeId}`);
+                  console.log(`  Result preview: "${(part.toolData.toolResult || 'none').substring(0, 150)}"`);
+                  if (part.toolData.isExecuting) {
+                    part.toolData.isExecuting = false;
+                    // Only set default result if truly no result was provided
+                    if (!part.toolData.toolResult) {
+                      console.log(`⚠️  Setting default result for ${part.toolData.toolName} because no result was found`);
+                      part.toolData.toolResult = '执行完成，无输出结果';
+                    }
                   }
                 }
+              });
+              
+              sessionManager.addMessage(currentSession.id, currentAssistantMessage);
+              console.log('✅ Assistant message saved successfully');
+            } else {
+              // Handle case where AI reply has no message parts (shouldn't happen normally)
+              console.log('⚠️ Assistant message has no parts, but still has content. Creating text part.');
+              if (currentAssistantMessage.content) {
+                currentAssistantMessage.messageParts = [{
+                  id: `part_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                  type: 'text',
+                  content: currentAssistantMessage.content,
+                  order: 0
+                }];
+                sessionManager.addMessage(currentSession.id, currentAssistantMessage);
+                console.log('✅ Assistant message saved with recovered text part');
+              } else {
+                console.log('❌ Assistant message has no content or parts - not saving');
               }
-            });
-            
-            sessionManager.addMessage(currentSession.id, currentAssistantMessage);
+            }
+          } else {
+            console.log('❌ No assistant message to save');
           }
           
           const session = sessionManager.getSession(currentSession.id);
@@ -529,12 +743,55 @@ Please respond in Chinese.`;
       
     } catch (sdkError) {
       console.error('Claude Code SDK error:', sdkError);
+      
+      // Try to save any accumulated assistant message before erroring out
+      if (currentAssistantMessage && (currentAssistantMessage.messageParts.length > 0 || currentAssistantMessage.content)) {
+        console.log('🛟 Emergency saving assistant message due to SDK error');
+        if (currentAssistantMessage.messageParts.length === 0 && currentAssistantMessage.content) {
+          currentAssistantMessage.messageParts = [{
+            id: `part_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            type: 'text',
+            content: currentAssistantMessage.content,
+            order: 0
+          }];
+        }
+        sessionManager.addMessage(currentSession.id, currentAssistantMessage);
+        const session = sessionManager.getSession(currentSession.id);
+        if (session) {
+          session.lastUpdated = Date.now();
+          sessionManager.saveSession(session);
+        }
+        console.log('✅ Emergency save completed');
+      }
+      
       const errorMessage = sdkError instanceof Error ? sdkError.message : 'Unknown error';
       res.write(`data: ${JSON.stringify({ 
         type: 'error', 
         error: 'Claude Code SDK failed', 
         message: errorMessage 
       })}\n\n`);
+    }
+    
+    // Final safety check: save any remaining assistant message that wasn't saved by 'result' event
+    if (currentAssistantMessage && (currentAssistantMessage.messageParts.length > 0 || currentAssistantMessage.content)) {
+      console.log('🔄 Final check: found unsaved assistant message, saving now');
+      if (currentAssistantMessage.messageParts.length === 0 && currentAssistantMessage.content) {
+        currentAssistantMessage.messageParts = [{
+          id: `part_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          type: 'text',
+          content: currentAssistantMessage.content,
+          order: 0
+        }];
+      }
+      sessionManager.addMessage(currentSession.id, currentAssistantMessage);
+      const session = sessionManager.getSession(currentSession.id);
+      if (session) {
+        session.lastUpdated = Date.now();
+        sessionManager.saveSession(session);
+      }
+      console.log('✅ Final save completed');
+    } else {
+      console.log('ℹ️ No unsaved assistant message found');
     }
     
     res.end();

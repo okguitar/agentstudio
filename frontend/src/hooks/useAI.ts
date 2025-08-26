@@ -161,11 +161,15 @@ export const useAIGenerateSlide = () => {
 };
 
 // Session management hooks
-export const useSessions = () => {
+export const useSessions = (searchTerm?: string) => {
   return useQuery({
-    queryKey: ['sessions'],
+    queryKey: ['sessions', searchTerm],
     queryFn: async () => {
-      const response = await fetch(`${API_BASE}/ai/sessions`);
+      const url = new URL(`${window.location.origin}${API_BASE}/ai/sessions`);
+      if (searchTerm && searchTerm.trim()) {
+        url.searchParams.append('search', searchTerm.trim());
+      }
+      const response = await fetch(url.toString());
       if (!response.ok) {
         throw new Error('Failed to fetch sessions');
       }
