@@ -51,9 +51,6 @@ export const EditTool: React.FC<EditToolProps> = ({ execution }) => {
         )}
       </div>
       
-      {execution.toolResult && !execution.isError && (
-        <ToolOutput result={execution.toolResult} />
-      )}
     </BaseToolComponent>
   );
 };

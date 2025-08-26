@@ -49,9 +49,6 @@ export const NotebookEditTool: React.FC<NotebookEditToolProps> = ({ execution })
         )}
       </div>
       
-      {execution.toolResult && !execution.isError && (
-        <ToolOutput result={execution.toolResult} />
-      )}
     </BaseToolComponent>
   );
 };

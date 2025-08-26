@@ -98,9 +98,6 @@ export const TodoWriteTool: React.FC<TodoWriteToolProps> = ({ execution }) => {
         </div>
       </div>
       
-      {execution.toolResult && !execution.isError && (
-        <ToolOutput result={execution.toolResult} />
-      )}
     </BaseToolComponent>
   );
 };

@@ -57,9 +57,6 @@ export const MultiEditTool: React.FC<MultiEditToolProps> = ({ execution }) => {
         </div>
       </div>
       
-      {execution.toolResult && !execution.isError && (
-        <ToolOutput result={execution.toolResult} />
-      )}
     </BaseToolComponent>
   );
 };

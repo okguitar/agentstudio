@@ -62,12 +62,14 @@ interface BaseToolProps {
   execution: ToolExecution;
   children?: React.ReactNode;
   subtitle?: string; // 显示关键信息的副标题
+  showResult?: boolean; // 是否显示工具结果，默认true
 }
 
-export const BaseToolComponent: React.FC<BaseToolProps> = ({ execution, children, subtitle }) => {
+export const BaseToolComponent: React.FC<BaseToolProps> = ({ execution, children, subtitle, showResult = true }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const Icon = TOOL_ICONS[execution.toolName as keyof typeof TOOL_ICONS] || Terminal;
   const colorClass = TOOL_COLORS[execution.toolName as keyof typeof TOOL_COLORS] || 'text-gray-600 bg-gray-100';
+
 
   // 清理错误信息，移除 <tool_use_error> 标签
   const cleanErrorMessage = (message: string) => {
@@ -113,6 +115,11 @@ export const BaseToolComponent: React.FC<BaseToolProps> = ({ execution, children
         <div className="px-4 pb-4 border-t border-gray-200">
           <div className="pt-3">
             {children}
+            
+            {/* 显示工具结果 */}
+            {showResult && execution.toolResult && !execution.isError && (
+              <ToolOutput result={execution.toolResult} />
+            )}
           </div>
         </div>
       )}

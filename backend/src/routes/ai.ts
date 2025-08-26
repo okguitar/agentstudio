@@ -4,6 +4,8 @@ import { anthropic } from '@ai-sdk/anthropic';
 import { streamText } from 'ai';
 import { Options, query } from '@anthropic-ai/claude-code';
 import { z } from 'zod';
+import * as fs from 'fs';
+import * as path from 'path';
 
 const router = express.Router();
 
@@ -23,40 +25,255 @@ const ChatRequestSchema = z.object({
   }).optional()
 });
 
-// Session management in memory (in production, use Redis or database)
-const sessions = new Map();
+// Session storage directory (relative to working directory)
+const getSessionsDir = () => {
+  const sessionsDir = path.join(process.cwd(), '.ai-sessions');
+  if (!fs.existsSync(sessionsDir)) {
+    fs.mkdirSync(sessionsDir, { recursive: true });
+  }
+  return sessionsDir;
+};
+
+// Message interfaces
+interface StoredMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: number;
+  messageParts?: Array<{
+    id: string;
+    type: 'text' | 'tool';
+    content?: string;
+    toolData?: {
+      id: string;
+      toolName: string;
+      toolInput: Record<string, unknown>;
+      toolResult?: string;
+      isExecuting: boolean;
+      isError?: boolean;
+    };
+    order: number;
+  }>;
+}
+
+interface SessionData {
+  id: string;
+  title: string;
+  createdAt: number;
+  lastUpdated: number;
+  messages: StoredMessage[];
+  claudeSessionId?: string | null;
+}
+
+// Session management with file system persistence
+class SessionManager {
+  private sessionsDir: string;
+
+  constructor() {
+    this.sessionsDir = getSessionsDir();
+  }
+
+  private getSessionFilePath(sessionId: string): string {
+    return path.join(this.sessionsDir, `${sessionId}.json`);
+  }
+
+  getAllSessions(): SessionData[] {
+    const sessionFiles = fs.readdirSync(this.sessionsDir)
+      .filter(file => file.endsWith('.json'));
+    
+    const sessions: SessionData[] = [];
+    for (const file of sessionFiles) {
+      try {
+        const filePath = path.join(this.sessionsDir, file);
+        const sessionData = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+        sessions.push(sessionData);
+      } catch (error) {
+        console.error(`Failed to read session file ${file}:`, error);
+      }
+    }
+    
+    return sessions.sort((a, b) => b.lastUpdated - a.lastUpdated);
+  }
+
+  getSession(sessionId: string): SessionData | null {
+    try {
+      const filePath = this.getSessionFilePath(sessionId);
+      if (!fs.existsSync(filePath)) {
+        return null;
+      }
+      return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+    } catch (error) {
+      console.error(`Failed to read session ${sessionId}:`, error);
+      return null;
+    }
+  }
+
+  createSession(title?: string): SessionData {
+    const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const session: SessionData = {
+      id: sessionId,
+      title: title || `AI编辑会话 ${new Date().toLocaleString()}`,
+      createdAt: Date.now(),
+      lastUpdated: Date.now(),
+      messages: [],
+      claudeSessionId: null
+    };
+    
+    this.saveSession(session);
+    return session;
+  }
+
+  saveSession(session: SessionData): void {
+    try {
+      const filePath = this.getSessionFilePath(session.id);
+      fs.writeFileSync(filePath, JSON.stringify(session, null, 2), 'utf-8');
+    } catch (error) {
+      console.error(`Failed to save session ${session.id}:`, error);
+    }
+  }
+
+  deleteSession(sessionId: string): boolean {
+    try {
+      const filePath = this.getSessionFilePath(sessionId);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error(`Failed to delete session ${sessionId}:`, error);
+      return false;
+    }
+  }
+
+  addMessage(sessionId: string, message: Omit<StoredMessage, 'id' | 'timestamp'>): StoredMessage | null {
+    const session = this.getSession(sessionId);
+    if (!session) {
+      return null;
+    }
+
+    const newMessage: StoredMessage = {
+      ...message,
+      id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      timestamp: Date.now(),
+      messageParts: message.messageParts || []
+    };
+
+    session.messages.push(newMessage);
+    session.lastUpdated = Date.now();
+    this.saveSession(session);
+    
+    return newMessage;
+  }
+
+  // Fix existing sessions with stuck tools
+  fixStuckTools(): number {
+    let fixedCount = 0;
+    const sessions = this.getAllSessions();
+    
+    for (const session of sessions) {
+      let sessionUpdated = false;
+      
+      for (const message of session.messages) {
+        if (message.messageParts) {
+          for (const part of message.messageParts) {
+            if (part.type === 'tool' && part.toolData && part.toolData.isExecuting) {
+              part.toolData.isExecuting = false;
+              // Keep existing toolResult if any, or provide a default message
+              if (!part.toolData.toolResult && part.toolData.toolResult !== '') {
+                part.toolData.toolResult = '工具执行已完成';
+              }
+              sessionUpdated = true;
+              fixedCount++;
+            }
+          }
+        }
+      }
+      
+      if (sessionUpdated) {
+        this.saveSession(session);
+      }
+    }
+    
+    return fixedCount;
+  }
+}
+
+const sessionManager = new SessionManager();
 
 // Session routes
 router.get('/sessions', (req, res) => {
-  const sessionList = Array.from(sessions.entries()).map(([id, session]) => ({
-    id,
-    title: session.title || `会话 ${id.substring(0, 8)}`,
-    createdAt: session.createdAt,
-    lastUpdated: session.lastUpdated,
-    messageCount: session.messages?.length || 0
-  }));
-  
-  res.json({ sessions: sessionList.sort((a, b) => b.lastUpdated - a.lastUpdated) });
+  try {
+    const sessions = sessionManager.getAllSessions();
+    const sessionList = sessions.map(session => ({
+      id: session.id,
+      title: session.title,
+      createdAt: session.createdAt,
+      lastUpdated: session.lastUpdated,
+      messageCount: session.messages.length
+    }));
+    
+    res.json({ sessions: sessionList });
+  } catch (error) {
+    console.error('Failed to get sessions:', error);
+    res.status(500).json({ error: 'Failed to retrieve sessions' });
+  }
+});
+
+// Get messages for a specific session
+router.get('/sessions/:sessionId/messages', (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const session = sessionManager.getSession(sessionId);
+    
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+    
+    res.json({ 
+      sessionId: session.id,
+      title: session.title,
+      messages: session.messages 
+    });
+  } catch (error) {
+    console.error('Failed to get session messages:', error);
+    res.status(500).json({ error: 'Failed to retrieve session messages' });
+  }
 });
 
 router.post('/sessions', (req, res) => {
-  const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  const session = {
-    id: sessionId,
-    title: req.body.title || `新会话 ${new Date().toLocaleString()}`,
-    createdAt: Date.now(),
-    lastUpdated: Date.now(),
-    messages: []
-  };
-  
-  sessions.set(sessionId, session);
-  res.json({ sessionId, session });
+  try {
+    const session = sessionManager.createSession(req.body.title);
+    res.json({ sessionId: session.id, session });
+  } catch (error) {
+    console.error('Failed to create session:', error);
+    res.status(500).json({ error: 'Failed to create session' });
+  }
 });
 
 router.delete('/sessions/:sessionId', (req, res) => {
-  const { sessionId } = req.params;
-  const deleted = sessions.delete(sessionId);
-  res.json({ success: deleted });
+  try {
+    const { sessionId } = req.params;
+    const deleted = sessionManager.deleteSession(sessionId);
+    res.json({ success: deleted });
+  } catch (error) {
+    console.error('Failed to delete session:', error);
+    res.status(500).json({ error: 'Failed to delete session' });
+  }
+});
+
+// Fix stuck tools in all sessions
+router.post('/sessions/fix-tools', (req, res) => {
+  try {
+    const fixedCount = sessionManager.fixStuckTools();
+    res.json({ 
+      success: true, 
+      message: `Fixed ${fixedCount} stuck tools` 
+    });
+  } catch (error) {
+    console.error('Failed to fix stuck tools:', error);
+    res.status(500).json({ error: 'Failed to fix stuck tools' });
+  }
 });
 
 // Get available AI models
@@ -93,20 +310,16 @@ router.post('/chat', async (req, res) => {
     const { message, context, sessionId } = validation.data;
 
     // Get or create session
-    let currentSession;
-    if (sessionId && sessions.has(sessionId)) {
-      currentSession = sessions.get(sessionId);
+    let currentSession: SessionData;
+    if (sessionId) {
+      const existingSession = sessionManager.getSession(sessionId);
+      if (existingSession) {
+        currentSession = existingSession;
+      } else {
+        currentSession = sessionManager.createSession();
+      }
     } else {
-      const newSessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      currentSession = {
-        id: newSessionId,
-        title: `AI编辑会话 ${new Date().toLocaleString()}`,
-        createdAt: Date.now(),
-        lastUpdated: Date.now(),
-        messages: [],
-        claudeSessionId: null
-      };
-      sessions.set(newSessionId, currentSession);
+      currentSession = sessionManager.createSession();
     }
 
     // Build system prompt for Claude Code
@@ -125,7 +338,7 @@ Slides are stored in the ../slides/ directory relative to the backend.
 Always provide helpful, specific suggestions and when possible, include code examples.
 Please respond in Chinese.`;
 
-    if (context?.currentSlide !== undefined) {
+    if (context?.currentSlide !== undefined && context.currentSlide !== null) {
       systemPrompt += `\n\nCurrent context: User is working on slide ${context.currentSlide + 1}`;
       if (context.slideContent) {
         systemPrompt += `\nCurrent slide content preview:\n${context.slideContent.substring(0, 500)}...`;
@@ -152,11 +365,13 @@ Please respond in Chinese.`;
     })}\n\n`);
 
     // Store user message
-    currentSession.messages.push({
+    sessionManager.addMessage(currentSession.id, {
       role: 'user',
-      content: message,
-      timestamp: Date.now()
+      content: message
     });
+
+    // Track current assistant message to accumulate content
+    let currentAssistantMessage: any = null;
 
     try {
       // Use Claude Code SDK with session management
@@ -185,44 +400,140 @@ Please respond in Chinese.`;
         
         // Send each message as SSE event
         const eventData = {
-          type: sdkMessage.type,
+          ...sdkMessage,
           timestamp: Date.now(),
-          sessionId: currentSession.id,
-          ...sdkMessage
+          sessionId: currentSession.id
         };
         
         res.write(`data: ${JSON.stringify(eventData)}\n\n`);
         
-        // Store assistant messages
+        // Accumulate assistant messages
         if (sdkMessage.type === 'assistant' && sdkMessage.message?.content) {
-          const textContent = sdkMessage.message.content
-            .filter(block => block.type === 'text')
-            .map(block => block.text)
-            .join('');
+          if (!currentAssistantMessage) {
+            currentAssistantMessage = {
+              role: 'assistant' as const,
+              content: '',
+              messageParts: [] as any[]
+            };
+          }
           
-          if (textContent) {
-            currentSession.messages.push({
-              role: 'assistant',
-              content: textContent,
-              timestamp: Date.now(),
-              claudeMessageId: sdkMessage.message.id
-            });
+          // Process content blocks and accumulate
+          for (const block of sdkMessage.message.content) {
+            if (block.type === 'text') {
+              currentAssistantMessage.messageParts.push({
+                id: `part_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                type: 'text',
+                content: block.text,
+                order: currentAssistantMessage.messageParts.length
+              });
+              currentAssistantMessage.content += block.text;
+            } else if (block.type === 'tool_use') {
+              currentAssistantMessage.messageParts.push({
+                id: `part_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                type: 'tool',
+                toolData: {
+                  id: `tool_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                  claudeId: block.id, // Store Claude's tool use ID for matching with results
+                  toolName: block.name,
+                  toolInput: block.input || {},
+                  isExecuting: true
+                },
+                order: currentAssistantMessage.messageParts.length
+              });
+            }
           }
         }
         
-        // If it's the final result, we can close the connection
+        // Handle tool results
+        if (sdkMessage.type === 'user' && sdkMessage.message?.content) {
+          for (const block of sdkMessage.message.content) {
+            if (block.type === 'tool_result' && currentAssistantMessage) {
+              console.log('Processing tool result:', {
+                tool_use_id: block.tool_use_id,
+                hasContent: !!block.content,
+                contentType: typeof block.content,
+                contentPreview: typeof block.content === 'string' ? block.content.substring(0, 100) : 'not string'
+              });
+              // Find the tool by tool_use_id if available, otherwise use the last executing tool
+              const toolParts = currentAssistantMessage.messageParts.filter((p: any) => p.type === 'tool');
+              let targetTool = null;
+              
+              if (block.tool_use_id) {
+                // Try to find tool by ID
+                targetTool = toolParts.find((p: any) => 
+                  p.toolData && (p.toolData.claudeId === block.tool_use_id || p.toolData.id === block.tool_use_id)
+                );
+              }
+              
+              // If not found by ID, find the last executing tool
+              if (!targetTool) {
+                targetTool = toolParts.reverse().find((p: any) => 
+                  p.toolData && p.toolData.isExecuting
+                );
+              }
+              
+              if (targetTool && targetTool.toolData) {
+                const result = typeof block.content === 'string' 
+                  ? block.content 
+                  : JSON.stringify(block.content);
+                console.log(`✅ Successfully setting tool result for ${targetTool.toolData.toolName}:`, result.substring(0, 100));
+                targetTool.toolData.toolResult = result;
+                targetTool.toolData.isExecuting = false;
+                targetTool.toolData.isError = block.is_error || false;
+              } else {
+                console.log('❌ Could not find target tool for result. Available tools:', 
+                  toolParts.map((p: any) => ({ 
+                    name: p.toolData?.toolName, 
+                    claudeId: p.toolData?.claudeId, 
+                    id: p.toolData?.id, 
+                    executing: p.toolData?.isExecuting 
+                  }))
+                );
+                console.log('Looking for tool_use_id:', block.tool_use_id);
+              }
+            }
+          }
+        }
+        
+        // If it's the final result, save the accumulated assistant message
         if (sdkMessage.type === 'result') {
-          currentSession.lastUpdated = Date.now();
+          if (currentAssistantMessage && currentAssistantMessage.messageParts.length > 0) {
+            // Ensure all tools are marked as completed
+            console.log('🔍 Final tool status check:');
+            currentAssistantMessage.messageParts.forEach((part: any, index: any) => {
+              if (part.type === 'tool' && part.toolData) {
+                console.log(`Tool ${index} (${part.toolData.toolName}): executing=${part.toolData.isExecuting}, hasResult=${!!part.toolData.toolResult}, claudeId=${part.toolData.claudeId}`);
+                console.log(`  Result preview: "${(part.toolData.toolResult || 'none').substring(0, 150)}"`);
+                if (part.toolData.isExecuting) {
+                  part.toolData.isExecuting = false;
+                  // Only set default result if truly no result was provided
+                  if (!part.toolData.toolResult) {
+                    console.log(`⚠️  Setting default result for ${part.toolData.toolName} because no result was found`);
+                    part.toolData.toolResult = '执行完成，无输出结果';
+                  }
+                }
+              }
+            });
+            
+            sessionManager.addMessage(currentSession.id, currentAssistantMessage);
+          }
+          
+          const session = sessionManager.getSession(currentSession.id);
+          if (session) {
+            session.lastUpdated = Date.now();
+            sessionManager.saveSession(session);
+          }
           break;
         }
       }
       
     } catch (sdkError) {
       console.error('Claude Code SDK error:', sdkError);
+      const errorMessage = sdkError instanceof Error ? sdkError.message : 'Unknown error';
       res.write(`data: ${JSON.stringify({ 
         type: 'error', 
         error: 'Claude Code SDK failed', 
-        message: sdkError.message 
+        message: errorMessage 
       })}\n\n`);
     }
     
@@ -231,7 +542,8 @@ Please respond in Chinese.`;
   } catch (error) {
     console.error('Error in AI chat:', error);
     if (!res.headersSent) {
-      res.status(500).json({ error: 'AI request failed', message: error.message });
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      res.status(500).json({ error: 'AI request failed', message: errorMessage });
     }
   }
 });

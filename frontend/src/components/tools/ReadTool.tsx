@@ -29,9 +29,6 @@ export const ReadTool: React.FC<ReadToolProps> = ({ execution }) => {
         )}
       </div>
       
-      {execution.toolResult && !execution.isError && (
-        <ToolOutput result={execution.toolResult} />
-      )}
     </BaseToolComponent>
   );
 };

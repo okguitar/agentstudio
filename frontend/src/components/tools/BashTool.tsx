@@ -27,9 +27,6 @@ export const BashTool: React.FC<BashToolProps> = ({ execution }) => {
         )}
       </div>
       
-      {execution.toolResult && !execution.isError && (
-        <ToolOutput result={execution.toolResult} />
-      )}
     </BaseToolComponent>
   );
 };

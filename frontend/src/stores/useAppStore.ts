@@ -32,6 +32,7 @@ interface AppState {
   setAiTyping: (typing: boolean) => void;
   setCurrentSessionId: (sessionId: string | null) => void;
   clearMessages: () => void;
+  loadSessionMessages: (messages: ChatMessage[]) => void;
   
   setSidebarCollapsed: (collapsed: boolean) => void;
   setPreviewZoom: (zoom: number) => void;
@@ -185,8 +186,11 @@ export const useAppStore = create<AppState>((set, get) => ({
   setCurrentSessionId: (sessionId) => set({ currentSessionId: sessionId }),
   
   clearMessages: () => set({ 
-    messages: [get().messages[0]], // Keep welcome message
-    currentSessionId: null // Reset session ID
+    messages: [get().messages[0]] // Keep welcome message only
+  }),
+  
+  loadSessionMessages: (messages) => set({ 
+    messages: [get().messages[0], ...messages] // Keep welcome message and add session messages
   }),
   
   setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),

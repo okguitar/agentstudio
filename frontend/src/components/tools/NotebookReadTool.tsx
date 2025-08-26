@@ -18,9 +18,6 @@ export const NotebookReadTool: React.FC<NotebookReadToolProps> = ({ execution })
         )}
       </div>
       
-      {execution.toolResult && !execution.isError && (
-        <ToolOutput result={execution.toolResult} />
-      )}
     </BaseToolComponent>
   );
 };

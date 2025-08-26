@@ -34,9 +34,6 @@ export const TaskTool: React.FC<TaskToolProps> = ({ execution }) => {
         )}
       </div>
       
-      {execution.toolResult && !execution.isError && (
-        <ToolOutput result={execution.toolResult} />
-      )}
     </BaseToolComponent>
   );
 };

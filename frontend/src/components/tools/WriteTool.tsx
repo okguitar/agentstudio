@@ -35,9 +35,6 @@ export const WriteTool: React.FC<WriteToolProps> = ({ execution }) => {
         )}
       </div>
       
-      {execution.toolResult && !execution.isError && (
-        <ToolOutput result={execution.toolResult} />
-      )}
     </BaseToolComponent>
   );
 };

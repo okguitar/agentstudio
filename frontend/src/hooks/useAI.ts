@@ -24,12 +24,14 @@ export const useAIChat = () => {
       message, 
       context, 
       sessionId, 
+      abortController,
       onMessage, 
       onError 
     }: { 
       message: string; 
       context?: ChatContext; 
       sessionId?: string | null;
+      abortController?: AbortController;
       onMessage?: (data: unknown) => void;
       onError?: (error: unknown) => void;
     }) => {
@@ -39,7 +41,8 @@ export const useAIChat = () => {
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ message, context, sessionId })
+          body: JSON.stringify({ message, context, sessionId }),
+          signal: abortController?.signal
         });
 
         if (!response.ok) {
@@ -55,6 +58,12 @@ export const useAIChat = () => {
         }
 
         while (true) {
+          // Check if request was aborted
+          if (abortController?.signal.aborted) {
+            reader.cancel();
+            throw new DOMException('Request aborted', 'AbortError');
+          }
+          
           const { done, value } = await reader.read();
           if (done) break;
 
@@ -194,6 +203,58 @@ export const useDeleteSession = () => {
 
       if (!response.ok) {
         throw new Error('Failed to delete session');
+      }
+
+      return response.json();
+    }
+  });
+};
+
+// Get session messages
+export const useSessionMessages = (sessionId: string | null) => {
+  return useQuery({
+    queryKey: ['session-messages', sessionId],
+    queryFn: async () => {
+      if (!sessionId) {
+        return { messages: [] };
+      }
+
+      const response = await fetch(`${API_BASE}/ai/sessions/${sessionId}/messages`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch session messages');
+      }
+
+      const data = await response.json();
+      
+      // Convert timestamps from number to Date objects to match ChatMessage interface
+      const convertedMessages = data.messages.map((msg: any) => ({
+        ...msg,
+        timestamp: new Date(msg.timestamp)
+      }));
+      
+      return {
+        ...data,
+        messages: convertedMessages
+      };
+    },
+    enabled: !!sessionId
+  });
+};
+
+// Fix stuck tools
+export const useFixStuckTools = () => {
+  return useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`${API_BASE}/ai/sessions/fix-tools`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fix stuck tools');
       }
 
       return response.json();
