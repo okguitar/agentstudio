@@ -1,5 +1,5 @@
 import React from 'react';
-import { BaseToolComponent, ToolOutput } from './BaseToolComponent';
+import { BaseToolComponent } from './BaseToolComponent';
 import type { ToolExecution, TodoWriteToolInput } from './types';
 import { CheckCircle, Clock, AlertCircle } from 'lucide-react';
 

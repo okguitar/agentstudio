@@ -17,7 +17,7 @@ export const useAIModels = () => {
   });
 };
 
-// AI Chat with SSE streaming
+// AI Chat with SSE streaming (backward compatibility - defaults to PPT agent)
 export const useAIChat = () => {
   return {
     mutateAsync: async ({ 
@@ -41,7 +41,7 @@ export const useAIChat = () => {
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ message, context, sessionId }),
+          body: JSON.stringify({ agentId: 'ppt-editor', message, context, sessionId }),
           signal: abortController?.signal
         });
 
@@ -160,12 +160,12 @@ export const useAIGenerateSlide = () => {
   });
 };
 
-// Session management hooks
+// Session management hooks (backward compatibility - PPT agent)
 export const useSessions = (searchTerm?: string) => {
   return useQuery({
     queryKey: ['sessions', searchTerm],
     queryFn: async () => {
-      const url = new URL(`${window.location.origin}${API_BASE}/ai/sessions`);
+      const url = new URL(`${window.location.origin}${API_BASE}/agents/ppt-editor/sessions`);
       if (searchTerm && searchTerm.trim()) {
         url.searchParams.append('search', searchTerm.trim());
       }
@@ -181,7 +181,7 @@ export const useSessions = (searchTerm?: string) => {
 export const useCreateSession = () => {
   return useMutation({
     mutationFn: async (title?: string) => {
-      const response = await fetch(`${API_BASE}/ai/sessions`, {
+      const response = await fetch(`${API_BASE}/agents/ppt-editor/sessions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -201,7 +201,7 @@ export const useCreateSession = () => {
 export const useDeleteSession = () => {
   return useMutation({
     mutationFn: async (sessionId: string) => {
-      const response = await fetch(`${API_BASE}/ai/sessions/${sessionId}`, {
+      const response = await fetch(`${API_BASE}/agents/ppt-editor/sessions/${sessionId}`, {
         method: 'DELETE'
       });
 
@@ -214,7 +214,7 @@ export const useDeleteSession = () => {
   });
 };
 
-// Get session messages
+// Get session messages (backward compatibility - PPT agent)
 export const useSessionMessages = (sessionId: string | null) => {
   return useQuery({
     queryKey: ['session-messages', sessionId],
@@ -223,7 +223,7 @@ export const useSessionMessages = (sessionId: string | null) => {
         return { messages: [] };
       }
 
-      const response = await fetch(`${API_BASE}/ai/sessions/${sessionId}/messages`);
+      const response = await fetch(`${API_BASE}/agents/ppt-editor/sessions/${sessionId}/messages`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch session messages');
@@ -246,22 +246,13 @@ export const useSessionMessages = (sessionId: string | null) => {
   });
 };
 
-// Fix stuck tools
+// Fix stuck tools (deprecated - keeping for backward compatibility)
 export const useFixStuckTools = () => {
   return useMutation({
     mutationFn: async () => {
-      const response = await fetch(`${API_BASE}/ai/sessions/fix-tools`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fix stuck tools');
-      }
-
-      return response.json();
+      // This functionality is now handled per-agent
+      console.warn('useFixStuckTools is deprecated - use agent-specific session management');
+      return { success: true, message: 'Function deprecated' };
     }
   });
 };

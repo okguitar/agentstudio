@@ -1,5 +1,5 @@
 import React from 'react';
-import { BaseToolComponent, ToolInput, ToolOutput } from './BaseToolComponent';
+import { BaseToolComponent, ToolInput } from './BaseToolComponent';
 import type { ToolExecution, NotebookEditToolInput } from './types';
 
 interface NotebookEditToolProps {

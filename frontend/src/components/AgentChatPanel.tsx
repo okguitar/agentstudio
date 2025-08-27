@@ -1,12 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Clock, Plus, Square } from 'lucide-react';
-import { useAppStore } from '../stores/useAppStore';
-import { useAIChat, useSessions, useCreateSession, useDeleteSession, useSessionMessages } from '../hooks/useAI';
+import { useAgentStore } from '../stores/useAgentStore';
+import { useAgentChat, useAgentSessions, useCreateAgentSession, useDeleteAgentSession, useAgentSessionMessages } from '../hooks/useAgents';
 import { useQueryClient } from '@tanstack/react-query';
 import { ChatMessageRenderer } from './ChatMessageRenderer';
 import { SessionsDropdown } from './SessionsDropdown';
+import type { AgentConfig } from '../types/index.js';
 
-export const ChatPanel: React.FC = () => {
+interface AgentChatPanelProps {
+  agent: AgentConfig;
+  projectPath?: string;
+}
+
+export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPath }) => {
   const [inputMessage, setInputMessage] = useState('');
   const [showSessions, setShowSessions] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -17,8 +23,6 @@ export const ChatPanel: React.FC = () => {
   const {
     messages,
     isAiTyping,
-    currentSlideIndex,
-    slides,
     currentSessionId,
     addMessage,
     updateMessage,
@@ -28,15 +32,16 @@ export const ChatPanel: React.FC = () => {
     setAiTyping,
     setCurrentSessionId,
     clearMessages,
-    loadSessionMessages
-  } = useAppStore();
+    loadSessionMessages,
+    buildContext
+  } = useAgentStore();
   
   const queryClient = useQueryClient();
-  const aiChatMutation = useAIChat();
-  const { data: sessionsData } = useSessions(searchTerm);
-  const createSession = useCreateSession();
-  const deleteSession = useDeleteSession();
-  const { data: sessionMessagesData } = useSessionMessages(currentSessionId);
+  const agentChatMutation = useAgentChat();
+  const { data: sessionsData } = useAgentSessions(agent.id, searchTerm, projectPath);
+  const createSession = useCreateAgentSession();
+  const deleteSession = useDeleteAgentSession();
+  const { data: sessionMessagesData } = useAgentSessionMessages(agent.id, currentSessionId, projectPath);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -45,10 +50,6 @@ export const ChatPanel: React.FC = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages, isAiTyping]);
-
-  useEffect(() => {
-    console.log('isAiTyping changed:', isAiTyping);
-  }, [isAiTyping]);
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || isAiTyping) return;
@@ -62,14 +63,8 @@ export const ChatPanel: React.FC = () => {
       role: 'user'
     });
 
-    // Refresh sessions immediately to trigger title generation
-    queryClient.invalidateQueries({ queryKey: ['sessions'] });
-
-    // Prepare context
-    const context = {
-      currentSlide: currentSlideIndex,
-      allSlides: slides
-    };
+    // Build context based on current agent and state
+    const context = buildContext();
 
     setAiTyping(true);
 
@@ -82,13 +77,15 @@ export const ChatPanel: React.FC = () => {
       let aiMessageId: string | null = null;
       let currentToolId: string | null = null;
       
-      console.log('Sending chat request:', { message: userMessage, context, sessionId: currentSessionId });
+      // console.log('Sending agent chat request:', { agentId: agent.id, message: userMessage, context, sessionId: currentSessionId, projectPath });
 
-      // Use SSE streaming chat
-      await aiChatMutation.mutateAsync({
+      // Use agent-specific SSE streaming chat
+      await agentChatMutation.mutateAsync({
+        agentId: agent.id,
         message: userMessage,
         context,
         sessionId: currentSessionId,
+        projectPath,
         abortController,
         onMessage: (data) => {
           console.log('Received SSE message:', data);
@@ -113,7 +110,7 @@ export const ChatPanel: React.FC = () => {
               };
               addMessage(message);
               // Get the ID of the message we just added
-              const state = useAppStore.getState();
+              const state = useAgentStore.getState();
               aiMessageId = state.messages[state.messages.length - 1].id;
             }
           }
@@ -126,11 +123,8 @@ export const ChatPanel: React.FC = () => {
               };
               addMessage(message);
               // Get the ID of the message we just added
-              const state = useAppStore.getState();
+              const state = useAgentStore.getState();
               aiMessageId = state.messages[state.messages.length - 1].id;
-              console.log('Created AI message with ID:', aiMessageId);
-            } else {
-              console.log('Reusing existing AI message ID:', aiMessageId);
             }
 
             // Handle tool use and text content
@@ -153,7 +147,7 @@ export const ChatPanel: React.FC = () => {
                   }
                   
                   // Store the tool ID for later updates
-                  const state = useAppStore.getState();
+                  const state = useAgentStore.getState();
                   const currentMessage = state.messages.find(m => m.id === aiMessageId);
                   if (currentMessage?.messageParts) {
                     const lastPart = currentMessage.messageParts[currentMessage.messageParts.length - 1];
@@ -217,18 +211,13 @@ export const ChatPanel: React.FC = () => {
               finalMessage = '\n\n✅ **处理完成**';
             }
             
-            // Remove cost and timing info display
-            // if (data.total_cost_usd) {
-            //   finalMessage += `\n\n📊 **统计信息**: 成本 $${data.total_cost_usd.toFixed(4)}, 耗时 ${data.duration_ms}ms`;
-            // }
-            
             // Update final message content
             if (aiMessageId && finalMessage) {
               addTextPartToMessage(aiMessageId, finalMessage);
             }
             
             // Refresh sessions list
-            queryClient.invalidateQueries({ queryKey: ['sessions'] });
+            queryClient.invalidateQueries({ queryKey: ['agent-sessions', agent.id] });
           }
         },
         onError: (error) => {
@@ -277,11 +266,11 @@ export const ChatPanel: React.FC = () => {
 
   const handleNewSession = async () => {
     try {
-      const result = await createSession.mutateAsync(undefined);
+      const result = await createSession.mutateAsync({ agentId: agent.id, projectPath });
       setCurrentSessionId(result.sessionId);
       clearMessages();
       setShowSessions(false);
-      queryClient.invalidateQueries({ queryKey: ['sessions'] });
+      queryClient.invalidateQueries({ queryKey: ['agent-sessions', agent.id] });
     } catch (error) {
       console.error('Failed to create session:', error);
     }
@@ -291,8 +280,7 @@ export const ChatPanel: React.FC = () => {
     clearMessages();
     setCurrentSessionId(sessionId);
     setShowSessions(false);
-    // Messages will be loaded by the useEffect hook when sessionMessagesData changes
-    queryClient.invalidateQueries({ queryKey: ['session-messages', sessionId] });
+    queryClient.invalidateQueries({ queryKey: ['agent-session-messages', agent.id, sessionId] });
   };
 
   const handleStopGeneration = () => {
@@ -312,23 +300,21 @@ export const ChatPanel: React.FC = () => {
   const handleDeleteSession = async (sessionId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     
-    // Find session title for confirmation
     const sessionToDelete = sessionsData?.sessions?.find((s: any) => s.id === sessionId);
     const sessionTitle = sessionToDelete?.title || '未知会话';
     
-    // Show confirmation dialog
     const confirmed = window.confirm(`确定要删除会话"${sessionTitle}"吗？\n\n此操作无法撤销。`);
     if (!confirmed) {
       return;
     }
     
     try {
-      await deleteSession.mutateAsync(sessionId);
+      await deleteSession.mutateAsync({ agentId: agent.id, sessionId, projectPath });
       if (currentSessionId === sessionId) {
         setCurrentSessionId(null);
         clearMessages();
       }
-      queryClient.invalidateQueries({ queryKey: ['sessions'] });
+      queryClient.invalidateQueries({ queryKey: ['agent-sessions', agent.id] });
     } catch (error) {
       console.error('Failed to delete session:', error);
       alert('删除会话失败，请重试。');
@@ -364,28 +350,34 @@ export const ChatPanel: React.FC = () => {
   return (
     <div className="flex flex-col h-full bg-white">
       {/* Header */}
-      <div className="px-5 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-600 to-blue-400 text-white">
+      <div 
+        className="px-5 py-4 border-b border-gray-200 text-white"
+        style={{ background: `linear-gradient(135deg, ${agent.ui.primaryColor}, ${agent.ui.primaryColor}dd)` }}
+      >
         <div className="flex items-center justify-between">
           <div className="flex-1">
-            <h1 className="text-lg font-semibold mb-1">AI PPT助手</h1>
+            <h1 className="text-lg font-semibold mb-1 flex items-center space-x-2">
+              <span className="text-2xl">{agent.ui.icon}</span>
+              <span>{agent.ui.headerTitle}</span>
+            </h1>
             <p className="text-sm opacity-90">
               {currentSessionId ? 
                 (sessionsData?.sessions?.find((s: any) => s.id === currentSessionId)?.title || '当前会话') : 
-                '与AI聊天来编辑你的演示文稿'
+                agent.ui.headerDescription
               }
             </p>
           </div>
           <div className="flex space-x-2 relative">
             <button
               onClick={() => setShowSessions(!showSessions)}
-              className="p-2 hover:bg-blue-500 rounded-lg transition-colors relative"
+              className="p-2 hover:bg-white/20 rounded-lg transition-colors relative"
               title="会话历史"
             >
               <Clock className="w-5 h-5" />
             </button>
             <button
               onClick={handleNewSession}
-              className="p-2 hover:bg-blue-500 rounded-lg transition-colors"
+              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
               title="新建会话"
             >
               <Plus className="w-5 h-5" />
@@ -408,9 +400,21 @@ export const ChatPanel: React.FC = () => {
         </div>
       </div>
 
-
       {/* Messages */}
       <div className="flex-1 px-5 py-5 overflow-y-auto space-y-4">
+        {/* Welcome message */}
+        <div className="px-4">
+          <div className="text-sm leading-relaxed break-words overflow-hidden text-gray-800">
+            <div className="flex items-start space-x-3">
+              <div className="text-2xl">{agent.ui.icon}</div>
+              <div className="flex-1">
+                <div className="font-medium text-gray-900 mb-2">{agent.name}</div>
+                <div className="text-gray-600">{agent.description}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
         {messages.map((message) => (
           <div
             key={message.id}
@@ -419,11 +423,12 @@ export const ChatPanel: React.FC = () => {
             <div
               className={`text-sm leading-relaxed break-words overflow-hidden ${
                 message.role === 'user'
-                  ? 'bg-blue-600 text-white p-3 rounded-lg'
+                  ? 'text-white p-3 rounded-lg'
                   : 'text-gray-800'
               }`}
+              style={message.role === 'user' ? { backgroundColor: agent.ui.primaryColor } : {}}
             >
-              <ChatMessageRenderer message={message} />
+              <ChatMessageRenderer message={message as any} />
             </div>
           </div>
         ))}
@@ -443,7 +448,7 @@ export const ChatPanel: React.FC = () => {
 
       {/* Input */}
       <div className="p-5 border-t border-gray-200">
-        <div className="flex items-center space-x-3">
+        <div className="flex items-end space-x-3">
           <div className="flex-1">
             <textarea
               ref={textareaRef}
@@ -452,15 +457,15 @@ export const ChatPanel: React.FC = () => {
               onKeyPress={handleKeyPress}
               placeholder="输入你的消息..."
               rows={1}
-              className="w-full resize-none border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full resize-none border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:border-transparent"
+              style={{ '--focus-ring-color': agent.ui.primaryColor } as React.CSSProperties}
               disabled={isAiTyping}
-              style={{ maxHeight: '100px' }}
             />
           </div>
           {isAiTyping ? (
             <button
               onClick={handleStopGeneration}
-              className="flex-shrink-0 w-11 h-11 bg-red-600 text-white rounded-lg flex items-center justify-center hover:bg-red-700 transition-colors"
+              className="flex-shrink-0 w-10 h-10 bg-red-600 text-white rounded-lg flex items-center justify-center hover:bg-red-700 transition-colors"
               title="停止生成"
             >
               <Square className="w-4 h-4" />
@@ -469,7 +474,8 @@ export const ChatPanel: React.FC = () => {
             <button
               onClick={handleSendMessage}
               disabled={!inputMessage.trim()}
-              className="flex-shrink-0 w-11 h-11 bg-blue-600 text-white rounded-lg flex items-center justify-center hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+              className="flex-shrink-0 w-10 h-10 text-white rounded-lg flex items-center justify-center hover:opacity-90 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+              style={{ backgroundColor: inputMessage.trim() ? agent.ui.primaryColor : undefined }}
               title={`发送消息 (输入: ${inputMessage.trim() ? '有' : '无'})`}
             >
               <Send className="w-4 h-4" />

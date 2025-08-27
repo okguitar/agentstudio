@@ -6,13 +6,17 @@ import { Options, query } from '@anthropic-ai/claude-code';
 import { z } from 'zod';
 import * as fs from 'fs';
 import * as path from 'path';
+import { AgentStorage } from '../../shared/utils/agentStorage.js';
+import { AgentConfig } from '../../shared/types/agents.js';
 
 const router = express.Router();
 
 // Validation schemas
 const ChatRequestSchema = z.object({
   message: z.string().min(1),
+  agentId: z.string().min(1),
   sessionId: z.string().optional().nullable(),
+  projectPath: z.string().optional(),
   context: z.object({
     currentSlide: z.number().optional().nullable(),
     slideContent: z.string().optional(),
@@ -21,7 +25,11 @@ const ChatRequestSchema = z.object({
       title: z.string(),
       path: z.string(),
       exists: z.boolean().optional()
-    })).optional()
+    })).optional(),
+    // Generic context for other agent types
+    currentItem: z.any().optional(),
+    allItems: z.array(z.any()).optional(),
+    customContext: z.record(z.any()).optional()
   }).optional()
 });
 
@@ -310,6 +318,13 @@ class SessionManager {
 
 const sessionManager = new SessionManager();
 
+// Function to get AgentStorage instance for specific project directory
+const getAgentStorage = (projectPath?: string): AgentStorage => {
+  const workingDir = projectPath || process.cwd();
+  // console.log('Creating AgentStorage with workingDir:', workingDir);
+  return new AgentStorage(workingDir);
+};
+
 // Session routes
 router.get('/sessions', (req, res) => {
   try {
@@ -480,7 +495,7 @@ router.get('/models', (req, res) => {
   res.json({ models, available: models.length > 0 });
 });
 
-// POST /api/ai/chat - General AI chat for presentation assistance using Claude Code SDK
+// POST /api/ai/chat - Agent-based AI chat using Claude Code SDK
 router.post('/chat', async (req, res) => {
   try {
     console.log('Chat request received:', req.body);
@@ -490,47 +505,68 @@ router.post('/chat', async (req, res) => {
       return res.status(400).json({ error: 'Invalid request body', details: validation.error });
     }
 
-    const { message, context, sessionId } = validation.data;
+    const { message, agentId, context, sessionId, projectPath } = validation.data;
+    
+    // console.log('Received chat request with projectPath:', projectPath);
 
-    // Get or create session
-    let currentSession: SessionData;
+    // Create AgentStorage instance for the specific project directory
+    const agentStorage = getAgentStorage(projectPath);
+
+    // Get agent configuration
+    const agent = agentStorage.getAgent(agentId);
+    if (!agent) {
+      return res.status(404).json({ error: 'Agent not found' });
+    }
+
+    if (!agent.enabled) {
+      return res.status(403).json({ error: 'Agent is disabled' });
+    }
+
+    // Get or create agent session
+    let currentSession: any;
     if (sessionId) {
-      const existingSession = sessionManager.getSession(sessionId);
+      const existingSession = agentStorage.getSession(agentId, sessionId);
       if (existingSession) {
         currentSession = existingSession;
       } else {
-        currentSession = sessionManager.createSession();
+        currentSession = agentStorage.createSession(agentId);
       }
     } else {
-      currentSession = sessionManager.createSession();
+      currentSession = agentStorage.createSession(agentId);
     }
 
-    // Build system prompt for Claude Code
-    let systemPrompt = `You are an AI assistant specialized in helping users create and edit HTML presentations. 
-You can help with:
-- Content creation and editing  
-- Design suggestions
-- Structure improvements
-- HTML/CSS modifications
-- Presentation flow optimization
-- File operations for slide management
+    // Build system prompt from agent configuration
+    let systemPrompt = agent.systemPrompt;
 
-The presentation uses HTML slides with embedded CSS styling. Each slide should be self-contained with a 1280x720 viewport.
-Slides are stored in the ../slides/ directory relative to the backend.
+    // Add context based on agent type and provided context
+    if (context) {
+      if (agent.ui.componentType === 'slides') {
+        // PPT-specific context
+        if (context.currentSlide !== undefined && context.currentSlide !== null) {
+          systemPrompt += `\n\nCurrent context: User is working on slide ${context.currentSlide + 1}`;
+          if (context.slideContent) {
+            systemPrompt += `\nCurrent slide content preview:\n${context.slideContent.substring(0, 500)}...`;
+          }
+        }
 
-Always provide helpful, specific suggestions and when possible, include code examples.
-Please respond in Chinese.`;
+        if (context.allSlides?.length) {
+          systemPrompt += `\n\nPresentation overview: ${context.allSlides.length} slides total`;
+          systemPrompt += `\nSlides: ${context.allSlides.map((s: any) => `${s.index + 1}. ${s.title}`).join(', ')}`;
+        }
+      } else {
+        // Generic context for other agent types
+        if (context.currentItem) {
+          systemPrompt += `\n\nCurrent item context: ${JSON.stringify(context.currentItem, null, 2)}`;
+        }
 
-    if (context?.currentSlide !== undefined && context.currentSlide !== null) {
-      systemPrompt += `\n\nCurrent context: User is working on slide ${context.currentSlide + 1}`;
-      if (context.slideContent) {
-        systemPrompt += `\nCurrent slide content preview:\n${context.slideContent.substring(0, 500)}...`;
+        if (context.allItems?.length) {
+          systemPrompt += `\n\nAll items overview: ${context.allItems.length} items total`;
+        }
+
+        if (context.customContext) {
+          systemPrompt += `\n\nCustom context: ${JSON.stringify(context.customContext, null, 2)}`;
+        }
       }
-    }
-
-    if (context?.allSlides?.length) {
-      systemPrompt += `\n\nPresentation overview: ${context.allSlides.length} slides total`;
-      systemPrompt += `\nSlides: ${context.allSlides.map(s => `${s.index + 1}. ${s.title}`).join(', ')}`;
     }
 
     // Set headers for Server-Sent Events
@@ -548,22 +584,28 @@ Please respond in Chinese.`;
     })}\n\n`);
 
     // Store user message
-    sessionManager.addMessage(currentSession.id, {
+    agentStorage.addMessageToSession(agentId, currentSession.id, {
       role: 'user',
       content: message
     });
 
     // Track current assistant message to accumulate content
     let currentAssistantMessage: any = null;
+    let assistantMessageSaved = false;
 
     try {
-      // Use Claude Code SDK with session management
+      // Build allowed tools list from agent configuration
+      const allowedTools = agent.allowedTools
+        .filter(tool => tool.enabled)
+        .map(tool => tool.name);
+
+      // Use Claude Code SDK with agent-specific settings
       const queryOptions: Options = {
         customSystemPrompt: systemPrompt,
-        allowedTools: ["Write", "Read", "Edit", "Glob", "MultiEdit", "Bash"],
-        maxTurns: 25,
-        cwd: process.cwd(),
-        permissionMode: 'acceptEdits'  // Automatically approve safe operations
+        allowedTools,
+        maxTurns: agent.maxTurns,
+        cwd: agent.workingDirectory ? path.resolve(process.cwd(), agent.workingDirectory) : process.cwd(),
+        permissionMode: agent.permissionMode as any
       };
 
       // Resume existing Claude session if available
@@ -576,11 +618,11 @@ Please respond in Chinese.`;
         options: queryOptions
       })) {
         
-        console.log('🔄 SDK Message type:', sdkMessage.type, sdkMessage.subtype || '');
+        console.log('🔄 SDK Message type:', sdkMessage.type, (sdkMessage as any).subtype || '');
         
         // Store Claude session ID from first message
-        if (sdkMessage.type === 'system' && sdkMessage.subtype === 'init') {
-          currentSession.claudeSessionId = sdkMessage.session_id;
+        if (sdkMessage.type === 'system' && (sdkMessage as any).subtype === 'init') {
+          currentSession.claudeSessionId = (sdkMessage as any).session_id;
         }
         
         // Send each message as SSE event
@@ -710,7 +752,8 @@ Please respond in Chinese.`;
                 }
               });
               
-              sessionManager.addMessage(currentSession.id, currentAssistantMessage);
+              agentStorage.addMessageToSession(agentId, currentSession.id, currentAssistantMessage);
+              assistantMessageSaved = true;
               console.log('✅ Assistant message saved successfully');
             } else {
               // Handle case where AI reply has no message parts (shouldn't happen normally)
@@ -722,7 +765,8 @@ Please respond in Chinese.`;
                   content: currentAssistantMessage.content,
                   order: 0
                 }];
-                sessionManager.addMessage(currentSession.id, currentAssistantMessage);
+                agentStorage.addMessageToSession(agentId, currentSession.id, currentAssistantMessage);
+                assistantMessageSaved = true;
                 console.log('✅ Assistant message saved with recovered text part');
               } else {
                 console.log('❌ Assistant message has no content or parts - not saving');
@@ -732,10 +776,10 @@ Please respond in Chinese.`;
             console.log('❌ No assistant message to save');
           }
           
-          const session = sessionManager.getSession(currentSession.id);
+          const session = agentStorage.getSession(agentId, currentSession.id);
           if (session) {
             session.lastUpdated = Date.now();
-            sessionManager.saveSession(session);
+            agentStorage.saveSession(session);
           }
           break;
         }
@@ -755,11 +799,11 @@ Please respond in Chinese.`;
             order: 0
           }];
         }
-        sessionManager.addMessage(currentSession.id, currentAssistantMessage);
-        const session = sessionManager.getSession(currentSession.id);
+        agentStorage.addMessageToSession(agentId, currentSession.id, currentAssistantMessage);
+        const session = agentStorage.getSession(agentId, currentSession.id);
         if (session) {
           session.lastUpdated = Date.now();
-          sessionManager.saveSession(session);
+          agentStorage.saveSession(session);
         }
         console.log('✅ Emergency save completed');
       }
@@ -773,7 +817,7 @@ Please respond in Chinese.`;
     }
     
     // Final safety check: save any remaining assistant message that wasn't saved by 'result' event
-    if (currentAssistantMessage && (currentAssistantMessage.messageParts.length > 0 || currentAssistantMessage.content)) {
+    if (!assistantMessageSaved && currentAssistantMessage && (currentAssistantMessage.messageParts.length > 0 || currentAssistantMessage.content)) {
       console.log('🔄 Final check: found unsaved assistant message, saving now');
       if (currentAssistantMessage.messageParts.length === 0 && currentAssistantMessage.content) {
         currentAssistantMessage.messageParts = [{
@@ -783,11 +827,11 @@ Please respond in Chinese.`;
           order: 0
         }];
       }
-      sessionManager.addMessage(currentSession.id, currentAssistantMessage);
-      const session = sessionManager.getSession(currentSession.id);
+      agentStorage.addMessageToSession(agentId, currentSession.id, currentAssistantMessage);
+      const session = agentStorage.getSession(agentId, currentSession.id);
       if (session) {
         session.lastUpdated = Date.now();
-        sessionManager.saveSession(session);
+        agentStorage.saveSession(session);
       }
       console.log('✅ Final save completed');
     } else {

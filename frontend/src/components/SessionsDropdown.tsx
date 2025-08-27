@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Clock, Plus, Trash2, Search } from 'lucide-react';
 
 interface Session {
