@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { AgentChatPanel } from '../components/AgentChatPanel';
 import { PreviewPanel } from '../components/PreviewPanel';
-import { AgentConfigPage } from '../components/AgentConfigPage';
+
 import { useAgentStore } from '../stores/useAgentStore';
 import { useAppStore } from '../stores/useAppStore'; // For PPT data
 import { useAgent } from '../hooks/useAgents';
@@ -14,7 +14,7 @@ export const ChatPage: React.FC = () => {
   const projectPath = searchParams.get('project');
   const { data: agentData, isLoading, error } = useAgent(agentId!);
   const { data: slidesData } = useSlides(); // For PPT agent
-  const [showConfigPage, setShowConfigPage] = useState(false);
+
   
   // Resizable panels state
   const [leftPanelWidth, setLeftPanelWidth] = useState(35); // percentage
@@ -154,12 +154,7 @@ export const ChatPage: React.FC = () => {
             >
               关闭页面
             </button>
-            <button
-              onClick={() => setShowConfigPage(true)}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              管理助手
-            </button>
+
           </div>
         </div>
       </div>

@@ -18,7 +18,7 @@ export interface AgentConfig {
   // AI configuration
   systemPrompt: string;
   maxTurns: number;
-  permissionMode: 'ask' | 'acceptEdits' | 'acceptAll';
+  permissionMode: 'default' | 'acceptEdits' | 'bypassPermissions' | 'plan';
   
   // Available tools
   allowedTools: AgentTool[];
@@ -90,6 +90,7 @@ export interface MessagePart {
     toolResult?: string;
     isExecuting: boolean;
     isError?: boolean;
+    claudeId?: string; // Claude's tool use ID for matching with results
   };
   order: number;
 }

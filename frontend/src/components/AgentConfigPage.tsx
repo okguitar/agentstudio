@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Settings, Plus, Edit3, Trash2, Eye, EyeOff, Save, X } from 'lucide-react';
-import { useAgents, useUpdateAgent, useDeleteAgent } from '../hooks/useAgents';
+import { useAgents, useUpdateAgent, useDeleteAgent, useCreateAgent } from '../hooks/useAgents';
 import { useQueryClient } from '@tanstack/react-query';
 import type { AgentConfig, AgentTool } from '../types/index.js';
 
@@ -25,50 +25,136 @@ const AVAILABLE_TOOLS = [
 interface AgentConfigPageProps {
   onClose: () => void;
   editingAgent?: AgentConfig | null;
+  isCreating?: boolean;
 }
 
-export const AgentConfigPage: React.FC<AgentConfigPageProps> = ({ onClose, editingAgent: propEditingAgent }) => {
+export const AgentConfigPage: React.FC<AgentConfigPageProps> = ({ onClose, editingAgent: propEditingAgent, isCreating: propIsCreating }) => {
   const { data: agentsData, isLoading } = useAgents(); // Get all agents including disabled
   const updateAgent = useUpdateAgent();
   const deleteAgent = useDeleteAgent();
+  const createAgent = useCreateAgent();
   const queryClient = useQueryClient();
   
   const [editingAgent, setEditingAgent] = useState<AgentConfig | null>(propEditingAgent || null);
-  const [editForm, setEditForm] = useState<Partial<AgentConfig>>(propEditingAgent || {});
+  const [editForm, setEditForm] = useState<Partial<AgentConfig>>(() => {
+    if (propIsCreating) {
+      // 返回创建模式的默认值
+      return {
+        name: '',
+        description: '',
+        version: '1.0.0',
+        systemPrompt: '',
+        maxTurns: 25,
+        permissionMode: 'default',
+        allowedTools: [
+          { name: 'Read', enabled: true },
+          { name: 'Write', enabled: true },
+          { name: 'Edit', enabled: true }
+        ],
+        ui: {
+          icon: '🤖',
+          primaryColor: '#3B82F6',
+          headerTitle: '',
+          headerDescription: '',
+          componentType: 'chat'
+        },
+        author: 'User',
+        tags: ['custom'],
+        enabled: true
+      };
+    }
+    return propEditingAgent || {};
+  });
   const [showToolSelector, setShowToolSelector] = useState(false);
   const [selectedToolsToAdd, setSelectedToolsToAdd] = useState<string[]>([]);
+  const [isCreating, setIsCreating] = useState(propIsCreating || false);
   
   const agents = agentsData?.agents || [];
 
   const handleEdit = (agent: AgentConfig) => {
     setEditingAgent(agent);
     setEditForm(agent);
+    setIsCreating(false);
+  };
+
+  const handleCreate = () => {
+    // 设置创建模式，并提供默认值
+    const defaultAgent: Partial<AgentConfig> = {
+      name: '',
+      description: '',
+      version: '1.0.0',
+      systemPrompt: '',
+      maxTurns: 25,
+      permissionMode: 'default',
+      allowedTools: [
+        { name: 'Read', enabled: true },
+        { name: 'Write', enabled: true },
+        { name: 'Edit', enabled: true }
+      ],
+      ui: {
+        icon: '🤖',
+        primaryColor: '#3B82F6',
+        headerTitle: '',
+        headerDescription: '',
+        componentType: 'chat'
+      },
+      author: 'User',
+      tags: ['custom'],
+      enabled: true
+    };
+    
+    setEditingAgent(null);
+    setEditForm(defaultAgent);
+    setIsCreating(true);
   };
 
   const handleSave = async () => {
-    if (!editingAgent || !editForm) return;
+    if (!editForm || !editForm.name?.trim()) {
+      alert('请填写助手名称');
+      return;
+    }
     
     try {
-      // Ensure enabled status is preserved from original agent
-      const dataToSave = {
-        ...editForm,
-        enabled: editingAgent.enabled // Keep original enabled status
-      };
-      
-      await updateAgent.mutateAsync({
-        agentId: editingAgent.id,
-        data: dataToSave
-      });
+      if (isCreating) {
+        // 创建新助手
+        const dataToSave = {
+          ...editForm,
+          id: `custom-${Date.now()}`, // 生成唯一ID
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          ui: {
+            ...editForm.ui,
+            headerTitle: editForm.ui?.headerTitle || editForm.name,
+            headerDescription: editForm.ui?.headerDescription || editForm.description
+          }
+        } as Omit<AgentConfig, 'createdAt' | 'updatedAt'>;
+        
+        await createAgent.mutateAsync(dataToSave);
+      } else {
+        // 更新现有助手
+        if (!editingAgent) return;
+        
+        const dataToSave = {
+          ...editForm,
+          enabled: editingAgent.enabled // Keep original enabled status
+        };
+        
+        await updateAgent.mutateAsync({
+          agentId: editingAgent.id,
+          data: dataToSave
+        });
+      }
       
       setEditingAgent(null);
       setEditForm({});
+      setIsCreating(false);
       queryClient.invalidateQueries({ queryKey: ['agents'] });
       
       // Close the modal after successful save
       onClose();
     } catch (error) {
-      console.error('Failed to update agent:', error);
-      alert('保存失败，请重试。');
+      console.error('Failed to save agent:', error);
+      alert(isCreating ? '创建失败，请重试。' : '保存失败，请重试。');
     }
   };
 
@@ -121,11 +207,11 @@ export const AgentConfigPage: React.FC<AgentConfigPageProps> = ({ onClose, editi
           <div className="flex items-center space-x-3">
             <Settings className="w-6 h-6 text-gray-600" />
             <h1 className="text-xl font-semibold text-gray-900">
-              {editingAgent ? `编辑助手：${editingAgent.name}` : '智能助手管理'}
+              {isCreating ? '创建助手' : editingAgent ? `编辑助手：${editingAgent.name}` : '智能助手管理'}
             </h1>
           </div>
           <div className="flex items-center space-x-2">
-            {editingAgent && (
+            {(editingAgent || isCreating) && (
               <>
                 <button
                   onClick={handleSave}
@@ -139,6 +225,7 @@ export const AgentConfigPage: React.FC<AgentConfigPageProps> = ({ onClose, editi
                   onClick={() => {
                     setEditingAgent(null);
                     setEditForm({});
+                    setIsCreating(false);
                     onClose(); // Close the modal on cancel
                   }}
                   className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
@@ -159,7 +246,7 @@ export const AgentConfigPage: React.FC<AgentConfigPageProps> = ({ onClose, editi
 
         {/* Content */}
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
-          {editingAgent ? (
+          {(editingAgent || isCreating) ? (
             /* Edit Form */
             <div className="space-y-6">
 
@@ -366,9 +453,9 @@ export const AgentConfigPage: React.FC<AgentConfigPageProps> = ({ onClose, editi
               <div className="flex items-center justify-between">
                 <p className="text-gray-600">管理系统中的智能助手配置</p>
                 <button
+                  onClick={handleCreate}
                   className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                  disabled={true}
-                  title="创建自定义助手功能即将推出"
+                  title="创建自定义助手"
                 >
                   <Plus className="w-4 h-4" />
                   <span>创建助手</span>

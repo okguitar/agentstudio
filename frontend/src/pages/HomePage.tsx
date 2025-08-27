@@ -215,9 +215,10 @@ export const HomePage: React.FC = () => {
       </div>
 
       {/* Agent Configuration Modal */}
-      {editingAgent && (
+      {(showConfigPage || editingAgent) && (
         <AgentConfigPage 
           onClose={() => {
+            setShowConfigPage(false);
             setEditingAgent(null);
           }} 
           editingAgent={editingAgent}
