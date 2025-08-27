@@ -82,7 +82,7 @@ export interface AgentConfig {
   version: string;
   systemPrompt: string;
   maxTurns: number;
-  permissionMode: 'ask' | 'acceptEdits' | 'acceptAll';
+  permissionMode: 'default' | 'acceptEdits' | 'bypassPermissions' | 'plan';
   allowedTools: AgentTool[];
   ui: {
     icon: string;
@@ -105,6 +105,7 @@ export interface AgentConfig {
   tags: string[];
   createdAt: string;
   updatedAt: string;
+  projects?: string[]; // List of working directories where this agent has been used
   enabled: boolean;
 }
 
