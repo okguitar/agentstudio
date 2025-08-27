@@ -24,6 +24,7 @@ export interface ToolUsageData {
   toolResult?: string;
   isError?: boolean;
   isExecuting?: boolean;
+  claudeId?: string; // Claude's tool use ID for matching with results
 }
 
 export interface MessagePart {

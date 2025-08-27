@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Clock, Plus, Square } from 'lucide-react';
+import { Send, Clock, Plus, Square, Paperclip, Smile, Settings } from 'lucide-react';
 import { useAgentStore } from '../stores/useAgentStore';
 import { useAgentChat, useAgentSessions, useCreateAgentSession, useDeleteAgentSession, useAgentSessionMessages } from '../hooks/useAgents';
 import { useQueryClient } from '@tanstack/react-query';
@@ -75,7 +75,6 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
     try {
       // Add initial AI message placeholder
       let aiMessageId: string | null = null;
-      let currentToolId: string | null = null;
       
       // console.log('Sending agent chat request:', { agentId: agent.id, message: userMessage, context, sessionId: currentSessionId, projectPath });
 
@@ -102,17 +101,8 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
             setCurrentSessionId(eventData.sessionId || null);
           } 
           else if (eventData.type === 'system' && eventData.subtype === 'init') {
-            // Claude Code SDK initialization
-            if (!aiMessageId) {
-              const message = {
-                content: '🔄 正在初始化 Claude Code SDK...',
-                role: 'assistant' as const
-              };
-              addMessage(message);
-              // Get the ID of the message we just added
-              const state = useAgentStore.getState();
-              aiMessageId = state.messages[state.messages.length - 1].id;
-            }
+            // Claude Code SDK initialization - silently initialize without showing message
+            // Just ensure we have an AI message ID ready for when content starts coming
           }
           else if (eventData.type === 'assistant') {
             // Add AI message placeholder if not added yet
@@ -129,7 +119,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
 
             // Handle tool use and text content
             if (eventData.message?.content && aiMessageId) {
-              for (const block of eventData.message.content as Array<{ type: string; text?: string; name?: string; input?: unknown }>) {
+              for (const block of eventData.message.content as Array<{ type: string; text?: string; name?: string; input?: unknown; id?: string }>) {
                 if (block.type === 'text') {
                   // Add text as a separate part
                   if (block.text) {
@@ -141,19 +131,10 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
                     const toolData = {
                       toolName: block.name,
                       toolInput: (block.input as Record<string, unknown>) || {},
-                      isExecuting: true
+                      isExecuting: true,
+                      claudeId: block.id // Store Claude's tool use ID for matching with results
                     };
                     addToolPartToMessage(aiMessageId, toolData);
-                  }
-                  
-                  // Store the tool ID for later updates
-                  const state = useAgentStore.getState();
-                  const currentMessage = state.messages.find(m => m.id === aiMessageId);
-                  if (currentMessage?.messageParts) {
-                    const lastPart = currentMessage.messageParts[currentMessage.messageParts.length - 1];
-                    if (lastPart.type === 'tool' && lastPart.toolData) {
-                      currentToolId = lastPart.toolData.id;
-                    }
                   }
                 }
               }
@@ -162,22 +143,31 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
           else if (eventData.type === 'user') {
             // Tool results
             if (eventData.message?.content && aiMessageId) {
-              for (const block of eventData.message.content as Array<{ type: string; content?: unknown; is_error?: boolean }>) {
-                if (block.type === 'tool_result' && currentToolId) {
-                  // Update the corresponding tool with results
-                  const toolResult = typeof block.content === 'string' 
-                    ? block.content 
-                    : Array.isArray(block.content)
-                      ? block.content.map((c: { text?: string }) => c.text || String(c)).join('')
-                      : JSON.stringify(block.content);
-                  
-                  updateToolPartInMessage(aiMessageId, currentToolId, {
-                    toolResult,
-                    isError: block.is_error || false,
-                    isExecuting: false
-                  });
-                  
-                  currentToolId = null; // Reset for next tool
+              for (const block of eventData.message.content as Array<{ type: string; content?: unknown; is_error?: boolean; tool_use_id?: string }>) {
+                if (block.type === 'tool_result' && block.tool_use_id) {
+                  // Find the tool by tool_use_id
+                  const state = useAgentStore.getState();
+                  const currentMessage = state.messages.find(m => m.id === aiMessageId);
+                  if (currentMessage?.messageParts) {
+                    const targetTool = currentMessage.messageParts.find((part: any) =>
+                      part.type === 'tool' && part.toolData?.claudeId === block.tool_use_id
+                    );
+                    
+                    if (targetTool?.toolData) {
+                      // Update the corresponding tool with results
+                      const toolResult = typeof block.content === 'string' 
+                        ? block.content 
+                        : Array.isArray(block.content)
+                          ? block.content.map((c: { text?: string }) => c.text || String(c)).join('')
+                          : JSON.stringify(block.content);
+                      
+                      updateToolPartInMessage(aiMessageId, targetTool.toolData.id, {
+                        toolResult,
+                        isError: block.is_error || false,
+                        isExecuting: false
+                      });
+                    }
+                  }
                 }
               }
             }
@@ -446,41 +436,79 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
-      <div className="p-5 border-t border-gray-200">
-        <div className="flex items-end space-x-3">
-          <div className="flex-1">
-            <textarea
-              ref={textareaRef}
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="输入你的消息..."
-              rows={1}
-              className="w-full resize-none border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:border-transparent"
-              style={{ '--focus-ring-color': agent.ui.primaryColor } as React.CSSProperties}
-              disabled={isAiTyping}
-            />
+      {/* Input Area */}
+      <div className="border-t border-gray-200">
+        {/* Text Input */}
+        <div className="p-4 pb-2">
+          <textarea
+            ref={textareaRef}
+            value={inputMessage}
+            onChange={(e) => setInputMessage(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder="输入你的消息... (Shift+Enter 换行，Enter 发送)"
+            rows={1}
+            className="w-full resize-none border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 disabled:bg-gray-50 disabled:text-gray-500"
+            style={{ 
+              '--focus-ring-color': agent.ui.primaryColor,
+              minHeight: '44px',
+              maxHeight: '120px'
+            } as React.CSSProperties}
+            disabled={isAiTyping}
+          />
+        </div>
+        
+        {/* Toolbar */}
+        <div className="px-4 pb-4 pt-2 border-t border-gray-100">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-1">
+              {/* Tool buttons */}
+              <button
+                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                title="附加文件"
+                disabled={isAiTyping}
+              >
+                <Paperclip className="w-4 h-4" />
+              </button>
+              <button
+                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                title="表情"
+                disabled={isAiTyping}
+              >
+                <Smile className="w-4 h-4" />
+              </button>
+              <button
+                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                title="设置"
+                disabled={isAiTyping}
+              >
+                <Settings className="w-4 h-4" />
+              </button>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              {isAiTyping ? (
+                <button
+                  onClick={handleStopGeneration}
+                  className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium shadow-sm"
+                  title="停止生成"
+                >
+                  <Square className="w-4 h-4" />
+                  <span>停止</span>
+                </button>
+              ) : (
+                <button
+                  onClick={handleSendMessage}
+                  disabled={!inputMessage.trim()}
+                  className="flex items-center space-x-2 px-4 py-2 text-white rounded-lg hover:opacity-90 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 text-sm font-medium shadow-sm"
+                  style={{ backgroundColor: inputMessage.trim() ? agent.ui.primaryColor : undefined }}
+                  title={`发送消息 (${inputMessage.trim() ? '有内容' : '无内容'})`}
+                >
+                  <Send className="w-4 h-4" />
+                  <span>发送</span>
+                </button>
+              )}
+            </div>
           </div>
-          {isAiTyping ? (
-            <button
-              onClick={handleStopGeneration}
-              className="flex-shrink-0 w-10 h-10 bg-red-600 text-white rounded-lg flex items-center justify-center hover:bg-red-700 transition-colors"
-              title="停止生成"
-            >
-              <Square className="w-4 h-4" />
-            </button>
-          ) : (
-            <button
-              onClick={handleSendMessage}
-              disabled={!inputMessage.trim()}
-              className="flex-shrink-0 w-10 h-10 text-white rounded-lg flex items-center justify-center hover:opacity-90 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-              style={{ backgroundColor: inputMessage.trim() ? agent.ui.primaryColor : undefined }}
-              title={`发送消息 (输入: ${inputMessage.trim() ? '有' : '无'})`}
-            >
-              <Send className="w-4 h-4" />
-            </button>
-          )}
         </div>
       </div>
     </div>
