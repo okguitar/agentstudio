@@ -216,11 +216,7 @@ export const ChatPage: React.FC = () => {
   return (
     <div className="h-screen bg-gray-100">
       {renderAgentLayout()}
-      
-      {/* Agent Configuration Modal */}
-      {showConfigPage && (
-        <AgentConfigPage onClose={() => setShowConfigPage(false)} />
-      )}
+
     </div>
   );
 };
