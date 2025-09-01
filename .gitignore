@@ -44,7 +44,7 @@ Thumbs.db
 tmp/
 temp/
 slides.js
-slides/
+/slides/
 index.html
 claude-*
 .ai-sessions
