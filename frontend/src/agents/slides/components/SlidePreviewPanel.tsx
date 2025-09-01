@@ -5,7 +5,7 @@ import { useSlides } from '../../../hooks/useSlides';
 import { SlidePreview } from '../../../components/SlidePreview';
 import type { AgentPanelProps } from '../../types.js';
 
-export const SlidePreviewPanel: React.FC<AgentPanelProps> = ({ agent }) => {
+export const SlidePreviewPanel: React.FC<AgentPanelProps> = () => {
   const { addMessage } = useAppStore();
   const { data: slidesData, isLoading, error } = useSlides();
 

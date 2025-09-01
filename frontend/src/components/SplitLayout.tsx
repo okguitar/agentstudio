@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 
 interface SplitLayoutProps {
   children: [React.ReactNode, React.ReactNode];
@@ -24,7 +24,7 @@ export const SplitLayout: React.FC<SplitLayoutProps> = ({
   };
 
   // 处理鼠标移动事件
-  const handleMouseMove = (e: MouseEvent) => {
+  const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!isDragging || !containerRef.current) return;
     
     const containerRect = containerRef.current.getBoundingClientRect();
@@ -33,12 +33,12 @@ export const SplitLayout: React.FC<SplitLayoutProps> = ({
     // 限制在最小和最大宽度之间
     const clampedWidth = Math.min(Math.max(newWidthPercent, minWidth), maxWidth);
     setLeftPanelWidth(clampedWidth);
-  };
+  }, [isDragging, minWidth, maxWidth]);
 
   // 处理鼠标释放事件
-  const handleMouseUp = () => {
+  const handleMouseUp = useCallback(() => {
     setIsDragging(false);
-  };
+  }, []);
 
   // 鼠标事件监听器
   useEffect(() => {
@@ -60,7 +60,7 @@ export const SplitLayout: React.FC<SplitLayoutProps> = ({
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
     };
-  }, [isDragging]);
+  }, [isDragging, handleMouseMove, handleMouseUp]);
 
   return (
     <div ref={containerRef} className="flex h-full bg-gray-100">

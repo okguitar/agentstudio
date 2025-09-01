@@ -2,7 +2,7 @@ import React from 'react';
 import { Code, Folder, Plus } from 'lucide-react';
 import type { AgentPanelProps } from '../../types.js';
 
-export const CodeExplorerPanel: React.FC<AgentPanelProps> = ({ agent, projectPath }) => {
+export const CodeExplorerPanel: React.FC<AgentPanelProps> = ({ projectPath }) => {
   // TODO: 实现代码浏览器功能
   // 这里先提供一个基础框架，后续可以扩展
 

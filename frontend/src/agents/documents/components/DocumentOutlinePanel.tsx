@@ -2,7 +2,7 @@ import React from 'react';
 import { FileText, Plus } from 'lucide-react';
 import type { AgentPanelProps } from '../../types.js';
 
-export const DocumentOutlinePanel: React.FC<AgentPanelProps> = ({ agent }) => {
+export const DocumentOutlinePanel: React.FC<AgentPanelProps> = () => {
   // TODO: 实现文档大纲功能
   // 这里先提供一个基础框架，后续可以扩展
 
