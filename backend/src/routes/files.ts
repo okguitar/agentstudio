@@ -10,8 +10,11 @@ const __dirname = dirname(__filename);
 
 const router = express.Router();
 
-// Get working directory (project root)
-const getWorkingDir = () => {
+// Get working directory (project root or specified project path)
+const getWorkingDir = (projectPath?: string) => {
+  if (projectPath) {
+    return resolve(projectPath);
+  }
   return resolve(__dirname, '../../..');
 };
 
@@ -30,8 +33,8 @@ const WriteFileSchema = z.object({
 });
 
 // Helper function to resolve and validate file path
-const resolveSafePath = (filePath: string): string => {
-  const workingDir = getWorkingDir();
+const resolveSafePath = (filePath: string, projectPath?: string): string => {
+  const workingDir = getWorkingDir(projectPath);
   const resolvedPath = resolve(workingDir, filePath);
   
   // Ensure the path is within the working directory for security
@@ -46,13 +49,13 @@ const resolveSafePath = (filePath: string): string => {
 // GET /api/files/read - Read a single file
 router.get('/read', async (req, res) => {
   try {
-    const { path } = req.query;
+    const { path, projectPath } = req.query;
     
     if (!path || typeof path !== 'string') {
       return res.status(400).json({ error: 'File path is required' });
     }
 
-    const fullPath = resolveSafePath(path);
+    const fullPath = resolveSafePath(path, typeof projectPath === 'string' ? projectPath : undefined);
     
     if (!existsSync(fullPath)) {
       return res.status(404).json({ error: 'File not found' });
@@ -83,11 +86,12 @@ router.post('/read-multiple', async (req, res) => {
     }
 
     const { paths } = validation.data;
+    const { projectPath } = req.query;
     
     const results = await Promise.allSettled(
       paths.map(async (path) => {
         try {
-          const fullPath = resolveSafePath(path);
+          const fullPath = resolveSafePath(path, typeof projectPath === 'string' ? projectPath : undefined);
           const exists = existsSync(fullPath);
           
           if (!exists) {
@@ -145,7 +149,8 @@ router.put('/write', async (req, res) => {
     }
 
     const { path, content } = validation.data;
-    const fullPath = resolveSafePath(path);
+    const { projectPath } = req.query;
+    const fullPath = resolveSafePath(path, typeof projectPath === 'string' ? projectPath : undefined);
 
     // Ensure directory exists
     await fs.ensureDir(dirname(fullPath));

@@ -5,7 +5,7 @@ import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
-import slidesRouter from './routes/slides.js';
+import filesRouter from './routes/files.js';
 import aiRouter from './routes/ai.js';
 import agentsRouter from './routes/agents.js';
 
@@ -43,7 +43,7 @@ const slidesDir = join(__dirname, '../..', process.env.SLIDES_DIR || 'slides');
 app.use('/slides', express.static(slidesDir));
 
 // Routes
-app.use('/api/slides', slidesRouter);
+app.use('/api/files', filesRouter);
 app.use('/api/ai', aiRouter);
 app.use('/api/agents', agentsRouter);
 

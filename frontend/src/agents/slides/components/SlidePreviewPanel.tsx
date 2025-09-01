@@ -3,8 +3,8 @@ import { useSlides } from '../hooks/useSlides';
 import { SlidePreview } from './SlidePreview';
 import type { AgentPanelProps } from '../../types.js';
 
-export const SlidePreviewPanel: React.FC<AgentPanelProps> = () => {
-  const { data: slidesData, isLoading, error } = useSlides();
+export const SlidePreviewPanel: React.FC<AgentPanelProps> = ({ projectPath }) => {
+  const { data: slidesData, isLoading, error } = useSlides(projectPath);
 
   if (isLoading) {
     return (
@@ -55,6 +55,7 @@ export const SlidePreviewPanel: React.FC<AgentPanelProps> = () => {
                 key={slide.index}
                 slide={slide}
                 totalSlides={slides.length}
+                projectPath={projectPath}
               />
             ))}
           </div>

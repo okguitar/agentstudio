@@ -10,38 +10,57 @@ import { useSlideContent } from '../hooks/useSlides';
 interface SlidePreviewProps {
   slide: Slide;
   totalSlides: number;
+  projectPath?: string;
 }
 
-export const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, totalSlides }) => {
+export const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, totalSlides, projectPath }) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
   const [viewMode, setViewMode] = useState<'preview' | 'code'>('preview');
   
-  const { data: slideContent } = useSlideContent(slide.index);
+  const { data: slideContent } = useSlideContent(slide.index, projectPath);
 
   useEffect(() => {
     const iframe = iframeRef.current;
-    if (!iframe || viewMode !== 'preview') return;
+    if (!iframe || viewMode !== 'preview' || !slideContent) return;
 
-    const handleLoad = () => {
-      setIsLoading(false);
-      setError(false);
-    };
+    setIsLoading(true);
+    setError(false);
 
-    const handleError = () => {
+    try {
+      // Create a blob URL from the slide content
+      const blob = new Blob([slideContent.content], { type: 'text/html' });
+      const blobUrl = URL.createObjectURL(blob);
+      
+      const handleLoad = () => {
+        setIsLoading(false);
+        setError(false);
+      };
+
+      const handleError = () => {
+        setIsLoading(false);
+        setError(true);
+      };
+
+      iframe.addEventListener('load', handleLoad);
+      iframe.addEventListener('error', handleError);
+      
+      // Set the iframe src to the blob URL
+      iframe.src = blobUrl;
+
+      return () => {
+        iframe.removeEventListener('load', handleLoad);
+        iframe.removeEventListener('error', handleError);
+        // Clean up the blob URL
+        URL.revokeObjectURL(blobUrl);
+      };
+    } catch (error) {
+      console.error('Error creating blob URL:', error);
       setIsLoading(false);
       setError(true);
-    };
-
-    iframe.addEventListener('load', handleLoad);
-    iframe.addEventListener('error', handleError);
-
-    return () => {
-      iframe.removeEventListener('load', handleLoad);
-      iframe.removeEventListener('error', handleError);
-    };
-  }, [viewMode]);
+    }
+  }, [viewMode, slideContent]);
 
   // Highlight code when switching to code view or when content loads
   useEffect(() => {
@@ -112,10 +131,9 @@ export const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, totalSlides }
               </div>
             )}
             
-            {slide.exists && (
+            {slide.exists && slideContent && (
               <iframe
                 ref={iframeRef}
-                src={`/slides/${slide.path.replace('slides/', '')}`}
                 className="w-full h-full border-none"
                 style={{ display: isLoading || error ? 'none' : 'block' }}
               />
