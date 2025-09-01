@@ -1,21 +1,10 @@
 import React from 'react';
-import { Plus } from 'lucide-react';
-
 import { useSlides } from '../hooks/useSlides';
 import { SlidePreview } from './SlidePreview';
-import { useAppStore } from '../../../stores/useAppStore'; // 通用聊天功能
 import type { AgentPanelProps } from '../../types.js';
 
 export const SlidePreviewPanel: React.FC<AgentPanelProps> = () => {
-  const { addMessage } = useAppStore(); // 使用通用的聊天store
   const { data: slidesData, isLoading, error } = useSlides();
-
-  const handleCreateSlide = () => {
-    addMessage({
-      content: '我想创建一张新的幻灯片',
-      role: 'user'
-    });
-  };
 
   if (isLoading) {
     return (
@@ -38,7 +27,7 @@ export const SlidePreviewPanel: React.FC<AgentPanelProps> = () => {
   return (
     <div className="flex flex-col h-full bg-gray-50">
       {/* Header - matching height with left panel */}
-      <div className="px-5 py-4 bg-white border-b border-gray-200 flex items-center justify-between">
+      <div className="px-5 py-4 bg-white border-b border-gray-200">
         <div className="flex flex-col">
           <div className="flex items-center space-x-3 mb-1">
             <h2 className="text-lg font-semibold text-gray-800">幻灯片预览</h2>
@@ -50,14 +39,6 @@ export const SlidePreviewPanel: React.FC<AgentPanelProps> = () => {
             共 {slides.length} 张幻灯片
           </div>
         </div>
-        
-        <button
-          onClick={handleCreateSlide}
-          className="flex items-center space-x-1 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          <span>新建</span>
-        </button>
       </div>
 
       {/* Slides List */}
@@ -65,14 +46,7 @@ export const SlidePreviewPanel: React.FC<AgentPanelProps> = () => {
         {slides.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-500 p-5">
             <div className="text-lg mb-2">还没有幻灯片</div>
-            <div className="text-sm mb-4">点击"新建"按钮或与AI聊天来创建第一张幻灯片</div>
-            <button
-              onClick={handleCreateSlide}
-              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              <span>创建第一张幻灯片</span>
-            </button>
+            <div className="text-sm">与AI聊天来创建幻灯片</div>
           </div>
         ) : (
           <div className="space-y-4 p-5">
