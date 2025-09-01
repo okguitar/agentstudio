@@ -420,6 +420,315 @@ router.get('/', (req, res) => {
   }
 });
 
+
+
+// Projects management routes - MUST be before /:agentId route
+router.get('/projects', (req, res) => {
+  try {
+    const agents = globalAgentStorage.getAllAgents();
+    const projects = [];
+    
+    // Gather projects from all agents
+    for (const agent of agents) {
+      if (agent.projects && agent.projects.length > 0) {
+        for (const projectPath of agent.projects) {
+          try {
+            // Check if directory still exists
+            if (fs.existsSync(projectPath)) {
+              const stats = fs.statSync(projectPath);
+              const projectName = path.basename(projectPath);
+              
+              // Try to get project metadata if it exists
+              const metadataPath = path.join(projectPath, '.cc-sessions', 'project.json');
+              let description = '';
+              let createdAt = stats.birthtime.toISOString();
+              
+              if (fs.existsSync(metadataPath)) {
+                try {
+                  const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf-8'));
+                  description = metadata.description || '';
+                  createdAt = metadata.createdAt || createdAt;
+                } catch (error) {
+                  // Ignore metadata read errors
+                }
+              }
+              
+              // Get last accessed time from agent sessions
+              const sessionsDir = path.join(projectPath, '.cc-sessions', agent.id);
+              let lastAccessed = createdAt;
+              if (fs.existsSync(sessionsDir)) {
+                try {
+                  const sessionFiles = fs.readdirSync(sessionsDir)
+                    .filter(file => file.endsWith('.json'))
+                    .map(file => {
+                      const sessionPath = path.join(sessionsDir, file);
+                      return fs.statSync(sessionPath).mtime;
+                    })
+                    .sort((a, b) => b.getTime() - a.getTime());
+                  
+                  if (sessionFiles.length > 0) {
+                    lastAccessed = sessionFiles[0].toISOString();
+                  }
+                } catch (error) {
+                  // Ignore session read errors
+                }
+              }
+              
+              projects.push({
+                id: `${agent.id}-${Buffer.from(projectPath).toString('base64').replace(/[+/=]/g, '').slice(-8)}`,
+                name: projectName,
+                path: projectPath,
+                agentId: agent.id,
+                agentName: agent.name,
+                agentIcon: agent.ui.icon,
+                agentColor: agent.ui.primaryColor,
+                createdAt,
+                lastAccessed,
+                description
+              });
+            }
+          } catch (error) {
+            // Skip projects that can't be read
+            console.warn(`Failed to read project ${projectPath}:`, error);
+          }
+        }
+      }
+    }
+    
+    // Sort by last accessed time (most recent first)
+    projects.sort((a, b) => new Date(b.lastAccessed).getTime() - new Date(a.lastAccessed).getTime());
+    
+    res.json({ projects });
+  } catch (error) {
+    console.error('Failed to get projects:', error);
+    res.status(500).json({ error: 'Failed to retrieve projects' });
+  }
+});
+
+// Create new project directory
+router.post('/projects/create', (req, res) => {
+  try {
+    const { agentId, projectName, parentDirectory, description } = req.body;
+    
+    if (!agentId || !projectName) {
+      return res.status(400).json({ error: 'Agent ID and project name are required' });
+    }
+    
+    // Verify agent exists
+    const agent = globalAgentStorage.getAgent(agentId);
+    if (!agent) {
+      return res.status(404).json({ error: 'Agent not found' });
+    }
+    
+    // Use custom parent directory if provided, otherwise default to ~/claude-code-projects
+    let projectPath: string;
+    if (parentDirectory && parentDirectory !== '~/claude-code-projects') {
+      // Expand tilde if present
+      const expandedParent = parentDirectory.startsWith('~/') 
+        ? path.join(os.homedir(), parentDirectory.slice(2))
+        : parentDirectory;
+      projectPath = path.join(expandedParent, projectName);
+    } else {
+      const homeDir = os.homedir();
+      const projectsDir = path.join(homeDir, 'claude-code-projects');
+      projectPath = path.join(projectsDir, projectName);
+      
+      // Create projects directory if it doesn't exist
+      if (!fs.existsSync(projectsDir)) {
+        fs.mkdirSync(projectsDir, { recursive: true });
+      }
+    }
+    
+    // Create project directory
+    if (!fs.existsSync(projectPath)) {
+      fs.mkdirSync(projectPath, { recursive: true });
+      
+      // Create .cc-sessions directory and project metadata
+      const sessionsDir = path.join(projectPath, '.cc-sessions');
+      fs.mkdirSync(sessionsDir, { recursive: true });
+      
+      const projectMetadata = {
+        name: projectName,
+        description: description || '',
+        agentId,
+        agentName: agent.name,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      
+      fs.writeFileSync(
+        path.join(sessionsDir, 'project.json'), 
+        JSON.stringify(projectMetadata, null, 2)
+      );
+      
+      // Create a basic README file
+      const readmeContent = `# ${projectName}
+
+Created with ${agent.name} on ${new Date().toLocaleString()}
+
+${description ? `## Description\n${description}\n\n` : ''}This is your project workspace. You can:
+- Store your files here
+- Create subdirectories for organization  
+- Use this directory for your ${agent.name} sessions
+
+The conversation history will be saved in \`.cc-sessions/${agentId}/\` within this directory.
+`;
+      
+      fs.writeFileSync(path.join(projectPath, 'README.md'), readmeContent);
+      
+      // Add project path to agent's projects list
+      if (!agent.projects) {
+        agent.projects = [];
+      }
+      const normalizedPath = path.resolve(projectPath);
+      if (!agent.projects.includes(normalizedPath)) {
+        agent.projects.unshift(normalizedPath); // Add to beginning for most recent
+        agent.updatedAt = new Date().toISOString();
+        globalAgentStorage.saveAgent(agent);
+      }
+      
+      // Return project info that matches frontend interface
+      const projectId = `${agentId}-${Buffer.from(normalizedPath).toString('base64').replace(/[+/=]/g, '').slice(-8)}`;
+      
+      res.json({ 
+        success: true, 
+        project: {
+          id: projectId,
+          name: projectName,
+          path: normalizedPath,
+          agentId,
+          agentName: agent.name,
+          agentIcon: agent.ui.icon,
+          agentColor: agent.ui.primaryColor,
+          createdAt: new Date().toISOString(),
+          lastAccessed: new Date().toISOString(),
+          description: description || ''
+        },
+        message: `Project "${projectName}" created successfully`
+      });
+    } else {
+      res.status(409).json({ error: 'Project directory already exists' });
+    }
+    
+  } catch (error) {
+    console.error('Failed to create project:', error);
+    res.status(500).json({ 
+      error: 'Failed to create project directory', 
+      details: error instanceof Error ? error.message : String(error)
+    });
+  }
+});
+
+router.put('/projects/:projectId', (req, res) => {
+  try {
+    const { projectId } = req.params;
+    const { description } = req.body;
+    
+    // Find project by ID
+    const agents = globalAgentStorage.getAllAgents();
+    let targetProject = null;
+    let targetAgent = null;
+    
+    for (const agent of agents) {
+      if (agent.projects && agent.projects.length > 0) {
+        for (const projectPath of agent.projects) {
+          const id = `${agent.id}-${Buffer.from(projectPath).toString('base64').replace(/[+/=]/g, '').slice(-8)}`;
+          if (id === projectId) {
+            targetProject = projectPath;
+            targetAgent = agent;
+            break;
+          }
+        }
+        if (targetProject) break;
+      }
+    }
+    
+    if (!targetProject || !fs.existsSync(targetProject)) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+    
+    // Update project metadata
+    const sessionsDir = path.join(targetProject, '.cc-sessions');
+    if (!fs.existsSync(sessionsDir)) {
+      fs.mkdirSync(sessionsDir, { recursive: true });
+    }
+    
+    const metadataPath = path.join(sessionsDir, 'project.json');
+    let metadata = {};
+    
+    if (fs.existsSync(metadataPath)) {
+      try {
+        metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf-8'));
+      } catch (error) {
+        // Start with empty metadata if file is corrupted
+      }
+    }
+    
+    const updatedMetadata = {
+      ...metadata,
+      description: description || '',
+      updatedAt: new Date().toISOString(),
+      createdAt: (metadata as any).createdAt || fs.statSync(targetProject).birthtime.toISOString()
+    };
+    
+    fs.writeFileSync(metadataPath, JSON.stringify(updatedMetadata, null, 2));
+    
+    res.json({ 
+      success: true, 
+      message: 'Project updated successfully'
+    });
+    
+  } catch (error) {
+    console.error('Failed to update project:', error);
+    res.status(500).json({ error: 'Failed to update project' });
+  }
+});
+
+router.delete('/projects/:projectId', (req, res) => {
+  try {
+    const { projectId } = req.params;
+    
+    // Find project by ID
+    const agents = globalAgentStorage.getAllAgents();
+    let targetProject = null;
+    let targetAgent = null;
+    
+    for (const agent of agents) {
+      if (agent.projects && agent.projects.length > 0) {
+        for (let i = 0; i < agent.projects.length; i++) {
+          const projectPath = agent.projects[i];
+          const id = `${agent.id}-${Buffer.from(projectPath).toString('base64').replace(/[+/=]/g, '').slice(-8)}`;
+          if (id === projectId) {
+            targetProject = projectPath;
+            targetAgent = agent;
+            
+            // Remove project from agent's projects list
+            agent.projects.splice(i, 1);
+            agent.updatedAt = new Date().toISOString();
+            globalAgentStorage.saveAgent(agent);
+            break;
+          }
+        }
+        if (targetProject) break;
+      }
+    }
+    
+    if (!targetProject) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+    
+    res.json({ 
+      success: true, 
+      message: 'Project removed from list successfully',
+      note: 'Project directory was not deleted from filesystem'
+    });
+    
+  } catch (error) {
+    console.error('Failed to delete project:', error);
+    res.status(500).json({ error: 'Failed to delete project' });
+  }
+});
+
 // Get specific agent
 router.get('/:agentId', (req, res) => {
   try {
@@ -684,7 +993,7 @@ The conversation history will be saved in \`.cc-sessions/${agentId}/\` within th
       }
       
       // Return project info that matches frontend interface
-      const projectId = `${agentId}-${Buffer.from(normalizedPath).toString('base64').slice(0, 8)}`;
+      const projectId = `${agentId}-${Buffer.from(normalizedPath).toString('base64').replace(/[+/=]/g, '').slice(-8)}`;
       
       res.json({ 
         success: true, 
@@ -826,198 +1135,7 @@ router.post('/filesystem/create-directory', (req, res) => {
   }
 });
 
-// Projects management routes
-router.get('/projects', (req, res) => {
-  try {
-    const agents = globalAgentStorage.getAllAgents();
-    const projects = [];
-    
-    // Gather projects from all agents
-    for (const agent of agents) {
-      if (agent.projects && agent.projects.length > 0) {
-        for (const projectPath of agent.projects) {
-          try {
-            // Check if directory still exists
-            if (fs.existsSync(projectPath)) {
-              const stats = fs.statSync(projectPath);
-              const projectName = path.basename(projectPath);
-              
-              // Try to get project metadata if it exists
-              const metadataPath = path.join(projectPath, '.cc-sessions', 'project.json');
-              let description = '';
-              let createdAt = stats.birthtime.toISOString();
-              
-              if (fs.existsSync(metadataPath)) {
-                try {
-                  const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf-8'));
-                  description = metadata.description || '';
-                  createdAt = metadata.createdAt || createdAt;
-                } catch (error) {
-                  // Ignore metadata read errors
-                }
-              }
-              
-              // Get last accessed time from agent sessions
-              const sessionsDir = path.join(projectPath, '.cc-sessions', agent.id);
-              let lastAccessed = createdAt;
-              if (fs.existsSync(sessionsDir)) {
-                try {
-                  const sessionFiles = fs.readdirSync(sessionsDir)
-                    .filter(file => file.endsWith('.json'))
-                    .map(file => {
-                      const sessionPath = path.join(sessionsDir, file);
-                      return fs.statSync(sessionPath).mtime;
-                    })
-                    .sort((a, b) => b.getTime() - a.getTime());
-                  
-                  if (sessionFiles.length > 0) {
-                    lastAccessed = sessionFiles[0].toISOString();
-                  }
-                } catch (error) {
-                  // Ignore session read errors
-                }
-              }
-              
-              projects.push({
-                id: `${agent.id}-${Buffer.from(projectPath).toString('base64').slice(0, 8)}`,
-                name: projectName,
-                path: projectPath,
-                agentId: agent.id,
-                agentName: agent.name,
-                agentIcon: agent.ui.icon,
-                agentColor: agent.ui.primaryColor,
-                createdAt,
-                lastAccessed,
-                description
-              });
-            }
-          } catch (error) {
-            // Skip projects that can't be read
-            console.warn(`Failed to read project ${projectPath}:`, error);
-          }
-        }
-      }
-    }
-    
-    // Sort by last accessed time (most recent first)
-    projects.sort((a, b) => new Date(b.lastAccessed).getTime() - new Date(a.lastAccessed).getTime());
-    
-    res.json({ projects });
-  } catch (error) {
-    console.error('Failed to get projects:', error);
-    res.status(500).json({ error: 'Failed to retrieve projects' });
-  }
-});
 
-router.put('/projects/:projectId', (req, res) => {
-  try {
-    const { projectId } = req.params;
-    const { description } = req.body;
-    
-    // Find project by ID
-    const agents = globalAgentStorage.getAllAgents();
-    let targetProject = null;
-    let targetAgent = null;
-    
-    for (const agent of agents) {
-      if (agent.projects && agent.projects.length > 0) {
-        for (const projectPath of agent.projects) {
-          const id = `${agent.id}-${Buffer.from(projectPath).toString('base64').slice(0, 8)}`;
-          if (id === projectId) {
-            targetProject = projectPath;
-            targetAgent = agent;
-            break;
-          }
-        }
-        if (targetProject) break;
-      }
-    }
-    
-    if (!targetProject || !fs.existsSync(targetProject)) {
-      return res.status(404).json({ error: 'Project not found' });
-    }
-    
-    // Update project metadata
-    const sessionsDir = path.join(targetProject, '.cc-sessions');
-    if (!fs.existsSync(sessionsDir)) {
-      fs.mkdirSync(sessionsDir, { recursive: true });
-    }
-    
-    const metadataPath = path.join(sessionsDir, 'project.json');
-    let metadata = {};
-    
-    if (fs.existsSync(metadataPath)) {
-      try {
-        metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf-8'));
-      } catch (error) {
-        // Start with empty metadata if file is corrupted
-      }
-    }
-    
-    const updatedMetadata = {
-      ...metadata,
-      description: description || '',
-      updatedAt: new Date().toISOString(),
-      createdAt: (metadata as any).createdAt || fs.statSync(targetProject).birthtime.toISOString()
-    };
-    
-    fs.writeFileSync(metadataPath, JSON.stringify(updatedMetadata, null, 2));
-    
-    res.json({ 
-      success: true, 
-      message: 'Project updated successfully'
-    });
-    
-  } catch (error) {
-    console.error('Failed to update project:', error);
-    res.status(500).json({ error: 'Failed to update project' });
-  }
-});
-
-router.delete('/projects/:projectId', (req, res) => {
-  try {
-    const { projectId } = req.params;
-    
-    // Find project by ID
-    const agents = globalAgentStorage.getAllAgents();
-    let targetProject = null;
-    let targetAgent = null;
-    
-    for (const agent of agents) {
-      if (agent.projects && agent.projects.length > 0) {
-        for (let i = 0; i < agent.projects.length; i++) {
-          const projectPath = agent.projects[i];
-          const id = `${agent.id}-${Buffer.from(projectPath).toString('base64').slice(0, 8)}`;
-          if (id === projectId) {
-            targetProject = projectPath;
-            targetAgent = agent;
-            
-            // Remove project from agent's projects list
-            agent.projects.splice(i, 1);
-            agent.updatedAt = new Date().toISOString();
-            globalAgentStorage.saveAgent(agent);
-            break;
-          }
-        }
-        if (targetProject) break;
-      }
-    }
-    
-    if (!targetProject) {
-      return res.status(404).json({ error: 'Project not found' });
-    }
-    
-    res.json({ 
-      success: true, 
-      message: 'Project removed from list successfully',
-      note: 'Project directory was not deleted from filesystem'
-    });
-    
-  } catch (error) {
-    console.error('Failed to delete project:', error);
-    res.status(500).json({ error: 'Failed to delete project' });
-  }
-});
 
 // MCP Configuration Management Helper Functions
 

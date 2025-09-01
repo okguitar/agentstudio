@@ -8,7 +8,8 @@
     "dev": "node --import tsx/esm --watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "migrate-projects": "node scripts/migrate-projects.js"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^1.0.5",
