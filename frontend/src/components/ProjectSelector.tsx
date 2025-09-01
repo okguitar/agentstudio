@@ -68,7 +68,6 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
     try {
       // Create project in selected directory or default location
       let finalProjectName = projectName;
-      let parentDir = selectedDirectory;
       
       const result = await createProject.mutateAsync({
         agentId: agent.id,
@@ -150,9 +149,9 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+      <div className="bg-white rounded-lg w-full max-w-6xl mx-4 max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
           <div className="flex items-center space-x-3">
             <div className="text-2xl">{agent.ui.icon}</div>
             <div>
@@ -162,90 +161,107 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-gray-400 hover:text-gray-600 flex-shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
         
-        {/* Recent Projects */}
-        {agent.projects && agent.projects.length > 0 ? (
-          <div className="mb-6">
-            <h4 className="text-sm font-medium text-gray-900 mb-3">最近使用的项目</h4>
-            <div className={`space-y-2 ${agent.projects.length > 6 ? 'max-h-80 overflow-y-auto' : ''}`}>
-              {agent.projects.map((project, index) => (
-                <button
-                  key={index}
-                  onClick={() => onProjectSelect(project)}
-                  className="w-full flex items-center space-x-3 p-3 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors text-left"
-                >
-                  <Folder className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-gray-900 truncate">
-                      {project.split('/').pop() || 'Untitled Project'}
-                    </div>
-                    <div className="text-sm text-gray-500 truncate">{project}</div>
+        {/* Main Content - Left Right Layout */}
+        <div className="flex flex-1 min-h-0 flex-col md:flex-row">
+          {/* Left Panel - Action Buttons */}
+          <div className="w-full md:w-1/2 p-6 md:border-r border-gray-200">
+            <h4 className="text-base font-medium text-gray-900 mb-4">项目操作</h4>
+            <div className="space-y-3">
+              <button
+                onClick={handleNewProject}
+                disabled={isCreatingProject}
+                className="w-full flex items-center space-x-4 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ borderColor: agent.ui.primaryColor + '40', backgroundColor: agent.ui.primaryColor + '08' }}
+              >
+                <div className="flex-shrink-0">
+                  <FolderPlus className={`w-6 h-6 ${isCreatingProject ? 'text-gray-400' : ''}`} style={{ color: isCreatingProject ? undefined : agent.ui.primaryColor }} />
+                </div>
+                <div className="text-left flex-1">
+                  <div className="font-medium text-gray-900">
+                    {isCreatingProject ? '正在创建项目...' : '快速新建项目'}
                   </div>
-                </button>
-              ))}
+                  <div className="text-sm text-gray-500 mt-1">
+                    在 ~/claude-code-projects 中自动创建
+                  </div>
+                </div>
+              </button>
+              
+              <button
+                onClick={handleNewProjectWithCustomLocation}
+                disabled={isCreatingProject}
+                className="w-full flex items-center space-x-4 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <div className="flex-shrink-0">
+                  <FolderPlus className="w-6 h-6 text-gray-600" />
+                </div>
+                <div className="text-left flex-1">
+                  <div className="font-medium text-gray-900">自定义位置新建</div>
+                  <div className="text-sm text-gray-500 mt-1">选择目录和项目名称</div>
+                </div>
+              </button>
+              
+              <button
+                onClick={handleBrowseProject}
+                className="w-full flex items-center space-x-4 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex-shrink-0">
+                  <Search className="w-6 h-6 text-gray-600" />
+                </div>
+                <div className="text-left flex-1">
+                  <div className="font-medium text-gray-900">浏览选择项目</div>
+                  <div className="text-sm text-gray-500 mt-1">通过文件浏览器选择项目目录</div>
+                </div>
+              </button>
             </div>
           </div>
-        ) : (
-          <div className="mb-6 text-center py-8 text-gray-500">
-            <Folder className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-            <p className="text-sm">暂无最近使用的项目</p>
-            <p className="text-xs text-gray-400">创建新项目开始使用</p>
-          </div>
-        )}
 
-        {/* Project Options */}
-        <div className="space-y-2 mb-4">
-          <button
-            onClick={handleNewProject}
-            disabled={isCreatingProject}
-            className="w-full flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ borderColor: agent.ui.primaryColor + '40', backgroundColor: agent.ui.primaryColor + '08' }}
-          >
-            <FolderPlus className={`w-5 h-5 ${isCreatingProject ? 'text-gray-400' : ''}`} style={{ color: isCreatingProject ? undefined : agent.ui.primaryColor }} />
-            <div className="text-left">
-              <div className="font-medium text-gray-900">
-                {isCreatingProject ? '正在创建项目...' : '快速新建项目'}
+          {/* Right Panel - Recent Projects */}
+          <div className="w-full md:w-1/2 p-6 flex flex-col min-h-[300px] md:min-h-0">
+            <h4 className="text-base font-medium text-gray-900 mb-4">最近使用的项目</h4>
+            
+            {agent.projects && agent.projects.length > 0 ? (
+              <div className="flex-1 overflow-hidden">
+                <div className="space-y-2 max-h-full overflow-y-auto">
+                  {agent.projects.map((project, index) => (
+                    <button
+                      key={index}
+                      onClick={() => onProjectSelect(project)}
+                      className="w-full flex items-center space-x-3 p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors text-left"
+                    >
+                      <Folder className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-gray-900 truncate">
+                          {project.split('/').pop() || 'Untitled Project'}
+                        </div>
+                        <div className="text-sm text-gray-500 truncate mt-1">{project}</div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div className="text-sm text-gray-500">
-                在 ~/claude-code-projects 中自动创建
+            ) : (
+              <div className="flex-1 flex items-center justify-center">
+                <div className="text-center text-gray-500">
+                  <Folder className="w-16 h-16 text-gray-300 mx-auto mb-3" />
+                  <p className="text-base font-medium">暂无最近使用的项目</p>
+                  <p className="text-sm text-gray-400 mt-1">创建新项目开始使用</p>
+                </div>
               </div>
-            </div>
-          </button>
-          
-          <button
-            onClick={handleNewProjectWithCustomLocation}
-            disabled={isCreatingProject}
-            className="w-full flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <FolderPlus className="w-5 h-5 text-gray-600" />
-            <div className="text-left">
-              <div className="font-medium text-gray-900">自定义位置新建</div>
-              <div className="text-sm text-gray-500">选择目录和项目名称</div>
-            </div>
-          </button>
-          
-          <button
-            onClick={handleBrowseProject}
-            className="w-full flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            <Search className="w-5 h-5 text-gray-600" />
-            <div className="text-left">
-              <div className="font-medium text-gray-900">浏览选择项目</div>
-              <div className="text-sm text-gray-500">通过文件浏览器选择项目目录</div>
-            </div>
-          </button>
+            )}
+          </div>
         </div>
         
-        {/* Actions */}
-        <div className="flex justify-end">
+        {/* Footer */}
+        <div className="flex justify-end p-6 border-t border-gray-200 flex-shrink-0">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+            className="px-6 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
           >
             取消
           </button>

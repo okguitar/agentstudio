@@ -12,11 +12,11 @@ export class AgentStorage {
     this.agentsDir = path.join(baseDir, 'agents');
     this.workingDir = workingDir;
     
-    // Ensure directories exist
-    this.ensureDirectoriesExist();
-    
-    // Initialize built-in agents if not exists
-    this.initializeBuiltinAgents();
+      // Ensure directories exist
+      this.ensureDirectoriesExist();
+      
+      // Initialize built-in agents if not exists
+      this.initializeBuiltinAgents();
   }
 
   private ensureDirectoriesExist(): void {

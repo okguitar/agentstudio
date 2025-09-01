@@ -11,12 +11,6 @@ interface AgentSelectorProps {
   onCreateAgent?: () => void;
 }
 
-interface ProjectOption {
-  id: string;
-  path: string;
-  name: string;
-  lastUsed?: Date;
-}
 
 export const AgentSelector: React.FC<AgentSelectorProps> = ({
   currentAgent,
@@ -69,7 +63,7 @@ export const AgentSelector: React.FC<AgentSelectorProps> = ({
     // This would trigger a file picker dialog
     // For now, using current directory as fallback
     if (selectedAgent) {
-      onAgentChange(selectedAgent, process.cwd());
+      onAgentChange(selectedAgent, '/');
       setShowProjectSelection(false);
       setSelectedAgent(null);
     }
