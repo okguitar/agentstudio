@@ -4,7 +4,7 @@ import Prism from 'prismjs';
 import 'prismjs/themes/prism-tomorrow.css';
 import 'prismjs/components/prism-markup';
 import 'prismjs/components/prism-css';
-import type { Slide } from '../types/index.js';
+import type { Slide } from '../../../types/index.js';
 import { useSlideContent } from '../hooks/useSlides';
 
 interface SlidePreviewProps {

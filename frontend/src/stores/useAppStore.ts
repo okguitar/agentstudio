@@ -1,26 +1,16 @@
 import { create } from 'zustand';
-import type { Slide, ChatMessage, ToolUsageData } from '../types/index.js';
+import type { ChatMessage, ToolUsageData } from '../types/index.js';
 
 interface AppState {
-  // Slides state
-  slides: Slide[];
-  currentSlideIndex: number | null;
-  selectedSlides: number[];
-  
-  // Chat state
+  // Chat state (通用)
   messages: ChatMessage[];
   isAiTyping: boolean;
   currentSessionId: string | null;
   
-  // UI state
+  // UI state (通用)
   sidebarCollapsed: boolean;
-  previewZoom: number;
   
   // Actions
-  setSlides: (slides: Slide[]) => void;
-  setCurrentSlide: (index: number | null) => void;
-  toggleSlideSelection: (index: number) => void;
-  clearSlideSelection: () => void;
   
   addMessage: (message: Omit<ChatMessage, 'id' | 'timestamp'>) => void;
   updateMessage: (messageId: string, updates: Partial<ChatMessage>) => void;
@@ -35,15 +25,10 @@ interface AppState {
   loadSessionMessages: (messages: ChatMessage[]) => void;
   
   setSidebarCollapsed: (collapsed: boolean) => void;
-  setPreviewZoom: (zoom: number) => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
   // Initial state
-  slides: [],
-  currentSlideIndex: null,
-  selectedSlides: [],
-  
   messages: [
     {
       id: 'welcome',
@@ -55,24 +40,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   ],
   isAiTyping: false,
   currentSessionId: null,
-  
   sidebarCollapsed: false,
-  previewZoom: 1,
-  
+
   // Actions
-  setSlides: (slides) => set({ slides }),
-  
-  setCurrentSlide: (index) => set({ currentSlideIndex: index }),
-  
-  toggleSlideSelection: (index) => set((state) => {
-    const isSelected = state.selectedSlides.includes(index);
-    const selectedSlides = isSelected
-      ? state.selectedSlides.filter(i => i !== index)
-      : [...state.selectedSlides, index];
-    return { selectedSlides };
-  }),
-  
-  clearSlideSelection: () => set({ selectedSlides: [] }),
   
   addMessage: (message) => set((state) => ({
     messages: [
@@ -194,6 +164,4 @@ export const useAppStore = create<AppState>((set, get) => ({
   }),
   
   setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
-  
-  setPreviewZoom: (zoom) => set({ previewZoom: zoom })
 }));

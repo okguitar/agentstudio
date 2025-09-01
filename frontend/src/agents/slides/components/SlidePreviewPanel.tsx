@@ -1,12 +1,13 @@
 import React from 'react';
 import { Plus } from 'lucide-react';
-import { useAppStore } from '../../../stores/useAppStore';
-import { useSlides } from '../../../hooks/useSlides';
-import { SlidePreview } from '../../../components/SlidePreview';
+
+import { useSlides } from '../hooks/useSlides';
+import { SlidePreview } from './SlidePreview';
+import { useAppStore } from '../../../stores/useAppStore'; // 通用聊天功能
 import type { AgentPanelProps } from '../../types.js';
 
 export const SlidePreviewPanel: React.FC<AgentPanelProps> = () => {
-  const { addMessage } = useAppStore();
+  const { addMessage } = useAppStore(); // 使用通用的聊天store
   const { data: slidesData, isLoading, error } = useSlides();
 
   const handleCreateSlide = () => {

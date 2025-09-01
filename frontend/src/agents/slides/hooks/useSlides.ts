@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { SlidesResponse, SlideContent } from '../types/index.js';
+import type { SlidesResponse, SlideContent } from '../../../types/index.js';
 
 const API_BASE = '/api';
 
@@ -18,46 +18,17 @@ export const useSlides = () => {
 };
 
 // Fetch specific slide content
-export const useSlideContent = (index: number | null) => {
+export const useSlideContent = (slideIndex: number) => {
   return useQuery<SlideContent>({
-    queryKey: ['slide', index],
+    queryKey: ['slide-content', slideIndex],
     queryFn: async () => {
-      if (index === null) throw new Error('No slide index provided');
-      const response = await fetch(`${API_BASE}/slides/${index}`);
+      const response = await fetch(`${API_BASE}/slides/${slideIndex}`);
       if (!response.ok) {
         throw new Error('Failed to fetch slide content');
       }
       return response.json();
     },
-    enabled: index !== null
-  });
-};
-
-// Update slide content
-export const useUpdateSlide = () => {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: async ({ index, content }: { index: number; content: string }) => {
-      const response = await fetch(`${API_BASE}/slides/${index}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ content })
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to update slide');
-      }
-      
-      return response.json();
-    },
-    onSuccess: (_, variables) => {
-      // Invalidate and refetch
-      queryClient.invalidateQueries({ queryKey: ['slide', variables.index] });
-      queryClient.invalidateQueries({ queryKey: ['slides'] });
-    }
+    enabled: slideIndex >= 0, // Only fetch if slideIndex is valid
   });
 };
 
@@ -66,13 +37,13 @@ export const useCreateSlide = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ content, slideIndex }: { content: string; slideIndex?: number }) => {
+    mutationFn: async (data: { title: string; content?: string }) => {
       const response = await fetch(`${API_BASE}/slides`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ content, slideIndex })
+        body: JSON.stringify(data),
       });
       
       if (!response.ok) {
@@ -82,8 +53,37 @@ export const useCreateSlide = () => {
       return response.json();
     },
     onSuccess: () => {
+      // Invalidate and refetch slides
       queryClient.invalidateQueries({ queryKey: ['slides'] });
-    }
+    },
+  });
+};
+
+// Update slide content
+export const useUpdateSlide = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ slideIndex, content }: { slideIndex: number; content: string }) => {
+      const response = await fetch(`${API_BASE}/slides/${slideIndex}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ content }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update slide');
+      }
+      
+      return response.json();
+    },
+    onSuccess: (_, variables) => {
+      // Invalidate specific slide content and slides list
+      queryClient.invalidateQueries({ queryKey: ['slide-content', variables.slideIndex] });
+      queryClient.invalidateQueries({ queryKey: ['slides'] });
+    },
   });
 };
 
@@ -92,9 +92,9 @@ export const useDeleteSlide = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (index: number) => {
-      const response = await fetch(`${API_BASE}/slides/${index}`, {
-        method: 'DELETE'
+    mutationFn: async (slideIndex: number) => {
+      const response = await fetch(`${API_BASE}/slides/${slideIndex}`, {
+        method: 'DELETE',
       });
       
       if (!response.ok) {
@@ -104,7 +104,8 @@ export const useDeleteSlide = () => {
       return response.json();
     },
     onSuccess: () => {
+      // Invalidate and refetch slides
       queryClient.invalidateQueries({ queryKey: ['slides'] });
-    }
+    },
   });
 };
