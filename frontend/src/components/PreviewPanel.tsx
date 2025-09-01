@@ -4,6 +4,11 @@ import { useAppStore } from '../stores/useAppStore';
 import { useSlides } from '../hooks/useSlides';
 import { SlidePreview } from './SlidePreview';
 
+/**
+ * @deprecated 此组件已被插件架构替代
+ * 现在由 agents/slides/components/SlidePreviewPanel.tsx 提供幻灯片预览功能
+ * 保留此文件是为了向后兼容性，将来可能会移除
+ */
 export const PreviewPanel: React.FC = () => {
   const { addMessage } = useAppStore();
   const { data: slidesData, isLoading, error } = useSlides();
