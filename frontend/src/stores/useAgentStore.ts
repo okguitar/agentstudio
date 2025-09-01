@@ -2,28 +2,19 @@ import { create } from 'zustand';
 import type { AgentConfig, AgentMessage, ToolUsageData } from '../types/index.js';
 
 interface AgentState {
-  // Current agent
+  // Current agent (框架层)
   currentAgent: AgentConfig | null;
   
-  // Agent-specific state
-  currentItem: unknown;
-  allItems: unknown[];
-  customContext: Record<string, unknown>;
-  
-  // Chat state
+  // Chat state (框架层通用聊天)
   messages: AgentMessage[];
   isAiTyping: boolean;
   currentSessionId: string | null;
   
-  // UI state
+  // UI state (框架层通用UI)
   sidebarCollapsed: boolean;
-  previewZoom: number;
   
   // Actions
   setCurrentAgent: (agent: AgentConfig | null) => void;
-  setCurrentItem: (item: unknown) => void;
-  setAllItems: (items: unknown[]) => void;
-  setCustomContext: (context: Record<string, unknown>) => void;
   
   addMessage: (message: Omit<AgentMessage, 'id' | 'timestamp' | 'agentId'>) => void;
   updateMessage: (messageId: string, updates: Partial<AgentMessage>) => void;
@@ -36,40 +27,24 @@ interface AgentState {
   loadSessionMessages: (messages: AgentMessage[]) => void;
   
   setSidebarCollapsed: (collapsed: boolean) => void;
-  setPreviewZoom: (zoom: number) => void;
-  
-  // Context builders
-  buildContext: () => Record<string, unknown>;
 }
 
-export const useAgentStore = create<AgentState>((set, get) => ({
+export const useAgentStore = create<AgentState>((set) => ({
   // Initial state
   currentAgent: null,
-  currentItem: null,
-  allItems: [],
-  customContext: {},
-  
   messages: [],
   isAiTyping: false,
   currentSessionId: null,
-  
   sidebarCollapsed: false,
-  previewZoom: 1,
   
   // Actions
   setCurrentAgent: (agent) => set({ 
     currentAgent: agent,
     // Clear state when switching agents
     messages: [],
-    currentSessionId: null,
-    currentItem: null,
-    allItems: [],
-    customContext: {}
+    isAiTyping: false,
+    currentSessionId: null
   }),
-  
-  setCurrentItem: (item) => set({ currentItem: item }),
-  setAllItems: (items) => set({ allItems: items }),
-  setCustomContext: (context) => set({ customContext: context }),
   
   addMessage: (message) => set((state) => ({
     messages: [
@@ -158,31 +133,4 @@ export const useAgentStore = create<AgentState>((set, get) => ({
   loadSessionMessages: (messages) => set({ messages }),
   
   setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
-  
-  setPreviewZoom: (zoom) => set({ previewZoom: zoom }),
-  
-  // Context builders
-  buildContext: () => {
-    const state = get();
-    const agent = state.currentAgent;
-    
-    if (!agent) return {};
-    
-    const baseContext = {
-      currentItem: state.currentItem,
-      allItems: state.allItems,
-      customContext: state.customContext
-    };
-    
-    // Agent-specific context building
-    if (agent.ui.componentType === 'slides') {
-      return {
-        ...baseContext,
-        currentSlide: typeof state.currentItem === 'number' ? state.currentItem : null,
-        allSlides: Array.isArray(state.allItems) ? state.allItems : []
-      };
-    }
-    
-    return baseContext;
-  }
 }));

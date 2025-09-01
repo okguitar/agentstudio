@@ -33,7 +33,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
     setCurrentSessionId,
     clearMessages,
     loadSessionMessages,
-    buildContext
+
   } = useAgentStore();
   
   const queryClient = useQueryClient();
@@ -63,8 +63,8 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
       role: 'user'
     });
 
-    // Build context based on current agent and state
-    const context = buildContext();
+    // Build context - now simplified since each agent manages its own state
+    const context = {};
 
     setAiTyping(true);
 
