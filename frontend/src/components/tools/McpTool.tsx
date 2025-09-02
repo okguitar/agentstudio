@@ -1,37 +1,43 @@
 import React from 'react';
-import { BaseToolComponent, ToolInput, ToolOutput } from './BaseToolComponent';
+import { BaseToolComponent, ToolInput } from './BaseToolComponent';
 import type { ToolExecution } from './types';
+import { parseMcpToolName } from './mcpUtils';
 
 interface McpToolProps {
   execution: ToolExecution;
 }
 
-interface McpToolInfo {
-  toolId: string;
-  prefix: string;      // "mcp"
-  serverName: string;  // "playwright", "supabase", etc.
-  toolName: string;    // "browser_take_screenshot", "list_projects", etc.
-  isExecuting?: boolean;
-  hasResult?: boolean;
-  isError?: boolean;
+// MCP结果内容类型
+interface McpTextContent {
+  type: 'text';
+  text: string;
 }
 
+interface McpImageContent {
+  type: 'image';
+  data: string; // base64 encoded image data
+  mimeType: string; // image/png, image/jpeg, etc.
+}
 
-/**
- * 解析MCP工具名称格式：mcp__serverName__toolName
- */
-export function parseMcpToolName(toolId: string): McpToolInfo | null {
-  const parts = toolId.split('__');
-  
-  if (parts.length !== 3 || parts[0] !== 'mcp') {
-    return null;
-  }
+interface McpResourceContent {
+  type: 'resource';
+  resource: {
+    uri: string;
+    name?: string;
+    description?: string;
+    mimeType?: string;
+  };
+}
 
-  return {
-    toolId,
-    prefix: parts[0],
-    serverName: parts[1],
-    toolName: parts[2]
+type McpContent = McpTextContent | McpImageContent | McpResourceContent | { type: string; [key: string]: unknown };
+
+// MCP工具结果类型
+interface McpResult {
+  content?: McpContent | McpContent[];
+  isError?: boolean;
+  _meta?: {
+    progress?: number;
+    progressTotal?: number;
   };
 }
 
@@ -44,6 +50,159 @@ function formatMcpToolName(toolName: string): string {
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
 }
+
+/**
+ * 尝试解析MCP结果结构
+ */
+function parseMcpResult(result: string): McpResult | null {
+  try {
+    const parsed = JSON.parse(result);
+    
+    // 如果结果是数组，可能是MCP内容数组
+    if (Array.isArray(parsed)) {
+      return { content: parsed };
+    }
+    
+    // 如果结果有content字段，可能是MCP结果
+    if (parsed && typeof parsed === 'object' && ('content' in parsed || 'isError' in parsed)) {
+      return parsed as McpResult;
+    }
+    
+    // 否则当作文本内容处理
+    return { content: { type: 'text', text: result } };
+  } catch {
+    // JSON解析失败，当作纯文本处理
+    return { content: { type: 'text', text: result } };
+  }
+}
+
+/**
+ * 渲染单个MCP内容
+ */
+const McpContentRenderer: React.FC<{ content: McpContent }> = ({ content }) => {
+  switch (content.type) {
+    case 'text':
+      return (
+        <div className="p-3 rounded-md border bg-green-50 border-green-200">
+          <pre className="text-sm font-mono text-green-700 whitespace-pre-wrap break-words">
+            {(content as McpTextContent).text}
+          </pre>
+        </div>
+      );
+      
+    case 'image': {
+      const imageContent = content as McpImageContent;
+      return (
+        <div className="p-3 rounded-md border bg-blue-50 border-blue-200">
+          <div className="text-xs font-medium text-blue-600 mb-2">
+            图片 ({imageContent.mimeType})
+          </div>
+          <img 
+            src={`data:${imageContent.mimeType};base64,${imageContent.data}`}
+            alt="MCP Tool Result"
+            className="max-w-full h-auto rounded border shadow-sm"
+            style={{ maxHeight: '400px' }}
+          />
+        </div>
+      );
+    }
+      
+    case 'resource': {
+      const resourceContent = content as McpResourceContent;
+      return (
+        <div className="p-3 rounded-md border bg-purple-50 border-purple-200">
+          <div className="text-xs font-medium text-purple-600 mb-2">资源</div>
+          <div className="text-sm text-purple-700 space-y-1">
+            <div><span className="font-medium">URI:</span> {resourceContent.resource.uri}</div>
+            {resourceContent.resource.name && (
+              <div><span className="font-medium">名称:</span> {resourceContent.resource.name}</div>
+            )}
+            {resourceContent.resource.description && (
+              <div><span className="font-medium">描述:</span> {resourceContent.resource.description}</div>
+            )}
+            {resourceContent.resource.mimeType && (
+              <div><span className="font-medium">类型:</span> {resourceContent.resource.mimeType}</div>
+            )}
+          </div>
+        </div>
+      );
+    }
+      
+    default:
+      // 未知类型，显示为JSON
+      return (
+        <div className="p-3 rounded-md border bg-gray-50 border-gray-200">
+          <div className="text-xs font-medium text-gray-600 mb-2">
+            未知类型 ({content.type})
+          </div>
+          <pre className="text-sm font-mono text-gray-700 whitespace-pre-wrap break-words">
+            {JSON.stringify(content, null, 2)}
+          </pre>
+        </div>
+      );
+  }
+};
+
+/**
+ * MCP结果渲染组件
+ */
+const McpResultRenderer: React.FC<{ result: string; isError?: boolean }> = ({ result, isError }) => {
+  if (!result) return null;
+
+  if (isError) {
+    return (
+      <div className="mt-3">
+        <p className="text-xs font-medium text-gray-600 mb-2">错误信息:</p>
+        <div className="p-3 rounded-md border bg-red-50 border-red-200 text-red-700 text-sm font-mono whitespace-pre-wrap break-words">
+          {result}
+        </div>
+      </div>
+    );
+  }
+
+  const mcpResult = parseMcpResult(result);
+  if (!mcpResult || !mcpResult.content) {
+    // 降级到原始文本显示
+    return (
+      <div className="mt-3">
+        <p className="text-xs font-medium text-gray-600 mb-2">执行结果:</p>
+        <div className="p-3 rounded-md border bg-green-50 border-green-200 text-green-700 text-sm font-mono whitespace-pre-wrap break-words">
+          {result}
+        </div>
+      </div>
+    );
+  }
+
+  const content = Array.isArray(mcpResult.content) ? mcpResult.content : [mcpResult.content];
+  
+  return (
+    <div className="mt-3">
+      <p className="text-xs font-medium text-gray-600 mb-2">执行结果:</p>
+      
+      {/* 进度信息 */}
+      {mcpResult._meta?.progress !== undefined && mcpResult._meta?.progressTotal && (
+        <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded text-sm">
+          <div className="text-blue-700 mb-1">
+            进度: {mcpResult._meta.progress} / {mcpResult._meta.progressTotal}
+          </div>
+          <div className="w-full bg-blue-200 rounded-full h-2">
+            <div 
+              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${(mcpResult._meta.progress / mcpResult._meta.progressTotal) * 100}%` }}
+            />
+          </div>
+        </div>
+      )}
+      
+      {/* 内容渲染 */}
+      <div className="space-y-3">
+        {content.map((item, index) => (
+          <McpContentRenderer key={index} content={item} />
+        ))}
+      </div>
+    </div>
+  );
+};
 
 /**
  * MCP工具专用显示组件
@@ -84,9 +243,9 @@ export const McpTool: React.FC<McpToolProps> = ({ execution }) => {
           isCode={true}
         />
         
-        {/* 工具执行结果 */}
+        {/* 工具执行结果 - 使用MCP专用渲染器 */}
         {execution.toolResult && (
-          <ToolOutput 
+          <McpResultRenderer 
             result={execution.toolResult}
             isError={execution.isError}
           />
