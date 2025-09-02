@@ -9,6 +9,7 @@ import filesRouter from './routes/files.js';
 import aiRouter from './routes/ai.js';
 import agentsRouter from './routes/agents.js';
 import mediaRouter from './routes/media.js';
+import settingsRouter from './routes/settings.js';
 
 dotenv.config();
 
@@ -48,6 +49,7 @@ app.use('/slides', express.static(slidesDir));
 app.use('/api/files', filesRouter);
 app.use('/api/ai', aiRouter);
 app.use('/api/agents', agentsRouter);
+app.use('/api/settings', settingsRouter);
 app.use('/media', mediaRouter);
 
 // Health check
