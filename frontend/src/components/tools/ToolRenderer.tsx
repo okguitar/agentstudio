@@ -17,9 +17,8 @@ import { NotebookEditTool } from './NotebookEditTool';
 import { WebFetchTool } from './WebFetchTool';
 import { TodoWriteTool } from './TodoWriteTool';
 import { WebSearchTool } from './WebSearchTool';
-import { McpTool } from './McpTool';
+import { McpTool, parseMcpToolName } from './McpTool';
 import { BaseToolComponent } from './BaseToolComponent';
-import { parseMcpToolName } from '../McpToolDisplay';
 
 interface ToolRendererProps {
   execution: ToolExecution;
