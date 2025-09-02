@@ -7,6 +7,8 @@ import 'prismjs/components/prism-css';
 import type { Slide } from '../../../types/index.js';
 import { useSlideContent } from '../hooks/useSlides';
 
+const API_BASE = import.meta.env.DEV ? 'http://localhost:3002' : '';
+
 interface SlidePreviewProps {
   slide: Slide;
   totalSlides: number;
@@ -18,49 +20,60 @@ export const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, totalSlides, 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
   const [viewMode, setViewMode] = useState<'preview' | 'code'>('preview');
+  const [projectId, setProjectId] = useState<string | null>(null);
   
   const { data: slideContent } = useSlideContent(slide.index, projectPath);
 
+  // Fetch project ID
+  useEffect(() => {
+    if (!projectPath) return;
+    
+    const fetchProjectId = async () => {
+      try {
+        const url = new URL(`${API_BASE}/api/files/project-id`, window.location.origin);
+        url.searchParams.set('projectPath', projectPath);
+        const response = await fetch(url);
+        
+        if (response.ok) {
+          const data = await response.json();
+          setProjectId(data.projectId);
+        }
+      } catch (error) {
+        console.error('Failed to fetch project ID:', error);
+      }
+    };
+    
+    fetchProjectId();
+  }, [projectPath]);
+
   useEffect(() => {
     const iframe = iframeRef.current;
-    if (!iframe || viewMode !== 'preview' || !slideContent) return;
+    if (!iframe || viewMode !== 'preview' || !projectId || !slide.path) return;
 
     setIsLoading(true);
     setError(false);
 
-    try {
-      // Create a blob URL from the slide content
-      const blob = new Blob([slideContent.content], { type: 'text/html' });
-      const blobUrl = URL.createObjectURL(blob);
-      
-      const handleLoad = () => {
-        setIsLoading(false);
-        setError(false);
-      };
+    const handleLoad = () => {
+      setIsLoading(false);
+      setError(false);
+    };
 
-      const handleError = () => {
-        setIsLoading(false);
-        setError(true);
-      };
-
-      iframe.addEventListener('load', handleLoad);
-      iframe.addEventListener('error', handleError);
-      
-      // Set the iframe src to the blob URL
-      iframe.src = blobUrl;
-
-      return () => {
-        iframe.removeEventListener('load', handleLoad);
-        iframe.removeEventListener('error', handleError);
-        // Clean up the blob URL
-        URL.revokeObjectURL(blobUrl);
-      };
-    } catch (error) {
-      console.error('Error creating blob URL:', error);
+    const handleError = () => {
       setIsLoading(false);
       setError(true);
-    }
-  }, [viewMode, slideContent]);
+    };
+
+    iframe.addEventListener('load', handleLoad);
+    iframe.addEventListener('error', handleError);
+    
+    // Use media proxy URL: /media/{project-id}/{relative-path}
+    iframe.src = `${API_BASE}/media/${projectId}/${slide.path}`;
+
+    return () => {
+      iframe.removeEventListener('load', handleLoad);
+      iframe.removeEventListener('error', handleError);
+    };
+  }, [viewMode, projectId, slide.path]);
 
   // Highlight code when switching to code view or when content loads
   useEffect(() => {
@@ -131,7 +144,7 @@ export const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, totalSlides, 
               </div>
             )}
             
-            {slide.exists && slideContent && (
+            {slide.exists && projectId && (
               <iframe
                 ref={iframeRef}
                 className="w-full h-full border-none"

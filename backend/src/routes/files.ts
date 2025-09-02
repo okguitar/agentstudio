@@ -4,6 +4,7 @@ import { existsSync } from 'fs';
 import { join, dirname, resolve, relative } from 'path';
 import { fileURLToPath } from 'url';
 import { z } from 'zod';
+import { getProjectId } from './media.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -169,6 +170,27 @@ router.put('/write', async (req, res) => {
       return res.status(403).json({ error: 'Access denied' });
     }
     res.status(500).json({ error: 'Failed to write file' });
+  }
+});
+
+// GET /api/files/project-id - Get project ID for a given project path
+router.get('/project-id', async (req, res) => {
+  try {
+    const { projectPath } = req.query;
+    
+    if (!projectPath || typeof projectPath !== 'string') {
+      return res.status(400).json({ error: 'Project path is required' });
+    }
+
+    const projectId = getProjectId(projectPath);
+    
+    res.json({
+      projectId,
+      projectPath
+    });
+  } catch (error) {
+    console.error('Error getting project ID:', error);
+    res.status(500).json({ error: 'Failed to get project ID' });
   }
 });
 

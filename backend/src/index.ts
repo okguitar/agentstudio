@@ -8,6 +8,7 @@ import { dirname, join } from 'path';
 import filesRouter from './routes/files.js';
 import aiRouter from './routes/ai.js';
 import agentsRouter from './routes/agents.js';
+import mediaRouter from './routes/media.js';
 
 dotenv.config();
 
@@ -25,7 +26,8 @@ app.use(helmet({
       scriptSrc: ["'self'", "'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", "ws:", "wss:"]
+      connectSrc: ["'self'", "ws:", "wss:"],
+      frameAncestors: ["'self'", "http://localhost:3000", "https://localhost:3000"] // Allow iframe embedding
     }
   }
 }));
@@ -46,6 +48,7 @@ app.use('/slides', express.static(slidesDir));
 app.use('/api/files', filesRouter);
 app.use('/api/ai', aiRouter);
 app.use('/api/agents', agentsRouter);
+app.use('/media', mediaRouter);
 
 // Health check
 app.get('/api/health', (req, res) => {
