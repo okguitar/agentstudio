@@ -1,17 +1,20 @@
-import React, { useEffect } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { AgentChatPanel } from '../components/AgentChatPanel';
 import { SplitLayout } from '../components/SplitLayout';
 import { getAgentPlugin } from '../agents/registry';
 import { useAgentStore } from '../stores/useAgentStore';
 import { useAgent } from '../hooks/useAgents';
+import { ProjectSelector } from '../components/ProjectSelector';
 
 export const ChatPage: React.FC = () => {
   const { agentId } = useParams<{ agentId: string }>();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const projectPath = searchParams.get('project');
   const { data: agentData, isLoading, error } = useAgent(agentId!);
   const { setCurrentAgent } = useAgentStore();
+  const [showProjectSelector, setShowProjectSelector] = useState(false);
 
   const agent = agentData?.agent;
 
@@ -21,6 +24,27 @@ export const ChatPage: React.FC = () => {
       setCurrentAgent(agent);
     }
   }, [agent, setCurrentAgent]);
+
+  // Show project selector if no project path is provided and agent is loaded
+  useEffect(() => {
+    if (agent && !projectPath) {
+      setShowProjectSelector(true);
+    }
+  }, [agent, projectPath]);
+
+  // Handle project selection - update URL instead of opening new window
+  const handleProjectSelect = (selectedProjectPath: string) => {
+    const params = new URLSearchParams();
+    params.set('project', selectedProjectPath);
+    navigate(`/chat/${agentId}?${params.toString()}`, { replace: true });
+    setShowProjectSelector(false);
+  };
+
+  const handleProjectSelectorClose = () => {
+    setShowProjectSelector(false);
+    // If user closes without selecting a project, redirect back to agents page
+    navigate('/agents');
+  };
 
   // Get agent plugin configuration
   const agentPlugin = agent ? getAgentPlugin(agent.ui.componentType) : undefined;
@@ -116,6 +140,15 @@ export const ChatPage: React.FC = () => {
   return (
     <div className="h-screen bg-gray-100">
       {renderLayout()}
+      
+      {/* Project Selection Modal - Only show when no project is selected */}
+      {showProjectSelector && agent && (
+        <ProjectSelector
+          agent={agent}
+          onProjectSelect={handleProjectSelect}
+          onClose={handleProjectSelectorClose}
+        />
+      )}
     </div>
   );
 };
