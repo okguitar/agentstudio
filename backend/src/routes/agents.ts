@@ -42,6 +42,7 @@ const CreateAgentSchema = z.object({
     primaryColor: z.string().optional().default('#3B82F6'),
     headerTitle: z.string(),
     headerDescription: z.string(),
+    welcomeMessage: z.string().optional(),
     componentType: z.enum(['slides', 'chat', 'documents', 'code', 'custom']),
     customComponent: z.string().optional()
   }),

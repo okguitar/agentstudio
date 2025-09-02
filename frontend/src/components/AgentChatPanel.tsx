@@ -353,9 +353,14 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
             <p className="text-sm opacity-90">
               {currentSessionId ? 
                 (sessionsData?.sessions?.find((s: any) => s.id === currentSessionId)?.title || '当前会话') : 
-                agent.ui.headerDescription
+                (agent.ui.welcomeMessage || agent.ui.headerDescription)
               }
             </p>
+            {projectPath && (
+              <p className="text-xs opacity-75 mt-1 truncate" title={projectPath}>
+                📁 {projectPath.split('/').pop() || projectPath}
+              </p>
+            )}
           </div>
           <div className="flex space-x-2 relative">
             <button

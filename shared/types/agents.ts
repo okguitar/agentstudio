@@ -29,6 +29,7 @@ export interface AgentConfig {
     primaryColor: string;
     headerTitle: string;
     headerDescription: string;
+    welcomeMessage?: string; // Custom welcome message instead of title + description
     componentType: 'slides' | 'chat' | 'documents' | 'code' | 'custom';
     customComponent?: string; // Path to custom component
   };
@@ -128,6 +129,7 @@ Please respond in Chinese.`,
       primaryColor: '#3B82F6',
       headerTitle: 'AI PPT助手',
       headerDescription: '与AI聊天来编辑你的演示文稿',
+      welcomeMessage: '你好！我是你的AI PPT助手，可以帮你创建、编辑和优化HTML演示文稿。有什么需要帮助的吗？',
       componentType: 'slides'
     },
     workingDirectory: '../slides',
@@ -165,6 +167,7 @@ Please respond in Chinese.`,
       primaryColor: '#10B981',
       headerTitle: '代码助手',
       headerDescription: '专业的软件开发和代码审查助手',
+      welcomeMessage: '你好！我是专业的代码助手，可以帮你进行代码开发、审查、调试和优化。请告诉我你想要解决的编程问题！',
       componentType: 'code'
     },
     tags: ['coding', 'development', 'review', 'debugging'],
@@ -198,6 +201,7 @@ Please respond in Chinese.`,
       primaryColor: '#8B5CF6',
       headerTitle: '文档助手',
       headerDescription: '专业的文档创建和编辑助手',
+      welcomeMessage: '你好！我是文档助手，专门帮助你创建、编辑和优化各种文档。无论是技术文档还是普通文档，我都能为你提供专业建议！',
       componentType: 'documents'
     },
     fileTypes: ['.md', '.txt', '.rst', '.adoc'],

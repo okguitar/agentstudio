@@ -89,6 +89,7 @@ export interface AgentConfig {
     primaryColor: string;
     headerTitle: string;
     headerDescription: string;
+    welcomeMessage?: string; // Custom welcome message instead of title + description
     componentType: 'slides' | 'chat' | 'documents' | 'code' | 'custom';
     customComponent?: string;
   };
