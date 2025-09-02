@@ -17,7 +17,9 @@ import { NotebookEditTool } from './NotebookEditTool';
 import { WebFetchTool } from './WebFetchTool';
 import { TodoWriteTool } from './TodoWriteTool';
 import { WebSearchTool } from './WebSearchTool';
+import { McpTool } from './McpTool';
 import { BaseToolComponent } from './BaseToolComponent';
+import { parseMcpToolName } from '../McpToolDisplay';
 
 interface ToolRendererProps {
   execution: ToolExecution;
@@ -27,6 +29,12 @@ interface ToolRendererProps {
  * 根据工具名称渲染对应的工具组件
  */
 export const ToolRenderer: React.FC<ToolRendererProps> = ({ execution }) => {
+  // 首先检查是否是MCP工具
+  const mcpToolInfo = parseMcpToolName(execution.toolName);
+  if (mcpToolInfo) {
+    return <McpTool execution={execution} />;
+  }
+
   switch (execution.toolName) {
     case 'Task':
       return <TaskTool execution={execution} />;

@@ -20,3 +20,4 @@ export { NotebookEditTool } from './NotebookEditTool';
 export { WebFetchTool } from './WebFetchTool';
 export { TodoWriteTool } from './TodoWriteTool';
 export { WebSearchTool } from './WebSearchTool';
+export { McpTool } from './McpTool';
