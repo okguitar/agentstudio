@@ -6,6 +6,7 @@ import { Options, query } from '@anthropic-ai/claude-code';
 import { z } from 'zod';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as os from 'os';
 import { AgentStorage } from '../../shared/utils/agentStorage.js';
 import { AgentConfig } from '../../shared/types/agents.js';
 
@@ -17,6 +18,7 @@ const ChatRequestSchema = z.object({
   agentId: z.string().min(1),
   sessionId: z.string().optional().nullable(),
   projectPath: z.string().optional(),
+  mcpTools: z.array(z.string()).optional(),
   context: z.object({
     currentSlide: z.number().optional().nullable(),
     slideContent: z.string().optional(),
@@ -505,7 +507,7 @@ router.post('/chat', async (req, res) => {
       return res.status(400).json({ error: 'Invalid request body', details: validation.error });
     }
 
-    const { message, agentId, context, sessionId, projectPath } = validation.data;
+    const { message, agentId, context, sessionId, projectPath, mcpTools } = validation.data;
     
     // console.log('Received chat request with projectPath:', projectPath);
 
@@ -599,6 +601,11 @@ router.post('/chat', async (req, res) => {
         .filter(tool => tool.enabled)
         .map(tool => tool.name);
 
+      // Add MCP tools if provided
+      if (mcpTools && mcpTools.length > 0) {
+        allowedTools.push(...mcpTools);
+      }
+
       // Use Claude Code SDK with agent-specific settings
       // If projectPath is provided, use it as cwd; otherwise fall back to agent's workingDirectory
       let cwd = process.cwd();
@@ -615,6 +622,47 @@ router.post('/chat', async (req, res) => {
         cwd,
         permissionMode: agent.permissionMode as any
       };
+
+      // Add MCP configuration if MCP tools are selected
+      if (mcpTools && mcpTools.length > 0) {
+        const mcpConfigPath = path.join(os.homedir(), '.claude-agent', 'mcp-server.json');
+        if (fs.existsSync(mcpConfigPath)) {
+          try {
+            const mcpConfigContent = JSON.parse(fs.readFileSync(mcpConfigPath, 'utf-8'));
+            
+            // Extract unique server names from mcpTools
+            const serverNames = new Set<string>();
+            for (const tool of mcpTools) {
+              // Tool format: mcp__serverName__toolName or mcp__serverName
+              const parts = tool.split('__');
+              if (parts.length >= 2 && parts[0] === 'mcp') {
+                serverNames.add(parts[1]);
+              }
+            }
+            
+            // Build mcpServers configuration
+            const mcpServers: Record<string, any> = {};
+            for (const serverName of serverNames) {
+              const serverConfig = mcpConfigContent.mcpServers?.[serverName];
+              if (serverConfig && serverConfig.status === 'active') {
+                mcpServers[serverName] = {
+                  type: 'stdio',
+                  command: serverConfig.command,
+                  args: serverConfig.args || [],
+                  env: serverConfig.env || {}
+                };
+              }
+            }
+            
+            if (Object.keys(mcpServers).length > 0) {
+              queryOptions.mcpServers = mcpServers;
+              console.log('🔧 MCP Servers configured:', Object.keys(mcpServers));
+            }
+          } catch (error) {
+            console.error('Failed to parse MCP configuration:', error);
+          }
+        }
+      }
 
       // Resume existing Claude session if available
       if (currentSession.claudeSessionId) {

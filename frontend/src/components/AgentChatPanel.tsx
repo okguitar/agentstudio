@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Clock, Plus, Square, Paperclip, Smile, Settings } from 'lucide-react';
+import { Send, Clock, Plus, Square, Paperclip, Wrench } from 'lucide-react';
 import { useAgentStore } from '../stores/useAgentStore';
 import { useAgentChat, useAgentSessions, useCreateAgentSession, useDeleteAgentSession, useAgentSessionMessages } from '../hooks/useAgents';
 import { useQueryClient } from '@tanstack/react-query';
 import { ChatMessageRenderer } from './ChatMessageRenderer';
 import { SessionsDropdown } from './SessionsDropdown';
+import { McpToolSelector } from './McpToolSelector';
 import type { AgentConfig } from '../types/index.js';
 
 interface AgentChatPanelProps {
@@ -16,6 +17,9 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
   const [inputMessage, setInputMessage] = useState('');
   const [showSessions, setShowSessions] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showMcpSelector, setShowMcpSelector] = useState(false);
+  const [selectedMcpTools, setSelectedMcpTools] = useState<string[]>([]);
+  const [mcpToolsEnabled, setMcpToolsEnabled] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -42,6 +46,12 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
   const createSession = useCreateAgentSession();
   const deleteSession = useDeleteAgentSession();
   const { data: sessionMessagesData } = useAgentSessionMessages(agent.id, currentSessionId, projectPath);
+
+  // Calculate the actual number of tools represented by the selection
+  const getActualToolCount = () => {
+    // 现在只需要计算单个工具选择的数量
+    return selectedMcpTools.filter(t => t.startsWith('mcp__') && t.split('__').length === 3).length;
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -85,6 +95,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
         context,
         sessionId: currentSessionId,
         projectPath,
+        mcpTools: mcpToolsEnabled && selectedMcpTools.length > 0 ? selectedMcpTools : undefined,
         abortController,
         onMessage: (data) => {
           console.log('Received SSE message:', data);
@@ -468,20 +479,39 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
               >
                 <Paperclip className="w-4 h-4" />
               </button>
-              <button
-                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                title="表情"
+              <div className="relative">
+                <button
+                onClick={() => setShowMcpSelector(!showMcpSelector)}
+                className={`relative p-2 transition-colors rounded-lg ${
+                  mcpToolsEnabled && selectedMcpTools.length > 0
+                    ? 'text-green-600 bg-green-50 hover:bg-green-100' 
+                    : selectedMcpTools.length > 0
+                    ? 'text-blue-600 bg-blue-50 hover:bg-blue-100'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                }`}
+                title={`MCP工具 ${selectedMcpTools.length > 0 ? `(已选择${getActualToolCount()}个${mcpToolsEnabled ? '，已启用' : '，未启用'})` : '(未选择)'}`}
                 disabled={isAiTyping}
               >
-                <Smile className="w-4 h-4" />
-              </button>
-              <button
-                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                title="设置"
-                disabled={isAiTyping}
-              >
-                <Settings className="w-4 h-4" />
-              </button>
+                <Wrench className="w-4 h-4" />
+                {selectedMcpTools.length > 0 && (
+                  <span className={`absolute -top-1 -right-1 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center ${
+                    mcpToolsEnabled ? 'bg-green-600' : 'bg-blue-600'
+                  }`}>
+                    {getActualToolCount()}
+                  </span>
+                )}
+                </button>
+                
+                {/* MCP Tool Selector Tooltip */}
+                <McpToolSelector
+                  isOpen={showMcpSelector}
+                  onClose={() => setShowMcpSelector(false)}
+                  selectedTools={selectedMcpTools}
+                  onToolsChange={setSelectedMcpTools}
+                  enabled={mcpToolsEnabled}
+                  onEnabledChange={setMcpToolsEnabled}
+                />
+              </div>
             </div>
             
             <div className="flex items-center space-x-2">

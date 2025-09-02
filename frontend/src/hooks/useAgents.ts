@@ -202,6 +202,7 @@ export const useAgentChat = () => {
       context, 
       sessionId,
       projectPath,
+      mcpTools,
       abortController,
       onMessage, 
       onError 
@@ -211,6 +212,7 @@ export const useAgentChat = () => {
       context?: ChatContext; 
       sessionId?: string | null;
       projectPath?: string;
+      mcpTools?: string[];
       abortController?: AbortController;
       onMessage?: (data: unknown) => void;
       onError?: (error: unknown) => void;
@@ -221,7 +223,7 @@ export const useAgentChat = () => {
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ agentId, message, context, sessionId, projectPath }),
+          body: JSON.stringify({ agentId, message, context, sessionId, projectPath, mcpTools }),
           signal: abortController?.signal
         });
 
