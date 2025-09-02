@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Clock, Plus, Square, Paperclip, Wrench } from 'lucide-react';
+import { Send, Clock, Plus, Square, Image, Wrench, X } from 'lucide-react';
+import { ImagePreview } from './ImagePreview';
 import { useAgentStore } from '../stores/useAgentStore';
 import { useAgentChat, useAgentSessions, useCreateAgentSession, useDeleteAgentSession, useAgentSessionMessages } from '../hooks/useAgents';
 import { useQueryClient } from '@tanstack/react-query';
@@ -20,8 +21,12 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
   const [showMcpSelector, setShowMcpSelector] = useState(false);
   const [selectedMcpTools, setSelectedMcpTools] = useState<string[]>([]);
   const [mcpToolsEnabled, setMcpToolsEnabled] = useState(false);
+  const [selectedImages, setSelectedImages] = useState<Array<{ id: string; file: File; preview: string }>>([]);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   
   const {
@@ -53,6 +58,109 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
     return selectedMcpTools.filter(t => t.startsWith('mcp__') && t.split('__').length === 3).length;
   };
 
+  // Image handling functions
+  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+    
+    const imageFiles = Array.from(files).filter(file => 
+      file.type.startsWith('image/') && 
+      ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)
+    );
+    
+    imageFiles.forEach(file => {
+      const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (e.target?.result) {
+          setSelectedImages(prev => [...prev, {
+            id,
+            file,
+            preview: e.target!.result as string
+          }]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+    
+    // Clear the input
+    if (event.target) {
+      event.target.value = '';
+    }
+  };
+
+  const handleImageRemove = (id: string) => {
+    setSelectedImages(prev => prev.filter(img => img.id !== id));
+  };
+
+  const handleImagePreview = (preview: string) => {
+    setPreviewImage(preview);
+  };
+
+  const handlePaste = (event: React.ClipboardEvent) => {
+    const items = event.clipboardData?.items;
+    if (!items) return;
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type.startsWith('image/')) {
+        const file = item.getAsFile();
+        if (file) {
+          const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            if (e.target?.result) {
+              setSelectedImages(prev => [...prev, {
+                id,
+                file,
+                preview: e.target!.result as string
+              }]);
+            }
+          };
+          reader.readAsDataURL(file);
+        }
+      }
+    }
+  };
+
+  const handleDragOver = (event: React.DragEvent) => {
+    event.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (event: React.DragEvent) => {
+    event.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (event: React.DragEvent) => {
+    event.preventDefault();
+    setIsDragOver(false);
+    
+    const files = event.dataTransfer?.files;
+    if (!files) return;
+    
+    const imageFiles = Array.from(files).filter(file => 
+      file.type.startsWith('image/') && 
+      ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)
+    );
+    
+    imageFiles.forEach(file => {
+      const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (e.target?.result) {
+          setSelectedImages(prev => [...prev, {
+            id,
+            file,
+            preview: e.target!.result as string
+          }]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -62,15 +170,26 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
   }, [messages, isAiTyping]);
 
   const handleSendMessage = async () => {
-    if (!inputMessage.trim() || isAiTyping) return;
+    if ((!inputMessage.trim() && selectedImages.length === 0) || isAiTyping) return;
 
     const userMessage = inputMessage.trim();
+    const images = [...selectedImages];
     setInputMessage('');
+    setSelectedImages([]);
     
-    // Add user message
+    // Convert images to backend format
+    const imageData = images.map(img => ({
+      id: img.id,
+      data: img.preview.split(',')[1], // Remove data:image/type;base64, prefix
+      mediaType: img.file.type as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
+      filename: img.file.name
+    }));
+    
+    // Add user message with images
     addMessage({
-      content: userMessage,
-      role: 'user'
+      content: userMessage || '发送了图片',
+      role: 'user',
+      images: imageData
     });
 
     // Build context - now simplified since each agent manages its own state
@@ -92,6 +211,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
       await agentChatMutation.mutateAsync({
         agentId: agent.id,
         message: userMessage,
+        images: imageData.length > 0 ? imageData : undefined,
         context,
         sessionId: currentSessionId,
         projectPath,
@@ -447,7 +567,47 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
       </div>
 
       {/* Input Area */}
-      <div className="border-t border-gray-200">
+      <div 
+        className={`border-t border-gray-200 ${isDragOver ? 'bg-blue-50 border-blue-300' : ''}`}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
+        {/* Selected Images Preview */}
+        {selectedImages.length > 0 && (
+          <div className="p-4 pb-2 border-b border-gray-100">
+            <div className="flex flex-wrap gap-2">
+              {selectedImages.map((img) => (
+                <div key={img.id} className="relative group">
+                  <img
+                    src={img.preview}
+                    alt="预览"
+                    className="w-16 h-16 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={() => handleImagePreview(img.preview)}
+                  />
+                  <button
+                    onClick={() => handleImageRemove(img.id)}
+                    className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs hover:bg-red-600"
+                    title="删除图片"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Drag Over Indicator */}
+        {isDragOver && (
+          <div className="absolute inset-0 bg-blue-100 bg-opacity-75 flex items-center justify-center z-10 pointer-events-none">
+            <div className="text-blue-600 text-lg font-medium flex items-center space-x-2">
+              <Image className="w-6 h-6" />
+              <span>拖放图片到这里</span>
+            </div>
+          </div>
+        )}
+
         {/* Text Input */}
         <div className="p-4 pb-2">
           <textarea
@@ -455,7 +615,8 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="输入你的消息... (Shift+Enter 换行，Enter 发送)"
+            onPaste={handlePaste}
+            placeholder={selectedImages.length > 0 ? "添加描述文字... (可选)" : "输入你的消息... (Shift+Enter 换行，Enter 发送)"}
             rows={1}
             className="w-full resize-none border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 disabled:bg-gray-50 disabled:text-gray-500"
             style={{ 
@@ -471,14 +632,36 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
         <div className="px-4 pb-4 pt-2 border-t border-gray-100">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-1">
+              {/* Hidden file input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/gif,image/webp"
+                multiple
+                onChange={handleImageSelect}
+                className="hidden"
+              />
+              
               {/* Tool buttons */}
-              <button
-                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                title="附加文件"
-                disabled={isAiTyping}
-              >
-                <Paperclip className="w-4 h-4" />
-              </button>
+              <div className="relative">
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`p-2 transition-colors rounded-lg ${
+                    selectedImages.length > 0
+                      ? 'text-blue-600 bg-blue-50 hover:bg-blue-100'
+                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                  }`}
+                  title={`选择图片${selectedImages.length > 0 ? ` (已选择${selectedImages.length}张)` : ''}`}
+                  disabled={isAiTyping}
+                >
+                  <Image className="w-4 h-4" />
+                </button>
+                {selectedImages.length > 0 && (
+                  <span className="absolute -top-1 -right-1 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center bg-blue-600">
+                    {selectedImages.length}
+                  </span>
+                )}
+              </div>
               <div className="relative">
                 <button
                 onClick={() => setShowMcpSelector(!showMcpSelector)}
@@ -527,10 +710,10 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
               ) : (
                 <button
                   onClick={handleSendMessage}
-                  disabled={!inputMessage.trim()}
+                  disabled={!inputMessage.trim() && selectedImages.length === 0}
                   className="flex items-center space-x-2 px-4 py-2 text-white rounded-lg hover:opacity-90 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 text-sm font-medium shadow-sm"
-                  style={{ backgroundColor: inputMessage.trim() ? agent.ui.primaryColor : undefined }}
-                  title={`发送消息 (${inputMessage.trim() ? '有内容' : '无内容'})`}
+                  style={{ backgroundColor: (inputMessage.trim() || selectedImages.length > 0) ? agent.ui.primaryColor : undefined }}
+                  title={`发送消息 (${inputMessage.trim() || selectedImages.length > 0 ? '有内容' : '无内容'})`}
                 >
                   <Send className="w-4 h-4" />
                   <span>发送</span>
@@ -540,6 +723,11 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
           </div>
         </div>
       </div>
+
+      <ImagePreview 
+        imageUrl={previewImage} 
+        onClose={() => setPreviewImage(null)} 
+      />
     </div>
   );
 };

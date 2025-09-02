@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
-import type { AgentConfig, ChatContext } from '../types/index.js';
+import type { AgentConfig, ChatContext, ImageData } from '../types/index.js';
 
 const API_BASE = '/api';
 
@@ -199,6 +199,7 @@ export const useAgentChat = () => {
     mutateAsync: async ({ 
       agentId,
       message, 
+      images,
       context, 
       sessionId,
       projectPath,
@@ -209,6 +210,7 @@ export const useAgentChat = () => {
     }: { 
       agentId: string;
       message: string; 
+      images?: ImageData[];
       context?: ChatContext; 
       sessionId?: string | null;
       projectPath?: string;
@@ -223,7 +225,7 @@ export const useAgentChat = () => {
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ agentId, message, context, sessionId, projectPath, mcpTools }),
+          body: JSON.stringify({ agentId, message, images, context, sessionId, projectPath, mcpTools }),
           signal: abortController?.signal
         });
 

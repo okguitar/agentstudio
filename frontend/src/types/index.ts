@@ -27,11 +27,19 @@ export interface ToolUsageData {
   claudeId?: string; // Claude's tool use ID for matching with results
 }
 
+export interface ImageData {
+  id: string;
+  data: string; // base64 encoded image data
+  mediaType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
+  filename?: string;
+}
+
 export interface MessagePart {
   id: string;
-  type: 'text' | 'tool';
+  type: 'text' | 'tool' | 'image';
   content?: string;
   toolData?: ToolUsageData;
+  imageData?: ImageData;
   order: number;
 }
 
@@ -40,6 +48,7 @@ export interface ChatMessage {
   content: string;
   role: 'user' | 'assistant';
   timestamp: Date;
+  images?: ImageData[];
   toolUsage?: ToolUsageData[];
   messageParts?: MessagePart[];
 }
@@ -126,6 +135,7 @@ export interface AgentMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp: number;
+  images?: ImageData[];
   messageParts?: MessagePart[];
   agentId: string;
 }

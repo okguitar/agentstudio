@@ -13,8 +13,16 @@ import { AgentConfig } from '../../shared/types/agents.js';
 const router = express.Router();
 
 // Validation schemas
+const ImageSchema = z.object({
+  id: z.string(),
+  data: z.string(), // base64 encoded image data
+  mediaType: z.enum(['image/jpeg', 'image/png', 'image/gif', 'image/webp']),
+  filename: z.string().optional()
+});
+
 const ChatRequestSchema = z.object({
-  message: z.string().min(1),
+  message: z.string(),
+  images: z.array(ImageSchema).optional(),
   agentId: z.string().min(1),
   sessionId: z.string().optional().nullable(),
   projectPath: z.string().optional(),
@@ -33,6 +41,8 @@ const ChatRequestSchema = z.object({
     allItems: z.array(z.any()).optional(),
     customContext: z.record(z.any()).optional()
   }).optional()
+}).refine(data => data.message.trim().length > 0 || (data.images && data.images.length > 0), {
+  message: "Either message text or images must be provided"
 });
 
 // Session storage directory (relative to working directory)
@@ -50,10 +60,22 @@ interface StoredMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp: number;
+  images?: Array<{
+    id: string;
+    data: string; // base64 encoded image data
+    mediaType: string;
+    filename?: string;
+  }>;
   messageParts?: Array<{
     id: string;
-    type: 'text' | 'tool';
+    type: 'text' | 'tool' | 'image';
     content?: string;
+    imageData?: {
+      id: string;
+      data: string;
+      mediaType: string;
+      filename?: string;
+    };
     toolData?: {
       id: string;
       toolName: string;
@@ -507,7 +529,7 @@ router.post('/chat', async (req, res) => {
       return res.status(400).json({ error: 'Invalid request body', details: validation.error });
     }
 
-    const { message, agentId, context, sessionId, projectPath, mcpTools } = validation.data;
+    const { message, images, agentId, context, sessionId, projectPath, mcpTools } = validation.data;
     
     // console.log('Received chat request with projectPath:', projectPath);
 
@@ -585,11 +607,17 @@ router.post('/chat', async (req, res) => {
       sessionTitle: currentSession.title 
     })}\n\n`);
 
-    // Store user message
-    agentStorage.addMessageToSession(agentId, currentSession.id, {
+    // Store user message with images
+    const userMessage: any = {
       role: 'user',
-      content: message
-    });
+      content: message || '发送了图片'
+    };
+    
+    if (images && images.length > 0) {
+      userMessage.images = images;
+    }
+    
+    agentStorage.addMessageToSession(agentId, currentSession.id, userMessage);
 
     // Track current assistant message to accumulate content
     let currentAssistantMessage: any = null;
@@ -669,11 +697,66 @@ router.post('/chat', async (req, res) => {
         queryOptions.resume = currentSession.claudeSessionId;
       }
 
-      for await (const sdkMessage of query({
-        prompt: message,
-        options: queryOptions
-      })) {
-        
+      // Check if we have images to use streaming input mode
+      if (images && images.length > 0) {
+        console.log('📸 Using streaming input mode for images:', images.map(img => ({
+          id: img.id,
+          mediaType: img.mediaType,
+          filename: img.filename,
+          size: img.data.length
+        })));
+
+        // Create async generator for streaming input with images
+        async function* generateMessages() {
+          const messageContent: any[] = [];
+          
+          // Add text content if provided
+          if (message && message.trim()) {
+            messageContent.push({
+              type: "text",
+              text: message
+            });
+          }
+          
+          // Add image content
+          for (const image of images!) {
+            messageContent.push({
+              type: "image",
+              source: {
+                type: "base64",
+                media_type: image.mediaType,
+                data: image.data
+              }
+            });
+          }
+          
+          yield {
+            type: "user" as const,
+            message: {
+              role: "user" as const,
+              content: messageContent
+            }
+          };
+        }
+
+        for await (const sdkMessage of query({
+          prompt: generateMessages() as any,
+          options: queryOptions
+        })) {
+          await processSDKMessage(sdkMessage);
+        }
+      } else {
+        // No images, use simple string prompt
+        for await (const sdkMessage of query({
+          prompt: message || '',
+          options: queryOptions
+        })) {
+          await processSDKMessage(sdkMessage);
+        }
+      }
+
+      // Function to process SDK messages (extracted to avoid duplication)
+      async function processSDKMessage(sdkMessage: any) {
         console.log('🔄 SDK Message type:', sdkMessage.type, (sdkMessage as any).subtype || '');
         
         // Store Claude session ID from first message
@@ -837,7 +920,6 @@ router.post('/chat', async (req, res) => {
             session.lastUpdated = Date.now();
             agentStorage.saveSession(session);
           }
-          break;
         }
       }
       

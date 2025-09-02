@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { MarkdownMessage } from './MarkdownMessage';
 import { ToolUsage } from './ToolUsage';
+import { ImagePreview } from './ImagePreview';
 import type { ChatMessage } from '../types/index';
 
 interface ChatMessageRendererProps {
@@ -8,6 +9,10 @@ interface ChatMessageRendererProps {
 }
 
 export const ChatMessageRenderer: React.FC<ChatMessageRendererProps> = ({ message }) => {
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+
+
   // Use messageParts if available, otherwise fall back to legacy content + toolUsage
   if (message.messageParts && message.messageParts.length > 0) {
     const sortedParts = [...message.messageParts].sort((a, b) => a.order - b.order);
@@ -36,9 +41,27 @@ export const ChatMessageRenderer: React.FC<ChatMessageRendererProps> = ({ messag
                 isExecuting={part.toolData.isExecuting}
               />
             );
+          } else if (part.type === 'image' && part.imageData) {
+            const imageUrl = `data:${part.imageData.mediaType};base64,${part.imageData.data}`;
+            return (
+              <div key={part.id} className="inline-block">
+                <img
+                  src={imageUrl}
+                  alt={part.imageData.filename || 'Image'}
+                  className="max-w-32 max-h-32 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity"
+                  onClick={() => setPreviewImage(imageUrl)}
+                  title={part.imageData.filename || 'Click to preview'}
+                />
+              </div>
+            );
           }
           return null;
         })}
+        
+        <ImagePreview 
+          imageUrl={previewImage} 
+          onClose={() => setPreviewImage(null)} 
+        />
       </div>
     );
   }
@@ -46,6 +69,25 @@ export const ChatMessageRenderer: React.FC<ChatMessageRendererProps> = ({ messag
   // Legacy fallback
   return (
     <div className="space-y-2">
+      {/* Images */}
+      {message.images && message.images.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {message.images.map((image) => {
+            const imageUrl = `data:${image.mediaType};base64,${image.data}`;
+            return (
+              <img
+                key={image.id}
+                src={imageUrl}
+                alt={image.filename || 'Image'}
+                className="max-w-32 max-h-32 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => setPreviewImage(imageUrl)}
+                title={image.filename || 'Click to preview'}
+              />
+            );
+          })}
+        </div>
+      )}
+      
       {/* Text content */}
       {message.content && (
         <div>
@@ -72,6 +114,11 @@ export const ChatMessageRenderer: React.FC<ChatMessageRendererProps> = ({ messag
           ))}
         </div>
       )}
+      
+      <ImagePreview 
+        imageUrl={previewImage} 
+        onClose={() => setPreviewImage(null)} 
+      />
     </div>
   );
 };
