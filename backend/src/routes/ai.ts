@@ -600,11 +600,19 @@ router.post('/chat', async (req, res) => {
         .map(tool => tool.name);
 
       // Use Claude Code SDK with agent-specific settings
+      // If projectPath is provided, use it as cwd; otherwise fall back to agent's workingDirectory
+      let cwd = process.cwd();
+      if (projectPath) {
+        cwd = projectPath;
+      } else if (agent.workingDirectory) {
+        cwd = path.resolve(process.cwd(), agent.workingDirectory);
+      }
+      
       const queryOptions: Options = {
         customSystemPrompt: systemPrompt,
         allowedTools,
         maxTurns: agent.maxTurns,
-        cwd: agent.workingDirectory ? path.resolve(process.cwd(), agent.workingDirectory) : process.cwd(),
+        cwd,
         permissionMode: agent.permissionMode as any
       };
 

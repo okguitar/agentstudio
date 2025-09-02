@@ -68,7 +68,16 @@ export const useSlides = (projectPath?: string) => {
         configUrl.searchParams.set('projectPath', projectPath);
       }
       const configResponse = await fetch(configUrl);
+      
+      // If slides.js doesn't exist, return empty slides response
       if (!configResponse.ok) {
+        if (configResponse.status === 404) {
+          return {
+            slides: [],
+            title: 'Presentation',
+            total: 0
+          };
+        }
         throw new Error('Failed to fetch slides configuration');
       }
       
@@ -142,6 +151,9 @@ export const useSlideContent = (slideIndex: number, projectPath?: string) => {
       }
       const configResponse = await fetch(configUrl);
       if (!configResponse.ok) {
+        if (configResponse.status === 404) {
+          throw new Error('No slides configuration found. Please create slides.js file first.');
+        }
         throw new Error('Failed to fetch slides configuration');
       }
       
@@ -191,6 +203,9 @@ export const useUpdateSlide = () => {
       }
       const configResponse = await fetch(configUrl);
       if (!configResponse.ok) {
+        if (configResponse.status === 404) {
+          throw new Error('No slides configuration found. Please create slides.js file first.');
+        }
         throw new Error('Failed to fetch slides configuration');
       }
       
