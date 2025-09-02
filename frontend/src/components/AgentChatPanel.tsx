@@ -349,6 +349,11 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
             <h1 className="text-lg font-semibold mb-1 flex items-center space-x-2">
               <span className="text-2xl">{agent.ui.icon}</span>
               <span>{agent.ui.headerTitle}</span>
+              {projectPath && (
+                <span className="text-xs opacity-75 font-normal truncate" title={projectPath}>
+                  📁 {projectPath.split('/').pop() || projectPath}
+                </span>
+              )}
             </h1>
             <p className="text-sm opacity-90">
               {currentSessionId ? 
@@ -356,11 +361,6 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
                 agent.ui.headerDescription
               }
             </p>
-            {projectPath && (
-              <p className="text-xs opacity-75 mt-1 truncate" title={projectPath}>
-                📁 {projectPath.split('/').pop() || projectPath}
-              </p>
-            )}
           </div>
           <div className="flex space-x-2 relative">
             <button
@@ -399,16 +399,8 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
       <div className="flex-1 px-5 py-5 overflow-y-auto space-y-4">
         {/* Welcome message */}
         <div className="px-4">
-          <div className="text-sm leading-relaxed break-words overflow-hidden text-gray-800">
-            <div className="flex items-start space-x-3">
-              <div className="text-2xl">{agent.ui.icon}</div>
-              <div className="flex-1">
-                <div className="font-medium text-gray-900 mb-2">{agent.name}</div>
-                <div className="text-gray-600">
-                  {agent.ui.welcomeMessage || agent.description}
-                </div>
-              </div>
-            </div>
+          <div className="text-sm leading-relaxed break-words overflow-hidden text-gray-600">
+            {agent.ui.welcomeMessage || agent.description}
           </div>
         </div>
         
