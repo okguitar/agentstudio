@@ -64,13 +64,11 @@ interface BaseToolProps {
   children?: React.ReactNode;
   subtitle?: string; // 显示关键信息的副标题
   showResult?: boolean; // 是否显示工具结果，默认true
+  isMcpTool?: boolean; // 标识是否为MCP工具
 }
 
-export const BaseToolComponent: React.FC<BaseToolProps> = ({ execution, children, subtitle, showResult = true }) => {
+export const BaseToolComponent: React.FC<BaseToolProps> = ({ execution, children, subtitle, showResult = true, isMcpTool = false }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  
-  // 检查是否是MCP工具
-  const isMcpTool = execution.toolName.startsWith('mcp__');
   
   // 为MCP工具使用不同的图标和颜色
   const Icon = isMcpTool 

@@ -45,6 +45,7 @@ export const McpTool: React.FC<McpToolProps> = ({ execution }) => {
       execution={modifiedExecution}
       subtitle={subtitle}
       showResult={false} // 我们自定义结果显示
+      isMcpTool={true} // 标识为MCP工具
     >
       <div className="space-y-3">
         {/* MCP工具标识 */}
@@ -56,15 +57,12 @@ export const McpTool: React.FC<McpToolProps> = ({ execution }) => {
           />
         </div>
 
-        {/* 工具输入参数 */}
-        {Object.entries(execution.toolInput).map(([key, value]) => (
-          <ToolInput 
-            key={key}
-            label={key}
-            value={value}
-            isCode={typeof value === 'object'}
-          />
-        ))}
+        {/* 工具输入参数 - 直接显示JSON */}
+        <ToolInput 
+          label="参数"
+          value={execution.toolInput}
+          isCode={true}
+        />
         
         {/* 工具执行结果 */}
         {execution.toolResult && (
