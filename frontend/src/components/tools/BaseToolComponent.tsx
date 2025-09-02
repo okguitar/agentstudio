@@ -16,7 +16,8 @@ import {
   Workflow,
   Loader2,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Link2  // 使用链接图标表示MCP协议连接
 } from 'lucide-react';
 import type { ToolExecution } from './types';
 
@@ -67,8 +68,18 @@ interface BaseToolProps {
 
 export const BaseToolComponent: React.FC<BaseToolProps> = ({ execution, children, subtitle, showResult = true }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const Icon = TOOL_ICONS[execution.toolName as keyof typeof TOOL_ICONS] || Terminal;
-  const colorClass = TOOL_COLORS[execution.toolName as keyof typeof TOOL_COLORS] || 'text-gray-600 bg-gray-100';
+  
+  // 检查是否是MCP工具
+  const isMcpTool = execution.toolName.startsWith('mcp__');
+  
+  // 为MCP工具使用不同的图标和颜色
+  const Icon = isMcpTool 
+    ? Link2 
+    : TOOL_ICONS[execution.toolName as keyof typeof TOOL_ICONS] || Terminal;
+  
+  const colorClass = isMcpTool 
+    ? 'text-blue-600 bg-blue-100' 
+    : TOOL_COLORS[execution.toolName as keyof typeof TOOL_COLORS] || 'text-gray-600 bg-gray-100';
 
 
   // 清理错误信息，移除 <tool_use_error> 标签
