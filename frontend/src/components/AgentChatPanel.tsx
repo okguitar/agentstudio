@@ -353,7 +353,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
             <p className="text-sm opacity-90">
               {currentSessionId ? 
                 (sessionsData?.sessions?.find((s: any) => s.id === currentSessionId)?.title || '当前会话') : 
-                (agent.ui.welcomeMessage || agent.ui.headerDescription)
+                agent.ui.headerDescription
               }
             </p>
             {projectPath && (
@@ -404,7 +404,9 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
               <div className="text-2xl">{agent.ui.icon}</div>
               <div className="flex-1">
                 <div className="font-medium text-gray-900 mb-2">{agent.name}</div>
-                <div className="text-gray-600">{agent.description}</div>
+                <div className="text-gray-600">
+                  {agent.ui.welcomeMessage || agent.description}
+                </div>
               </div>
             </div>
           </div>
