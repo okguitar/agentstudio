@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { AgentConfig, AgentSession, AgentMessage, BUILTIN_AGENTS } from '../types/agents.js';
+import { Options, query } from '@anthropic-ai/claude-code';
 
 export class AgentStorage {
   private agentsDir: string;
@@ -310,6 +311,120 @@ export class AgentStorage {
     }
   }
 
+  // Helper method to check if session title should be updated
+  private shouldUpdateTitle(title: string): boolean {
+    return title.includes('会话') && title.includes(new Date().toLocaleString().split(' ')[0]);
+  }
+
+  // Generate intelligent session title based on first user message using Claude Code SDK
+  private async updateSessionTitle(session: AgentSession): Promise<void> {
+    // Only update if it's still the default title
+    if (!this.shouldUpdateTitle(session.title)) {
+      return;
+    }
+    
+    // Find the first user message
+    const firstUserMessage = session.messages.find(msg => msg.role === 'user');
+    if (!firstUserMessage) {
+      return;
+    }
+
+    let userQuestion = '';
+    
+    // Extract text content from the message
+    if (firstUserMessage.content) {
+      userQuestion = firstUserMessage.content;
+    } else if (firstUserMessage.messageParts) {
+      userQuestion = firstUserMessage.messageParts
+        .filter(part => part.type === 'text')
+        .map(part => part.content)
+        .join(' ');
+    }
+
+    if (userQuestion) {
+      try {
+        // Use Claude Code SDK to generate a concise title
+        
+        const titlePrompt = `请为以下用户问题生成一个简洁的标题（不超过25个字符），用于会话列表显示：
+
+用户问题：${userQuestion}
+
+要求：
+1. 提取问题的核心要点
+2. 使用简洁明了的中文
+3. 不超过25个字符
+4. 不需要引号或其他标点符号
+5. 直接输出标题内容，不要任何前缀或后缀`;
+
+        const queryOptions: Options = {
+          customSystemPrompt: "你是一个专门生成简洁标题的助手。请直接输出标题内容，不要任何解释或格式化。",
+          allowedTools: [],  // No tools needed for title generation
+          maxTurns: 1,
+          cwd: process.cwd()
+        };
+
+        let generatedTitle = '';
+        
+        for await (const sdkMessage of query({
+          prompt: titlePrompt,
+          options: queryOptions
+        })) {
+          if (sdkMessage.type === 'assistant' && sdkMessage.message?.content) {
+            for (const block of sdkMessage.message.content) {
+              if (block.type === 'text') {
+                generatedTitle += block.text;
+              }
+            }
+          }
+        }
+        
+        if (generatedTitle.trim()) {
+          // Clean the generated title
+          let cleanTitle = generatedTitle.trim()
+            .replace(/^["'"']|["'"']$/g, '') // Remove quotes
+            .replace(/\n/g, ' ') // Replace newlines
+            .replace(/\s+/g, ' '); // Collapse spaces
+          
+          // Ensure it's not too long
+          if (cleanTitle.length > 30) {
+            cleanTitle = cleanTitle.substring(0, 27) + '...';
+          }
+          
+          session.title = cleanTitle;
+          console.log(`Generated title for session ${session.id}: "${cleanTitle}"`);
+        } else {
+          // Fallback to simple truncation if AI generation fails
+          this.fallbackTitleGeneration(session, userQuestion);
+        }
+      } catch (error) {
+        console.error('Failed to update session title with Claude SDK:', error);
+        // Fallback to simple truncation
+        this.fallbackTitleGeneration(session, userQuestion);
+      }
+    }
+  }
+
+  // Fallback title generation when Claude SDK fails
+  private fallbackTitleGeneration(session: AgentSession, userQuestion: string): void {
+    let fallbackTitle = userQuestion.trim()
+      .replace(/\n/g, ' ')
+      .replace(/\s+/g, ' ')
+      .substring(0, 25);
+    
+    // Take first sentence if it's reasonable
+    const firstSentence = fallbackTitle.split(/[.!?。！？]/)[0];
+    if (firstSentence.length > 8 && firstSentence.length < 25) {
+      fallbackTitle = firstSentence;
+    }
+    
+    if (fallbackTitle.length > 22) {
+      fallbackTitle = fallbackTitle.substring(0, 22) + '...';
+    }
+    
+    session.title = fallbackTitle;
+    console.log(`Fallback title for session ${session.id}: "${fallbackTitle}"`);
+  }
+
   addMessageToSession(agentId: string, sessionId: string, message: Omit<AgentMessage, 'id' | 'timestamp' | 'agentId'>): AgentMessage | null {
     const session = this.getSession(agentId, sessionId);
     if (!session) {
@@ -327,7 +442,20 @@ export class AgentStorage {
     session.messages.push(newMessage);
     session.lastUpdated = Date.now();
     
+    // Save session first, then update title asynchronously
     this.saveSession(session);
+    
+    // Update session title based on first user message (async, doesn't block)
+    if (message.role === 'user' && this.shouldUpdateTitle(session.title)) {
+      this.updateSessionTitle(session).then(() => {
+        // Save again after title is updated
+        this.saveSession(session);
+        console.log(`Session title updated to: "${session.title}"`);
+      }).catch(err => {
+        console.error('Failed to update session title:', err);
+      });
+    }
+    
     return newMessage;
   }
 }
