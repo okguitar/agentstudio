@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Plus, Eye, EyeOff, Search, Edit, Trash2, Save, X, Play } from 'lucide-react';
+import { Plus, Eye, EyeOff, Search, Edit, Trash2, Save, X, Play, Settings, Wrench, Tag } from 'lucide-react';
 import { useAgents, useUpdateAgent, useDeleteAgent, useCreateAgent } from '../hooks/useAgents';
 import { useQueryClient } from '@tanstack/react-query';
 import { ProjectSelector } from '../components/ProjectSelector';
+import { formatRelativeTime } from '../utils';
 import type { AgentConfig, AgentTool } from '../types/index.js';
 
 // 可用工具列表 - 与后端Claude Code SDK工具名称保持一致
@@ -240,7 +241,7 @@ export const AgentsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Agents List */}
+      {/* Agents Table */}
       {filteredAgents.length === 0 ? (
         <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
           <div className="text-6xl mb-4">🤖</div>
@@ -260,64 +261,107 @@ export const AgentsPage: React.FC = () => {
           )}
         </div>
       ) : (
-        <div className="bg-white rounded-lg border border-gray-200 divide-y divide-gray-200">
-          {filteredAgents.map((agent) => (
-            <div key={agent.id} className="p-6 hover:bg-gray-50 transition-colors">
-              <div className="flex items-start space-x-4">
-                {/* Agent Icon */}
-                <div className={`text-4xl ${!agent.enabled ? 'opacity-50' : ''}`}>
-                  {agent.ui.icon}
-                </div>
-                
-                {/* Agent Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                      <h3 className={`text-lg font-semibold ${
-                        agent.enabled ? 'text-gray-900' : 'text-gray-600'
-                      }`}>
-                        {agent.name}
-                      </h3>
-                      <p className={`text-sm mt-1 ${
-                        agent.enabled ? 'text-gray-600' : 'text-gray-500'
-                      }`}>
-                        {agent.description}
-                      </p>
-                      
-                      {/* Agent Details */}
-                      <div className="flex flex-wrap items-center gap-4 mt-3 text-sm text-gray-500">
-                        <div className="flex items-center space-x-1">
-                          <span>组件类型:</span>
-                          <span className={`px-2 py-1 text-xs rounded ${
-                            agent.ui.componentType === 'slides' ? 'bg-blue-100 text-blue-700' :
-                            agent.ui.componentType === 'code' ? 'bg-green-100 text-green-700' :
-                            agent.ui.componentType === 'documents' ? 'bg-purple-100 text-purple-700' :
-                            'bg-gray-100 text-gray-700'
-                          }`}>
-                            {agent.ui.componentType}
-                          </span>
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  智能助手
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  类型
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  配置
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  工具
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  状态
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  操作
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredAgents.map((agent) => (
+                <tr key={agent.id} className="hover:bg-gray-50 transition-colors">
+                  {/* Agent */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <div className={`text-2xl mr-4 ${!agent.enabled ? 'opacity-50' : ''}`}>
+                        {agent.ui.icon}
+                      </div>
+                      <div>
+                        <div className={`text-sm font-medium ${
+                          agent.enabled ? 'text-gray-900' : 'text-gray-600'
+                        }`}>
+                          {agent.name}
                         </div>
-                        <div className="flex items-center space-x-1">
-                          <span>最大轮次:</span>
-                          <span className="font-medium">25</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <span>权限模式:</span>
-                          <span className="font-medium">自动接受编辑</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <span>工具数量:</span>
-                          <span className="font-medium">
-                            {agent.ui.componentType === 'slides' ? '9' :
-                             agent.ui.componentType === 'code' ? '7' :
-                             agent.ui.componentType === 'documents' ? '6' : '5'}
-                          </span>
+                        <div className={`text-sm ${
+                          agent.enabled ? 'text-gray-500' : 'text-gray-400'
+                        }`}>
+                          {agent.description}
                         </div>
                       </div>
                     </div>
-                    
-                    {/* Action Buttons */}
-                    <div className="flex items-center space-x-2 ml-4">
+                  </td>
+
+                  {/* Type */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      agent.ui.componentType === 'slides' ? 'bg-blue-100 text-blue-800' :
+                      agent.ui.componentType === 'code' ? 'bg-green-100 text-green-800' :
+                      agent.ui.componentType === 'documents' ? 'bg-purple-100 text-purple-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {agent.ui.componentType}
+                    </span>
+                  </td>
+
+                  {/* Configuration */}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <div className="space-y-1">
+                      <div className="flex items-center">
+                        <Settings className="w-3 h-3 mr-1 text-gray-400" />
+                        <span>最大轮次: {agent.maxTurns || 25}</span>
+                      </div>
+                      <div className="flex items-center">
+                        <Wrench className="w-3 h-3 mr-1 text-gray-400" />
+                        <span>权限: {
+                          agent.permissionMode === 'default' ? '默认' :
+                          agent.permissionMode === 'acceptEdits' ? '自动接受编辑' :
+                          agent.permissionMode === 'bypassPermissions' ? '绕过权限' :
+                          agent.permissionMode === 'plan' ? '规划模式' : '默认'
+                        }</span>
+                      </div>
+                    </div>
+                  </td>
+
+                  {/* Tools */}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <div className="flex items-center">
+                      <Tag className="w-3 h-3 mr-1 text-gray-400" />
+                      <span>{agent.allowedTools?.length || 0} 个工具</span>
+                    </div>
+                  </td>
+
+                  {/* Status */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      agent.enabled 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {agent.enabled ? '已启用' : '已禁用'}
+                    </span>
+                  </td>
+
+                  {/* Actions */}
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <div className="flex items-center space-x-2">
                       {/* Start Using Button - Only show for enabled agents */}
                       {agent.enabled && (
                         <button
@@ -325,47 +369,47 @@ export const AgentsPage: React.FC = () => {
                             setSelectedAgentForStart(agent);
                             setShowProjectSelector(true);
                           }}
-                          className="flex items-center space-x-2 px-4 py-2 text-white rounded-lg transition-colors hover:opacity-90"
+                          className="flex items-center space-x-1 px-3 py-1 text-xs text-white rounded-md transition-colors hover:opacity-90"
                           style={{ backgroundColor: agent.ui.primaryColor }}
                           title="开始使用助手"
                         >
-                          <Play className="w-4 h-4" />
-                          <span>开始使用</span>
+                          <Play className="w-3 h-3" />
+                          <span>使用</span>
                         </button>
                       )}
                       
                       <button
                         onClick={() => handleToggleEnabled(agent)}
-                        className={`p-2 rounded-lg transition-colors ${
+                        className={`p-1 rounded transition-colors ${
                           agent.enabled
                             ? 'text-green-600 hover:bg-green-50'
                             : 'text-gray-400 hover:bg-gray-100'
                         }`}
-                        title={agent.enabled ? '隐藏助手' : '显示助手'}
+                        title={agent.enabled ? '禁用助手' : '启用助手'}
                       >
-                        {agent.enabled ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+                        {agent.enabled ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                       </button>
                       <button
                         onClick={() => handleEdit(agent)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
                         title="编辑助手"
                       >
-                        <Edit className="w-5 h-5" />
+                        <Edit className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDelete(agent)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
                         title="删除助手"
                         disabled={agent.id === 'ppt-editor' || agent.id === 'code-assistant' || agent.id === 'document-writer'}
                       >
-                        <Trash2 className="w-5 h-5" />
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 

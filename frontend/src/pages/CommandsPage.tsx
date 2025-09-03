@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { 
   Plus,
   Search,
-  Filter,
   Edit,
   Trash2,
   Globe,
@@ -19,7 +18,7 @@ import { CommandForm } from '../components/CommandForm';
 import { formatRelativeTime } from '../utils';
 
 export const CommandsPage: React.FC = () => {
-  const [filter, setFilter] = useState<SlashCommandFilter>({ scope: 'user' });
+  const [filter] = useState<SlashCommandFilter>({ scope: 'user' });
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingCommand, setEditingCommand] = useState<SlashCommand | null>(null);
@@ -107,21 +106,7 @@ export const CommandsPage: React.FC = () => {
                   className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
-              <div className="flex items-center space-x-2">
-                <Filter className="h-4 w-4 text-gray-500" />
-                <select
-                  value={filter.scope || 'all'}
-                  onChange={(e) => setFilter({ ...filter, scope: e.target.value as any })}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="all">全部</option>
-                  {COMMAND_SCOPES.map((scope) => (
-                    <option key={scope.value} value={scope.value}>
-                      {scope.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              
             </div>
           </div>
           <button
