@@ -16,6 +16,7 @@ import {
 import { SlashCommand, SlashCommandFilter, COMMAND_SCOPES } from '../types/commands';
 import { useCommands, useDeleteCommand } from '../hooks/useCommands';
 import { CommandForm } from '../components/CommandForm';
+import { formatRelativeTime } from '../utils';
 
 export const CommandsPage: React.FC = () => {
   const [filter, setFilter] = useState<SlashCommandFilter>({ scope: 'user' });
@@ -50,18 +51,7 @@ export const CommandsPage: React.FC = () => {
     return scope === 'project' ? Globe : User;
   };
 
-  const formatDate = (dateString: string | Date) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-    
-    if (diffInHours < 1) return '刚刚';
-    if (diffInHours < 24) return `${diffInHours}小时前`;
-    if (diffInHours < 48) return '昨天';
-    if (diffInHours < 24 * 7) return `${Math.floor(diffInHours / 24)}天前`;
-    
-    return date.toLocaleDateString('zh-CN');
-  };
+
 
   if (isLoading) {
     return (
@@ -274,7 +264,7 @@ export const CommandsPage: React.FC = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <div className="flex items-center space-x-1">
                           <Clock className="w-4 h-4" />
-                          <span>{formatDate(command.updatedAt)}</span>
+                          <span>{formatRelativeTime(command.updatedAt)}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

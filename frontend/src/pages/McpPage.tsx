@@ -8,8 +8,13 @@ import {
   CheckCircle,
   XCircle,
   Loader2,
-  AlertTriangle
+  AlertTriangle,
+  Edit,
+  Clock,
+  Terminal,
+  Tag
 } from 'lucide-react';
+import { formatRelativeTime } from '../utils';
 
 interface McpServerConfig {
   name: string;
@@ -334,143 +339,8 @@ export const McpPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Servers List */}
-      <div className="space-y-6">
-        {filteredServers.map((server) => (
-          <div key={server.name} className="bg-white rounded-lg border border-gray-200 p-6">
-                          <div className="flex items-start justify-between mb-4">
-                <div className="flex items-start space-x-4">
-                  <div className="p-3 bg-gray-100 rounded-lg">
-                    <Server className="w-6 h-6 text-gray-600" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-2">
-                      <h3 className="text-xl font-semibold text-gray-900">{server.name}</h3>
-                      {/* Status Indicator */}
-                      {server.status === 'active' && (
-                        <div className="flex items-center space-x-1 text-green-600">
-                          <CheckCircle className="w-5 h-5" />
-                          <span className="text-sm font-medium">可用</span>
-                        </div>
-                      )}
-                      {server.status === 'error' && (
-                        <div className="flex items-center space-x-1 text-red-600">
-                          <XCircle className="w-5 h-5" />
-                          <span className="text-sm font-medium">错误</span>
-                        </div>
-                      )}
-                      {server.status === 'validating' && (
-                        <div className="flex items-center space-x-1 text-blue-600">
-                          <Loader2 className="w-5 h-5 animate-spin" />
-                          <span className="text-sm font-medium">验证中</span>
-                        </div>
-                      )}
-                      {!server.status && (
-                        <div className="flex items-center space-x-1 text-gray-500">
-                          <AlertTriangle className="w-5 h-5" />
-                          <span className="text-sm font-medium">未验证</span>
-                        </div>
-                      )}
-                    </div>
-                  <div className="space-y-2 text-sm text-gray-600">
-                    <div className="flex items-center space-x-2">
-                      <span className="font-medium">命令:</span>
-                      <code className="px-2 py-1 bg-gray-100 rounded text-xs">{server.command}</code>
-                    </div>
-                    <div className="flex items-start space-x-2">
-                      <span className="font-medium">参数:</span>
-                      <div className="flex flex-wrap gap-1">
-                        {server.args.map((arg, idx) => (
-                          <code key={idx} className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs">
-                            {arg}
-                          </code>
-                        ))}
-                      </div>
-                    </div>
-                    {server.timeout && (
-                      <div className="flex items-center space-x-2">
-                        <span className="font-medium">超时:</span>
-                        <span>{server.timeout}ms</span>
-                      </div>
-                    )}
-                    {server.autoApprove && server.autoApprove.length > 0 && (
-                      <div className="flex items-start space-x-2">
-                        <span className="font-medium">自动批准:</span>
-                        <div className="flex flex-wrap gap-1">
-                          {server.autoApprove.map((item, idx) => (
-                            <code key={idx} className="px-2 py-1 bg-green-50 text-green-700 rounded text-xs">
-                              {item}
-                            </code>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Error Message */}
-                    {server.status === 'error' && server.error && (
-                      <div className="flex items-start space-x-2 mt-3 p-3 bg-red-50 rounded-lg">
-                        <XCircle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
-                        <div>
-                          <span className="font-medium text-red-800">配置错误:</span>
-                          <span className="text-red-700 ml-1">{server.error}</span>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Tools List */}
-                    {server.status === 'active' && server.tools && server.tools.length > 0 && (
-                      <div className="mt-3 p-3 bg-green-50 rounded-lg">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <CheckCircle className="w-4 h-4 text-green-600" />
-                          <span className="font-medium text-green-800">可用工具 ({server.tools.length})</span>
-                        </div>
-                        <div className="flex flex-wrap gap-1">
-                          {server.tools.map((tool, idx) => (
-                            <code key={idx} className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs">
-                              {tool}
-                            </code>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => validateMcpServer(server.name)}
-                  disabled={server.status === 'validating'}
-                  className="text-green-600 hover:bg-green-50 p-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="重新验证"
-                >
-                  {server.status === 'validating' ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <CheckCircle className="w-5 h-5" />
-                  )}
-                </button>
-                <button
-                  onClick={() => handleEditServer(server)}
-                  className="text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition-colors"
-                  title="编辑配置"
-                >
-                  <Settings className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={() => handleDeleteServer(server.name)}
-                  className="text-red-600 hover:bg-red-50 p-2 rounded-lg transition-colors"
-                  title="删除配置"
-                >
-                  <Trash2 className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {filteredServers.length === 0 && (
+      {/* Servers Table */}
+      {filteredServers.length === 0 ? (
         <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
           <div className="text-6xl mb-4">🖥️</div>
           <h3 className="text-xl font-medium text-gray-900 mb-2">
@@ -487,6 +357,177 @@ export const McpPage: React.FC = () => {
               添加服务
             </button>
           )}
+        </div>
+      ) : (
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    服务
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    状态
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    命令
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    可用工具
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    配置
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    操作
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredServers.map((server, index) => (
+                  <tr 
+                    key={server.name + '-' + index}
+                    className="hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="text-xl mr-3">🖥️</div>
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {server.name}
+                          </div>
+                          {server.status === 'error' && server.error && (
+                            <div className="text-sm text-red-600 truncate max-w-xs">
+                              {server.error}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {server.status === 'active' && (
+                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          可用
+                        </span>
+                      )}
+                      {server.status === 'error' && (
+                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
+                          <XCircle className="w-3 h-3 mr-1" />
+                          错误
+                        </span>
+                      )}
+                      {server.status === 'validating' && (
+                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                          <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                          验证中
+                        </span>
+                      )}
+                      {!server.status && (
+                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
+                          <AlertTriangle className="w-3 h-3 mr-1" />
+                          未验证
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center space-x-1 text-sm text-gray-500">
+                        <Terminal className="w-4 h-4" />
+                        <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">
+                          {server.command}
+                        </code>
+                      </div>
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {server.args.slice(0, 2).map((arg, idx) => (
+                          <code key={idx} className="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded text-xs">
+                            {arg}
+                          </code>
+                        ))}
+                        {server.args.length > 2 && (
+                          <span className="text-xs text-gray-400">+{server.args.length - 2}</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {server.status === 'active' && server.tools && server.tools.length > 0 ? (
+                        <div>
+                          <div className="flex items-center space-x-1 text-sm text-gray-500 mb-1">
+                            <Tag className="w-3 h-3" />
+                            <span>{server.tools.length} 个工具</span>
+                          </div>
+                          <div className="flex flex-wrap gap-1">
+                            {server.tools.slice(0, 3).map((tool, idx) => (
+                              <code key={idx} className="bg-green-50 text-green-700 px-1.5 py-0.5 rounded text-xs">
+                                {tool}
+                              </code>
+                            ))}
+                            {server.tools.length > 3 && (
+                              <span className="text-xs text-gray-400">+{server.tools.length - 3}</span>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-sm text-gray-400">
+                          {server.status === 'active' ? '无工具' : '-'}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-500">
+                        {server.timeout && (
+                          <div className="flex items-center space-x-1 mb-1">
+                            <Clock className="w-3 h-3" />
+                            <span>{server.timeout}ms</span>
+                          </div>
+                        )}
+                        {server.autoApprove && server.autoApprove.length > 0 && (
+                          <div className="flex items-center space-x-1">
+                            <CheckCircle className="w-3 h-3" />
+                            <span className="text-xs">自动批准 {server.autoApprove.length} 项</span>
+                          </div>
+                        )}
+                        {!server.timeout && (!server.autoApprove || server.autoApprove.length === 0) && (
+                          <span className="text-gray-400">默认配置</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex items-center justify-end space-x-2">
+                        <button
+                          onClick={() => validateMcpServer(server.name)}
+                          disabled={server.status === 'validating'}
+                          className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-600 bg-green-50 rounded-md hover:bg-green-100 transition-colors disabled:opacity-50"
+                          title="重新验证"
+                        >
+                          {server.status === 'validating' ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <CheckCircle className="w-3 h-3" />
+                          )}
+                        </button>
+                        <button
+                          onClick={() => handleEditServer(server)}
+                          className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors"
+                          title="编辑配置"
+                        >
+                          <Edit className="w-3 h-3 mr-1" />
+                          编辑
+                        </button>
+                        <button
+                          onClick={() => handleDeleteServer(server.name)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="删除配置"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

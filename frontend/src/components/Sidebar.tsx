@@ -63,7 +63,7 @@ const navigationItems = [
       },
       {
         name: '自定义命令',
-        href: '/commands',
+        href: '/settings/commands',
         icon: Command,
       },
       {

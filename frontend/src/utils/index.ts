@@ -1,4 +1,5 @@
 export * from './streamReader';
+export * from './dateFormat';
 
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';

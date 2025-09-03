@@ -12,6 +12,7 @@ import {
 import { Subagent } from '../../types/subagents';
 import { useSubagents, useDeleteSubagent } from '../../hooks/useSubagents';
 import { SubagentForm } from '../../components/SubagentForm';
+import { formatRelativeTime } from '../../utils';
 
 export const SubagentsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -48,18 +49,7 @@ export const SubagentsPage: React.FC = () => {
     refetch();
   };
 
-  const formatDate = (dateString: string | Date) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-    
-    if (diffInHours < 1) return '刚刚';
-    if (diffInHours < 24) return `${diffInHours}小时前`;
-    if (diffInHours < 48) return '昨天';
-    if (diffInHours < 24 * 7) return `${Math.floor(diffInHours / 24)}天前`;
-    
-    return date.toLocaleDateString('zh-CN');
-  };
+
 
   if (isLoading) {
     return (
@@ -236,13 +226,13 @@ export const SubagentsPage: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <div className="flex items-center space-x-1">
                         <Calendar className="w-4 h-4" />
-                        <span>{formatDate(subagent.createdAt)}</span>
+                        <span>{formatRelativeTime(subagent.createdAt)}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <div className="flex items-center space-x-1">
                         <Clock className="w-4 h-4" />
-                        <span>{formatDate(subagent.updatedAt)}</span>
+                        <span>{formatRelativeTime(subagent.updatedAt)}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

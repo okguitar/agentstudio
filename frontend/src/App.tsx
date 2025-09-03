@@ -35,7 +35,6 @@ const AppContent: React.FC = () => {
         <Route path="/" element={<Layout><DashboardPage /></Layout>} />
         <Route path="/agents" element={<Layout><AgentsPage /></Layout>} />
         <Route path="/projects" element={<Layout><ProjectsPage /></Layout>} />
-        <Route path="/commands" element={<Layout><CommandsPage /></Layout>} />
         <Route path="/mcp" element={<Layout><McpPage /></Layout>} />
         <Route path="/analytics" element={<Layout><AnalyticsPage /></Layout>} />
         <Route path="/settings" element={<Layout><SettingsLayout /></Layout>}>
@@ -43,6 +42,7 @@ const AppContent: React.FC = () => {
           <Route path="general" element={<GeneralSettingsPage />} />
           <Route path="versions" element={<VersionSettingsPage />} />
           <Route path="memory" element={<MemorySettingsPage />} />
+          <Route path="commands" element={<CommandsPage />} />
           <Route path="subagents" element={<SubagentsPage />} />
         </Route>
       </Routes>

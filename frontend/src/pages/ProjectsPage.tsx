@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useAgents } from '../hooks/useAgents';
 import { FileBrowser } from '../components/FileBrowser';
+import { formatRelativeTime } from '../utils';
 
 interface Project {
   id: string;
@@ -360,18 +361,7 @@ export const ProjectsPage: React.FC = () => {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-    
-    if (diffInHours < 1) return '刚刚';
-    if (diffInHours < 24) return `${diffInHours}小时前`;
-    if (diffInHours < 48) return '昨天';
-    if (diffInHours < 24 * 7) return `${Math.floor(diffInHours / 24)}天前`;
-    
-    return date.toLocaleDateString('zh-CN');
-  };
+
 
   if (loading) {
     return (
@@ -531,13 +521,13 @@ export const ProjectsPage: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <div className="flex items-center space-x-1">
                         <Calendar className="w-4 h-4" />
-                        <span>{formatDate(project.createdAt)}</span>
+                        <span>{formatRelativeTime(project.createdAt)}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <div className="flex items-center space-x-1">
                         <User className="w-4 h-4" />
-                        <span>{formatDate(project.lastAccessed)}</span>
+                        <span>{formatRelativeTime(project.lastAccessed)}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
