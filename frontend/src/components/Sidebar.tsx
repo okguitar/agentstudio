@@ -1,12 +1,18 @@
-import React from 'react';
-import { NavLink } from 'react-router-dom';
+import React, { useState } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Bot, 
   Server, 
   BarChart3, 
   Settings,
-  FolderOpen
+  FolderOpen,
+  Command,
+  ChevronDown,
+  ChevronRight,
+  Terminal,
+  Brain,
+  Palette
 } from 'lucide-react';
 
 const navigationItems = [
@@ -39,10 +45,129 @@ const navigationItems = [
     name: '系统设置',
     href: '/settings',
     icon: Settings,
+    submenu: [
+      {
+        name: '通用设置',
+        href: '/settings/general',
+        icon: Palette,
+      },
+      {
+        name: '版本管理',
+        href: '/settings/versions',
+        icon: Terminal,
+      },
+      {
+        name: '全局记忆',
+        href: '/settings/memory',
+        icon: Brain,
+      },
+      {
+        name: '自定义命令',
+        href: '/commands',
+        icon: Command,
+      },
+    ],
   },
 ];
 
 export const Sidebar: React.FC = () => {
+  const location = useLocation();
+  const [expandedMenus, setExpandedMenus] = useState<string[]>(() => {
+    // Auto-expand the settings menu if we're on a settings page
+    return location.pathname.startsWith('/settings') ? ['系统设置'] : [];
+  });
+
+  const toggleMenu = (itemName: string) => {
+    setExpandedMenus(prev => 
+      prev.includes(itemName) 
+        ? prev.filter(name => name !== itemName)
+        : [...prev, itemName]
+    );
+  };
+
+  const isMenuExpanded = (itemName: string) => expandedMenus.includes(itemName);
+  
+  const isItemActive = (href: string, hasSubmenu: boolean) => {
+    if (hasSubmenu) {
+      return location.pathname.startsWith(href);
+    }
+    return location.pathname === href || (href === '/' && location.pathname === '/');
+  };
+
+  const renderNavItem = (item: any) => {
+    const hasSubmenu = item.submenu && item.submenu.length > 0;
+    const isExpanded = isMenuExpanded(item.name);
+    const isActive = isItemActive(item.href, hasSubmenu);
+
+    if (hasSubmenu) {
+      return (
+        <li key={item.name}>
+          <div className="space-y-1">
+            {/* Parent Menu Item */}
+            <button
+              onClick={() => toggleMenu(item.name)}
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+                isActive
+                  ? 'bg-blue-50 text-blue-700'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              }`}
+            >
+              <item.icon className="w-5 h-5" />
+              <span className="font-medium flex-1 text-left">{item.name}</span>
+              {isExpanded ? (
+                <ChevronDown className="w-4 h-4" />
+              ) : (
+                <ChevronRight className="w-4 h-4" />
+              )}
+            </button>
+
+            {/* Submenu */}
+            {isExpanded && (
+              <ul className="ml-6 space-y-1">
+                {item.submenu.map((subItem: any) => (
+                  <li key={subItem.name}>
+                    <NavLink
+                      to={subItem.href}
+                      className={({ isActive }) =>
+                        `flex items-center space-x-3 px-4 py-2 rounded-lg transition-colors text-sm ${
+                          isActive
+                            ? 'bg-blue-100 text-blue-700'
+                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                        }`
+                      }
+                    >
+                      <subItem.icon className="w-4 h-4" />
+                      <span className="font-medium">{subItem.name}</span>
+                    </NavLink>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </li>
+      );
+    }
+
+    return (
+      <li key={item.name}>
+        <NavLink
+          to={item.href}
+          end={item.href === '/'}
+          className={({ isActive }) =>
+            `flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+              isActive
+                ? 'bg-blue-50 text-blue-700'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+            }`
+          }
+        >
+          <item.icon className="w-5 h-5" />
+          <span className="font-medium">{item.name}</span>
+        </NavLink>
+      </li>
+    );
+  };
+
   return (
     <div className="fixed top-0 left-0 w-64 bg-white shadow-sm border-r border-gray-200 flex flex-col h-screen z-40">
       {/* Logo */}
@@ -61,24 +186,7 @@ export const Sidebar: React.FC = () => {
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-4 pb-4">
         <ul className="space-y-2">
-          {navigationItems.map((item) => (
-            <li key={item.name}>
-              <NavLink
-                to={item.href}
-                end={item.href === '/'}
-                className={({ isActive }) =>
-                  `flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
-                    isActive
-                      ? 'bg-blue-50 text-blue-700'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                  }`
-                }
-              >
-                <item.icon className="w-5 h-5" />
-                <span className="font-medium">{item.name}</span>
-              </NavLink>
-            </li>
-          ))}
+          {navigationItems.map(renderNavItem)}
         </ul>
       </nav>
 
