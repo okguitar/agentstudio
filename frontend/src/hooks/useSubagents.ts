@@ -109,3 +109,156 @@ export const useDeleteSubagent = () => {
     },
   });
 };
+
+// Project-specific subagents
+const fetchProjectSubagents = async (projectId: string, filter: SubagentFilter = {}): Promise<Subagent[]> => {
+  // First get the project info to get the path
+  const projectResponse = await fetch(`/api/agents/projects`);
+  if (!projectResponse.ok) {
+    throw new Error('Failed to fetch project info');
+  }
+  const projectsData = await projectResponse.json();
+  const project = projectsData.projects.find((p: any) => p.id === projectId);
+  
+  if (!project) {
+    throw new Error('Project not found');
+  }
+
+  const params = new URLSearchParams();
+  params.append('projectPath', project.path);
+  if (filter.search) params.append('search', filter.search);
+
+  const response = await fetch(`${API_BASE}/subagents?${params}`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch project subagents');
+  }
+  return response.json();
+};
+
+export const useProjectSubagents = (filter: { projectId: string; search?: string }) => {
+  return useQuery({
+    queryKey: ['subagents', 'project', filter.projectId, filter.search],
+    queryFn: () => fetchProjectSubagents(filter.projectId, { search: filter.search }),
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+};
+
+// Project-specific subagent creation
+const createProjectSubagent = async (projectId: string, subagent: SubagentCreate): Promise<Subagent> => {
+  // First get the project info to get the path
+  const projectResponse = await fetch(`/api/agents/projects`);
+  if (!projectResponse.ok) {
+    throw new Error('Failed to fetch project info');
+  }
+  const projectsData = await projectResponse.json();
+  const project = projectsData.projects.find((p: any) => p.id === projectId);
+  
+  if (!project) {
+    throw new Error('Project not found');
+  }
+
+  const params = new URLSearchParams();
+  params.append('projectPath', project.path);
+
+  const response = await fetch(`${API_BASE}/subagents?${params}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(subagent),
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to create subagent');
+  }
+  return response.json();
+};
+
+// Project-specific subagent update
+const updateProjectSubagent = async (projectId: string, data: { id: string } & SubagentUpdate): Promise<Subagent> => {
+  // First get the project info to get the path
+  const projectResponse = await fetch(`/api/agents/projects`);
+  if (!projectResponse.ok) {
+    throw new Error('Failed to fetch project info');
+  }
+  const projectsData = await projectResponse.json();
+  const project = projectsData.projects.find((p: any) => p.id === projectId);
+  
+  if (!project) {
+    throw new Error('Project not found');
+  }
+
+  const { id, ...updates } = data;
+  const params = new URLSearchParams();
+  params.append('projectPath', project.path);
+
+  const response = await fetch(`${API_BASE}/subagents/${id}?${params}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(updates),
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to update subagent');
+  }
+  return response.json();
+};
+
+// Project-specific subagent deletion
+const deleteProjectSubagent = async (projectId: string, id: string): Promise<void> => {
+  // First get the project info to get the path
+  const projectResponse = await fetch(`/api/agents/projects`);
+  if (!projectResponse.ok) {
+    throw new Error('Failed to fetch project info');
+  }
+  const projectsData = await projectResponse.json();
+  const project = projectsData.projects.find((p: any) => p.id === projectId);
+  
+  if (!project) {
+    throw new Error('Project not found');
+  }
+
+  const params = new URLSearchParams();
+  params.append('projectPath', project.path);
+
+  const response = await fetch(`${API_BASE}/subagents/${id}?${params}`, {
+    method: 'DELETE',
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to delete subagent');
+  }
+};
+
+export const useCreateProjectSubagent = (projectId: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (subagent: SubagentCreate) => createProjectSubagent(projectId, subagent),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['subagents', 'project', projectId] });
+    },
+  });
+};
+
+export const useUpdateProjectSubagent = (projectId: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { id: string } & SubagentUpdate) => updateProjectSubagent(projectId, data),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['subagents', 'project', projectId] });
+      queryClient.invalidateQueries({ queryKey: ['subagent', data.id] });
+    },
+  });
+};
+
+export const useDeleteProjectSubagent = (projectId: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteProjectSubagent(projectId, id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['subagents', 'project', projectId] });
+    },
+  });
+};

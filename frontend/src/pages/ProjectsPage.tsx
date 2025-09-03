@@ -6,9 +6,12 @@ import {
   User,
   ExternalLink,
   Trash2,
-  Play,
   Folder,
-  X
+  X,
+  Settings,
+  Brain,
+  Command,
+  Bot
 } from 'lucide-react';
 import {
   Table,
@@ -21,6 +24,9 @@ import {
 import { useAgents } from '../hooks/useAgents';
 import { FileBrowser } from '../components/FileBrowser';
 import { formatRelativeTime } from '../utils';
+import { ProjectMemoryModal } from '../components/ProjectMemoryModal';
+import { ProjectCommandsModal } from '../components/ProjectCommandsModal';
+import { ProjectSubAgentsModal } from '../components/ProjectSubAgentsModal';
 
 interface Project {
   id: string;
@@ -251,6 +257,9 @@ export const ProjectsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterAgent, setFilterAgent] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [memoryProject, setMemoryProject] = useState<Project | null>(null);
+  const [commandsProject, setCommandsProject] = useState<Project | null>(null);
+  const [subAgentsProject, setSubAgentsProject] = useState<Project | null>(null);
 
   const agents = agentsData?.agents || [];
   const enabledAgents = agents.filter(agent => agent.enabled);
@@ -367,6 +376,18 @@ export const ProjectsPage: React.FC = () => {
         alert(`删除项目失败: ${error instanceof Error ? error.message : '未知错误'}`);
       }
     }
+  };
+
+  const handleMemoryManagement = (project: Project) => {
+    setMemoryProject(project);
+  };
+
+  const handleCommandManagement = (project: Project) => {
+    setCommandsProject(project);
+  };
+
+  const handleSubAgentManagement = (project: Project) => {
+    setSubAgentsProject(project);
   };
 
 
@@ -487,9 +508,21 @@ export const ProjectsPage: React.FC = () => {
                   <TableCell className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="text-xl mr-3">{project.agentIcon}</div>
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">
-                          {project.name}
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => handleOpenProject(project)}
+                            className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline cursor-pointer text-left"
+                          >
+                            {project.name}
+                          </button>
+                          <button
+                            onClick={() => handleOpenProject(project)}
+                            className="text-gray-500 hover:text-gray-700 transition-colors"
+                            title="打开项目"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                          </button>
                         </div>
                         {project.description && (
                           <div className="text-sm text-gray-500 truncate max-w-xs">
@@ -509,6 +542,7 @@ export const ProjectsPage: React.FC = () => {
                     >
                       {project.agentName}
                     </span>
+                    
                   </TableCell>
                   <TableCell className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center space-x-2 text-sm text-gray-500">
@@ -516,13 +550,6 @@ export const ProjectsPage: React.FC = () => {
                       <span className="truncate max-w-sm" title={project.path}>
                         {project.path}
                       </span>
-                      <button
-                        onClick={() => navigator.clipboard.writeText(project.path)}
-                        className="hover:text-gray-700 transition-colors"
-                        title="复制路径"
-                      >
-                        <ExternalLink className="w-3 h-3" />
-                      </button>
                     </div>
                   </TableCell>
                   <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -538,22 +565,34 @@ export const ProjectsPage: React.FC = () => {
                     </div>
                   </TableCell>
                   <TableCell className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex items-center justify-end space-x-2">
+                    <div className="flex items-center justify-end space-x-1">
                       <button
-                        onClick={() => handleOpenProject(project)}
-                        className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-white rounded-md hover:opacity-90 transition-colors"
-                        style={{ backgroundColor: project.agentColor }}
-                        title="打开项目"
+                        onClick={() => handleMemoryManagement(project)}
+                        className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
+                        title="记忆管理"
                       >
-                        <Play className="w-3 h-3 mr-1" />
-                        继续工作
+                        <Brain className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleCommandManagement(project)}
+                        className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
+                        title="命令管理"
+                      >
+                        <Command className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleSubAgentManagement(project)}
+                        className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
+                        title="子Agent管理"
+                      >
+                        <Bot className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => handleDeleteProject(project)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        className="p-1.5 text-red-600 hover:bg-red-50 rounded-md transition-colors"
                         title="删除项目"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </TableCell>
@@ -571,6 +610,30 @@ export const ProjectsPage: React.FC = () => {
         onConfirm={handleCreateProject}
         agents={enabledAgents}
       />
+
+      {/* Memory Management Modal */}
+      {memoryProject && (
+        <ProjectMemoryModal
+          project={memoryProject}
+          onClose={() => setMemoryProject(null)}
+        />
+      )}
+
+      {/* Commands Management Modal */}
+      {commandsProject && (
+        <ProjectCommandsModal
+          project={commandsProject}
+          onClose={() => setCommandsProject(null)}
+        />
+      )}
+
+      {/* SubAgents Management Modal */}
+      {subAgentsProject && (
+        <ProjectSubAgentsModal
+          project={subAgentsProject}
+          onClose={() => setSubAgentsProject(null)}
+        />
+      )}
     </div>
   );
 };

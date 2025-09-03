@@ -4,27 +4,29 @@ import {
   SlashCommand, 
   SlashCommandCreate, 
   SlashCommandUpdate} from '../types/commands';
-import { useCreateCommand, useUpdateCommand } from '../hooks/useCommands';
+import { useCreateCommand, useUpdateCommand, useCreateProjectCommand, useUpdateProjectCommand } from '../hooks/useCommands';
 import { ToolSelector } from './ui/ToolSelector';
 
 interface CommandFormProps {
   command?: SlashCommand | null;
+  projectId?: string; // Optional project ID for project-specific commands
   onClose: () => void;
   onSuccess: () => void;
 }
 
 export const CommandForm: React.FC<CommandFormProps> = ({
   command,
+  projectId,
   onClose,
   onSuccess,
 }) => {
   const [formData, setFormData] = useState<SlashCommandCreate>({
-    name: '',
-    description: '',
-    content: '',
-    scope: 'user',
-    namespace: '',
-    argumentHint: '',
+    name: command ? '' : 'optimize',
+    description: command ? '' : '优化代码性能和可读性',
+    content: command ? '' : '分析这段代码的性能问题并提供优化建议：\n\n使用参数：$ARGUMENTS\n使用第一个参数：$1\n使用第二个参数：$2\n\n引用文件：@src/utils/helpers.js\n执行命令：!`git status`',
+    scope: projectId ? 'project' : 'user',
+    namespace: command ? '' : 'frontend',
+    argumentHint: command ? '' : '[filename] [options]',
     allowedTools: [],
     model: '',
   });
@@ -34,8 +36,8 @@ export const CommandForm: React.FC<CommandFormProps> = ({
   const [rawContent, setRawContent] = useState('');
   const [useInheritModel, setUseInheritModel] = useState(true);
 
-  const createCommand = useCreateCommand();
-  const updateCommand = useUpdateCommand();
+  const createCommand = projectId ? useCreateProjectCommand(projectId) : useCreateCommand();
+  const updateCommand = projectId ? useUpdateProjectCommand(projectId) : useUpdateCommand();
 
   const isEditing = !!command;
 

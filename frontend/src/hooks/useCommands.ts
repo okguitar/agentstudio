@@ -122,3 +122,168 @@ export const useDeleteCommand = () => {
     },
   });
 };
+
+// Project-specific commands
+const fetchProjectCommands = async (projectId: string, filter: Omit<SlashCommandFilter, 'scope'> = {}): Promise<SlashCommand[]> => {
+  // First get the project info to get the path
+  const projectResponse = await fetch(`/api/agents/projects`);
+  if (!projectResponse.ok) {
+    throw new Error('Failed to fetch project info');
+  }
+  const projectsData = await projectResponse.json();
+  const project = projectsData.projects.find((p: any) => p.id === projectId);
+  
+  if (!project) {
+    throw new Error('Project not found');
+  }
+
+  const params = new URLSearchParams();
+  params.append('scope', 'project');
+  params.append('projectPath', project.path);
+  if (filter.namespace) params.append('namespace', filter.namespace);
+  if (filter.search) params.append('search', filter.search);
+
+  const response = await fetch(`${API_BASE}/commands?${params}`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch project commands');
+  }
+  return response.json();
+};
+
+export const useProjectCommands = (filter: { projectId: string; search?: string }) => {
+  return useQuery({
+    queryKey: ['commands', 'project', filter.projectId, filter.search],
+    queryFn: () => fetchProjectCommands(filter.projectId, { search: filter.search }),
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+};
+
+// Project-specific command creation
+const createProjectCommand = async (projectId: string, command: SlashCommandCreate): Promise<SlashCommand> => {
+  // First get the project info to get the path
+  const projectResponse = await fetch(`/api/agents/projects`);
+  if (!projectResponse.ok) {
+    throw new Error('Failed to fetch project info');
+  }
+  const projectsData = await projectResponse.json();
+  const project = projectsData.projects.find((p: any) => p.id === projectId);
+  
+  if (!project) {
+    throw new Error('Project not found');
+  }
+
+  const params = new URLSearchParams();
+  params.append('projectPath', project.path);
+
+  const response = await fetch(`${API_BASE}/commands?${params}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(command),
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to create command');
+  }
+  
+  return response.json();
+};
+
+// Project-specific command update
+const updateProjectCommand = async (projectId: string, data: { id: string; updates: SlashCommandUpdate }): Promise<SlashCommand> => {
+  // First get the project info to get the path
+  const projectResponse = await fetch(`/api/agents/projects`);
+  if (!projectResponse.ok) {
+    throw new Error('Failed to fetch project info');
+  }
+  const projectsData = await projectResponse.json();
+  const project = projectsData.projects.find((p: any) => p.id === projectId);
+  
+  if (!project) {
+    throw new Error('Project not found');
+  }
+
+  const { id, updates } = data;
+  const params = new URLSearchParams();
+  params.append('projectPath', project.path);
+
+  const response = await fetch(`${API_BASE}/commands/${encodeURIComponent(id)}?${params}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(updates),
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to update command');
+  }
+  
+  return response.json();
+};
+
+// Project-specific command deletion
+const deleteProjectCommand = async (projectId: string, id: string): Promise<void> => {
+  // First get the project info to get the path
+  const projectResponse = await fetch(`/api/agents/projects`);
+  if (!projectResponse.ok) {
+    throw new Error('Failed to fetch project info');
+  }
+  const projectsData = await projectResponse.json();
+  const project = projectsData.projects.find((p: any) => p.id === projectId);
+  
+  if (!project) {
+    throw new Error('Project not found');
+  }
+
+  const params = new URLSearchParams();
+  params.append('projectPath', project.path);
+
+  const response = await fetch(`${API_BASE}/commands/${encodeURIComponent(id)}?${params}`, {
+    method: 'DELETE',
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to delete command');
+  }
+};
+
+export const useCreateProjectCommand = (projectId: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (command: SlashCommandCreate) => createProjectCommand(projectId, command),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['commands', 'project', projectId] });
+    },
+  });
+};
+
+export const useUpdateProjectCommand = (projectId: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: { id: string; updates: SlashCommandUpdate }) =>
+      updateProjectCommand(projectId, data),
+    onSuccess: (updatedCommand) => {
+      queryClient.invalidateQueries({ queryKey: ['commands', 'project', projectId] });
+      queryClient.setQueryData(['commands', updatedCommand.id], updatedCommand);
+    },
+  });
+};
+
+export const useDeleteProjectCommand = (projectId: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => deleteProjectCommand(projectId, id),
+    onSuccess: (_, deletedId) => {
+      queryClient.invalidateQueries({ queryKey: ['commands', 'project', projectId] });
+      queryClient.removeQueries({ queryKey: ['commands', deletedId] });
+    },
+  });
+};

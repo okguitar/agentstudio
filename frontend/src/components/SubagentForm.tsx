@@ -5,17 +5,19 @@ import {
   SubagentCreate, 
   SubagentUpdate,
   SUBAGENT_SCOPES} from '../types/subagents';
-import { useCreateSubagent, useUpdateSubagent } from '../hooks/useSubagents';
+import { useCreateSubagent, useUpdateSubagent, useCreateProjectSubagent, useUpdateProjectSubagent } from '../hooks/useSubagents';
 import { ToolSelector } from './ui/ToolSelector';
 
 interface SubagentFormProps {
   subagent?: Subagent | null;
+  projectId?: string; // Optional project ID for project-specific subagents
   onClose: () => void;
   onSuccess: () => void;
 }
 
 export const SubagentForm: React.FC<SubagentFormProps> = ({
   subagent,
+  projectId,
   onClose,
   onSuccess,
 }) => {
@@ -23,7 +25,7 @@ export const SubagentForm: React.FC<SubagentFormProps> = ({
     name: '',
     description: '',
     content: '',
-    scope: 'user',
+    scope: projectId ? 'project' : 'user',
     tools: [],
   });
 
@@ -31,8 +33,8 @@ export const SubagentForm: React.FC<SubagentFormProps> = ({
   const [isCodeMode, setIsCodeMode] = useState(false);
   const [rawContent, setRawContent] = useState('');
 
-  const createSubagent = useCreateSubagent();
-  const updateSubagent = useUpdateSubagent();
+  const createSubagent = projectId ? useCreateProjectSubagent(projectId) : useCreateSubagent();
+  const updateSubagent = projectId ? useUpdateProjectSubagent(projectId) : useUpdateSubagent();
 
   const isEditing = !!subagent;
 
@@ -312,15 +314,19 @@ tools: read_file, write, search_replace
                     </label>
                     <select
                       value={formData.scope}
-                      onChange={(e) => setFormData(prev => ({ ...prev, scope: e.target.value as 'user' }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      onChange={(e) => setFormData(prev => ({ ...prev, scope: e.target.value as 'user' | 'project' }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-100"
                       disabled
                     >
-                      {SUBAGENT_SCOPES.map(scope => (
-                        <option key={scope.value} value={scope.value}>
-                          {scope.label}
-                        </option>
-                      ))}
+                      {projectId ? (
+                        <option value="project">项目 Subagent</option>
+                      ) : (
+                        SUBAGENT_SCOPES.map(scope => (
+                          <option key={scope.value} value={scope.value}>
+                            {scope.label}
+                          </option>
+                        ))
+                      )}
                     </select>
                   </div>
                 </div>

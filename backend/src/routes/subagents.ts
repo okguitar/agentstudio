@@ -16,6 +16,14 @@ const stat = promisify(fs.stat);
 // Get user subagents directory (~/.claude/agents)
 const getUserSubagentsDir = () => path.join(process.env.HOME || process.env.USERPROFILE || '', '.claude', 'agents');
 
+// Get project subagents directory (.claude/agents)
+const getProjectSubagentsDir = (projectPath?: string) => {
+  if (projectPath) {
+    return path.join(projectPath, '.claude', 'agents');
+  }
+  return path.join(process.cwd(), '..', '.claude', 'agents');
+};
+
 // Ensure directory exists
 async function ensureDir(dirPath: string) {
   try {
@@ -119,8 +127,16 @@ router.get('/', async (req, res) => {
     const filter: SubagentFilter = {
       search: req.query.search as string
     };
+    const projectPath = req.query.projectPath as string;
 
-    let subagents = await scanSubagents(getUserSubagentsDir());
+    let subagents;
+    if (projectPath) {
+      // Get project-specific subagents
+      subagents = await scanSubagents(getProjectSubagentsDir(projectPath));
+    } else {
+      // Get user subagents
+      subagents = await scanSubagents(getUserSubagentsDir());
+    }
 
     // Apply search filter
     if (filter.search) {
@@ -191,8 +207,8 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Missing required fields: name, description, content' });
     }
 
-    if (subagentData.scope !== 'user') {
-      return res.status(400).json({ error: 'Invalid scope. Must be "user"' });
+    if (!['user', 'project'].includes(subagentData.scope)) {
+      return res.status(400).json({ error: 'Invalid scope. Must be "user" or "project"' });
     }
 
     // Validate name format (lowercase letters and hyphens only)
@@ -201,7 +217,18 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Name must contain only lowercase letters, numbers, and hyphens' });
     }
 
-    const dirPath = getUserSubagentsDir();
+    const projectPath = req.query.projectPath as string;
+    let dirPath: string;
+    
+    if (subagentData.scope === 'project') {
+      if (!projectPath) {
+        return res.status(400).json({ error: 'Project path is required for project scope' });
+      }
+      dirPath = getProjectSubagentsDir(projectPath);
+    } else {
+      dirPath = getUserSubagentsDir();
+    }
+    
     const filePath = path.join(dirPath, subagentData.name + '.md');
 
     // Check if subagent already exists
@@ -222,11 +249,11 @@ router.post('/', async (req, res) => {
     // Return created subagent
     const stats = await stat(filePath);
     const subagent: Subagent = {
-      id: `user:${subagentData.name}`,
+      id: `${subagentData.scope}:${subagentData.name}`,
       name: subagentData.name,
       description: subagentData.description,
       content: subagentData.content,
-      scope: 'user',
+      scope: subagentData.scope,
       tools: subagentData.tools,
       createdAt: stats.birthtime,
       updatedAt: stats.mtime
@@ -246,11 +273,22 @@ router.put('/:id', async (req, res) => {
     const updateData: SubagentUpdate = req.body;
     const [scope, name] = id.split(':');
     
-    if (scope !== 'user') {
+    if (!['user', 'project'].includes(scope)) {
       return res.status(400).json({ error: 'Invalid subagent scope' });
     }
 
-    const dirPath = getUserSubagentsDir();
+    const projectPath = req.query.projectPath as string;
+    let dirPath: string;
+    
+    if (scope === 'project') {
+      if (!projectPath) {
+        return res.status(400).json({ error: 'Project path is required for project scope' });
+      }
+      dirPath = getProjectSubagentsDir(projectPath);
+    } else {
+      dirPath = getUserSubagentsDir();
+    }
+    
     const filePath = path.join(dirPath, name + '.md');
 
     try {
@@ -270,7 +308,7 @@ router.put('/:id', async (req, res) => {
         name: parsed.frontmatter.name || name,
         description: parsed.frontmatter.description || '',
         content: parsed.body,
-        scope: 'user',
+        scope: scope as 'user' | 'project',
         tools: parsed.frontmatter.tools ? 
           parsed.frontmatter.tools.split(',').map((s: string) => s.trim()) : undefined,
         createdAt: stats.birthtime,
@@ -293,11 +331,22 @@ router.delete('/:id', async (req, res) => {
     const { id } = req.params;
     const [scope, name] = id.split(':');
     
-    if (scope !== 'user') {
+    if (!['user', 'project'].includes(scope)) {
       return res.status(400).json({ error: 'Invalid subagent scope' });
     }
 
-    const dirPath = getUserSubagentsDir();
+    const projectPath = req.query.projectPath as string;
+    let dirPath: string;
+    
+    if (scope === 'project') {
+      if (!projectPath) {
+        return res.status(400).json({ error: 'Project path is required for project scope' });
+      }
+      dirPath = getProjectSubagentsDir(projectPath);
+    } else {
+      dirPath = getUserSubagentsDir();
+    }
+    
     const filePath = path.join(dirPath, name + '.md');
 
     try {

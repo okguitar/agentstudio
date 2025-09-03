@@ -14,7 +14,12 @@ const unlink = promisify(fs.unlink);
 const stat = promisify(fs.stat);
 
 // Get project commands directory (.claude/commands)
-const getProjectCommandsDir = () => path.join(process.cwd(), '..', '.claude', 'commands');
+const getProjectCommandsDir = (projectPath?: string) => {
+  if (projectPath) {
+    return path.join(projectPath, '.claude', 'commands');
+  }
+  return path.join(process.cwd(), '..', '.claude', 'commands');
+};
 
 // Get user commands directory (~/.claude/commands)
 const getUserCommandsDir = () => path.join(process.env.HOME || process.env.USERPROFILE || '', '.claude', 'commands');
@@ -65,7 +70,10 @@ function formatCommandContent(command: SlashCommandCreate | SlashCommandUpdate, 
   if (Object.keys(frontmatter).length > 0) {
     content += '---\n';
     for (const [key, value] of Object.entries(frontmatter)) {
-      content += `${key}: ${value}\n`;
+      // Quote values that contain special YAML characters
+      const shouldQuote = typeof value === 'string' && (/[[\]{}:>|*&!%@`]/.test(value) || value.includes('#') || value.trim() !== value);
+      const formattedValue = shouldQuote ? `"${value.replace(/"/g, '\\"')}"` : value;
+      content += `${key}: ${formattedValue}\n`;
     }
     content += '---\n\n';
   }
@@ -135,12 +143,13 @@ router.get('/', async (req, res) => {
       namespace: req.query.namespace as string,
       search: req.query.search as string
     };
+    const projectPath = req.query.projectPath as string;
 
     let commands: SlashCommand[] = [];
 
     // Scan project commands
     if (filter.scope === 'all' || filter.scope === 'project') {
-      const projectCommands = await scanCommands(getProjectCommandsDir(), 'project');
+      const projectCommands = await scanCommands(getProjectCommandsDir(projectPath), 'project');
       commands.push(...projectCommands);
     }
 
@@ -183,6 +192,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    const projectPath = req.query.projectPath as string;
     const [scope, ...nameParts] = id.split(':');
     const fullName = nameParts.join(':');
     
@@ -190,7 +200,7 @@ router.get('/:id', async (req, res) => {
       return res.status(400).json({ error: 'Invalid command scope' });
     }
 
-    const baseDir = scope === 'project' ? getProjectCommandsDir() : getUserCommandsDir();
+    const baseDir = scope === 'project' ? getProjectCommandsDir(projectPath) : getUserCommandsDir();
     const filePath = path.join(baseDir, fullName + '.md');
 
     try {
@@ -231,6 +241,7 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const commandData: SlashCommandCreate = req.body;
+    const projectPath = req.query.projectPath as string;
 
     if (!commandData.name || !commandData.content || !commandData.scope) {
       return res.status(400).json({ error: 'Missing required fields: name, content, scope' });
@@ -240,7 +251,7 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Invalid scope. Must be "project" or "user"' });
     }
 
-    const baseDir = commandData.scope === 'project' ? getProjectCommandsDir() : getUserCommandsDir();
+    const baseDir = commandData.scope === 'project' ? getProjectCommandsDir(projectPath) : getUserCommandsDir();
     const fileName = commandData.namespace 
       ? path.join(commandData.namespace, commandData.name + '.md')
       : commandData.name + '.md';
@@ -289,6 +300,7 @@ router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const updateData: SlashCommandUpdate = req.body;
+    const projectPath = req.query.projectPath as string;
     const [scope, ...nameParts] = id.split(':');
     const fullName = nameParts.join(':');
     
@@ -296,7 +308,7 @@ router.put('/:id', async (req, res) => {
       return res.status(400).json({ error: 'Invalid command scope' });
     }
 
-    const baseDir = scope === 'project' ? getProjectCommandsDir() : getUserCommandsDir();
+    const baseDir = scope === 'project' ? getProjectCommandsDir(projectPath) : getUserCommandsDir();
     const oldFilePath = path.join(baseDir, fullName + '.md');
 
     try {
@@ -380,6 +392,7 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    const projectPath = req.query.projectPath as string;
     const [scope, ...nameParts] = id.split(':');
     const fullName = nameParts.join(':');
     
@@ -387,7 +400,7 @@ router.delete('/:id', async (req, res) => {
       return res.status(400).json({ error: 'Invalid command scope' });
     }
 
-    const baseDir = scope === 'project' ? getProjectCommandsDir() : getUserCommandsDir();
+    const baseDir = scope === 'project' ? getProjectCommandsDir(projectPath) : getUserCommandsDir();
     const filePath = path.join(baseDir, fullName + '.md');
 
     try {
