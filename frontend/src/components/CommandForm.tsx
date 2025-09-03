@@ -9,6 +9,7 @@ import {
   COMMON_TOOLS
 } from '../types/commands';
 import { useCreateCommand, useUpdateCommand } from '../hooks/useCommands';
+import { ToolSelector } from './ui/ToolSelector';
 
 interface CommandFormProps {
   command?: SlashCommand | null;
@@ -33,8 +34,6 @@ export const CommandForm: React.FC<CommandFormProps> = ({
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [showToolInput, setShowToolInput] = useState(false);
-  const [newTool, setNewTool] = useState('');
   const [isCodeMode, setIsCodeMode] = useState(false);
   const [rawContent, setRawContent] = useState('');
   const [useInheritModel, setUseInheritModel] = useState(true);
@@ -211,6 +210,7 @@ export const CommandForm: React.FC<CommandFormProps> = ({
           argumentHint: submitData.argumentHint,
           allowedTools: submitData.allowedTools,
           model: submitData.model,
+          namespace: submitData.namespace,
         };
         await updateCommand.mutateAsync({ id: command.id, updates: updateData });
       } else {
@@ -223,31 +223,6 @@ export const CommandForm: React.FC<CommandFormProps> = ({
     }
   };
 
-  const handleAddTool = () => {
-    if (newTool.trim() && !formData.allowedTools.includes(newTool.trim())) {
-      setFormData({
-        ...formData,
-        allowedTools: [...formData.allowedTools, newTool.trim()]
-      });
-      setNewTool('');
-    }
-  };
-
-  const handleRemoveTool = (tool: string) => {
-    setFormData({
-      ...formData,
-      allowedTools: formData.allowedTools.filter(t => t !== tool)
-    });
-  };
-
-  const handleAddCommonTool = (tool: string) => {
-    if (!formData.allowedTools.includes(tool)) {
-      setFormData({
-        ...formData,
-        allowedTools: [...formData.allowedTools, tool]
-      });
-    }
-  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -486,77 +461,13 @@ model: claude-3-5-sonnet-20241022
 
             {/* Allowed Tools */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                允许的工具
-              </label>
-              
-              {/* Current Tools */}
-              {formData.allowedTools.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {formData.allowedTools.map((tool) => (
-                    <span
-                      key={tool}
-                      className="inline-flex items-center space-x-1 bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm"
-                    >
-                      <span>{tool}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveTool(tool)}
-                        className="hover:bg-blue-200 rounded-full p-0.5"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              {/* Common Tools */}
-              <div className="mb-3">
-                <p className="text-sm text-gray-600 mb-2">常用工具：</p>
-                <div className="flex flex-wrap gap-2">
-                  {COMMON_TOOLS.map((tool) => (
-                    <button
-                      key={tool}
-                      type="button"
-                      onClick={() => handleAddCommonTool(tool)}
-                      disabled={formData.allowedTools.includes(tool)}
-                      className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed rounded border"
-                    >
-                      {tool}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Custom Tool Input */}
-              <div className="flex items-end space-x-2">
-                <div className="flex-1">
-                  <input
-                    type="text"
-                    value={newTool}
-                    onChange={(e) => setNewTool(e.target.value)}
-                    placeholder="Bash(git add:*)"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={handleAddTool}
-                  disabled={!newTool.trim()}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
-                >
-                  添加
-                </button>
-              </div>
-              
-              <div className="mt-1 flex items-start space-x-1 text-sm text-gray-500">
-                <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                <span>
-                  指定命令可以使用的工具。格式如 "Bash(git add:*)" 表示只允许特定的 bash 命令。
-                  留空则继承对话权限。
-                </span>
-              </div>
+              <ToolSelector
+                selectedTools={formData.allowedTools}
+                onChange={(tools) => setFormData({ ...formData, allowedTools: tools as string[] })}
+                label="允许的工具"
+                emptyText="留空则继承对话权限"
+                useAgentTool={false}
+              />
             </div>
 
             {/* Command Content */}

@@ -371,13 +371,7 @@ export const McpPage: React.FC = () => {
                     状态
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    命令
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     可用工具
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    配置
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     操作
@@ -431,93 +425,26 @@ export const McpPage: React.FC = () => {
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center space-x-1 text-sm text-gray-500">
-                        <Terminal className="w-4 h-4" />
-                        <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">
-                          {server.command}
-                        </code>
-                      </div>
-                      <div className="mt-1 flex flex-wrap gap-1">
-                        {server.args.slice(0, 2).map((arg, idx) => (
-                          <code key={idx} className="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded text-xs">
-                            {arg}
-                          </code>
-                        ))}
-                        {server.args.length > 2 && (
-                          <span className="text-xs text-gray-400">+{server.args.length - 2}</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4">
                       {server.status === 'active' && server.tools && server.tools.length > 0 ? (
-                        <div className="relative group">
+                        <div>
                           <div className="flex items-center space-x-1 text-sm text-gray-500 mb-1">
                             <Tag className="w-3 h-3" />
                             <span>{server.tools.length} 个工具</span>
                           </div>
                           <div className="flex flex-wrap gap-1">
-                            {server.tools.slice(0, 3).map((tool, idx) => (
+                            {server.tools.map((tool, idx) => (
                               <code key={idx} className="bg-green-50 text-green-700 px-1.5 py-0.5 rounded text-xs">
                                 {tool}
                               </code>
                             ))}
-                            {server.tools.length > 3 && (
-                              <span 
-                                className="text-xs text-gray-400 cursor-help"
-                                title={`更多工具: ${server.tools.slice(3).join(', ')}`}
-                              >
-                                +{server.tools.length - 3}
-                              </span>
-                            )}
                           </div>
-                          
-                          {/* Hover 提示框 - 当工具数量超过 3 个时显示 */}
-                          {server.tools.length > 3 && (
-                            <div className="fixed hidden group-hover:block pointer-events-none" 
-                                 style={{
-                                   zIndex: 9999,
-                                   left: '50%',
-                                   top: '50%',
-                                   transform: 'translate(-50%, -50%)'
-                                 }}>
-                              <div className="bg-black bg-opacity-95 text-white text-xs rounded-lg p-4 shadow-2xl max-w-md border border-gray-600">
-                                <div className="font-medium mb-3 text-center">所有可用工具 ({server.tools.length})</div>
-                                <div className="flex flex-wrap gap-1.5 justify-center">
-                                  {server.tools.map((tool, idx) => (
-                                    <code key={idx} className="bg-white bg-opacity-25 px-2 py-1 rounded text-xs whitespace-nowrap">
-                                      {tool}
-                                    </code>
-                                  ))}
-                                </div>
-                              </div>
-                            </div>
-                          )}
                         </div>
                       ) : (
                         <span className="text-sm text-gray-400">
                           {server.status === 'active' ? '无工具' : '-'}
                         </span>
                       )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">
-                        {server.timeout && (
-                          <div className="flex items-center space-x-1 mb-1">
-                            <Clock className="w-3 h-3" />
-                            <span>{server.timeout}ms</span>
-                          </div>
-                        )}
-                        {server.autoApprove && server.autoApprove.length > 0 && (
-                          <div className="flex items-center space-x-1">
-                            <CheckCircle className="w-3 h-3" />
-                            <span className="text-xs">自动批准 {server.autoApprove.length} 项</span>
-                          </div>
-                        )}
-                        {!server.timeout && (!server.autoApprove || server.autoApprove.length === 0) && (
-                          <span className="text-gray-400">默认配置</span>
-                        )}
-                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end space-x-2">

@@ -6,13 +6,13 @@ import {
   Trash2,
   AlertCircle,
   Calendar,
-  Wrench,
-  Clock
+  Tag
 } from 'lucide-react';
 import { Subagent } from '../../types/subagents';
 import { useSubagents, useDeleteSubagent } from '../../hooks/useSubagents';
 import { SubagentForm } from '../../components/SubagentForm';
 import { formatRelativeTime } from '../../utils';
+import { getToolDisplayName } from '../../../shared/utils/toolMapping';
 
 export const SubagentsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -153,16 +153,10 @@ export const SubagentsPage: React.FC = () => {
                     Subagent
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    类型
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     工具
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     创建时间
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    更新时间
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     操作
@@ -190,49 +184,29 @@ export const SubagentsPage: React.FC = () => {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
-                        用户级别
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center space-x-2 text-sm text-gray-500">
-                        <Wrench className="w-4 h-4" />
-                        <span>
-                          {subagent.tools && subagent.tools.length > 0 
-                            ? `${subagent.tools.length} 个工具`
-                            : '无限制'
-                          }
-                        </span>
-                      </div>
-                      {subagent.tools && subagent.tools.length > 0 && (
-                        <div className="mt-1 flex flex-wrap gap-1">
-                          {subagent.tools.slice(0, 2).map((tool, toolIndex) => (
-                            <span
-                              key={toolIndex}
-                              className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700"
-                            >
-                              {tool}
-                            </span>
-                          ))}
-                          {subagent.tools.length > 2 && (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
-                              +{subagent.tools.length - 2}
-                            </span>
-                          )}
+                    <td className="px-6 py-4">
+                      {subagent.tools && subagent.tools.length > 0 ? (
+                        <div>
+                          <div className="flex items-center space-x-1 text-sm text-gray-500 mb-1">
+                            <Tag className="w-3 h-3" />
+                            <span>{subagent.tools.length} 个工具</span>
+                          </div>
+                          <div className="flex flex-wrap gap-1">
+                            {subagent.tools.map((tool, toolIndex) => (
+                              <code key={toolIndex} className="bg-green-50 text-green-700 px-1.5 py-0.5 rounded text-xs">
+                                {getToolDisplayName(tool)}
+                              </code>
+                            ))}
+                          </div>
                         </div>
+                      ) : (
+                        <span className="text-sm text-gray-500">继承对话设置</span>
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <div className="flex items-center space-x-1">
                         <Calendar className="w-4 h-4" />
                         <span>{formatRelativeTime(subagent.createdAt)}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <div className="flex items-center space-x-1">
-                        <Clock className="w-4 h-4" />
-                        <span>{formatRelativeTime(subagent.updatedAt)}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

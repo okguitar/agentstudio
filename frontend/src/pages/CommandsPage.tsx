@@ -16,6 +16,7 @@ import { SlashCommand, SlashCommandFilter, COMMAND_SCOPES } from '../types/comma
 import { useCommands, useDeleteCommand } from '../hooks/useCommands';
 import { CommandForm } from '../components/CommandForm';
 import { formatRelativeTime } from '../utils';
+import { getToolDisplayName } from '../../shared/utils/toolMapping';
 
 export const CommandsPage: React.FC = () => {
   const [filter] = useState<SlashCommandFilter>({ scope: 'user' });
@@ -157,16 +158,13 @@ export const CommandsPage: React.FC = () => {
                     命令
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    作用域
+                    模型
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    模型/工具
+                    工具
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    命名空间
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    更新时间
+                    创建时间
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     操作
@@ -186,7 +184,7 @@ export const CommandsPage: React.FC = () => {
                           <div className="text-xl mr-3">⚡</div>
                           <div>
                             <div className="text-sm font-medium text-gray-900">
-                              /{command.name}
+                              {command.namespace ? `/${command.namespace}:${command.name}` : `/${command.name}`}
                               {command.argumentHint && (
                                 <code className="ml-2 bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded text-xs">
                                   {command.argumentHint}
@@ -201,55 +199,39 @@ export const CommandsPage: React.FC = () => {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span 
-                          className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
-                            command.scope === 'project' 
-                              ? 'bg-blue-100 text-blue-800' 
-                              : 'bg-green-100 text-green-800'
-                          }`}
-                        >
-                          <ScopeIcon className="w-3 h-3 mr-1" />
-                          {COMMAND_SCOPES.find(s => s.value === command.scope)?.label}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex flex-col gap-1">
-                          {command.model && (
-                            <div className="flex items-center space-x-1 text-sm text-gray-500">
-                              <Code className="w-3 h-3" />
-                              <span className="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded text-xs">
-                                {command.model}
-                              </span>
-                            </div>
-                          )}
-                          {command.allowedTools && command.allowedTools.length > 0 && (
-                            <div className="flex items-center space-x-1 text-sm text-gray-500">
-                              <Tag className="w-3 h-3" />
-                              <span className="bg-green-100 text-green-800 px-1.5 py-0.5 rounded text-xs">
-                                {command.allowedTools.length} 工具
-                              </span>
-                            </div>
-                          )}
-                          {!command.model && (!command.allowedTools || command.allowedTools.length === 0) && (
-                            <span className="text-sm text-gray-400">无限制</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {command.namespace ? (
-                          <div className="flex items-center space-x-1 text-sm text-gray-500">
-                            <Folder className="w-4 h-4" />
-                            <span>{command.namespace}</span>
+                      <td className="px-6 py-4">
+                        {command.model ? (
+                          <div className="text-sm text-gray-900">
+                            <Code className="w-3 h-3 inline mr-1" />
+                            {command.model}
                           </div>
                         ) : (
-                          <span className="text-sm text-gray-400">根目录</span>
+                          <span className="text-sm text-gray-500">继承对话设置</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        {command.allowedTools && command.allowedTools.length > 0 ? (
+                          <div>
+                            <div className="flex items-center space-x-1 text-sm text-gray-500 mb-1">
+                              <Tag className="w-3 h-3" />
+                              <span>{command.allowedTools.length} 个工具</span>
+                            </div>
+                            <div className="flex flex-wrap gap-1">
+                              {command.allowedTools.map((tool, idx) => (
+                                <code key={idx} className="bg-green-50 text-green-700 px-1.5 py-0.5 rounded text-xs">
+                                  {getToolDisplayName(tool)}
+                                </code>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-gray-500">继承对话设置</span>
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <div className="flex items-center space-x-1">
                           <Clock className="w-4 h-4" />
-                          <span>{formatRelativeTime(command.updatedAt)}</span>
+                          <span>{formatRelativeTime(command.createdAt || command.updatedAt)}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

@@ -29,6 +29,7 @@ export interface SlashCommandUpdate {
   argumentHint?: string;
   allowedTools?: string[];
   model?: string;
+  namespace?: string;
 }
 
 export interface SlashCommandFilter {

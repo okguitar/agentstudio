@@ -3,26 +3,10 @@ import { Plus, Eye, EyeOff, Search, Edit, Trash2, Save, X, Play, Settings, Wrenc
 import { useAgents, useUpdateAgent, useDeleteAgent, useCreateAgent } from '../hooks/useAgents';
 import { useQueryClient } from '@tanstack/react-query';
 import { ProjectSelector } from '../components/ProjectSelector';
+import { ToolSelector } from '../components/ui/ToolSelector';
 import { formatRelativeTime } from '../utils';
 import type { AgentConfig, AgentTool } from '../types/index.js';
 
-// 可用工具列表 - 与后端Claude Code SDK工具名称保持一致
-const AVAILABLE_TOOLS = [
-  { name: 'Bash', label: '终端命令', description: '执行命令行操作' },
-  { name: 'Edit', label: '文件编辑', description: '编辑文件内容' },
-  { name: 'MultiEdit', label: '多文件编辑', description: '批量编辑多个文件' },
-  { name: 'Read', label: '读取文件', description: '读取文件内容' },
-  { name: 'Write', label: '写入文件', description: '创建或覆盖文件' },
-  { name: 'LS', label: '目录列表', description: '列出目录内容' },
-  { name: 'Glob', label: '文件搜索', description: '使用通配符搜索文件' },
-  { name: 'Grep', label: '文本搜索', description: '在文件中搜索文本' },
-  { name: 'NotebookRead', label: '笔记本读取', description: '读取Jupyter笔记本' },
-  { name: 'NotebookEdit', label: '笔记本编辑', description: '编辑Jupyter笔记本' },
-  { name: 'WebFetch', label: '网页获取', description: '获取网页内容' },
-  { name: 'WebSearch', label: '网络搜索', description: '搜索网络信息' },
-  { name: 'TodoWrite', label: '任务管理', description: '创建和管理待办事项' },
-  { name: 'Task', label: '任务执行', description: '执行复杂任务' }
-] as const;
 
 export const AgentsPage: React.FC = () => {
   const { data: agentsData, isLoading } = useAgents();
@@ -37,8 +21,6 @@ export const AgentsPage: React.FC = () => {
   const [selectedAgentForStart, setSelectedAgentForStart] = useState<AgentConfig | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState<'all' | 'enabled' | 'disabled'>('all');
-  const [showToolSelector, setShowToolSelector] = useState(false);
-  const [selectedToolsToAdd, setSelectedToolsToAdd] = useState<string[]>([]);
 
   const agents = agentsData?.agents || [];
   const filteredAgents = agents.filter(agent => {
@@ -533,93 +515,11 @@ export const AgentsPage: React.FC = () => {
                 </div>
 
                 {/* Allowed Tools */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">启用的工具</label>
-                  <div className="min-h-[80px] border border-gray-300 rounded-lg p-3">
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      {editForm.allowedTools?.map((tool: AgentTool) => {
-                        const toolInfo = AVAILABLE_TOOLS.find(t => t.name === tool.name);
-                        return (
-                          <span
-                            key={tool.name}
-                            className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
-                          >
-                            <span>{toolInfo?.label || tool.name}</span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEditForm({
-                                  ...editForm,
-                                  allowedTools: editForm.allowedTools?.filter((t: AgentTool) => t.name !== tool.name) || []
-                                });
-                              }}
-                              className="ml-2 hover:bg-blue-200 rounded-full p-0.5 transition-colors"
-                              title="移除工具"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          </span>
-                        );
-                      })}
-                      
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const availableTools = AVAILABLE_TOOLS.filter(tool => 
-                            !editForm.allowedTools?.some((t: AgentTool) => t.name === tool.name)
-                          );
-                          
-                          if (availableTools.length === 0) {
-                            alert('所有工具都已添加');
-                            return;
-                          }
-                          
-                          setSelectedToolsToAdd([]);
-                          setShowToolSelector(true);
-                        }}
-                        className="inline-flex items-center px-3 py-1 rounded-full text-sm border-2 border-dashed border-gray-300 text-gray-600 bg-white hover:border-gray-400 hover:text-gray-700 transition-colors"
-                      >
-                        <Plus className="w-3 h-3 mr-1" />
-                        <span>添加工具</span>
-                      </button>
-                    </div>
-                    
-                    {(!editForm.allowedTools || editForm.allowedTools.length === 0) && (
-                      <div className="text-center py-4 text-gray-500">
-                        <p className="text-sm">还未选择任何工具</p>
-                        <p className="text-xs">点击"+ 添加工具"开始选择</p>
-                      </div>
-                    )}
-                    
-                    <div className="flex items-center justify-between pt-2 border-t border-gray-200">
-                      <span className="text-xs text-gray-500">
-                        已选择 {editForm.allowedTools?.length || 0} / {AVAILABLE_TOOLS.length} 个工具
-                      </span>
-                      <div className="flex space-x-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const allTools: AgentTool[] = AVAILABLE_TOOLS.map(tool => ({
-                              name: tool.name,
-                              enabled: true
-                            }));
-                            setEditForm({ ...editForm, allowedTools: allTools });
-                          }}
-                          className="text-xs px-2 py-1 text-blue-600 hover:bg-blue-50 rounded"
-                        >
-                          全选
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setEditForm({ ...editForm, allowedTools: [] })}
-                          className="text-xs px-2 py-1 text-gray-600 hover:bg-gray-50 rounded"
-                        >
-                          清空
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <ToolSelector
+                  selectedTools={editForm.allowedTools || []}
+                  onChange={(tools) => setEditForm({ ...editForm, allowedTools: tools as AgentTool[] })}
+                  useAgentTool={true}
+                />
 
                 {/* System Prompt */}
                 <div>
@@ -638,94 +538,6 @@ export const AgentsPage: React.FC = () => {
         </div>
       )}
 
-      {/* Tool Selector Modal */}
-      {showToolSelector && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
-          <div className="bg-white rounded-lg max-w-md w-full mx-4 max-h-[70vh] overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">选择要添加的工具</h3>
-              <button
-                onClick={() => setShowToolSelector(false)}
-                className="p-1 hover:bg-gray-100 rounded"
-              >
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
-            </div>
-            
-            <div className="p-4 max-h-80 overflow-y-auto">
-              <div className="space-y-3">
-                {AVAILABLE_TOOLS.map((tool) => {
-                  const isCurrentlyEnabled = editForm.allowedTools?.some((t: AgentTool) => t.name === tool.name) || false;
-                  const isSelectedToAdd = selectedToolsToAdd.includes(tool.name);
-                  const isChecked = isCurrentlyEnabled || isSelectedToAdd;
-                  
-                  return (
-                    <label key={tool.name} className={`flex items-start space-x-3 cursor-pointer ${isCurrentlyEnabled ? 'opacity-60' : ''}`}>
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        disabled={isCurrentlyEnabled}
-                        onChange={(e) => {
-                          if (!isCurrentlyEnabled) {
-                            if (e.target.checked) {
-                              setSelectedToolsToAdd([...selectedToolsToAdd, tool.name]);
-                            } else {
-                              setSelectedToolsToAdd(selectedToolsToAdd.filter(name => name !== tool.name));
-                            }
-                          }
-                        }}
-                        className="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className={`text-sm font-medium ${isCurrentlyEnabled ? 'text-gray-500' : 'text-gray-900'}`}>
-                          {tool.label}
-                          {isCurrentlyEnabled && <span className="ml-2 text-xs text-blue-600">(已添加)</span>}
-                        </div>
-                        <div className="text-xs text-gray-500">{tool.description}</div>
-                      </div>
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
-            
-            <div className="flex items-center justify-between p-4 border-t border-gray-200">
-              <span className="text-sm text-gray-500">
-                已选择 {selectedToolsToAdd.length} 个工具
-              </span>
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => setShowToolSelector(false)}
-                  className="px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
-                >
-                  取消
-                </button>
-                <button
-                  onClick={() => {
-                    if (selectedToolsToAdd.length > 0) {
-                      const newTools: AgentTool[] = selectedToolsToAdd.map(name => ({
-                        name,
-                        enabled: true
-                      }));
-                      
-                      setEditForm({
-                        ...editForm,
-                        allowedTools: [...(editForm.allowedTools || []), ...newTools]
-                      });
-                    }
-                    setShowToolSelector(false);
-                    setSelectedToolsToAdd([]);
-                  }}
-                  disabled={selectedToolsToAdd.length === 0}
-                  className="px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  添加 ({selectedToolsToAdd.length})
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Project Selection Modal */}
       {showProjectSelector && selectedAgentForStart && (

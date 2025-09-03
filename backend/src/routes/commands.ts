@@ -58,6 +58,7 @@ function formatCommandContent(command: SlashCommandCreate | SlashCommandUpdate, 
   if (command.argumentHint) frontmatter['argument-hint'] = command.argumentHint;
   if (command.allowedTools) frontmatter['allowed-tools'] = command.allowedTools.join(', ');
   if (command.model) frontmatter.model = command.model;
+  if ('namespace' in command && command.namespace !== undefined) frontmatter.namespace = command.namespace;
 
   // Build content
   let content = '';
@@ -296,31 +297,67 @@ router.put('/:id', async (req, res) => {
     }
 
     const baseDir = scope === 'project' ? getProjectCommandsDir() : getUserCommandsDir();
-    const filePath = path.join(baseDir, fullName + '.md');
+    const oldFilePath = path.join(baseDir, fullName + '.md');
 
     try {
       // Read existing content
-      const existingContent = await readFile(filePath, 'utf-8');
+      const existingContent = await readFile(oldFilePath, 'utf-8');
+      
+      // Parse existing command to get current namespace and name
+      const pathParts = fullName.split('/');
+      const commandName = pathParts.pop()!;
+      const currentNamespace = pathParts.length > 0 ? pathParts.join('/') : undefined;
+      
+      // Determine new namespace (from update data or keep current)
+      const newNamespace = updateData.namespace !== undefined ? updateData.namespace || undefined : currentNamespace;
       
       // Format updated content
       const content = formatCommandContent(updateData, existingContent);
-      await writeFile(filePath, content, 'utf-8');
+      
+      // Check if namespace changed - if so, we need to move the file
+      let newFilePath = oldFilePath;
+      let newId = id;
+      
+      if (newNamespace !== currentNamespace) {
+        const newFileName = newNamespace 
+          ? path.join(newNamespace, commandName + '.md')
+          : commandName + '.md';
+        newFilePath = path.join(baseDir, newFileName);
+        newId = `${scope}:${newNamespace ? newNamespace + '/' : ''}${commandName}`;
+        
+        // Ensure new directory exists
+        await ensureDir(path.dirname(newFilePath));
+        
+        // Check if target file already exists
+        try {
+          await stat(newFilePath);
+          if (newFilePath !== oldFilePath) {
+            return res.status(409).json({ error: 'A command with this namespace and name already exists' });
+          }
+        } catch {
+          // File doesn't exist, good to proceed
+        }
+      }
+      
+      // Write to new location
+      await writeFile(newFilePath, content, 'utf-8');
+      
+      // If file location changed, remove old file
+      if (newFilePath !== oldFilePath) {
+        await unlink(oldFilePath);
+      }
 
       // Return updated command
       const parsed = parseCommandContent(content);
-      const stats = await stat(filePath);
-      
-      const pathParts = fullName.split('/');
-      const commandName = pathParts.pop()!;
-      const namespace = pathParts.length > 0 ? pathParts.join('/') : undefined;
+      const stats = await stat(newFilePath);
 
       const command: SlashCommand = {
-        id,
+        id: newId,
         name: commandName,
         description: parsed.frontmatter.description || parsed.body.split('\n')[0] || '',
         content: parsed.body,
         scope: scope as 'project' | 'user',
-        namespace,
+        namespace: newNamespace,
         argumentHint: parsed.frontmatter['argument-hint'],
         allowedTools: parsed.frontmatter['allowed-tools'] ? 
           parsed.frontmatter['allowed-tools'].split(',').map((s: string) => s.trim()) : undefined,
