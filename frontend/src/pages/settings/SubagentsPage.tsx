@@ -4,11 +4,10 @@ import {
   Search,
   Edit,
   Trash2,
-  Bot,
-  User,
   AlertCircle,
   Calendar,
-  Wrench
+  Wrench,
+  Clock
 } from 'lucide-react';
 import { Subagent } from '../../types/subagents';
 import { useSubagents, useDeleteSubagent } from '../../hooks/useSubagents';
@@ -49,12 +48,25 @@ export const SubagentsPage: React.FC = () => {
     refetch();
   };
 
+  const formatDate = (dateString: string | Date) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+    
+    if (diffInHours < 1) return '刚刚';
+    if (diffInHours < 24) return `${diffInHours}小时前`;
+    if (diffInHours < 48) return '昨天';
+    if (diffInHours < 24 * 7) return `${Math.floor(diffInHours / 24)}天前`;
+    
+    return date.toLocaleDateString('zh-CN');
+  };
+
   if (isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-gray-50">
+      <div className="p-8 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent mx-auto mb-4" />
-          <p className="text-gray-600">加载中...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="text-gray-600">正在加载 Subagents...</div>
         </div>
       </div>
     );
@@ -62,7 +74,7 @@ export const SubagentsPage: React.FC = () => {
 
   if (error) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-gray-50">
+      <div className="p-8 flex items-center justify-center">
         <div className="text-center">
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">加载失败</h3>
@@ -79,9 +91,9 @@ export const SubagentsPage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="p-8">
       {/* Header */}
-      <div>
+      <div className="mb-8">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Subagent 管理</h1>
@@ -116,125 +128,149 @@ export const SubagentsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Subagents List */}
-      <div className="space-y-4">
-        {subagents.length === 0 ? (
-          <div className="text-center py-12">
-            <Bot className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              {searchTerm ? '未找到匹配的 Subagents' : '还没有 Subagents'}
-            </h3>
-            <p className="text-gray-600 mb-6">
-              {searchTerm 
-                ? '请尝试使用不同的关键词搜索'
-                : '创建你的第一个专门的 AI 子代理来处理特定任务'
-              }
-            </p>
-            {!searchTerm && (
-              <button
-                onClick={() => {
-                  setEditingSubagent(null);
-                  setShowForm(true);
-                }}
-                className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors mx-auto"
-              >
-                <Plus className="h-4 w-4" />
-                <span>创建 Subagent</span>
-              </button>
-            )}
-          </div>
-        ) : (
-          <div className="grid gap-4">
-            {subagents.map((subagent) => (
-              <div
-                key={subagent.id}
-                className="bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow"
-              >
-                <div className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          {subagent.name}
-                        </h3>
-                        <div className="flex items-center space-x-2">
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
-                            <User className="h-3 w-3 mr-1" />
-                            个人
-                          </span>
-                        </div>
-                      </div>
-                      
-                      <p className="text-gray-600 mb-3">
-                        {subagent.description}
-                      </p>
-
-                      <div className="flex items-center space-x-4 text-sm text-gray-500">
-                        <div className="flex items-center space-x-1">
-                          <Calendar className="h-4 w-4" />
-                          <span>
-                            创建于 {new Date(subagent.createdAt).toLocaleDateString('zh-CN')}
-                          </span>
-                        </div>
-                        {subagent.tools && subagent.tools.length > 0 && (
-                          <div className="flex items-center space-x-1">
-                            <Wrench className="h-4 w-4" />
-                            <span>{subagent.tools.length} 个工具</span>
+      {/* Subagents Table */}
+      {subagents.length === 0 ? (
+        <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
+          <div className="text-6xl mb-4">🤖</div>
+          <h3 className="text-xl font-medium text-gray-900 mb-2">
+            {searchTerm ? '未找到匹配的 Subagents' : '还没有 Subagents'}
+          </h3>
+          <p className="text-gray-600 mb-6">
+            {searchTerm 
+              ? '尝试调整搜索条件'
+              : '创建你的第一个专门的 AI 子代理来处理特定任务'
+            }
+          </p>
+          {!searchTerm && (
+            <button
+              onClick={() => {
+                setEditingSubagent(null);
+                setShowForm(true);
+              }}
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              新建 Subagent
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Subagent
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    类型
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    工具
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    创建时间
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    更新时间
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    操作
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {subagents.map((subagent, index) => (
+                  <tr 
+                    key={subagent.id + '-' + index}
+                    className="hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="text-xl mr-3">🤖</div>
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {subagent.name}
                           </div>
-                        )}
+                          {subagent.description && (
+                            <div className="text-sm text-gray-500 truncate max-w-xs">
+                              {subagent.description}
+                            </div>
+                          )}
+                        </div>
                       </div>
-
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                        用户级别
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center space-x-2 text-sm text-gray-500">
+                        <Wrench className="w-4 h-4" />
+                        <span>
+                          {subagent.tools && subagent.tools.length > 0 
+                            ? `${subagent.tools.length} 个工具`
+                            : '无限制'
+                          }
+                        </span>
+                      </div>
                       {subagent.tools && subagent.tools.length > 0 && (
-                        <div className="mt-3">
-                          <div className="flex flex-wrap gap-1">
-                            {subagent.tools.slice(0, 5).map((tool, index) => (
-                              <span
-                                key={index}
-                                className="inline-flex items-center px-2 py-1 rounded-md text-xs bg-gray-100 text-gray-700"
-                              >
-                                {tool}
-                              </span>
-                            ))}
-                            {subagent.tools.length > 5 && (
-                              <span className="inline-flex items-center px-2 py-1 rounded-md text-xs bg-gray-100 text-gray-700">
-                                +{subagent.tools.length - 5} 更多
-                              </span>
-                            )}
-                          </div>
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {subagent.tools.slice(0, 2).map((tool, toolIndex) => (
+                            <span
+                              key={toolIndex}
+                              className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700"
+                            >
+                              {tool}
+                            </span>
+                          ))}
+                          {subagent.tools.length > 2 && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
+                              +{subagent.tools.length - 2}
+                            </span>
+                          )}
                         </div>
                       )}
-                    </div>
-
-                    <div className="flex items-center space-x-2 ml-4">
-                      <button
-                        onClick={() => handleEdit(subagent)}
-                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="编辑"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => setShowDeleteConfirm(subagent)}
-                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title="删除"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* System prompt preview */}
-                  <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                    <p className="text-sm text-gray-600 line-clamp-3">
-                      {subagent.content}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <div className="flex items-center space-x-1">
+                        <Calendar className="w-4 h-4" />
+                        <span>{formatDate(subagent.createdAt)}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <div className="flex items-center space-x-1">
+                        <Clock className="w-4 h-4" />
+                        <span>{formatDate(subagent.updatedAt)}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex items-center justify-end space-x-2">
+                        <button
+                          onClick={() => handleEdit(subagent)}
+                          className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors"
+                          title="编辑 Subagent"
+                        >
+                          <Edit className="w-3 h-3 mr-1" />
+                          编辑
+                        </button>
+                        <button
+                          onClick={() => setShowDeleteConfirm(subagent)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="删除 Subagent"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Form Modal */}
       {showForm && (
