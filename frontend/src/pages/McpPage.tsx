@@ -451,7 +451,7 @@ export const McpPage: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {server.status === 'active' && server.tools && server.tools.length > 0 ? (
-                        <div>
+                        <div className="relative group">
                           <div className="flex items-center space-x-1 text-sm text-gray-500 mb-1">
                             <Tag className="w-3 h-3" />
                             <span>{server.tools.length} 个工具</span>
@@ -463,9 +463,30 @@ export const McpPage: React.FC = () => {
                               </code>
                             ))}
                             {server.tools.length > 3 && (
-                              <span className="text-xs text-gray-400">+{server.tools.length - 3}</span>
+                              <span 
+                                className="text-xs text-gray-400 cursor-help"
+                                title={`更多工具: ${server.tools.slice(3).join(', ')}`}
+                              >
+                                +{server.tools.length - 3}
+                              </span>
                             )}
                           </div>
+                          
+                          {/* Hover 提示框 - 当工具数量超过 3 个时显示 */}
+                          {server.tools.length > 3 && (
+                            <div className="absolute left-0 top-full mt-2 z-50 hidden group-hover:block">
+                              <div className="bg-black bg-opacity-90 text-white text-xs rounded-lg p-3 shadow-lg max-w-sm">
+                                <div className="font-medium mb-2">所有可用工具 ({server.tools.length})</div>
+                                <div className="flex flex-wrap gap-1">
+                                  {server.tools.map((tool, idx) => (
+                                    <code key={idx} className="bg-white bg-opacity-20 px-1.5 py-0.5 rounded text-xs">
+                                      {tool}
+                                    </code>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <span className="text-sm text-gray-400">
