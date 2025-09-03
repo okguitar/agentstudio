@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, AlertCircle, HelpCircle, Plus, Minus, Info, Code, Edit3, Bot } from 'lucide-react';
+import { Save, AlertCircle, HelpCircle, Info, Code, Edit3 } from 'lucide-react';
 import { 
   Subagent, 
   SubagentCreate, 
   SubagentUpdate,
-  SUBAGENT_SCOPES,
-  COMMON_TOOLS
-} from '../types/subagents';
+  SUBAGENT_SCOPES} from '../types/subagents';
 import { useCreateSubagent, useUpdateSubagent } from '../hooks/useSubagents';
 import { ToolSelector } from './ui/ToolSelector';
 

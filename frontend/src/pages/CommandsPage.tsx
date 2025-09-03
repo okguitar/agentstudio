@@ -6,13 +6,12 @@ import {
   Trash2,
   Globe,
   User,
-  Folder,
   AlertCircle,
   Clock,
   Tag,
   Code
 } from 'lucide-react';
-import { SlashCommand, SlashCommandFilter, COMMAND_SCOPES } from '../types/commands';
+import { SlashCommand, SlashCommandFilter } from '../types/commands';
 import { useCommands, useDeleteCommand } from '../hooks/useCommands';
 import { CommandForm } from '../components/CommandForm';
 import { formatRelativeTime } from '../utils';

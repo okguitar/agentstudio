@@ -1,13 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, AlertCircle, HelpCircle, Plus, Minus, Info, Code, Edit3 } from 'lucide-react';
+import { Save, AlertCircle, Code, Edit3 } from 'lucide-react';
 import { 
   SlashCommand, 
   SlashCommandCreate, 
-  SlashCommandUpdate,
-  COMMAND_SCOPES,
-  DEFAULT_MODELS,
-  COMMON_TOOLS
-} from '../types/commands';
+  SlashCommandUpdate} from '../types/commands';
 import { useCreateCommand, useUpdateCommand } from '../hooks/useCommands';
 import { ToolSelector } from './ui/ToolSelector';
 
