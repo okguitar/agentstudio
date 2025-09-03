@@ -5,11 +5,13 @@ import {
   Filter,
   Edit,
   Trash2,
-  Command,
   Globe,
   User,
   Folder,
-  AlertCircle
+  AlertCircle,
+  Clock,
+  Tag,
+  Code
 } from 'lucide-react';
 import { SlashCommand, SlashCommandFilter, COMMAND_SCOPES } from '../types/commands';
 import { useCommands, useDeleteCommand } from '../hooks/useCommands';
@@ -44,19 +46,21 @@ export const CommandsPage: React.FC = () => {
     return true;
   });
 
-  const groupedCommands = filteredCommands.reduce((groups, command) => {
-    const key = command.namespace || '__root__';
-    if (!groups[key]) groups[key] = [];
-    groups[key].push(command);
-    return groups;
-  }, {} as Record<string, SlashCommand[]>);
-
   const getScopeIcon = (scope: 'project' | 'user') => {
     return scope === 'project' ? Globe : User;
   };
 
-  const getScopeColor = (scope: 'project' | 'user') => {
-    return scope === 'project' ? 'text-blue-600' : 'text-green-600';
+  const formatDate = (dateString: string | Date) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+    
+    if (diffInHours < 1) return '刚刚';
+    if (diffInHours < 24) return `${diffInHours}小时前`;
+    if (diffInHours < 48) return '昨天';
+    if (diffInHours < 24 * 7) return `${Math.floor(diffInHours / 24)}天前`;
+    
+    return date.toLocaleDateString('zh-CN');
   };
 
   if (isLoading) {
@@ -143,110 +147,166 @@ export const CommandsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Commands List */}
-      <div className="space-y-6">
-          {Object.keys(groupedCommands).length === 0 ? (
-            <div className="text-center py-12">
-              <Command className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">暂无自定义命令</h3>
-              <p className="text-gray-600 mb-6">创建你的第一个自定义 Slash Command</p>
-              <button
-                onClick={() => setShowForm(true)}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors"
-              >
-                创建命令
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {Object.entries(groupedCommands).map(([namespace, commands]) => (
-                <div key={namespace} className="bg-white rounded-lg shadow">
-                  {/* Group Header */}
-                  {namespace !== '__root__' && (
-                    <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 rounded-t-lg">
-                      <div className="flex items-center space-x-2">
-                        <Folder className="h-5 w-5 text-gray-600" />
-                        <h3 className="font-medium text-gray-900">{namespace}</h3>
-                        <span className="text-sm text-gray-500">({commands.length})</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Commands List */}
-                  <div className="divide-y divide-gray-200">
-                    {commands.map((command) => {
-                      const ScopeIcon = getScopeIcon(command.scope);
-                      return (
-                        <div key={command.id} className="p-6 hover:bg-gray-50 transition-colors">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-3 mb-2">
-                                <h4 className="text-lg font-medium text-gray-900">
-                                  /{command.name}
-                                </h4>
-                                <div className={`flex items-center space-x-1 ${getScopeColor(command.scope)}`}>
-                                  <ScopeIcon className="h-4 w-4" />
-                                  <span className="text-sm font-medium">
-                                    {COMMAND_SCOPES.find(s => s.value === command.scope)?.label}
-                                  </span>
-                                </div>
-                                {command.argumentHint && (
-                                  <code className="bg-gray-100 text-gray-800 px-2 py-1 rounded text-sm">
-                                    {command.argumentHint}
-                                  </code>
-                                )}
-                              </div>
-                              
-                              <p className="text-gray-600 mb-3 line-clamp-2">
+      {/* Commands Table */}
+      {filteredCommands.length === 0 ? (
+        <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
+          <div className="text-6xl mb-4">⚡</div>
+          <h3 className="text-xl font-medium text-gray-900 mb-2">
+            {searchTerm ? '未找到匹配的命令' : '还没有自定义命令'}
+          </h3>
+          <p className="text-gray-600 mb-6">
+            {searchTerm 
+              ? '尝试调整搜索条件或筛选器'
+              : '创建你的第一个自定义 Slash Command'
+            }
+          </p>
+          {!searchTerm && (
+            <button
+              onClick={() => {
+                setEditingCommand(null);
+                setShowForm(true);
+              }}
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              新建命令
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    命令
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    作用域
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    模型/工具
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    命名空间
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    更新时间
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    操作
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredCommands.map((command, index) => {
+                  const ScopeIcon = getScopeIcon(command.scope);
+                  return (
+                    <tr 
+                      key={command.id + '-' + index}
+                      className="hover:bg-gray-50 transition-colors"
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="text-xl mr-3">⚡</div>
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">
+                              /{command.name}
+                              {command.argumentHint && (
+                                <code className="ml-2 bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded text-xs">
+                                  {command.argumentHint}
+                                </code>
+                              )}
+                            </div>
+                            {command.description && (
+                              <div className="text-sm text-gray-500 truncate max-w-xs">
                                 {command.description}
-                              </p>
-                              
-                              <div className="flex flex-wrap gap-2 text-sm text-gray-500">
-                                {command.model && (
-                                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                                    {command.model}
-                                  </span>
-                                )}
-                                {command.allowedTools && command.allowedTools.length > 0 && (
-                                  <span className="bg-green-100 text-green-800 px-2 py-1 rounded">
-                                    {command.allowedTools.length} 工具
-                                  </span>
-                                )}
-                                <span className="text-gray-400">
-                                  更新于 {new Date(command.updatedAt).toLocaleDateString()}
-                                </span>
                               </div>
-                            </div>
-
-                            <div className="flex items-center space-x-2 ml-4">
-                              <button
-                                onClick={() => {
-                                  setEditingCommand(command);
-                                  setShowForm(true);
-                                }}
-                                className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                title="编辑"
-                              >
-                                <Edit className="h-4 w-4" />
-                              </button>
-                              <button
-                                onClick={() => setShowDeleteConfirm(command)}
-                                className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                title="删除"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-                            </div>
+                            )}
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-      </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span 
+                          className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
+                            command.scope === 'project' 
+                              ? 'bg-blue-100 text-blue-800' 
+                              : 'bg-green-100 text-green-800'
+                          }`}
+                        >
+                          <ScopeIcon className="w-3 h-3 mr-1" />
+                          {COMMAND_SCOPES.find(s => s.value === command.scope)?.label}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex flex-col gap-1">
+                          {command.model && (
+                            <div className="flex items-center space-x-1 text-sm text-gray-500">
+                              <Code className="w-3 h-3" />
+                              <span className="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded text-xs">
+                                {command.model}
+                              </span>
+                            </div>
+                          )}
+                          {command.allowedTools && command.allowedTools.length > 0 && (
+                            <div className="flex items-center space-x-1 text-sm text-gray-500">
+                              <Tag className="w-3 h-3" />
+                              <span className="bg-green-100 text-green-800 px-1.5 py-0.5 rounded text-xs">
+                                {command.allowedTools.length} 工具
+                              </span>
+                            </div>
+                          )}
+                          {!command.model && (!command.allowedTools || command.allowedTools.length === 0) && (
+                            <span className="text-sm text-gray-400">无限制</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {command.namespace ? (
+                          <div className="flex items-center space-x-1 text-sm text-gray-500">
+                            <Folder className="w-4 h-4" />
+                            <span>{command.namespace}</span>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-gray-400">根目录</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div className="flex items-center space-x-1">
+                          <Clock className="w-4 h-4" />
+                          <span>{formatDate(command.updatedAt)}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex items-center justify-end space-x-2">
+                          <button
+                            onClick={() => {
+                              setEditingCommand(command);
+                              setShowForm(true);
+                            }}
+                            className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors"
+                            title="编辑命令"
+                          >
+                            <Edit className="w-3 h-3 mr-1" />
+                            编辑
+                          </button>
+                          <button
+                            onClick={() => setShowDeleteConfirm(command)}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="删除命令"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Command Form Modal */}
       {showForm && (
