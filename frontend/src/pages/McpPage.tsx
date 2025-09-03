@@ -474,12 +474,18 @@ export const McpPage: React.FC = () => {
                           
                           {/* Hover 提示框 - 当工具数量超过 3 个时显示 */}
                           {server.tools.length > 3 && (
-                            <div className="absolute left-0 top-full mt-2 z-50 hidden group-hover:block">
-                              <div className="bg-black bg-opacity-90 text-white text-xs rounded-lg p-3 shadow-lg max-w-sm">
-                                <div className="font-medium mb-2">所有可用工具 ({server.tools.length})</div>
-                                <div className="flex flex-wrap gap-1">
+                            <div className="fixed hidden group-hover:block pointer-events-none" 
+                                 style={{
+                                   zIndex: 9999,
+                                   left: '50%',
+                                   top: '50%',
+                                   transform: 'translate(-50%, -50%)'
+                                 }}>
+                              <div className="bg-black bg-opacity-95 text-white text-xs rounded-lg p-4 shadow-2xl max-w-md border border-gray-600">
+                                <div className="font-medium mb-3 text-center">所有可用工具 ({server.tools.length})</div>
+                                <div className="flex flex-wrap gap-1.5 justify-center">
                                   {server.tools.map((tool, idx) => (
-                                    <code key={idx} className="bg-white bg-opacity-20 px-1.5 py-0.5 rounded text-xs">
+                                    <code key={idx} className="bg-white bg-opacity-25 px-2 py-1 rounded text-xs whitespace-nowrap">
                                       {tool}
                                     </code>
                                   ))}
