@@ -11,6 +11,14 @@ import {
   Tag,
   Code
 } from 'lucide-react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { SlashCommand, SlashCommandFilter } from '../types/commands';
 import { useCommands, useDeleteCommand } from '../hooks/useCommands';
 import { CommandForm } from '../components/CommandForm';
@@ -149,118 +157,116 @@ export const CommandsPage: React.FC = () => {
         </div>
       ) : (
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    命令
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    模型
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    工具
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    创建时间
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    操作
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredCommands.map((command, index) => {
-                  const ScopeIcon = getScopeIcon(command.scope);
-                  return (
-                    <tr 
-                      key={command.id + '-' + index}
-                      className="hover:bg-gray-50 transition-colors"
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="text-xl mr-3">⚡</div>
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">
-                              {command.namespace ? `/${command.namespace}:${command.name}` : `/${command.name}`}
-                              {command.argumentHint && (
-                                <code className="ml-2 bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded text-xs">
-                                  {command.argumentHint}
-                                </code>
-                              )}
-                            </div>
-                            {command.description && (
-                              <div className="text-sm text-gray-500 truncate max-w-xs">
-                                {command.description}
-                              </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  命令
+                </TableHead>
+                <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  模型
+                </TableHead>
+                <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  工具
+                </TableHead>
+                <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  创建时间
+                </TableHead>
+                <TableHead className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  操作
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredCommands.map((command, index) => {
+                const ScopeIcon = getScopeIcon(command.scope);
+                return (
+                  <TableRow 
+                    key={command.id + '-' + index}
+                    className="hover:bg-gray-50 transition-colors"
+                  >
+                    <TableCell className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="text-xl mr-3">⚡</div>
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {command.namespace ? `/${command.namespace}:${command.name}` : `/${command.name}`}
+                            {command.argumentHint && (
+                              <code className="ml-2 bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded text-xs">
+                                {command.argumentHint}
+                              </code>
                             )}
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        {command.model ? (
-                          <div className="text-sm text-gray-900">
-                            <Code className="w-3 h-3 inline mr-1" />
-                            {command.model}
-                          </div>
-                        ) : (
-                          <span className="text-sm text-gray-500">继承对话设置</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4">
-                        {command.allowedTools && command.allowedTools.length > 0 ? (
-                          <div>
-                            <div className="flex items-center space-x-1 text-sm text-gray-500 mb-1">
-                              <Tag className="w-3 h-3" />
-                              <span>{command.allowedTools.length} 个工具</span>
+                          {command.description && (
+                            <div className="text-sm text-gray-500 truncate max-w-xs">
+                              {command.description}
                             </div>
-                            <div className="flex flex-wrap gap-1">
-                              {command.allowedTools.map((tool, idx) => (
-                                <code key={idx} className="bg-green-50 text-green-700 px-1.5 py-0.5 rounded text-xs">
-                                  {getToolDisplayName(tool)}
-                                </code>
-                              ))}
-                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="px-6 py-4">
+                      {command.model ? (
+                        <div className="text-sm text-gray-900">
+                          <Code className="w-3 h-3 inline mr-1" />
+                          {command.model}
+                        </div>
+                      ) : (
+                        <span className="text-sm text-gray-500">继承对话设置</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="px-6 py-4">
+                      {command.allowedTools && command.allowedTools.length > 0 ? (
+                        <div>
+                          <div className="flex items-center space-x-1 text-sm text-gray-500 mb-1">
+                            <Tag className="w-3 h-3" />
+                            <span>{command.allowedTools.length} 个工具</span>
                           </div>
-                        ) : (
-                          <span className="text-sm text-gray-500">继承对话设置</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <div className="flex items-center space-x-1">
-                          <Clock className="w-4 h-4" />
-                          <span>{formatRelativeTime(command.createdAt || command.updatedAt)}</span>
+                          <div className="flex flex-wrap gap-1">
+                            {command.allowedTools.map((tool, idx) => (
+                              <code key={idx} className="bg-green-50 text-green-700 px-1.5 py-0.5 rounded text-xs">
+                                {getToolDisplayName(tool)}
+                              </code>
+                            ))}
+                          </div>
                         </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex items-center justify-end space-x-2">
-                          <button
-                            onClick={() => {
-                              setEditingCommand(command);
-                              setShowForm(true);
-                            }}
-                            className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors"
-                            title="编辑命令"
-                          >
-                            <Edit className="w-3 h-3 mr-1" />
-                            编辑
-                          </button>
-                          <button
-                            onClick={() => setShowDeleteConfirm(command)}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            title="删除命令"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                      ) : (
+                        <span className="text-sm text-gray-500">继承对话设置</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <div className="flex items-center space-x-1">
+                        <Clock className="w-4 h-4" />
+                        <span>{formatRelativeTime(command.createdAt || command.updatedAt)}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex items-center justify-end space-x-2">
+                        <button
+                          onClick={() => {
+                            setEditingCommand(command);
+                            setShowForm(true);
+                          }}
+                          className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors"
+                          title="编辑命令"
+                        >
+                          <Edit className="w-3 h-3 mr-1" />
+                          编辑
+                        </button>
+                        <button
+                          onClick={() => setShowDeleteConfirm(command)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="删除命令"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
         </div>
       )}
 

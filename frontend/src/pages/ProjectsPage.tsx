@@ -10,6 +10,14 @@ import {
   Folder,
   X
 } from 'lucide-react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { useAgents } from '../hooks/useAgents';
 import { FileBrowser } from '../components/FileBrowser';
 import { formatRelativeTime } from '../utils';
@@ -447,114 +455,112 @@ export const ProjectsPage: React.FC = () => {
         </div>
       ) : (
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    项目
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    助手类型
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    路径
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    创建时间
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    最后访问
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    操作
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredProjects.map((project, index) => (
-                  <tr 
-                    key={project.id + '-' + index}
-                    className="hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="text-xl mr-3">{project.agentIcon}</div>
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">
-                            {project.name}
-                          </div>
-                          {project.description && (
-                            <div className="text-sm text-gray-500 truncate max-w-xs">
-                              {project.description}
-                            </div>
-                          )}
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  项目
+                </TableHead>
+                <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  助手类型
+                </TableHead>
+                <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  路径
+                </TableHead>
+                <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  创建时间
+                </TableHead>
+                <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  最后访问
+                </TableHead>
+                <TableHead className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  操作
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredProjects.map((project, index) => (
+                <TableRow 
+                  key={project.id + '-' + index}
+                  className="hover:bg-gray-50 transition-colors"
+                >
+                  <TableCell className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <div className="text-xl mr-3">{project.agentIcon}</div>
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {project.name}
                         </div>
+                        {project.description && (
+                          <div className="text-sm text-gray-500 truncate max-w-xs">
+                            {project.description}
+                          </div>
+                        )}
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span 
-                        className="inline-flex px-2 py-1 text-xs font-medium rounded-full"
-                        style={{
-                          backgroundColor: project.agentColor + '20',
-                          color: project.agentColor
-                        }}
-                      >
-                        {project.agentName}
+                    </div>
+                  </TableCell>
+                  <TableCell className="px-6 py-4 whitespace-nowrap">
+                    <span 
+                      className="inline-flex px-2 py-1 text-xs font-medium rounded-full"
+                      style={{
+                        backgroundColor: project.agentColor + '20',
+                        color: project.agentColor
+                      }}
+                    >
+                      {project.agentName}
+                    </span>
+                  </TableCell>
+                  <TableCell className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center space-x-2 text-sm text-gray-500">
+                      <Folder className="w-4 h-4" />
+                      <span className="truncate max-w-sm" title={project.path}>
+                        {project.path}
                       </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center space-x-2 text-sm text-gray-500">
-                        <Folder className="w-4 h-4" />
-                        <span className="truncate max-w-sm" title={project.path}>
-                          {project.path}
-                        </span>
-                        <button
-                          onClick={() => navigator.clipboard.writeText(project.path)}
-                          className="hover:text-gray-700 transition-colors"
-                          title="复制路径"
-                        >
-                          <ExternalLink className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <div className="flex items-center space-x-1">
-                        <Calendar className="w-4 h-4" />
-                        <span>{formatRelativeTime(project.createdAt)}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <div className="flex items-center space-x-1">
-                        <User className="w-4 h-4" />
-                        <span>{formatRelativeTime(project.lastAccessed)}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex items-center justify-end space-x-2">
-                        <button
-                          onClick={() => handleOpenProject(project)}
-                          className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-white rounded-md hover:opacity-90 transition-colors"
-                          style={{ backgroundColor: project.agentColor }}
-                          title="打开项目"
-                        >
-                          <Play className="w-3 h-3 mr-1" />
-                          继续工作
-                        </button>
-                        <button
-                          onClick={() => handleDeleteProject(project)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title="删除项目"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                      <button
+                        onClick={() => navigator.clipboard.writeText(project.path)}
+                        className="hover:text-gray-700 transition-colors"
+                        title="复制路径"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </TableCell>
+                  <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <div className="flex items-center space-x-1">
+                      <Calendar className="w-4 h-4" />
+                      <span>{formatRelativeTime(project.createdAt)}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <div className="flex items-center space-x-1">
+                      <User className="w-4 h-4" />
+                      <span>{formatRelativeTime(project.lastAccessed)}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <div className="flex items-center justify-end space-x-2">
+                      <button
+                        onClick={() => handleOpenProject(project)}
+                        className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-white rounded-md hover:opacity-90 transition-colors"
+                        style={{ backgroundColor: project.agentColor }}
+                        title="打开项目"
+                      >
+                        <Play className="w-3 h-3 mr-1" />
+                        继续工作
+                      </button>
+                      <button
+                        onClick={() => handleDeleteProject(project)}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        title="删除项目"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       )}
 

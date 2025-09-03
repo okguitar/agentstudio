@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
 import { Plus, Eye, EyeOff, Search, Edit, Trash2, Save, X, Play, Settings, Wrench, Tag } from 'lucide-react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { useAgents, useUpdateAgent, useDeleteAgent, useCreateAgent } from '../hooks/useAgents';
 import { useQueryClient } from '@tanstack/react-query';
 import { ProjectSelector } from '../components/ProjectSelector';
@@ -244,34 +252,34 @@ export const AgentsPage: React.FC = () => {
         </div>
       ) : (
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
                   智能助手
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                </TableHead>
+                <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
                   类型
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                </TableHead>
+                <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
                   配置
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                </TableHead>
+                <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
                   工具
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                </TableHead>
+                <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
                   状态
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                </TableHead>
+                <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
                   操作
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {filteredAgents.map((agent) => (
-                <tr key={agent.id} className="hover:bg-gray-50 transition-colors">
+                <TableRow key={agent.id} className="hover:bg-gray-50 transition-colors">
                   {/* Agent */}
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <TableCell className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className={`text-2xl mr-4 ${!agent.enabled ? 'opacity-50' : ''}`}>
                         {agent.ui.icon}
@@ -289,10 +297,10 @@ export const AgentsPage: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                  </td>
+                  </TableCell>
 
                   {/* Type */}
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <TableCell className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                       agent.ui.componentType === 'slides' ? 'bg-blue-100 text-blue-800' :
                       agent.ui.componentType === 'code' ? 'bg-green-100 text-green-800' :
@@ -301,10 +309,10 @@ export const AgentsPage: React.FC = () => {
                     }`}>
                       {agent.ui.componentType}
                     </span>
-                  </td>
+                  </TableCell>
 
                   {/* Configuration */}
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     <div className="space-y-1">
                       <div className="flex items-center">
                         <Settings className="w-3 h-3 mr-1 text-gray-400" />
@@ -320,18 +328,18 @@ export const AgentsPage: React.FC = () => {
                         }</span>
                       </div>
                     </div>
-                  </td>
+                  </TableCell>
 
                   {/* Tools */}
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     <div className="flex items-center">
                       <Tag className="w-3 h-3 mr-1 text-gray-400" />
                       <span>{agent.allowedTools?.length || 0} 个工具</span>
                     </div>
-                  </td>
+                  </TableCell>
 
                   {/* Status */}
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <TableCell className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                       agent.enabled 
                         ? 'bg-green-100 text-green-800' 
@@ -339,10 +347,10 @@ export const AgentsPage: React.FC = () => {
                     }`}>
                       {agent.enabled ? '已启用' : '已禁用'}
                     </span>
-                  </td>
+                  </TableCell>
 
                   {/* Actions */}
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <TableCell className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex items-center space-x-2">
                       {/* Start Using Button - Only show for enabled agents */}
                       {agent.enabled && (
@@ -387,11 +395,11 @@ export const AgentsPage: React.FC = () => {
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       )}
 
