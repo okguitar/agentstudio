@@ -11,6 +11,7 @@ import { SettingsLayout } from './components/SettingsLayout';
 import { GeneralSettingsPage } from './pages/settings/GeneralSettingsPage';
 import { VersionSettingsPage } from './pages/settings/VersionSettingsPage';
 import { MemorySettingsPage } from './pages/settings/MemorySettingsPage';
+import { SubagentsPage } from './pages/settings/SubagentsPage';
 import { CommandsPage } from './pages/CommandsPage';
 import { ChatPage } from './pages/ChatPage';
 
@@ -42,6 +43,7 @@ const AppContent: React.FC = () => {
           <Route path="general" element={<GeneralSettingsPage />} />
           <Route path="versions" element={<VersionSettingsPage />} />
           <Route path="memory" element={<MemorySettingsPage />} />
+          <Route path="subagents" element={<SubagentsPage />} />
         </Route>
       </Routes>
     </Router>

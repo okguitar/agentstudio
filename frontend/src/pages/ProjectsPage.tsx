@@ -388,54 +388,51 @@ export const ProjectsPage: React.FC = () => {
     <div className="p-8">
       {/* Header */}
       <div className="mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">项目管理</h1>
-          <p className="text-gray-600 mt-2">管理你的所有工作项目</p>
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">项目管理</h1>
+            <p className="text-gray-600 mt-2">管理你的所有工作项目</p>
+          </div>
         </div>
-      </div>
 
-      {/* Search and Filters */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
-          {/* Search - 左侧 */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="text"
-              placeholder="搜索项目..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4 py-2 w-64 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
+        {/* Search and Add Button */}
+        <div className="flex items-center space-x-4">
+          <div className="flex-1 bg-white rounded-lg border border-gray-200 p-4">
+            <div className="flex items-center space-x-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="搜索项目..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-sm font-medium text-gray-700">助手类型:</span>
+                <select
+                  value={filterAgent}
+                  onChange={(e) => setFilterAgent(e.target.value)}
+                  className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="all">全部</option>
+                  {enabledAgents.map(agent => (
+                    <option key={agent.id} value={agent.id}>
+                      {agent.ui.icon} {agent.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
           </div>
-
-          {/* Agent Filter - 紧接搜索框 */}
-          <div className="flex items-center space-x-2">
-            <span className="text-sm font-medium text-gray-700">助手类型:</span>
-            <select
-              value={filterAgent}
-              onChange={(e) => setFilterAgent(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="all">全部</option>
-              {enabledAgents.map(agent => (
-                <option key={agent.id} value={agent.id}>
-                  {agent.ui.icon} {agent.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* 新建项目按钮 - 右侧 */}
-          <div className="sm:ml-auto">
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <Plus className="w-5 h-5" />
-              <span>新建项目</span>
-            </button>
-          </div>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
+          >
+            <Plus className="w-5 h-5" />
+            <span>新建项目</span>
+          </button>
         </div>
       </div>
 

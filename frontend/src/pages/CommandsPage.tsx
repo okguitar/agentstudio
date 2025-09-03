@@ -89,71 +89,62 @@ export const CommandsPage: React.FC = () => {
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-gray-50">
+    <div className="p-8">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <Command className="h-8 w-8 text-blue-600" />
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">自定义命令</h1>
-                <p className="text-gray-600">管理 Slash Commands</p>
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">自定义命令</h1>
+            <p className="text-gray-600 mt-2">管理 Slash Commands</p>
+          </div>
+        </div>
+
+        {/* Search and Add Button */}
+        <div className="flex items-center space-x-4">
+          <div className="flex-1 bg-white rounded-lg border border-gray-200 p-4">
+            <div className="flex items-center space-x-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="搜索命令..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div className="flex items-center space-x-2">
+                <Filter className="h-4 w-4 text-gray-500" />
+                <select
+                  value={filter.scope || 'all'}
+                  onChange={(e) => setFilter({ ...filter, scope: e.target.value as any })}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="all">全部</option>
+                  {COMMAND_SCOPES.map((scope) => (
+                    <option key={scope.value} value={scope.value}>
+                      {scope.label}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
-            <button
-              onClick={() => {
-                setEditingCommand(null);
-                setShowForm(true);
-              }}
-              className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
-            >
-              <Plus className="h-4 w-4" />
-              <span>新建命令</span>
-            </button>
           </div>
+          <button
+            onClick={() => {
+              setEditingCommand(null);
+              setShowForm(true);
+            }}
+            className="flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
+          >
+            <Plus className="w-5 h-5" />
+            <span>新建命令</span>
+          </button>
         </div>
       </div>
 
-      {/* Filters and Search */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="px-6 py-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            {/* Search */}
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <input
-                type="text"
-                placeholder="搜索命令..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-
-            {/* Scope Filter */}
-            <div className="flex items-center space-x-2">
-              <Filter className="h-4 w-4 text-gray-500" />
-              <select
-                value={filter.scope || 'all'}
-                onChange={(e) => setFilter({ ...filter, scope: e.target.value as any })}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="all">全部</option>
-                {COMMAND_SCOPES.map((scope) => (
-                  <option key={scope.value} value={scope.value}>
-                    {scope.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 overflow-auto">
-        <div className="p-6">
+      {/* Commands List */}
+      <div className="space-y-6">
           {Object.keys(groupedCommands).length === 0 ? (
             <div className="text-center py-12">
               <Command className="h-16 w-16 text-gray-400 mx-auto mb-4" />
@@ -255,7 +246,6 @@ export const CommandsPage: React.FC = () => {
               ))}
             </div>
           )}
-        </div>
       </div>
 
       {/* Command Form Modal */}

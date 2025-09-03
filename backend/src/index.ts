@@ -11,6 +11,7 @@ import agentsRouter from './routes/agents.js';
 import mediaRouter from './routes/media.js';
 import settingsRouter from './routes/settings.js';
 import commandsRouter from './routes/commands.js';
+import subagentsRouter from './routes/subagents.js';
 
 dotenv.config();
 
@@ -52,6 +53,7 @@ app.use('/api/ai', aiRouter);
 app.use('/api/agents', agentsRouter);
 app.use('/api/settings', settingsRouter);
 app.use('/api/commands', commandsRouter);
+app.use('/api/subagents', subagentsRouter);
 app.use('/media', mediaRouter);
 
 // Health check

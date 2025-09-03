@@ -186,52 +186,57 @@ export const AgentsPage: React.FC = () => {
   return (
     <div className="p-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900">Agent管理</h1>
-        <button
-          onClick={handleCreate}
-          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          <span>创建助手</span>
-        </button>
-      </div>
-
-      {/* Filters and Search */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="text"
-              placeholder="搜索助手..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4 py-2 w-64 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Agent管理</h1>
+            <p className="text-gray-600 mt-2">管理专门的 AI 代理</p>
           </div>
+        </div>
 
-          {/* Filter Tabs */}
-          <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
-            {[
-              { key: 'all', label: '全部', count: agents.length },
-              { key: 'enabled', label: '已启用', count: agents.filter(a => a.enabled).length },
-              { key: 'disabled', label: '已禁用', count: agents.filter(a => !a.enabled).length }
-            ].map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => setFilter(tab.key as any)}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  filter === tab.key
-                    ? 'bg-white text-blue-700 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                {tab.label} ({tab.count})
-              </button>
-            ))}
+        {/* Search and Add Button */}
+        <div className="flex items-center space-x-4">
+          <div className="flex-1 bg-white rounded-lg border border-gray-200 p-4">
+            <div className="flex items-center space-x-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="搜索助手..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              {/* Filter Tabs */}
+              <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
+                {[
+                  { key: 'all', label: '全部', count: agents.length },
+                  { key: 'enabled', label: '已启用', count: agents.filter(a => a.enabled).length },
+                  { key: 'disabled', label: '已禁用', count: agents.filter(a => !a.enabled).length }
+                ].map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => setFilter(tab.key as any)}
+                    className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                      filter === tab.key
+                        ? 'bg-white text-blue-700 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    {tab.label} ({tab.count})
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
+          <button
+            onClick={handleCreate}
+            className="flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
+          >
+            <Plus className="w-5 h-5" />
+            <span>创建助手</span>
+          </button>
         </div>
       </div>
 

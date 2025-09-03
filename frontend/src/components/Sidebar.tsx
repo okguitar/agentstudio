@@ -66,6 +66,11 @@ const navigationItems = [
         href: '/commands',
         icon: Command,
       },
+      {
+        name: 'Subagent管理',
+        href: '/settings/subagents',
+        icon: Bot,
+      },
     ],
   },
 ];
