@@ -11,6 +11,9 @@ importers:
       '@anthropic-ai/claude-code':
         specifier: ^1.0.89
         version: 1.0.89
+      ccusage:
+        specifier: ^16.2.3
+        version: 16.2.3
       tsx:
         specifier: ^4.20.4
         version: 4.20.4
@@ -257,6 +260,11 @@ packages:
   ansi-styles@4.3.0:
     resolution: {integrity: sha512-zbB9rCJAT1rbjiVDb2hqKFHNYLxgtk8NURxZ3IZwD3F6NtxbXZQCnnSi1Lkx+IDohdPlFp222wVALIheZJQSEg==}
     engines: {node: '>=8'}
+
+  ccusage@16.2.3:
+    resolution: {integrity: sha512-/BvsGfNjZ45SwSyzZy6xhQpwm2w8x2dp1yRGZql8115DQS3PNFNF9QJ+1YLMF0OayY/BU5R/mUQdd12DLekySQ==}
+    engines: {node: '>=20.19.4'}
+    hasBin: true
 
   chalk@4.1.2:
     resolution: {integrity: sha512-oKnbhFyRIXpUuez8iBMmyEa4nbj4IOQyuhc/wy9kY7/WVPcwIO9VA668Pu8RkO7+0G76SLROeyw9CpQ061i4mA==}
@@ -522,6 +530,8 @@ snapshots:
   ansi-styles@4.3.0:
     dependencies:
       color-convert: 2.0.1
+
+  ccusage@16.2.3: {}
 
   chalk@4.1.2:
     dependencies:

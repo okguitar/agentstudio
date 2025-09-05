@@ -51,3 +51,4 @@ claude-*
 .claude-sessions
 .cc-sessions
 .playwright-mcp
+.claude/
