@@ -18,7 +18,7 @@ export const LSTool: React.FC<LSToolProps> = ({ execution }) => {
   };
 
   return (
-    <BaseToolComponent execution={execution} subtitle={getSubtitle()}>
+    <BaseToolComponent execution={execution} subtitle={getSubtitle()} hideToolName={true}>
       <div>
         <ToolInput label="目录路径" value={input.path} />
         {input.ignore && input.ignore.length > 0 && (

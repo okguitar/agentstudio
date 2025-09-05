@@ -17,87 +17,52 @@ export const TodoWriteTool: React.FC<TodoWriteToolProps> = ({ execution }) => {
       case 'in_progress':
         return <Clock className="w-3 h-3 text-blue-600" />;
       default:
-        return <AlertCircle className="w-3 h-3 text-gray-600" />;
+        return <AlertCircle className="w-3 h-3 text-gray-400" />;
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'bg-green-50 border-green-200';
-      case 'in_progress':
-        return 'bg-blue-50 border-blue-200';
-      default:
-        return 'bg-gray-50 border-gray-200';
+  // Calculate progress
+  const completedCount = input.todos.filter(t => t.status === 'completed').length;
+  const totalCount = input.todos.length;
+  const currentTask = input.todos.find(todo => todo.status === 'in_progress')?.content;
+  
+  // Generate subtitle based on status
+  const getSubtitle = () => {
+    if (completedCount === totalCount && totalCount > 0) {
+      return '所有任务已完成';
     }
-  };
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high':
-        return 'bg-red-100 text-red-800';
-      case 'medium':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'low':
-        return 'bg-green-100 text-green-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
+    if (currentTask) {
+      return `${completedCount + 1}/${totalCount} ${currentTask}`;
     }
+    return `${completedCount}/${totalCount} 待办任务`;
   };
 
   return (
-    <BaseToolComponent execution={execution}>
-      <div>
-        <div className="mb-3">
-          <p className="text-xs font-medium text-gray-600 mb-2">
-            待办事项列表 ({input.todos.length} 项):
-          </p>
-          
-          <div className="space-y-2 max-h-80 overflow-y-auto">
-            {input.todos.map((todo) => (
-              <div 
-                key={todo.id} 
-                className={`p-3 rounded-md border ${getStatusColor(todo.status)}`}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-2 flex-1">
-                    {getStatusIcon(todo.status)}
-                    <div className="flex-1">
-                      <p className="text-sm text-gray-800 leading-relaxed">
-                        {todo.content}
-                      </p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className={`px-2 py-1 text-xs rounded ${getPriorityColor(todo.priority)}`}>
-                          {todo.priority === 'high' ? '高' : 
-                           todo.priority === 'medium' ? '中' : '低'}优先级
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          {todo.status === 'completed' ? '已完成' : 
-                           todo.status === 'in_progress' ? '进行中' : '待处理'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
+    <BaseToolComponent execution={execution} subtitle={getSubtitle()} showResult={false}>
+      <div className="space-y-1">
+        {input.todos.map((todo, index) => (
+          <div 
+            key={index}
+            className="flex items-center gap-2 text-sm py-1"
+          >
+            {getStatusIcon(todo.status)}
+            <span className={`flex-1 ${
+              todo.status === 'completed' ? 'text-gray-500 line-through' : 
+              todo.status === 'in_progress' ? 'text-blue-700 font-medium' : 
+              'text-gray-700'
+            }`}>
+              {todo.content}
+            </span>
           </div>
-        </div>
+        ))}
         
-        {/* 统计信息 */}
-        <div className="flex gap-4 text-xs text-gray-600 bg-gray-100 p-2 rounded">
-          <span>
-            已完成: {input.todos.filter(t => t.status === 'completed').length}
-          </span>
-          <span>
-            进行中: {input.todos.filter(t => t.status === 'in_progress').length}
-          </span>
-          <span>
-            待处理: {input.todos.filter(t => t.status === 'pending').length}
-          </span>
+        {/* Compact statistics */}
+        <div className="flex gap-3 text-xs text-gray-500 pt-2 border-t border-gray-200 mt-2">
+          <span>已完成: {input.todos.filter(t => t.status === 'completed').length}</span>
+          <span>进行中: {input.todos.filter(t => t.status === 'in_progress').length}</span>
+          <span>待处理: {input.todos.filter(t => t.status === 'pending').length}</span>
         </div>
       </div>
-      
     </BaseToolComponent>
   );
 };

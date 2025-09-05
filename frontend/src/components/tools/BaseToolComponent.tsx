@@ -65,9 +65,10 @@ interface BaseToolProps {
   subtitle?: string; // 显示关键信息的副标题
   showResult?: boolean; // 是否显示工具结果，默认true
   isMcpTool?: boolean; // 标识是否为MCP工具
+  hideToolName?: boolean; // 是否隐藏工具名称，仅显示图标和副标题
 }
 
-export const BaseToolComponent: React.FC<BaseToolProps> = ({ execution, children, subtitle, showResult = true, isMcpTool = false }) => {
+export const BaseToolComponent: React.FC<BaseToolProps> = ({ execution, children, subtitle, showResult = true, isMcpTool = false, hideToolName = true }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   
   // 为MCP工具使用不同的图标和颜色
@@ -87,59 +88,65 @@ export const BaseToolComponent: React.FC<BaseToolProps> = ({ execution, children
 
 
   return (
-    <div className="border border-gray-200 rounded-lg bg-gray-50 max-w-full">
-      {/* 可点击的工具头部 */}
-      <div 
-        className="flex items-start justify-between p-4 cursor-pointer hover:bg-gray-100 transition-colors"
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
-        <div className="flex items-start space-x-2 flex-1 min-w-0">
-          <div className={`p-2 rounded-full ${colorClass} mt-0.5`}>
-            {execution.isExecuting ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+    <>
+      <div className="border border-gray-200 rounded-lg bg-gray-50 max-w-full">
+        {/* 可点击的工具头部 */}
+        <div 
+          className={`flex items-start justify-between cursor-pointer hover:bg-gray-100 transition-colors ${
+            hideToolName ? 'p-2' : 'p-4'
+          }`}
+          onClick={() => setIsExpanded(!isExpanded)}
+        >
+          <div className={`flex space-x-2 flex-1 min-w-0 ${hideToolName ? 'items-center' : 'items-start'}`}>
+            <div className={`${hideToolName ? 'p-1.5' : 'p-2'} rounded-full ${colorClass} ${hideToolName ? '' : 'mt-0.5'}`}>
+              {execution.isExecuting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Icon className="w-4 h-4" />
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              {!hideToolName && (
+                <h4 className="text-sm font-semibold text-gray-800">{execution.toolName}</h4>
+              )}
+              {subtitle && (
+                <p className="text-xs text-gray-500 truncate">
+                  {subtitle}
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center">
+            {isExpanded ? (
+              <ChevronDown className="w-4 h-4 text-gray-400" />
             ) : (
-              <Icon className="w-4 h-4" />
-            )}
-          </div>
-          <div className="min-w-0 flex-1">
-            <h4 className="text-sm font-semibold text-gray-800">{execution.toolName}</h4>
-            {subtitle && (
-              <p className="text-xs text-gray-500 truncate">
-                {subtitle}
-              </p>
+              <ChevronRight className="w-4 h-4 text-gray-400" />
             )}
           </div>
         </div>
-        <div className="flex items-center">
-          {isExpanded ? (
-            <ChevronDown className="w-4 h-4 text-gray-400" />
-          ) : (
-            <ChevronRight className="w-4 h-4 text-gray-400" />
-          )}
-        </div>
+
+        {/* 可展开的工具内容 */}
+        {isExpanded && (
+          <div className="px-4 pb-4 border-t border-gray-200">
+            <div className="pt-3">
+              {children}
+              
+              {/* 显示工具结果 */}
+              {showResult && execution.toolResult && !execution.isError && (
+                <ToolOutput result={execution.toolResult} />
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* 可展开的工具内容 */}
-      {isExpanded && (
-        <div className="px-4 pb-4 border-t border-gray-200">
-          <div className="pt-3">
-            {children}
-            
-            {/* 显示工具结果 */}
-            {showResult && execution.toolResult && !execution.isError && (
-              <ToolOutput result={execution.toolResult} />
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* 错误状态显示 - 在工具组件外部显示 */}
+      {/* 错误状态显示 - 在组件外部独立显示 */}
       {execution.isError && execution.toolResult && (
-        <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">
+        <div className="ml-2 mt-1 text-red-500 text-xs">
           {cleanErrorMessage(execution.toolResult)}
         </div>
       )}
-    </div>
+    </>
   );
 };
 

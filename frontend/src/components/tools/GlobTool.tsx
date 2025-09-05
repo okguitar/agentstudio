@@ -26,7 +26,7 @@ export const GlobTool: React.FC<GlobToolProps> = ({ execution }) => {
   };
 
   return (
-    <BaseToolComponent execution={execution} subtitle={getSubtitle()}>
+    <BaseToolComponent execution={execution} subtitle={getSubtitle()} hideToolName={true}>
       <div>
         <ToolInput label="匹配模式" value={input.pattern} isCode={true} />
         {input.path && (
