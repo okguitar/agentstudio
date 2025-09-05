@@ -210,7 +210,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 flex flex-col min-h-0">
           {loading ? (
             <div className="flex items-center justify-center h-64">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -220,7 +220,13 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
               <p>错误: {error}</p>
             </div>
           ) : (
-            <div className="h-full overflow-y-auto">
+            <div 
+              className="flex-1 overflow-y-auto"
+              onWheel={(e) => {
+                // 防止滚动事件穿透到底层页面
+                e.stopPropagation();
+              }}
+            >
               <table className="w-full">
                 <thead className="bg-gray-50 sticky top-0">
                   <tr>

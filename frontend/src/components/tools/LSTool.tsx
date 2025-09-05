@@ -14,9 +14,6 @@ export const LSTool: React.FC<LSToolProps> = ({ execution }) => {
     if (!input.path) return undefined;
     // 简化路径显示，如果是绝对路径则尝试显示相对部分
     const path = input.path;
-    if (path.includes('slides/ai-editor/')) {
-      return path.split('slides/ai-editor/')[1] || path;
-    }
     return path.split('/').slice(-2).join('/') || path;
   };
 

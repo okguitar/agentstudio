@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { Clock, Plus, Trash2, Search } from 'lucide-react';
+import { Clock, Search } from 'lucide-react';
 
 interface Session {
   id: string;
@@ -14,8 +14,6 @@ interface SessionsDropdownProps {
   sessions: Session[];
   currentSessionId: string | null;
   onSwitchSession: (sessionId: string) => void;
-  onNewSession: () => void;
-  onDeleteSession: (sessionId: string, e: React.MouseEvent) => void;
   isLoading?: boolean;
   searchTerm: string;
   onSearchChange: (term: string) => void;
@@ -27,8 +25,6 @@ export const SessionsDropdown: React.FC<SessionsDropdownProps> = ({
   sessions,
   currentSessionId,
   onSwitchSession,
-  onNewSession,
-  onDeleteSession,
   isLoading = false,
   searchTerm,
   onSearchChange
@@ -77,15 +73,6 @@ export const SessionsDropdown: React.FC<SessionsDropdownProps> = ({
           <Clock className="w-4 h-4 text-gray-600" />
           <span className="text-sm font-medium text-gray-900">会话历史</span>
         </div>
-        <div className="flex items-center space-x-1">
-          <button
-            onClick={onNewSession}
-            className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-            title="新建会话"
-          >
-            <Plus className="w-4 h-4" />
-          </button>
-        </div>
       </div>
 
       {/* Search */}
@@ -115,30 +102,21 @@ export const SessionsDropdown: React.FC<SessionsDropdownProps> = ({
               <div
                 key={session.id}
                 onClick={() => onSwitchSession(session.id)}
-                className={`flex items-center justify-between mx-2 px-3 py-2 rounded cursor-pointer hover:bg-gray-50 transition-colors ${
+                className={`mx-2 px-3 py-2 rounded cursor-pointer hover:bg-gray-50 transition-colors ${
                   currentSessionId === session.id ? 'bg-blue-50 border border-blue-200' : 'border border-transparent'
                 }`}
               >
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-gray-900 truncate">
-                    {session.title}
-                  </div>
-                  <div className="text-xs text-gray-500 mt-0.5">
-                    {session.messageCount} 条消息 • {new Date(session.lastUpdated).toLocaleString('zh-CN', {
-                      month: 'short',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
-                  </div>
+                <div className="text-sm font-medium text-gray-900 truncate">
+                  {session.title}
                 </div>
-                <button
-                  onClick={(e) => onDeleteSession(session.id, e)}
-                  className="ml-2 p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors flex-shrink-0"
-                  title="删除会话"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+                <div className="text-xs text-gray-500 mt-0.5">
+                  {session.messageCount} 条消息 • {new Date(session.lastUpdated).toLocaleString('zh-CN', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </div>
               </div>
             ))}
           </div>
@@ -152,13 +130,8 @@ export const SessionsDropdown: React.FC<SessionsDropdownProps> = ({
             ) : (
               <div>
                 <Clock className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                <p className="text-sm text-gray-500 mb-2">暂无会话历史</p>
-                <button
-                  onClick={onNewSession}
-                  className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
-                >
-                  创建第一个会话
-                </button>
+                <p className="text-sm text-gray-500">暂无会话历史</p>
+                <p className="text-xs text-gray-400 mt-1">开始聊天后会显示会话</p>
               </div>
             )}
           </div>

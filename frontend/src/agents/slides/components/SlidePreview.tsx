@@ -17,10 +17,12 @@ interface SlidePreviewProps {
 
 export const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, totalSlides, projectPath }) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
   const [viewMode, setViewMode] = useState<'preview' | 'code'>('preview');
   const [projectId, setProjectId] = useState<string | null>(null);
+  const [scale, setScale] = useState(1);
   
   const { data: slideContent } = useSlideContent(slide.index, projectPath);
 
@@ -87,6 +89,45 @@ export const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, totalSlides, 
 
   // Calculate aspect ratio container dimensions
   const aspectRatio = 1280 / 720; // 16:9
+  const SLIDE_WIDTH = 1280;
+  const SLIDE_HEIGHT = 720;
+
+  // Calculate scale based on container size
+  const calculateScale = () => {
+    if (!containerRef.current) return 1;
+    
+    const container = containerRef.current;
+    const containerRect = container.getBoundingClientRect();
+    const containerWidth = containerRect.width;
+    const containerHeight = containerRect.height;
+    
+    // Calculate scale factors for both dimensions
+    const scaleX = containerWidth / SLIDE_WIDTH;
+    const scaleY = containerHeight / SLIDE_HEIGHT;
+    
+    // Use the smaller scale to ensure the entire slide fits
+    return Math.min(scaleX, scaleY, 1); // Don't scale up beyond 1:1
+  };
+
+  // Update scale when container size changes
+  useEffect(() => {
+    const updateScale = () => {
+      const newScale = calculateScale();
+      setScale(newScale);
+    };
+
+    // Update scale initially and on window resize
+    updateScale();
+    window.addEventListener('resize', updateScale);
+    
+    // Also update when switching view modes
+    const timeout = setTimeout(updateScale, 100);
+
+    return () => {
+      window.removeEventListener('resize', updateScale);
+      clearTimeout(timeout);
+    };
+  }, [viewMode]);
   
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden">
@@ -129,9 +170,12 @@ export const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, totalSlides, 
       {/* Content */}
       <div className="p-4">
         {viewMode === 'preview' ? (
-          // Preview mode - iframe with 1280:720 aspect ratio
-          <div className="relative w-full bg-gray-100 rounded-lg overflow-hidden" 
-               style={{ aspectRatio: `${aspectRatio}` }}>
+          // Preview mode - iframe with 1280:720 aspect ratio and proper scaling
+          <div 
+            ref={containerRef}
+            className="relative w-full bg-gray-100 rounded-lg overflow-hidden" 
+            style={{ aspectRatio: `${aspectRatio}` }}
+          >
             {isLoading && (
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-sm text-gray-500">加载中...</div>
@@ -145,11 +189,26 @@ export const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, totalSlides, 
             )}
             
             {slide.exists && projectId && (
-              <iframe
-                ref={iframeRef}
-                className="w-full h-full border-none"
-                style={{ display: isLoading || error ? 'none' : 'block' }}
-              />
+              <div 
+                className="absolute top-0 left-0"
+                style={{
+                  width: `${SLIDE_WIDTH}px`,
+                  height: `${SLIDE_HEIGHT}px`,
+                  transform: `scale(${scale})`,
+                  transformOrigin: 'top left',
+                }}
+              >
+                <iframe
+                  ref={iframeRef}
+                  className="w-full h-full border-none"
+                  style={{ 
+                    display: isLoading || error ? 'none' : 'block',
+                    width: `${SLIDE_WIDTH}px`,
+                    height: `${SLIDE_HEIGHT}px`,
+                  }}
+                  scrolling="no"
+                />
+              </div>
             )}
             
             {!slide.exists && !isLoading && (

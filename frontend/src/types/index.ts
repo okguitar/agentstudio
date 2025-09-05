@@ -54,13 +54,6 @@ export interface ChatMessage {
 }
 
 export interface ChatContext {
-  currentSlide?: number | null;
-  slideContent?: string;
-  allSlides?: Slide[];
-  // Generic context for other agent types
-  currentItem?: unknown;
-  allItems?: unknown[];
-  customContext?: Record<string, unknown>;
 }
 
 export interface AIProvider {
@@ -105,11 +98,6 @@ export interface AgentConfig {
   workingDirectory?: string;
   dataDirectory?: string;
   fileTypes?: string[];
-  contextBuilders?: {
-    currentItem?: (state: unknown) => unknown;
-    allItems?: (state: unknown) => unknown[];
-    customContext?: (state: unknown) => Record<string, unknown>;
-  };
   author: string;
   homepage?: string;
   tags: string[];

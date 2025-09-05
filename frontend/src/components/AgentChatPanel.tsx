@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Clock, Plus, Square, Image, Wrench, X } from 'lucide-react';
+import { Send, Clock, Square, Image, Wrench, X } from 'lucide-react';
 import { ImagePreview } from './ImagePreview';
 import { useAgentStore } from '../stores/useAgentStore';
-import { useAgentChat, useAgentSessions, useCreateAgentSession, useDeleteAgentSession, useAgentSessionMessages } from '../hooks/useAgents';
+import { useAgentChat, useAgentSessions, useAgentSessionMessages } from '../hooks/useAgents';
 import { useQueryClient } from '@tanstack/react-query';
 import { ChatMessageRenderer } from './ChatMessageRenderer';
 import { SessionsDropdown } from './SessionsDropdown';
@@ -48,8 +48,6 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
   const queryClient = useQueryClient();
   const agentChatMutation = useAgentChat();
   const { data: sessionsData } = useAgentSessions(agent.id, searchTerm, projectPath);
-  const createSession = useCreateAgentSession();
-  const deleteSession = useDeleteAgentSession();
   const { data: sessionMessagesData } = useAgentSessionMessages(agent.id, currentSessionId, projectPath);
 
   // Calculate the actual number of tools represented by the selection
@@ -207,13 +205,13 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
       
       // console.log('Sending agent chat request:', { agentId: agent.id, message: userMessage, context, sessionId: currentSessionId, projectPath });
 
-      // Use agent-specific SSE streaming chat
+      // Use agent-specific SSE streaming chat - pass null as sessionId if no current session
       await agentChatMutation.mutateAsync({
         agentId: agent.id,
         message: userMessage,
         images: imageData.length > 0 ? imageData : undefined,
         context,
-        sessionId: currentSessionId,
+        sessionId: currentSessionId, // Keep existing session or null for new session
         projectPath,
         mcpTools: mcpToolsEnabled && selectedMcpTools.length > 0 ? selectedMcpTools : undefined,
         abortController,
@@ -227,9 +225,14 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
             permission_denials?: Array<{ tool_name: string; tool_input: Record<string, unknown> }> 
           };
           
-          if (eventData.type === 'connected') {
-            console.log('Setting session ID:', eventData.sessionId);
-            setCurrentSessionId(eventData.sessionId || null);
+          if (eventData.type === 'connected' && eventData.sessionId) {
+            console.log('Setting session ID from AI response:', eventData.sessionId);
+            // Only set session ID if we don't have one (new session created by AI)
+            if (!currentSessionId) {
+              setCurrentSessionId(eventData.sessionId);
+              // Refresh sessions list when new session is created
+              queryClient.invalidateQueries({ queryKey: ['agent-sessions', agent.id] });
+            }
           } 
           else if (eventData.type === 'system' && eventData.subtype === 'init') {
             // Claude Code SDK initialization - silently initialize without showing message
@@ -337,8 +340,10 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
               addTextPartToMessage(aiMessageId, finalMessage);
             }
             
-            // Refresh sessions list
-            queryClient.invalidateQueries({ queryKey: ['agent-sessions', agent.id] });
+            // Refresh sessions list only if we had a session (don't refresh on new session creation)
+            if (currentSessionId) {
+              queryClient.invalidateQueries({ queryKey: ['agent-sessions', agent.id] });
+            }
           }
         },
         onError: (error) => {
@@ -385,18 +390,6 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
     }
   };
 
-  const handleNewSession = async () => {
-    try {
-      const result = await createSession.mutateAsync({ agentId: agent.id, projectPath });
-      setCurrentSessionId(result.sessionId);
-      clearMessages();
-      setShowSessions(false);
-      queryClient.invalidateQueries({ queryKey: ['agent-sessions', agent.id] });
-    } catch (error) {
-      console.error('Failed to create session:', error);
-    }
-  };
-
   const handleSwitchSession = (sessionId: string) => {
     clearMessages();
     setCurrentSessionId(sessionId);
@@ -415,30 +408,6 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
         content: '⏹️ 生成已停止',
         role: 'assistant'
       });
-    }
-  };
-
-  const handleDeleteSession = async (sessionId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    
-    const sessionToDelete = sessionsData?.sessions?.find((s: any) => s.id === sessionId);
-    const sessionTitle = sessionToDelete?.title || '未知会话';
-    
-    const confirmed = window.confirm(`确定要删除会话"${sessionTitle}"吗？\n\n此操作无法撤销。`);
-    if (!confirmed) {
-      return;
-    }
-    
-    try {
-      await deleteSession.mutateAsync({ agentId: agent.id, sessionId, projectPath });
-      if (currentSessionId === sessionId) {
-        setCurrentSessionId(null);
-        clearMessages();
-      }
-      queryClient.invalidateQueries({ queryKey: ['agent-sessions', agent.id] });
-    } catch (error) {
-      console.error('Failed to delete session:', error);
-      alert('删除会话失败，请重试。');
     }
   };
 
@@ -501,13 +470,6 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
             >
               <Clock className="w-5 h-5" />
             </button>
-            <button
-              onClick={handleNewSession}
-              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-              title="新建会话"
-            >
-              <Plus className="w-5 h-5" />
-            </button>
             
             {/* Sessions Dropdown */}
             <SessionsDropdown
@@ -516,8 +478,6 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
               sessions={sessionsData?.sessions || []}
               currentSessionId={currentSessionId}
               onSwitchSession={handleSwitchSession}
-              onNewSession={handleNewSession}
-              onDeleteSession={handleDeleteSession}
               isLoading={false}
               searchTerm={searchTerm}
               onSearchChange={setSearchTerm}
