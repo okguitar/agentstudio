@@ -6,13 +6,13 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
 import filesRouter from './routes/files.js';
-import aiRouter from './routes/ai.js';
 import agentsRouter from './routes/agents.js';
 import mediaRouter from './routes/media.js';
 import settingsRouter from './routes/settings.js';
 import commandsRouter from './routes/commands.js';
 import subagentsRouter from './routes/subagents.js';
 import projectsRouter from './routes/projects.js';
+import { usageRouter } from './routes/usage.js';
 
 dotenv.config();
 
@@ -28,10 +28,11 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'", "'unsafe-inline'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdn.jsdelivr.net"],
       imgSrc: ["'self'", "data:", "https:"],
       connectSrc: ["'self'", "ws:", "wss:"],
-      frameAncestors: ["'self'", "http://localhost:3000", "https://localhost:3000"] // Allow iframe embedding
+      frameAncestors: ["'self'", "http://localhost:3000", "https://localhost:3000", "http://localhost:3001"] // Allow iframe embedding
     }
   }
 }));
@@ -50,12 +51,12 @@ app.use('/slides', express.static(slidesDir));
 
 // Routes
 app.use('/api/files', filesRouter);
-app.use('/api/ai', aiRouter);
 app.use('/api/agents', agentsRouter);
 app.use('/api/settings', settingsRouter);
 app.use('/api/commands', commandsRouter);
 app.use('/api/subagents', subagentsRouter);
 app.use('/api/projects', projectsRouter);
+app.use('/api/usage', usageRouter);
 app.use('/media', mediaRouter);
 
 // Health check
