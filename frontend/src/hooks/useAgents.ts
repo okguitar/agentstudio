@@ -116,45 +116,6 @@ export const useAgentSessions = (agentId: string, searchTerm?: string, projectPa
   });
 };
 
-export const useCreateAgentSession = () => {
-  return useMutation({
-    mutationFn: async ({ agentId, title, projectPath }: { agentId: string; title?: string; projectPath?: string }) => {
-      const response = await fetch(`${API_BASE}/agents/${agentId}/sessions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ title, projectPath })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create agent session');
-      }
-
-      return response.json();
-    }
-  });
-};
-
-export const useDeleteAgentSession = () => {
-  return useMutation({
-    mutationFn: async ({ agentId, sessionId, projectPath }: { agentId: string; sessionId: string; projectPath?: string }) => {
-      const url = new URL(`${window.location.origin}${API_BASE}/agents/${agentId}/sessions/${sessionId}`);
-      if (projectPath) {
-        url.searchParams.set('projectPath', projectPath);
-      }
-      const response = await fetch(url.toString(), {
-        method: 'DELETE'
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete agent session');
-      }
-
-      return response.json();
-    }
-  });
-};
 
 // Get agent session messages
 export const useAgentSessionMessages = (agentId: string, sessionId: string | null, projectPath?: string) => {
@@ -220,7 +181,7 @@ export const useAgentChat = () => {
       onError?: (error: unknown) => void;
     }) => {
       try {
-        const response = await fetch(`${API_BASE}/ai/chat`, {
+        const response = await fetch(`${API_BASE}/agents/chat`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'

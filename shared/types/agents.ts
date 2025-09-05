@@ -39,13 +39,6 @@ export interface AgentConfig {
   dataDirectory?: string;
   fileTypes?: string[]; // Supported file extensions
   
-  // Context builders
-  contextBuilders?: {
-    currentItem?: (state: unknown) => unknown;
-    allItems?: (state: unknown) => unknown[];
-    customContext?: (state: unknown) => Record<string, unknown>;
-  };
-  
   // Metadata
   author: string;
   homepage?: string;
@@ -67,7 +60,6 @@ export interface AgentSession {
   createdAt: number;
   lastUpdated: number;
   messages: AgentMessage[];
-  claudeSessionId?: string | null;
   customData?: Record<string, unknown>;
 }
 

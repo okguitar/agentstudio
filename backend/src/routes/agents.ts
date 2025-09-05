@@ -4,10 +4,283 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
 import { spawn } from 'child_process';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import { query, Options } from '@anthropic-ai/claude-code';
 import { AgentStorage } from '../../shared/utils/agentStorage.js';
 import { AgentConfig } from '../../shared/types/agents.js';
 
 const router = express.Router();
+const execAsync = promisify(exec);
+
+// Helper functions for reading Claude Code history from ~/.claude/projects
+function convertProjectPathToClaudeFormat(projectPath: string): string {
+  // Convert path like /Users/kongjie/claude-code-projects/ppt-editor-project-2025-08-27-00-12
+  // to: -Users-kongjie-claude-code-projects-ppt-editor-project-2025-08-27-00-12
+  return projectPath.replace(/\//g, '-');
+}
+
+interface ClaudeHistoryMessage {
+  type: 'summary' | 'user' | 'assistant';
+  summary?: string;
+  message?: {
+    role: 'user' | 'assistant';
+    content: any[];
+  };
+  uuid: string;
+  timestamp: string;
+  sessionId: string;
+  parentUuid?: string;
+  leafUuid?: string;
+}
+
+interface ClaudeHistorySession {
+  id: string;
+  title: string;
+  createdAt: string;
+  lastUpdated: string;
+  messages: any[];
+}
+
+function readClaudeHistorySessions(projectPath: string): ClaudeHistorySession[] {
+  try {
+    const claudeProjectPath = convertProjectPathToClaudeFormat(projectPath);
+    const historyDir = path.join(os.homedir(), '.claude', 'projects', claudeProjectPath);
+    
+    if (!fs.existsSync(historyDir)) {
+      console.log('Claude history directory not found:', historyDir);
+      return [];
+    }
+
+    const jsonlFiles = fs.readdirSync(historyDir)
+      .filter(file => file.endsWith('.jsonl'))
+      .filter(file => !file.startsWith('.'));
+
+    const sessions: ClaudeHistorySession[] = [];
+
+    for (const filename of jsonlFiles) {
+      const sessionId = filename.replace('.jsonl', '');
+      const filePath = path.join(historyDir, filename);
+      
+      try {
+        const content = fs.readFileSync(filePath, 'utf-8');
+        const lines = content.trim().split('\n').filter(line => line.trim());
+        
+        if (lines.length === 0) continue;
+
+        const messages: ClaudeHistoryMessage[] = lines.map(line => JSON.parse(line));
+        
+        // Find summary message for session title
+        const summaryMessage = messages.find(msg => msg.type === 'summary');
+        const title = summaryMessage?.summary || `会话 ${sessionId.slice(0, 8)}`;
+        
+        // Filter user and assistant messages, but exclude tool_result-only user messages
+        const conversationMessages = messages.filter(msg => {
+          if (msg.type === 'assistant') return true;
+          if (msg.type === 'user') {
+            // Check if this user message contains only tool_result
+            if (msg.message?.content && Array.isArray(msg.message.content)) {
+              const hasNonToolResult = msg.message.content.some((block: any) => block.type !== 'tool_result');
+              return hasNonToolResult; // Only include if it has content other than tool_result
+            }
+            // Include user messages with string content or no content array
+            return typeof msg.message?.content === 'string' || !msg.message?.content;
+          }
+          return false;
+        });
+        
+        if (conversationMessages.length === 0) continue;
+
+        // Convert messages to our format and group consecutive assistant messages
+        const convertedMessages: any[] = [];
+        let i = 0;
+
+        while (i < conversationMessages.length) {
+          const msg = conversationMessages[i];
+          
+          if (msg.type === 'user') {
+            // User message - always add as new message
+            convertedMessages.push({
+              id: `msg_${convertedMessages.length}_${msg.uuid}`,
+              role: msg.message?.role || msg.type,
+              content: extractContentFromClaudeMessage(msg),
+              timestamp: new Date(msg.timestamp).getTime(),
+              messageParts: convertClaudeMessageToMessageParts(msg)
+            });
+            i++;
+          } else if (msg.type === 'assistant') {
+            // Find all consecutive assistant messages and combine them
+            const assistantMessages = [msg];
+            let j = i + 1;
+            
+            // Collect all consecutive assistant messages
+            while (j < conversationMessages.length && conversationMessages[j].type === 'assistant') {
+              assistantMessages.push(conversationMessages[j]);
+              j++;
+            }
+            
+            // Create combined assistant message
+            const combinedMessage = {
+              id: `msg_${convertedMessages.length}_${msg.uuid}`,
+              role: 'assistant',
+              content: '',
+              timestamp: new Date(msg.timestamp).getTime(),
+              messageParts: [] as any[]
+            };
+            
+            // Combine all assistant message parts
+            assistantMessages.forEach((assistantMsg) => {
+              const textContent = extractContentFromClaudeMessage(assistantMsg);
+              const msgParts = convertClaudeMessageToMessageParts(assistantMsg);
+              
+              combinedMessage.content += textContent;
+              combinedMessage.messageParts.push(...msgParts.map(part => ({
+                ...part,
+                order: combinedMessage.messageParts.length + part.order
+              })));
+            });
+            
+            convertedMessages.push(combinedMessage);
+            i = j; // Skip to next non-assistant message
+          } else {
+            i++;
+          }
+        }
+
+        // Process tool results - find tool_result messages and associate them with tool_use
+        for (let i = 0; i < messages.length; i++) {
+          const msg = messages[i];
+          if (msg.type === 'user' && msg.message?.content && Array.isArray(msg.message.content)) {
+            for (const block of msg.message.content) {
+              if (block.type === 'tool_result' && block.tool_use_id) {
+                // Find the assistant message that contains the matching tool_use
+                // Look backwards through conversation messages (not all messages)
+                for (let j = convertedMessages.length - 1; j >= 0; j--) {
+                  const assistantMsg = convertedMessages[j];
+                  if (assistantMsg && assistantMsg.role === 'assistant') {
+                    // Find the tool part with matching claudeId
+                    const toolPart = assistantMsg.messageParts.find((part: any) => 
+                      part.type === 'tool' && 
+                      part.toolData && 
+                      part.toolData.claudeId === block.tool_use_id
+                    );
+                    
+                    if (toolPart && toolPart.toolData) {
+                      toolPart.toolData.toolResult = typeof block.content === 'string' 
+                        ? block.content 
+                        : JSON.stringify(block.content);
+                      toolPart.toolData.isError = block.is_error || false;
+                      break;
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        // Get timestamps
+        const timestamps = conversationMessages
+          .map(msg => new Date(msg.timestamp).getTime())
+          .filter(t => !isNaN(t));
+        
+        const createdAt = timestamps.length > 0 ? Math.min(...timestamps) : Date.now();
+        const lastUpdated = timestamps.length > 0 ? Math.max(...timestamps) : Date.now();
+
+        sessions.push({
+          id: sessionId,
+          title,
+          createdAt: new Date(createdAt).toISOString(),
+          lastUpdated: new Date(lastUpdated).toISOString(),
+          messages: convertedMessages
+        });
+
+      } catch (error) {
+        console.error(`Failed to parse Claude history file ${filename}:`, error);
+        continue;
+      }
+    }
+
+    return sessions.sort((a, b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime());
+
+  } catch (error) {
+    console.error('Failed to read Claude history sessions:', error);
+    return [];
+  }
+}
+
+function extractContentFromClaudeMessage(msg: ClaudeHistoryMessage): string {
+  if (!msg.message?.content) return '';
+  
+  // Handle both array and string content
+  if (typeof msg.message.content === 'string') {
+    return msg.message.content;
+  }
+  
+  if (Array.isArray(msg.message.content)) {
+    return msg.message.content
+      .filter((block: any) => block.type === 'text')
+      .map((block: any) => block.text)
+      .join('');
+  }
+  
+  return '';
+}
+
+function convertClaudeMessageToMessageParts(msg: ClaudeHistoryMessage): any[] {
+  if (!msg.message?.content) return [];
+  
+  // Handle string content
+  if (typeof msg.message.content === 'string') {
+    return [{
+      id: `part_0_${msg.uuid}`,
+      type: 'text',
+      content: msg.message.content,
+      order: 0
+    }];
+  }
+  
+  // Handle array content
+  if (Array.isArray(msg.message.content)) {
+    return msg.message.content.map((block: any, index: number) => {
+      if (block.type === 'text') {
+        return {
+          id: `part_${index}_${msg.uuid}`,
+          type: 'text',
+          content: block.text,
+          order: index
+        };
+      } else if (block.type === 'tool_use') {
+        return {
+          id: `part_${index}_${msg.uuid}`,
+          type: 'tool',
+          toolData: {
+            id: `tool_${index}_${msg.uuid}`,
+            claudeId: block.id,
+            toolName: block.name,
+            toolInput: block.input || {},
+            toolResult: '', // Will be filled by tool_result if available
+            isExecuting: false, // Historical data is not executing
+            isError: false
+          },
+          order: index
+        };
+      } else if (block.type === 'tool_result') {
+        // Skip tool_result blocks as they will be merged with tool_use blocks
+        return null;
+      }
+      // Handle other content types
+      return {
+        id: `part_${index}_${msg.uuid}`,
+        type: 'unknown',
+        content: JSON.stringify(block),
+        order: index
+      };
+    }).filter(part => part !== null);
+  }
+  
+  return [];
+}
 
 // Function to get AgentStorage instance for specific project directory
 const getAgentStorageForRequest = (req: express.Request): AgentStorage => {
@@ -827,6 +1100,7 @@ router.get('/:agentId/sessions', (req, res) => {
   try {
     const { agentId } = req.params;
     const { search } = req.query;
+    const projectPath = req.query.projectPath as string;
     
     // Verify agent exists
     const agent = globalAgentStorage.getAgent(agentId);
@@ -834,19 +1108,43 @@ router.get('/:agentId/sessions', (req, res) => {
       return res.status(404).json({ error: 'Agent not found' });
     }
     
-    // Use project-specific AgentStorage for sessions
-    const agentStorage = getAgentStorageForRequest(req);
-    const sessions = agentStorage.getAgentSessions(agentId, search as string);
-    const sessionList = sessions.map(session => ({
-      id: session.id,
-      agentId: session.agentId,
-      title: session.title,
-      createdAt: session.createdAt,
-      lastUpdated: session.lastUpdated,
-      messageCount: session.messages.length
-    }));
+    let sessions: any[] = [];
     
-    res.json({ sessions: sessionList });
+    // If projectPath is provided, read from Claude Code history
+    if (projectPath) {
+      console.log('Reading Claude history sessions for project:', projectPath);
+      const claudeSessions = readClaudeHistorySessions(projectPath);
+      sessions = claudeSessions.map(session => ({
+        id: session.id,
+        agentId: agentId, // Associate with current agent
+        title: session.title,
+        createdAt: session.createdAt,
+        lastUpdated: session.lastUpdated,
+        messageCount: session.messages.length
+      }));
+    } else {
+      // Use project-specific AgentStorage for sessions (existing behavior)
+      const agentStorage = getAgentStorageForRequest(req);
+      const agentSessions = agentStorage.getAgentSessions(agentId, search as string);
+      sessions = agentSessions.map(session => ({
+        id: session.id,
+        agentId: session.agentId,
+        title: session.title,
+        createdAt: session.createdAt,
+        lastUpdated: session.lastUpdated,
+        messageCount: session.messages.length
+      }));
+    }
+    
+    // Apply search filter if provided
+    if (search && typeof search === 'string' && search.trim()) {
+      const searchTerm = search.trim().toLowerCase();
+      sessions = sessions.filter(session => 
+        session.title.toLowerCase().includes(searchTerm)
+      );
+    }
+    
+    res.json({ sessions });
   } catch (error) {
     console.error('Failed to get agent sessions:', error);
     res.status(500).json({ error: 'Failed to retrieve agent sessions' });
@@ -856,10 +1154,28 @@ router.get('/:agentId/sessions', (req, res) => {
 router.get('/:agentId/sessions/:sessionId/messages', (req, res) => {
   try {
     const { agentId, sessionId } = req.params;
+    const projectPath = req.query.projectPath as string;
     
-    // Use project-specific AgentStorage for sessions
-    const agentStorage = getAgentStorageForRequest(req);
-    const session = agentStorage.getSession(agentId, sessionId);
+    let session: any = null;
+    
+    // If projectPath is provided, read from Claude Code history
+    if (projectPath) {
+      console.log('Reading Claude history messages for session:', sessionId, 'in project:', projectPath);
+      const claudeSessions = readClaudeHistorySessions(projectPath);
+      session = claudeSessions.find(s => s.id === sessionId);
+      
+      if (session) {
+        // Add agentId to match expected format
+        session = {
+          ...session,
+          agentId: agentId
+        };
+      }
+    } else {
+      // Use project-specific AgentStorage for sessions (existing behavior)
+      const agentStorage = getAgentStorageForRequest(req);
+      session = agentStorage.getSession(agentId, sessionId);
+    }
     
     if (!session) {
       return res.status(404).json({ error: 'Session not found' });
@@ -911,117 +1227,305 @@ router.delete('/:agentId/sessions/:sessionId', (req, res) => {
   }
 });
 
-// Create new project directory
-router.post('/projects/create', (req, res) => {
+// Validation schemas for chat
+const ImageSchema = z.object({
+  id: z.string(),
+  data: z.string(), // base64 encoded image data
+  mediaType: z.enum(['image/jpeg', 'image/png', 'image/gif', 'image/webp']),
+  filename: z.string().optional()
+});
+
+const ChatRequestSchema = z.object({
+  message: z.string(),
+  images: z.array(ImageSchema).optional(),
+  agentId: z.string().min(1),
+  sessionId: z.string().optional().nullable(),
+  projectPath: z.string().optional(),
+  mcpTools: z.array(z.string()).optional(),
+  context: z.object({
+    currentSlide: z.number().optional().nullable(),
+    slideContent: z.string().optional(),
+    allSlides: z.array(z.object({
+      index: z.number(),
+      title: z.string(),
+      path: z.string(),
+      exists: z.boolean().optional()
+    })).optional(),
+    // Generic context for other agent types
+    currentItem: z.any().optional(),
+    allItems: z.array(z.any()).optional(),
+    customContext: z.record(z.any()).optional()
+  }).optional()
+}).refine(data => data.message.trim().length > 0 || (data.images && data.images.length > 0), {
+  message: "Either message text or images must be provided"
+});
+
+// Function to get the path to system claude command
+async function getClaudeExecutablePath(): Promise<string | null> {
   try {
-    const { agentId, projectName, parentDirectory, description } = req.body;
+    const { stdout: claudePath } = await execAsync('which claude');
+    if (!claudePath) return null;
     
-    if (!agentId || !projectName) {
-      return res.status(400).json({ error: 'Agent ID and project name are required' });
+    const cleanPath = claudePath.trim();
+    
+    // Skip local node_modules paths - we want global installation
+    if (cleanPath.includes('node_modules/.bin')) {
+      // Try to find global installation by checking PATH without local node_modules
+      try {
+        const { stdout: allClaudes } = await execAsync('which -a claude');
+        const claudes = allClaudes.trim().split('\n');
+        
+        // Find the first non-local installation
+        for (const claudePathOption of claudes) {
+          if (!claudePathOption.includes('node_modules/.bin')) {
+            return claudePathOption.trim();
+          }
+        }
+      } catch (error) {
+        // Fallback to the first path found
+      }
     }
     
-    // Verify agent exists
+    return cleanPath;
+  } catch (error) {
+    console.error('Failed to get claude executable path:', error);
+    return null;
+  }
+}
+
+// POST /api/agents/chat - Agent-based AI chat using Claude Code SDK
+router.post('/chat', async (req, res) => {
+  try {
+    console.log('Chat request received:', req.body);
+    const validation = ChatRequestSchema.safeParse(req.body);
+    if (!validation.success) {
+      console.log('Validation failed:', validation.error);
+      return res.status(400).json({ error: 'Invalid request body', details: validation.error });
+    }
+
+    const { message, images, agentId, context, sessionId, projectPath, mcpTools } = validation.data;
+    
+    // console.log('Received chat request with projectPath:', projectPath);
+
+    // Get agent configuration using global storage (agent configs are global)
     const agent = globalAgentStorage.getAgent(agentId);
     if (!agent) {
       return res.status(404).json({ error: 'Agent not found' });
     }
-    
-    // Use custom parent directory if provided, otherwise default to ~/claude-code-projects
-    let projectPath: string;
-    if (parentDirectory && parentDirectory !== '~/claude-code-projects') {
-      // Expand tilde if present
-      const expandedParent = parentDirectory.startsWith('~/') 
-        ? path.join(os.homedir(), parentDirectory.slice(2))
-        : parentDirectory;
-      projectPath = path.join(expandedParent, projectName);
-    } else {
-      const homeDir = os.homedir();
-      const projectsDir = path.join(homeDir, 'claude-code-projects');
-      projectPath = path.join(projectsDir, projectName);
-      
-      // Create projects directory if it doesn't exist
-      if (!fs.existsSync(projectsDir)) {
-        fs.mkdirSync(projectsDir, { recursive: true });
+
+    if (!agent.enabled) {
+      return res.status(403).json({ error: 'Agent is disabled' });
+    }
+
+    // Build system prompt from agent configuration
+    let systemPrompt = agent.systemPrompt;
+
+    // Add context based on agent type and provided context
+    if (context) {
+      if (agent.ui.componentType === 'slides') {
+        // PPT-specific context
+        if (context.currentSlide !== undefined && context.currentSlide !== null) {
+          systemPrompt += `\n\nCurrent context: User is working on slide ${context.currentSlide + 1}`;
+          if (context.slideContent) {
+            systemPrompt += `\nCurrent slide content preview:\n${context.slideContent.substring(0, 500)}...`;
+          }
+        }
+
+        if (context.allSlides?.length) {
+          systemPrompt += `\n\nPresentation overview: ${context.allSlides.length} slides total`;
+          systemPrompt += `\nSlides: ${context.allSlides.map((s: any) => `${s.index + 1}. ${s.title}`).join(', ')}`;
+        }
+      } else {
+        // Generic context for other agent types
+        if (context.currentItem) {
+          systemPrompt += `\n\nCurrent item context: ${JSON.stringify(context.currentItem, null, 2)}`;
+        }
+
+        if (context.allItems?.length) {
+          systemPrompt += `\n\nAll items overview: ${context.allItems.length} items total`;
+        }
+
+        if (context.customContext) {
+          systemPrompt += `\n\nCustom context: ${JSON.stringify(context.customContext, null, 2)}`;
+        }
       }
     }
-    
-    // Create project directory
-    if (!fs.existsSync(projectPath)) {
-      fs.mkdirSync(projectPath, { recursive: true });
+
+    // Set headers for Server-Sent Events
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Headers', 'Cache-Control');
+
+    try {
+      // Build allowed tools list from agent configuration
+      const allowedTools = agent.allowedTools
+        .filter(tool => tool.enabled)
+        .map(tool => tool.name);
+
+      // Add MCP tools if provided
+      if (mcpTools && mcpTools.length > 0) {
+        allowedTools.push(...mcpTools);
+      }
+
+      // Use Claude Code SDK with agent-specific settings
+      // If projectPath is provided, use it as cwd; otherwise fall back to agent's workingDirectory
+      let cwd = process.cwd();
+      if (projectPath) {
+        cwd = projectPath;
+      } else if (agent.workingDirectory) {
+        cwd = path.resolve(process.cwd(), agent.workingDirectory);
+      }
       
-      // Create .cc-sessions directory and project metadata
-      const sessionsDir = path.join(projectPath, '.cc-sessions');
-      fs.mkdirSync(sessionsDir, { recursive: true });
-      
-      const projectMetadata = {
-        name: projectName,
-        description: description || '',
-        agentId,
-        agentName: agent.name,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+      const claudePath = await getClaudeExecutablePath();
+      const queryOptions: Options = {
+        customSystemPrompt: systemPrompt,
+        allowedTools,
+        maxTurns: agent.maxTurns,
+        cwd,
+        permissionMode: agent.permissionMode as any,
+        ...(claudePath && { pathToClaudeCodeExecutable: claudePath })
       };
-      
-      fs.writeFileSync(
-        path.join(sessionsDir, 'project.json'), 
-        JSON.stringify(projectMetadata, null, 2)
-      );
-      
-      // Create a basic README file
-      const readmeContent = `# ${projectName}
 
-Created with ${agent.name} on ${new Date().toLocaleString()}
-
-${description ? `## Description\n${description}\n\n` : ''}This is your project workspace. You can:
-- Store your files here
-- Create subdirectories for organization  
-- Use this directory for your ${agent.name} sessions
-
-The conversation history will be saved in \`.cc-sessions/${agentId}/\` within this directory.
-`;
-      
-      fs.writeFileSync(path.join(projectPath, 'README.md'), readmeContent);
-      
-      // Add project path to agent's projects list
-      if (!agent.projects) {
-        agent.projects = [];
+      // Add MCP configuration if MCP tools are selected
+      if (mcpTools && mcpTools.length > 0) {
+        const mcpConfigPath = path.join(os.homedir(), '.claude-agent', 'mcp-server.json');
+        if (fs.existsSync(mcpConfigPath)) {
+          try {
+            const mcpConfigContent = JSON.parse(fs.readFileSync(mcpConfigPath, 'utf-8'));
+            
+            // Extract unique server names from mcpTools
+            const serverNames = new Set<string>();
+            for (const tool of mcpTools) {
+              // Tool format: mcp__serverName__toolName or mcp__serverName
+              const parts = tool.split('__');
+              if (parts.length >= 2 && parts[0] === 'mcp') {
+                serverNames.add(parts[1]);
+              }
+            }
+            
+            // Build mcpServers configuration
+            const mcpServers: Record<string, any> = {};
+            for (const serverName of serverNames) {
+              const serverConfig = mcpConfigContent.mcpServers?.[serverName];
+              if (serverConfig && serverConfig.status === 'active') {
+                mcpServers[serverName] = {
+                  type: 'stdio',
+                  command: serverConfig.command,
+                  args: serverConfig.args || [],
+                  env: serverConfig.env || {}
+                };
+              }
+            }
+            
+            if (Object.keys(mcpServers).length > 0) {
+              queryOptions.mcpServers = mcpServers;
+              console.log('🔧 MCP Servers configured:', Object.keys(mcpServers));
+            }
+          } catch (error) {
+            console.error('Failed to parse MCP configuration:', error);
+          }
+        }
       }
-      const normalizedPath = path.resolve(projectPath);
-      if (!agent.projects.includes(normalizedPath)) {
-        agent.projects.unshift(normalizedPath); // Add to beginning for most recent
-        agent.updatedAt = new Date().toISOString();
-        globalAgentStorage.saveAgent(agent);
+
+      // Resume existing Claude session if sessionId provided
+      if (sessionId) {
+        queryOptions.resume = sessionId;
+        console.log('🔄 Resuming Claude session:', sessionId);
+      } else {
+        console.log('🆕 Starting new Claude session');
+      }
+
+      // Check if we have images to use streaming input mode
+      if (images && images.length > 0) {
+        console.log('📸 Using streaming input mode for images:', images.map(img => ({
+          id: img.id,
+          mediaType: img.mediaType,
+          filename: img.filename,
+          size: img.data.length
+        })));
+
+        // Create async generator for streaming input with images
+        async function* generateMessages() {
+          const messageContent: any[] = [];
+          
+          // Add text content if provided
+          if (message && message.trim()) {
+            messageContent.push({
+              type: "text",
+              text: message
+            });
+          }
+          
+          // Add image content
+          for (const image of images!) {
+            messageContent.push({
+              type: "image",
+              source: {
+                type: "base64",
+                media_type: image.mediaType,
+                data: image.data
+              }
+            });
+          }
+          
+          yield {
+            type: "user" as const,
+            message: {
+              role: "user" as const,
+              content: messageContent
+            }
+          };
+        }
+
+        for await (const sdkMessage of query({
+          prompt: generateMessages() as any,
+          options: queryOptions
+        })) {
+          // Send each message as SSE event
+          const eventData = {
+            ...sdkMessage,
+            timestamp: Date.now()
+          };
+          
+          res.write(`data: ${JSON.stringify(eventData)}\n\n`);
+        }
+      } else {
+        // No images, use simple string prompt
+        for await (const sdkMessage of query({
+          prompt: message || '',
+          options: queryOptions
+        })) {
+          // Send each message as SSE event
+          const eventData = {
+            ...sdkMessage,
+            timestamp: Date.now()
+          };
+          
+          res.write(`data: ${JSON.stringify(eventData)}\n\n`);
+        }
       }
       
-      // Return project info that matches frontend interface
-      const projectId = `${agentId}-${Buffer.from(normalizedPath).toString('base64').replace(/[+/=]/g, '').slice(-8)}`;
+    } catch (sdkError) {
+      console.error('Claude Code SDK error:', sdkError);
       
-      res.json({ 
-        success: true, 
-        project: {
-          id: projectId,
-          name: projectName,
-          path: normalizedPath,
-          agentId,
-          agentName: agent.name,
-          agentIcon: agent.ui.icon,
-          agentColor: agent.ui.primaryColor,
-          createdAt: new Date().toISOString(),
-          lastAccessed: new Date().toISOString(),
-          description: description || ''
-        },
-        message: `Project "${projectName}" created successfully`
-      });
-    } else {
-      res.status(409).json({ error: 'Project directory already exists' });
+      const errorMessage = sdkError instanceof Error ? sdkError.message : 'Unknown error';
+      res.write(`data: ${JSON.stringify({ 
+        type: 'error', 
+        error: 'Claude Code SDK failed', 
+        message: errorMessage 
+      })}\n\n`);
     }
+    
+    res.end();
     
   } catch (error) {
-    console.error('Failed to create project:', error);
-    res.status(500).json({ 
-      error: 'Failed to create project directory', 
-      details: error instanceof Error ? error.message : String(error)
-    });
+    console.error('Error in AI chat:', error);
+    if (!res.headersSent) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      res.status(500).json({ error: 'AI request failed', message: errorMessage });
+    }
   }
 });
 

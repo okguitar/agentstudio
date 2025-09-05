@@ -271,6 +271,26 @@ export class AgentStorage {
     return session;
   }
 
+  createSessionWithId(agentId: string, sessionId: string, title?: string): AgentSession {
+    const agent = this.getAgent(agentId);
+    
+    // Add current working directory to agent's projects
+    this.addAgentProject(agentId, this.workingDir);
+    
+    const session: AgentSession = {
+      id: sessionId, // Use AI-provided session_id
+      agentId,
+      title: title || `${agent?.name || 'Agent'} 会话 ${new Date().toLocaleString()}`,
+      createdAt: Date.now(),
+      lastUpdated: Date.now(),
+      messages: []
+      // claudeSessionId will be set when AI returns it in init message
+    };
+    
+    this.saveSession(session);
+    return session;
+  }
+
   saveSession(session: AgentSession): void {
     try {
       const sessionsDir = this.getAgentSessionsDir(session.agentId);
