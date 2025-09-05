@@ -191,6 +191,59 @@ router.post('/:dirName/agents/:agentId/usage', async (req, res) => {
   }
 });
 
+// GET /api/projects/:dirName/check-agent - Check if project needs agent selection
+router.get('/:dirName/check-agent', async (req, res) => {
+  try {
+    const { dirName } = req.params;
+    
+    const project = projectStorage.getProject(dirName);
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+    
+    const needsAgent = project.agents.length === 0 || !project.defaultAgent;
+    
+    res.json({ 
+      needsAgent,
+      project: {
+        name: project.name,
+        path: project.path,
+        agents: project.agents,
+        defaultAgent: project.defaultAgent
+      }
+    });
+  } catch (error) {
+    console.error('Error checking project agent:', error);
+    res.status(500).json({ error: 'Failed to check project agent' });
+  }
+});
+
+// POST /api/projects/:dirName/select-agent - Select first agent for project
+router.post('/:dirName/select-agent', async (req, res) => {
+  try {
+    const { dirName } = req.params;
+    const { agentId } = req.body;
+    
+    if (!agentId) {
+      return res.status(400).json({ error: 'Agent ID is required' });
+    }
+    
+    // Add the agent to the project and set it as default
+    projectStorage.addAgentToProject(dirName, agentId);
+    projectStorage.setDefaultAgent(dirName, agentId);
+    
+    const updatedProject = projectStorage.getProject(dirName);
+    
+    res.json({ 
+      success: true,
+      project: updatedProject 
+    });
+  } catch (error) {
+    console.error('Error selecting agent for project:', error);
+    res.status(500).json({ error: 'Failed to select agent for project' });
+  }
+});
+
 // GET /api/projects/:dirName/claude-md - Get project CLAUDE.md content
 router.get('/:dirName/claude-md', async (req, res) => {
   try {

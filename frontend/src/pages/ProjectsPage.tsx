@@ -31,11 +31,14 @@ import { ProjectSubAgentsModal } from '../components/ProjectSubAgentsModal';
 interface Project {
   id: string;
   name: string;
+  dirName: string;
   path: string;
-  agentId: string;
-  agentName: string;
-  agentIcon: string;
-  agentColor: string;
+  realPath?: string;
+  agents: string[];
+  defaultAgent: string;
+  defaultAgentName: string;
+  defaultAgentIcon: string;
+  defaultAgentColor: string;
   createdAt: string;
   lastAccessed: string;
   description?: string;
@@ -260,6 +263,7 @@ export const ProjectsPage: React.FC = () => {
   const [memoryProject, setMemoryProject] = useState<Project | null>(null);
   const [commandsProject, setCommandsProject] = useState<Project | null>(null);
   const [subAgentsProject, setSubAgentsProject] = useState<Project | null>(null);
+  const [agentSelectProject, setAgentSelectProject] = useState<Project | null>(null);
 
   const agents = agentsData?.agents || [];
   const enabledAgents = agents.filter(agent => agent.enabled);
@@ -269,7 +273,7 @@ export const ProjectsPage: React.FC = () => {
     const fetchProjects = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/api/agents/projects');
+        const response = await fetch('/api/projects');
         if (response.ok) {
           const data = await response.json();
           setProjects(data.projects || []);
@@ -291,9 +295,9 @@ export const ProjectsPage: React.FC = () => {
   const filteredProjects = projects.filter(project => {
     const matchesSearch = project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          project.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         project.agentName.toLowerCase().includes(searchQuery.toLowerCase());
+                         project.defaultAgentName.toLowerCase().includes(searchQuery.toLowerCase());
     
-    const matchesAgent = filterAgent === 'all' || project.agentId === filterAgent;
+    const matchesAgent = filterAgent === 'all' || project.defaultAgent === filterAgent;
     
     return matchesSearch && matchesAgent;
   });
@@ -340,10 +344,20 @@ export const ProjectsPage: React.FC = () => {
     }
   };
 
-  const handleOpenProject = (project: Project) => {
+  const handleOpenProject = async (project: Project) => {
+    // Check if project has a default agent
+    if (!project.defaultAgent || project.agents.length === 0) {
+      // Show agent selection dialog
+      setAgentSelectProject(project);
+      return;
+    }
+
+    // Open project with default agent
+    console.log('Opening project:', project.name, 'with agent:', project.defaultAgent);
     const params = new URLSearchParams();
     params.set('project', project.path);
-    const url = `/chat/${project.agentId}?${params.toString()}`;
+    const url = `/chat/${project.defaultAgent}?${params.toString()}`;
+    console.log('Generated URL:', url);
     window.open(url, '_blank');
 
     // Update last accessed time
@@ -388,6 +402,44 @@ export const ProjectsPage: React.FC = () => {
 
   const handleSubAgentManagement = (project: Project) => {
     setSubAgentsProject(project);
+  };
+
+  const handleAgentSelection = async (agentId: string) => {
+    if (!agentSelectProject) return;
+
+    try {
+      // Call API to select agent for project
+      const response = await fetch(`/api/projects/${agentSelectProject.dirName}/select-agent`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ agentId })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Update projects list with new agent info
+        setProjects(prev => prev.map(p => 
+          p.id === agentSelectProject.id ? data.project : p
+        ));
+
+        // Close selection dialog
+        setAgentSelectProject(null);
+
+        // Open project with selected agent
+        const params = new URLSearchParams();
+        params.set('project', data.project.path);
+        const url = `/chat/${agentId}?${params.toString()}`;
+        window.open(url, '_blank');
+      } else {
+        const error = await response.json();
+        alert(`设置Agent失败: ${error.error || '未知错误'}`);
+      }
+    } catch (error) {
+      console.error('Failed to select agent:', error);
+      alert(`设置Agent失败: ${error instanceof Error ? error.message : '未知错误'}`);
+    }
   };
 
 
@@ -507,7 +559,7 @@ export const ProjectsPage: React.FC = () => {
                 >
                   <TableCell className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <div className="text-xl mr-3">{project.agentIcon}</div>
+                      <div className="text-xl mr-3">{project.defaultAgentIcon || '❓'}</div>
                       <div className="flex-1">
                         <div className="flex items-center space-x-2">
                           <button
@@ -533,16 +585,19 @@ export const ProjectsPage: React.FC = () => {
                     </div>
                   </TableCell>
                   <TableCell className="px-6 py-4 whitespace-nowrap">
-                    <span 
-                      className="inline-flex px-2 py-1 text-xs font-medium rounded-full"
-                      style={{
-                        backgroundColor: project.agentColor + '20',
-                        color: project.agentColor
-                      }}
-                    >
-                      {project.agentName}
-                    </span>
-                    
+                    {project.defaultAgentName ? (
+                      <span 
+                        className="inline-flex px-2 py-1 text-xs font-medium rounded-full"
+                        style={{
+                          backgroundColor: project.defaultAgentColor + '20',
+                          color: project.defaultAgentColor
+                        }}
+                      >
+                        {project.defaultAgentName}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-gray-400 italic">未设置</span>
+                    )}
                   </TableCell>
                   <TableCell className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center space-x-2 text-sm text-gray-500">
@@ -633,6 +688,58 @@ export const ProjectsPage: React.FC = () => {
           project={subAgentsProject}
           onClose={() => setSubAgentsProject(null)}
         />
+      )}
+
+      {/* Agent Selection Modal */}
+      {agentSelectProject && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg w-full max-w-md mx-4">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">选择助手类型</h2>
+              <button
+                onClick={() => setAgentSelectProject(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <div className="mb-4">
+                <p className="text-sm text-gray-600 mb-4">
+                  项目 "<strong>{agentSelectProject.name}</strong>" 还没有关联助手类型，请选择一个：
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                {enabledAgents.map((agent) => (
+                  <button
+                    key={agent.id}
+                    onClick={() => handleAgentSelection(agent.id)}
+                    className="w-full p-4 text-left border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="text-2xl">{agent.ui.icon}</div>
+                      <div>
+                        <div className="font-medium text-gray-900">{agent.name}</div>
+                        <div className="text-sm text-gray-600">{agent.description}</div>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex justify-end mt-6">
+                <button
+                  onClick={() => setAgentSelectProject(null)}
+                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  取消
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

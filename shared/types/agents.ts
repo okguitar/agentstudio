@@ -196,5 +196,41 @@ Please respond in Chinese.`,
     fileTypes: ['.md', '.txt', '.rst', '.adoc'],
     tags: ['documentation', 'writing', 'markdown', 'content'],
     enabled: true
+  },
+  {
+    id: 'general-chat',
+    name: '通用聊天助手',
+    description: '通用的AI聊天助手，适用于各种对话和咨询',
+    systemPrompt: `You are a general-purpose AI assistant. You can help with:
+- General questions and conversations
+- Problem-solving and brainstorming  
+- Information and explanations
+- Creative tasks and writing
+- Analysis and research
+- File operations when needed
+
+You are helpful, harmless, and honest. Always strive to provide accurate and useful information.
+Please respond in Chinese unless the user specifically requests another language.`,
+    allowedTools: [
+      { name: 'Write', enabled: true },
+      { name: 'Read', enabled: true },
+      { name: 'Edit', enabled: true },
+      { name: 'Glob', enabled: true },
+      { name: 'MultiEdit', enabled: true },
+      { name: 'Bash', enabled: true },
+      { name: 'Task', enabled: true },
+      { name: 'WebFetch', enabled: true },
+      { name: 'WebSearch', enabled: true }
+    ],
+    ui: {
+      icon: '💬',
+      primaryColor: '#6366F1',
+      headerTitle: '通用聊天',
+      headerDescription: '与AI进行自由对话和咨询',
+      welcomeMessage: '你好！我是通用AI助手，可以帮你解答问题、进行对话、处理各种任务。有什么我可以帮助你的吗？',
+      componentType: 'chat'
+    },
+    tags: ['general', 'chat', 'conversation', 'assistant'],
+    enabled: true
   }
 ];
