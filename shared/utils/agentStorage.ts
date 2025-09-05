@@ -136,40 +136,6 @@ export class AgentStorage {
     return agent;
   }
 
-  // Project tracking for agents
-  addAgentProject(agentId: string, projectPath: string): void {
-    const agent = this.getAgent(agentId);
-    if (!agent) return;
-
-    if (!agent.projects) {
-      agent.projects = [];
-    }
-
-    const normalizedPath = path.resolve(projectPath);
-    if (!agent.projects.includes(normalizedPath)) {
-      agent.projects.push(normalizedPath);
-      agent.updatedAt = new Date().toISOString();
-      this.saveAgent(agent);
-    }
-  }
-
-  getAgentProjects(agentId: string): string[] {
-    const agent = this.getAgent(agentId);
-    return agent?.projects || [];
-  }
-
-  removeAgentProject(agentId: string, projectPath: string): void {
-    const agent = this.getAgent(agentId);
-    if (!agent || !agent.projects) return;
-
-    const normalizedPath = path.resolve(projectPath);
-    const index = agent.projects.indexOf(normalizedPath);
-    if (index > -1) {
-      agent.projects.splice(index, 1);
-      agent.updatedAt = new Date().toISOString();
-      this.saveAgent(agent);
-    }
-  }
 
   // Session management
   getAgentSessionsDir(agentId: string): string {
@@ -255,9 +221,6 @@ export class AgentStorage {
     const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const agent = this.getAgent(agentId);
     
-    // Add current working directory to agent's projects
-    this.addAgentProject(agentId, this.workingDir);
-    
     const session: AgentSession = {
       id: sessionId,
       agentId,
@@ -273,9 +236,6 @@ export class AgentStorage {
 
   createSessionWithId(agentId: string, sessionId: string, title?: string): AgentSession {
     const agent = this.getAgent(agentId);
-    
-    // Add current working directory to agent's projects
-    this.addAgentProject(agentId, this.workingDir);
     
     const session: AgentSession = {
       id: sessionId, // Use AI-provided session_id

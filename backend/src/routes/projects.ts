@@ -2,7 +2,7 @@ import express from 'express';
 import fs from 'fs';
 import path from 'path';
 import { promisify } from 'util';
-import { AgentStorage } from '../../shared/utils/agentStorage.js';
+import { ProjectMetadataStorage } from '../../shared/utils/projectMetadataStorage.js';
 
 const router = express.Router();
 const readFile = promisify(fs.readFile);
@@ -10,8 +10,8 @@ const writeFile = promisify(fs.writeFile);
 const mkdir = promisify(fs.mkdir);
 const stat = promisify(fs.stat);
 
-// Use the same global agent storage as agents.ts
-const globalAgentStorage = new AgentStorage();
+// Use the new project metadata storage
+const projectStorage = new ProjectMetadataStorage();
 
 // Ensure directory exists
 async function ensureDir(dirPath: string) {
@@ -22,38 +22,181 @@ async function ensureDir(dirPath: string) {
   }
 }
 
-// Find project by ID (same logic as agents.ts)
-function findProjectById(projectId: string) {
-  const agents = globalAgentStorage.getAllAgents();
-  
-  for (const agent of agents) {
-    if (agent.projects && agent.projects.length > 0) {
-      for (const projectPath of agent.projects) {
-        const id = `${agent.id}-${Buffer.from(projectPath).toString('base64').replace(/[+/=]/g, '').slice(-8)}`;
-        if (id === projectId) {
-          return {
-            id,
-            name: path.basename(projectPath),
-            path: projectPath,
-            agentId: agent.id,
-            agentName: agent.name,
-            agentIcon: agent.ui.icon,
-            agentColor: agent.ui.primaryColor
-          };
-        }
-      }
-    }
-  }
-  
-  return null;
-}
-
-// GET /api/projects/:id/claude-md - Get project CLAUDE.md content
-router.get('/:id/claude-md', async (req, res) => {
+// GET /api/projects - Get all projects
+router.get('/', async (req, res) => {
   try {
-    const { id } = req.params;
+    const projects = projectStorage.getAllProjects();
+    res.json({ projects });
+  } catch (error) {
+    console.error('Error fetching projects:', error);
+    res.status(500).json({ error: 'Failed to fetch projects' });
+  }
+});
+
+// GET /api/projects/:dirName - Get specific project
+router.get('/:dirName', async (req, res) => {
+  try {
+    const { dirName } = req.params;
+    const project = projectStorage.getProject(dirName);
     
-    const project = findProjectById(id);
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+    
+    res.json({ project });
+  } catch (error) {
+    console.error('Error fetching project:', error);
+    res.status(500).json({ error: 'Failed to fetch project' });
+  }
+});
+
+// POST /api/projects - Create new project
+router.post('/', async (req, res) => {
+  try {
+    const { name, dirName, agentId, description, tags, metadata } = req.body;
+    
+    if (!dirName) {
+      return res.status(400).json({ error: 'Directory name is required' });
+    }
+    
+    // Check if project directory already exists
+    const existingProject = projectStorage.getProject(dirName);
+    if (existingProject) {
+      return res.status(409).json({ error: 'Project directory already exists' });
+    }
+    
+    const projectMetadata = projectStorage.createProject(dirName, {
+      name: name || dirName,
+      description,
+      agentId,
+      tags,
+      metadata
+    });
+    
+    const project = projectStorage.getProject(dirName);
+    res.json({ project, metadata: projectMetadata });
+  } catch (error) {
+    console.error('Error creating project:', error);
+    res.status(500).json({ error: 'Failed to create project' });
+  }
+});
+
+// PUT /api/projects/:dirName - Update project info
+router.put('/:dirName', async (req, res) => {
+  try {
+    const { dirName } = req.params;
+    const { name, description, tags, metadata } = req.body;
+    
+    const project = projectStorage.getProject(dirName);
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+    
+    // Update basic info
+    if (name !== undefined || description !== undefined) {
+      projectStorage.updateProjectInfo(dirName, { name, description });
+    }
+    
+    // Update tags
+    if (tags !== undefined) {
+      projectStorage.updateProjectTags(dirName, tags);
+    }
+    
+    // Update metadata
+    if (metadata !== undefined) {
+      projectStorage.updateProjectMetadata(dirName, metadata);
+    }
+    
+    const updatedProject = projectStorage.getProject(dirName);
+    res.json({ project: updatedProject });
+  } catch (error) {
+    console.error('Error updating project:', error);
+    res.status(500).json({ error: 'Failed to update project' });
+  }
+});
+
+// DELETE /api/projects/:dirName - Delete project metadata
+router.delete('/:dirName', async (req, res) => {
+  try {
+    const { dirName } = req.params;
+    
+    const success = projectStorage.deleteProject(dirName);
+    if (!success) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting project:', error);
+    res.status(500).json({ error: 'Failed to delete project' });
+  }
+});
+
+// PUT /api/projects/:dirName/default-agent - Set default agent
+router.put('/:dirName/default-agent', async (req, res) => {
+  try {
+    const { dirName } = req.params;
+    const { agentId } = req.body;
+    
+    if (!agentId) {
+      return res.status(400).json({ error: 'Agent ID is required' });
+    }
+    
+    projectStorage.setDefaultAgent(dirName, agentId);
+    const updatedProject = projectStorage.getProject(dirName);
+    
+    res.json({ project: updatedProject });
+  } catch (error) {
+    console.error('Error setting default agent:', error);
+    res.status(500).json({ error: 'Failed to set default agent' });
+  }
+});
+
+// PUT /api/projects/:dirName/agents/:agentId - Enable/disable agent for project
+router.put('/:dirName/agents/:agentId', async (req, res) => {
+  try {
+    const { dirName, agentId } = req.params;
+    const { enabled } = req.body;
+    
+    if (typeof enabled !== 'boolean') {
+      return res.status(400).json({ error: 'Enabled must be a boolean' });
+    }
+    
+    if (enabled) {
+      projectStorage.addAgentToProject(dirName, agentId);
+    } else {
+      projectStorage.removeAgentFromProject(dirName, agentId);
+    }
+    
+    const updatedProject = projectStorage.getProject(dirName);
+    res.json({ project: updatedProject });
+  } catch (error) {
+    console.error('Error updating project agent:', error);
+    res.status(500).json({ error: 'Failed to update project agent' });
+  }
+});
+
+// POST /api/projects/:dirName/agents/:agentId/usage - Record agent usage
+router.post('/:dirName/agents/:agentId/usage', async (req, res) => {
+  try {
+    const { dirName, agentId } = req.params;
+    
+    projectStorage.recordAgentUsage(dirName, agentId);
+    const updatedProject = projectStorage.getProject(dirName);
+    
+    res.json({ project: updatedProject });
+  } catch (error) {
+    console.error('Error recording agent usage:', error);
+    res.status(500).json({ error: 'Failed to record agent usage' });
+  }
+});
+
+// GET /api/projects/:dirName/claude-md - Get project CLAUDE.md content
+router.get('/:dirName/claude-md', async (req, res) => {
+  try {
+    const { dirName } = req.params;
+    
+    const project = projectStorage.getProject(dirName);
     if (!project) {
       return res.status(404).json({ error: 'Project not found' });
     }
@@ -97,17 +240,17 @@ router.get('/:id/claude-md', async (req, res) => {
   }
 });
 
-// PUT /api/projects/:id/claude-md - Update project CLAUDE.md content
-router.put('/:id/claude-md', async (req, res) => {
+// PUT /api/projects/:dirName/claude-md - Update project CLAUDE.md content
+router.put('/:dirName/claude-md', async (req, res) => {
   try {
-    const { id } = req.params;
+    const { dirName } = req.params;
     const { content } = req.body;
 
     if (typeof content !== 'string') {
       return res.status(400).json({ error: 'Content must be a string' });
     }
 
-    const project = findProjectById(id);
+    const project = projectStorage.getProject(dirName);
     if (!project) {
       return res.status(404).json({ error: 'Project not found' });
     }

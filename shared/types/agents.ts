@@ -46,9 +46,6 @@ export interface AgentConfig {
   createdAt: string;
   updatedAt: string;
   
-  // Project tracking - list of working directories where this agent has been used
-  projects?: string[];
-  
   // Enable/disable state
   enabled: boolean;
 }

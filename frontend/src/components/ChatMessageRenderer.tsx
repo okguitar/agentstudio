@@ -20,7 +20,13 @@ export const ChatMessageRenderer: React.FC<ChatMessageRendererProps> = ({ messag
     return (
       <div className="space-y-3">
         {sortedParts.map((part) => {
-          if (part.type === 'text' && part.content) {
+          if (part.type === 'command' && part.content) {
+            return (
+              <div key={part.id} className="inline-flex items-center px-2 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-md text-sm font-mono">
+                {part.content}
+              </div>
+            );
+          } else if (part.type === 'text' && part.content) {
             return (
               <div key={part.id}>
                 {message.role === 'assistant' ? (

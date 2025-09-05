@@ -9,9 +9,14 @@ import { promisify } from 'util';
 import { query, Options } from '@anthropic-ai/claude-code';
 import { AgentStorage } from '../../shared/utils/agentStorage.js';
 import { AgentConfig } from '../../shared/types/agents.js';
+import { ProjectMetadataStorage } from '../../shared/utils/projectMetadataStorage.js';
 
 const router = express.Router();
 const execAsync = promisify(exec);
+
+// Storage instances
+const globalAgentStorage = new AgentStorage();
+const projectStorage = new ProjectMetadataStorage();
 
 // Helper functions for reading Claude Code history from ~/.claude/projects
 function convertProjectPathToClaudeFormat(projectPath: string): string {
@@ -74,8 +79,13 @@ function readClaudeHistorySessions(projectPath: string): ClaudeHistorySession[] 
         const summaryMessage = messages.find(msg => msg.type === 'summary');
         const title = summaryMessage?.summary || `会话 ${sessionId.slice(0, 8)}`;
         
-        // Filter user and assistant messages, but exclude tool_result-only user messages
+        // Filter user and assistant messages, but exclude tool_result-only user messages and isMeta messages
         const conversationMessages = messages.filter(msg => {
+          // Filter out isMeta messages (rule 1)
+          if ((msg as any).isMeta === true) {
+            return false;
+          }
+          
           if (msg.type === 'assistant') return true;
           if (msg.type === 'user') {
             // Check if this user message contains only tool_result
@@ -214,6 +224,11 @@ function extractContentFromClaudeMessage(msg: ClaudeHistoryMessage): string {
   
   // Handle both array and string content
   if (typeof msg.message.content === 'string') {
+    // Rule 2: Check for command message format and extract command name only
+    const commandMatch = msg.message.content.match(/<command-message>.*?<\/command-message>\s*<command-name>(.+?)<\/command-name>/);
+    if (commandMatch) {
+      return commandMatch[1]; // Return only the command name
+    }
     return msg.message.content;
   }
   
@@ -232,6 +247,18 @@ function convertClaudeMessageToMessageParts(msg: ClaudeHistoryMessage): any[] {
   
   // Handle string content
   if (typeof msg.message.content === 'string') {
+    // Rule 2: Check for command message format and create command-specific part
+    const commandMatch = msg.message.content.match(/<command-message>.*?<\/command-message>\s*<command-name>(.+?)<\/command-name>/);
+    if (commandMatch) {
+      return [{
+        id: `part_0_${msg.uuid}`,
+        type: 'command',
+        content: commandMatch[1], // Only the command name
+        originalContent: msg.message.content, // Keep original for reference
+        order: 0
+      }];
+    }
+    
     return [{
       id: `part_0_${msg.uuid}`,
       type: 'text',
@@ -290,8 +317,6 @@ const getAgentStorageForRequest = (req: express.Request): AgentStorage => {
   return new AgentStorage(workingDir);
 };
 
-// For agent configuration operations, we still use the global one
-const globalAgentStorage = new AgentStorage();
 
 // Validation schemas
 const CreateAgentSchema = z.object({
@@ -697,81 +722,10 @@ router.get('/', (req, res) => {
 
 
 // Projects management routes - MUST be before /:agentId route
+// Using new project metadata storage system
 router.get('/projects', (req, res) => {
   try {
-    const agents = globalAgentStorage.getAllAgents();
-    const projects = [];
-    
-    // Gather projects from all agents
-    for (const agent of agents) {
-      if (agent.projects && agent.projects.length > 0) {
-        for (const projectPath of agent.projects) {
-          try {
-            // Check if directory still exists
-            if (fs.existsSync(projectPath)) {
-              const stats = fs.statSync(projectPath);
-              const projectName = path.basename(projectPath);
-              
-              // Try to get project metadata if it exists
-              const metadataPath = path.join(projectPath, '.cc-sessions', 'project.json');
-              let description = '';
-              let createdAt = stats.birthtime.toISOString();
-              
-              if (fs.existsSync(metadataPath)) {
-                try {
-                  const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf-8'));
-                  description = metadata.description || '';
-                  createdAt = metadata.createdAt || createdAt;
-                } catch (error) {
-                  // Ignore metadata read errors
-                }
-              }
-              
-              // Get last accessed time from agent sessions
-              const sessionsDir = path.join(projectPath, '.cc-sessions', agent.id);
-              let lastAccessed = createdAt;
-              if (fs.existsSync(sessionsDir)) {
-                try {
-                  const sessionFiles = fs.readdirSync(sessionsDir)
-                    .filter(file => file.endsWith('.json'))
-                    .map(file => {
-                      const sessionPath = path.join(sessionsDir, file);
-                      return fs.statSync(sessionPath).mtime;
-                    })
-                    .sort((a, b) => b.getTime() - a.getTime());
-                  
-                  if (sessionFiles.length > 0) {
-                    lastAccessed = sessionFiles[0].toISOString();
-                  }
-                } catch (error) {
-                  // Ignore session read errors
-                }
-              }
-              
-              projects.push({
-                id: `${agent.id}-${Buffer.from(projectPath).toString('base64').replace(/[+/=]/g, '').slice(-8)}`,
-                name: projectName,
-                path: projectPath,
-                agentId: agent.id,
-                agentName: agent.name,
-                agentIcon: agent.ui.icon,
-                agentColor: agent.ui.primaryColor,
-                createdAt,
-                lastAccessed,
-                description
-              });
-            }
-          } catch (error) {
-            // Skip projects that can't be read
-            console.warn(`Failed to read project ${projectPath}:`, error);
-          }
-        }
-      }
-    }
-    
-    // Sort by last accessed time (most recent first)
-    projects.sort((a, b) => new Date(b.lastAccessed).getTime() - new Date(a.lastAccessed).getTime());
-    
+    const projects = projectStorage.getAllProjects();
     res.json({ projects });
   } catch (error) {
     console.error('Failed to get projects:', error);
@@ -779,7 +733,7 @@ router.get('/projects', (req, res) => {
   }
 });
 
-// Create new project directory
+// Create new project directory in ~/.claude/projects
 router.post('/projects/create', (req, res) => {
   try {
     const { agentId, projectName, parentDirectory, description } = req.body;
