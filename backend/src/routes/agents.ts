@@ -733,6 +733,30 @@ router.get('/projects', (req, res) => {
   }
 });
 
+// Get projects for a specific agent
+router.get('/projects/:agentId', (req, res) => {
+  try {
+    const { agentId } = req.params;
+    
+    // Verify agent exists
+    const agent = globalAgentStorage.getAgent(agentId);
+    if (!agent) {
+      return res.status(404).json({ error: 'Agent not found' });
+    }
+    
+    // Get all projects and filter by agent
+    const allProjects = projectStorage.getAllProjects();
+    const agentProjects = allProjects.filter(project => 
+      project.agents.includes(agentId)
+    );
+    
+    res.json({ projects: agentProjects });
+  } catch (error) {
+    console.error('Failed to get agent projects:', error);
+    res.status(500).json({ error: 'Failed to retrieve agent projects' });
+  }
+});
+
 // Create new project directory in ~/.claude/projects
 router.post('/projects/create', (req, res) => {
   try {

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Folder, FolderPlus, X, Search } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { AgentConfig } from '../types/index.js';
-import { useCreateProject } from '../hooks/useAgents.js';
+import { useCreateProject, useAgentProjects } from '../hooks/useAgents.js';
 import { FileBrowser } from './FileBrowser.js';
 
 interface ProjectSelectorProps {
@@ -23,6 +23,10 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
   const [showProjectNameDialog, setShowProjectNameDialog] = useState(false);
   const createProject = useCreateProject();
   const queryClient = useQueryClient();
+  
+  // Get projects for this specific agent
+  const { data: agentProjectsData, isLoading: projectsLoading } = useAgentProjects(agent.id);
+  const agentProjects = agentProjectsData?.projects || [];
 
   const handleNewProject = async () => {
     // Quick create with default settings
@@ -38,11 +42,10 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
         projectName
       });
       
-      // Refresh agents data to show the new project in recent projects
-      await queryClient.invalidateQueries({ queryKey: ['agents'] });
-      await queryClient.invalidateQueries({ queryKey: ['agent', agent.id] });
+      // Refresh agent projects data to show the new project in recent projects
+      await queryClient.invalidateQueries({ queryKey: ['agent-projects', agent.id] });
       
-      onProjectSelect(result.projectPath);
+      onProjectSelect(result.project.path);
     } catch (error) {
       console.error('Failed to create project:', error);
       alert(`创建项目失败: ${error instanceof Error ? error.message : '未知错误'}`);
@@ -75,11 +78,10 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
         parentDirectory: selectedDirectory || undefined
       });
       
-      // Refresh agents data to show the new project in recent projects
-      await queryClient.invalidateQueries({ queryKey: ['agents'] });
-      await queryClient.invalidateQueries({ queryKey: ['agent', agent.id] });
+      // Refresh agent projects data to show the new project in recent projects
+      await queryClient.invalidateQueries({ queryKey: ['agent-projects', agent.id] });
       
-      onProjectSelect(result.projectPath);
+      onProjectSelect(result.project.path);
     } catch (error) {
       console.error('Failed to create project:', error);
       alert(`创建项目失败: ${error instanceof Error ? error.message : '未知错误'}`);
@@ -98,7 +100,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
     if (isDirectory) {
       // Normalize paths for comparison
       const normalizedPath = path.replace(/\/$/, ''); // Remove trailing slash
-      const normalizedProjects = (agent.projects || []).map(p => p.replace(/\/$/, ''));
+      const normalizedProjects = agentProjects.map(p => p.path.replace(/\/$/, ''));
       
       // Check if this directory is already in agent's projects
       let isExistingProject = normalizedProjects.includes(normalizedPath);
@@ -225,21 +227,38 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
           <div className="w-full md:w-1/2 p-6 flex flex-col min-h-[300px] md:min-h-0">
             <h4 className="text-base font-medium text-gray-900 mb-4">最近使用的项目</h4>
             
-            {agent.projects && agent.projects.length > 0 ? (
+            {projectsLoading ? (
+              <div className="flex-1 flex items-center justify-center">
+                <div className="text-center text-gray-500">
+                  <div className="animate-spin w-8 h-8 border-4 border-gray-300 border-t-blue-600 rounded-full mx-auto mb-3"></div>
+                  <p className="text-sm">正在加载项目...</p>
+                </div>
+              </div>
+            ) : agentProjects.length > 0 ? (
               <div className="flex-1 overflow-hidden">
                 <div className="space-y-2 max-h-full overflow-y-auto">
-                  {agent.projects.map((project, index) => (
+                  {agentProjects.map((project, index) => (
                     <button
-                      key={index}
-                      onClick={() => onProjectSelect(project)}
+                      key={project.id || index}
+                      onClick={() => onProjectSelect(project.path)}
                       className="w-full flex items-center space-x-3 p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors text-left"
                     >
-                      <Folder className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                      <div 
+                        className="w-5 h-5 flex-shrink-0 text-xl"
+                        style={{ color: project.defaultAgentColor || '#3B82F6' }}
+                      >
+                        {project.defaultAgentIcon || '📁'}
+                      </div>
                       <div className="flex-1 min-w-0">
                         <div className="font-medium text-gray-900 truncate">
-                          {project.split('/').pop() || 'Untitled Project'}
+                          {project.name}
                         </div>
-                        <div className="text-sm text-gray-500 truncate mt-1">{project}</div>
+                        <div className="text-sm text-gray-500 truncate mt-1">
+                          {project.path}
+                        </div>
+                        <div className="text-xs text-gray-400 mt-1">
+                          最后访问: {new Date(project.lastAccessed).toLocaleString()}
+                        </div>
                       </div>
                     </button>
                   ))}

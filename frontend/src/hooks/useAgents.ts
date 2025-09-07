@@ -261,3 +261,18 @@ export const useCreateProject = () => {
     }
   });
 };
+
+// Get projects for a specific agent
+export const useAgentProjects = (agentId: string) => {
+  return useQuery({
+    queryKey: ['agent-projects', agentId],
+    queryFn: async () => {
+      const response = await fetch(`${API_BASE}/agents/projects/${agentId}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch agent projects');
+      }
+      return response.json();
+    },
+    enabled: !!agentId
+  });
+};
