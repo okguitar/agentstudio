@@ -295,6 +295,19 @@ function convertClaudeMessageToMessageParts(msg: ClaudeHistoryMessage): any[] {
       } else if (block.type === 'tool_result') {
         // Skip tool_result blocks as they will be merged with tool_use blocks
         return null;
+      } else if (block.type === 'image') {
+        // Handle image content blocks
+        return {
+          id: `part_${index}_${msg.uuid}`,
+          type: 'image',
+          imageData: {
+            id: `img_${index}_${msg.uuid}`,
+            data: block.source?.data || '',
+            mediaType: block.source?.media_type || 'image/jpeg',
+            filename: `image_${index}.jpg` // Default filename since Claude history may not store original filename
+          },
+          order: index
+        };
       }
       // Handle other content types
       return {
@@ -1356,14 +1369,15 @@ router.post('/chat', async (req, res) => {
         cwd = path.resolve(process.cwd(), agent.workingDirectory);
       }
       
-      const claudePath = await getClaudeExecutablePath();
+      // const claudePath = await getClaudeExecutablePath();
       const queryOptions: Options = {
         customSystemPrompt: systemPrompt,
         allowedTools,
         maxTurns: agent.maxTurns,
         cwd,
         permissionMode: agent.permissionMode as any,
-        ...(claudePath && { pathToClaudeCodeExecutable: claudePath })
+        // Temporarily disable custom path to let SDK find claude automatically
+        // ...(claudePath && { pathToClaudeCodeExecutable: claudePath })
       };
 
       // Add MCP configuration if MCP tools are selected
