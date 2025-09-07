@@ -65,7 +65,7 @@ export const SessionsDropdown: React.FC<SessionsDropdownProps> = ({
   return (
     <div 
       ref={dropdownRef}
-      className="absolute top-full left-0 mt-1 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50"
+      className="absolute top-full right-0 mt-1 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50"
     >
       {/* Header */}
       <div className="flex items-center justify-between p-3 border-b border-gray-100">

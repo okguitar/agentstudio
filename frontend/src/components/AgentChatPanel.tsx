@@ -462,26 +462,28 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
               }
             </p>
           </div>
-          <div className="flex space-x-2 relative">
-            <button
-              onClick={() => setShowSessions(!showSessions)}
-              className="p-2 hover:bg-white/20 rounded-lg transition-colors relative"
-              title="会话历史"
-            >
-              <Clock className="w-5 h-5" />
-            </button>
-            
-            {/* Sessions Dropdown */}
-            <SessionsDropdown
-              isOpen={showSessions}
-              onToggle={() => setShowSessions(!showSessions)}
-              sessions={sessionsData?.sessions || []}
-              currentSessionId={currentSessionId}
-              onSwitchSession={handleSwitchSession}
-              isLoading={false}
-              searchTerm={searchTerm}
-              onSearchChange={setSearchTerm}
-            />
+          <div className="flex space-x-2">
+            <div className="relative">
+              <button
+                onClick={() => setShowSessions(!showSessions)}
+                className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+                title="会话历史"
+              >
+                <Clock className="w-5 h-5" />
+              </button>
+              
+              {/* Sessions Dropdown */}
+              <SessionsDropdown
+                isOpen={showSessions}
+                onToggle={() => setShowSessions(!showSessions)}
+                sessions={sessionsData?.sessions || []}
+                currentSessionId={currentSessionId}
+                onSwitchSession={handleSwitchSession}
+                isLoading={false}
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+              />
+            </div>
           </div>
         </div>
       </div>
