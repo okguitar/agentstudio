@@ -1,7 +1,7 @@
 {
-  "name": "ai-ppt-editor",
-  "version": "1.0.0",
-  "description": "AI-powered PPT editor with React frontend and Node.js backend",
+  "name": "agentstudio",
+  "version": "0.1.0",
+  "description": "Claude-powered AgentStudio with React frontend and Node.js backend, built on top of Claude Code SDK",
   "type": "module",
   "scripts": {
     "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
@@ -15,21 +15,21 @@
   },
   "keywords": [
     "ai",
-    "ppt",
+    "agent",
+    "studio",
     "editor",
     "react",
-    "typescript",
-    "presentation"
+    "typescript"
   ],
   "author": "jeffkit <bbmyth@gmail.com>",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/jeffkit/ai-ppt-editor.git"
+    "url": "https://github.com/jeffkit/agentstudio.git"
   },
-  "homepage": "https://github.com/jeffkit/ai-ppt-editor#readme",
+  "homepage": "https://github.com/jeffkit/agentstudio#readme",
   "bugs": {
-    "url": "https://github.com/jeffkit/ai-ppt-editor/issues"
+    "url": "https://github.com/jeffkit/agentstudio/issues"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

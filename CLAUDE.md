@@ -2,22 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Developer Information
-
-**Project Owner**: jeffkit
-- **Name**: jeffkit
-- **Email**: bbmyth@gmail.com
-- **GitHub**: https://github.com/jeffkit
-
-When creating or updating package.json files, use the above information for:
-- `author` field: "jeffkit <bbmyth@gmail.com>"
-- `repository.url`: "https://github.com/jeffkit/ai-ppt-editor.git"
-- `homepage`: "https://github.com/jeffkit/ai-ppt-editor#readme"
-- `bugs.url`: "https://github.com/jeffkit/ai-ppt-editor/issues"
 
 ## Project Overview
 
-AI-powered PPT editor with React frontend and Node.js backend. The application features an agent-based architecture where specialized AI agents handle different types of content editing. The main interface provides a split-panel layout (chat on left, preview on right) with real-time collaboration between users and AI agents.
+Claude-powered AgentStudio with React frontend and Node.js backend, built on top of Claude Code SDK. The application features an agent-based architecture where specialized AI agents handle different types of content editing. The main interface provides a split-panel layout (chat on left, preview on right) with real-time collaboration between users and AI agents.
 
 ## Architecture
 
@@ -52,6 +40,7 @@ Backend follows RESTful patterns:
 - `/api/slides/*`: Slide CRUD operations (GET, PUT, POST, DELETE)
 - `/api/ai/*`: Legacy AI functionality and session management
 - `/api/agents/*`: Agent-based AI interactions with Claude Code SDK
+- `/api/usage/*`: Usage statistics and monitoring (daily, weekly, monthly, live, summary)
 - `/api/health`: Health check endpoint
 - Static file serving for slide HTML content via `/slides/*`
 
@@ -59,9 +48,15 @@ Backend follows RESTful patterns:
 The application uses a sophisticated agent system built on Claude Code SDK:
 - **Built-in Agents**: PPT Editor, Code Assistant, Document Writer
 - **Custom Agents**: Configurable agents with specific tools and permissions
+- **Subagents**: User-defined AI subagents with custom system prompts and tool access
 - **Session Management**: Per-agent conversation history with automatic title generation
 - **Tool Integration**: Dynamic tool rendering with real-time status updates
 - **Project-Aware**: Agents operate within specific project contexts
+
+### Project Management System
+- **Project-Level Commands**: Slash commands scoped to projects or users (`/shared/types/commands.ts`)
+- **Project Metadata**: Track project configurations, agent associations, and custom attributes
+- **Agent Associations**: Configure which agents are enabled per project with usage statistics
 
 ### File System Integration
 - Slides stored as individual HTML files in `../slides/` directory (relative to backend)
@@ -77,7 +72,7 @@ npm run setup                # Install all dependencies (root, frontend, backend
 
 ### Development
 ```bash
-npm run dev                  # Start both frontend (3000) and backend (3001)
+npm run dev                  # Start both frontend (3000) and backend (3002)
 npm run dev:frontend         # Frontend only
 npm run dev:backend          # Backend only
 ```
@@ -112,8 +107,8 @@ Backend requires `.env` file in `backend/` directory:
 OPENAI_API_KEY=your_openai_api_key_here
 ANTHROPIC_API_KEY=your_anthropic_api_key_here
 
-# Server Configuration
-PORT=3002  # Note: Backend runs on port 3002, frontend on 3000
+# Server Configuration  
+PORT=3002  # Backend runs on port 3002, frontend on 3000
 NODE_ENV=development
 
 # File System
@@ -154,7 +149,11 @@ SLIDES_DIR=../slides  # Relative to backend/src
 ai-editor/
 ├── package.json                    # Root package.json with monorepo scripts
 ├── shared/                         # Shared types and utilities
-│   ├── types/agents.ts            # Agent configuration types
+│   ├── types/
+│   │   ├── agents.ts              # Agent configuration types
+│   │   ├── commands.ts            # Slash command types (project/user scoped)
+│   │   ├── subagents.ts           # Subagent configuration types
+│   │   └── projects.ts            # Project metadata types
 │   └── utils/agentStorage.ts      # Agent persistence utilities
 ├── frontend/                      # React frontend
 │   ├── src/
@@ -162,8 +161,10 @@ ai-editor/
 │   │   │   ├── tools/             # Dynamic tool visualization components
 │   │   │   └── ui/               # Reusable UI components
 │   │   ├── hooks/                # React Query hooks
+│   │   │   └── useUsageStats.ts  # Usage statistics hook
 │   │   ├── stores/               # Zustand state management
 │   │   ├── pages/                # Page components
+│   │   │   └── UsageStatsPage.tsx # Usage monitoring dashboard
 │   │   └── types/                # Frontend type definitions
 │   ├── vitest.config.ts          # Test configuration
 │   └── vite.config.ts            # Vite configuration
@@ -172,15 +173,20 @@ ai-editor/
     │   ├── routes/               # Express routes
     │   │   ├── agents.ts         # Agent-based AI endpoints
     │   │   ├── ai.ts            # Legacy AI endpoints
-    │   │   └── slides.ts        # Slide CRUD operations
+    │   │   ├── slides.ts        # Slide CRUD operations
+    │   │   └── usage.ts         # Usage statistics API
+    │   ├── services/
+    │   │   └── ccusageService.ts # ccusage integration service
     │   └── index.ts             # Server entry point
     └── .env.example             # Environment variables template
 ```
 
 ### Adding New AI Features
-1. Create agent configuration in `shared/types/agents.ts`
-2. Add agent routes in `backend/src/routes/agents.ts`
-3. Update frontend components to support new agent types
+1. **Built-in Agents**: Create agent configuration in `shared/types/agents.ts`
+2. **Subagents**: Use `shared/types/subagents.ts` for user-defined agents
+3. **Slash Commands**: Add project/user-scoped commands via `shared/types/commands.ts`
+4. Add corresponding routes in `backend/src/routes/agents.ts`
+5. Update frontend components to support new agent types
 
 ### UI Component Development
 - Follow existing patterns in `frontend/src/components/`
@@ -194,6 +200,14 @@ ai-editor/
 - Use jsdom environment for component testing
 
 ### Agent Development
-- Extend `BUILTIN_AGENTS` in `shared/types/agents.ts` for new built-in agents
+- **Built-in Agents**: Extend `BUILTIN_AGENTS` in `shared/types/agents.ts`
+- **Subagents**: Create user-defined agents with custom system prompts in `shared/types/subagents.ts`
+- **Project Commands**: Define project-scoped slash commands in `shared/types/commands.ts`
 - Configure agent tools, permissions, and UI properties
 - Implement context builders for agent-specific data
+
+### Usage Monitoring
+- **ccusage Integration**: Backend uses ccusage service for API usage tracking
+- **Statistics API**: Endpoints for daily, weekly, monthly, and live usage data
+- **Usage Dashboard**: Frontend `UsageStatsPage.tsx` displays consumption metrics
+- **Monitoring**: Real-time burn rate and usage summaries via `/api/usage/*` endpoints

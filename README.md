@@ -1,197 +1,245 @@
-# AI PPT Editor
+# AgentStudio
 
-基于现代技术栈构建的AI驱动的PPT编辑器，支持与AI对话来编辑演示文稿。
+A sophisticated AI-powered workspace built on top of Claude Code SDK, featuring advanced agent management, project organization, and real-time collaboration capabilities.
 
-## 技术栈
+## 🚀 Features
 
-### 前端
-- **React 18** + **TypeScript** - 现代React开发
-- **Vite** - 快速构建工具
-- **TailwindCSS** - 实用优先的CSS框架
-- **Zustand** - 轻量级状态管理
-- **React Query** - 服务端状态管理
-- **Lucide React** - 图标库
+### Core Functionality
+- **🤖 Multi-Agent System**: Built-in agents (PPT Editor, Code Assistant, Document Writer) plus custom user-defined subagents
+- **📁 Project Management**: Organize work into projects with agent associations and metadata
+- **💬 Interactive Chat**: Full-screen chat interface with streaming AI responses
+- **🔧 Custom Tools**: Dynamic tool rendering and real-time status updates
+- **📊 Usage Analytics**: Comprehensive API usage tracking and monitoring dashboard
+- **⚡ Slash Commands**: Project-scoped and user-scoped custom commands
+- **🔗 MCP Integration**: Model Context Protocol support for enhanced AI capabilities
 
-### 后端
-- **Node.js** + **Express** + **TypeScript** - 后端API服务
-- **Vercel AI SDK** - AI集成
-- **OpenAI/Anthropic** - AI模型支持
-- **Zod** - 类型验证
-- **fs-extra** - 文件操作
+### Advanced Features
+- **Project-Level Configuration**: Per-project agent settings and custom commands
+- **Subagent Management**: Create and manage custom AI agents with specific system prompts
+- **Usage Monitoring**: Real-time API cost tracking with daily, weekly, and monthly breakdowns
+- **Session Management**: Persistent conversation history with automatic title generation
+- **File System Integration**: Direct file operations and slide management
+- **Settings Management**: Comprehensive configuration for agents, memory, and user preferences
 
-## 功能特性
+## 🛠 Tech Stack
 
-### 核心功能
-- 🤖 **AI聊天助手** - 与AI对话来编辑PPT
-- 📱 **现代界面** - 左侧聊天，右侧预览的分栏布局
-- 🖼️ **实时预览** - 多张幻灯片网格预览
-- ✏️ **在线编辑** - AI驱动的内容编辑
-- 💾 **自动保存** - 编辑后自动保存到文件
+### Frontend
+- **React 19** + **TypeScript** - Modern React with latest features
+- **Vite** - Lightning-fast build tool and dev server
+- **TailwindCSS** - Utility-first CSS framework
+- **React Router DOM** - Client-side routing
+- **React Query** - Server state management and caching
+- **Zustand** - Lightweight client state management
+- **Lucide React** - Beautiful icon library
 
-### AI功能
-- 📝 **内容编辑** - AI理解指令修改幻灯片内容
-- 🎨 **样式调整** - 保持或修改CSS样式
-- ✨ **内容生成** - AI生成新的幻灯片内容
-- 🔄 **智能对话** - 上下文感知的AI助手
+### Backend
+- **Node.js** + **Express** + **TypeScript** - Robust API server
+- **Claude Code SDK** - Advanced AI integration with tool support
+- **ccusage** - API usage tracking and monitoring
+- **Helmet** + **CORS** - Security and cross-origin support
+- **Zod** - Runtime type validation
+- **fs-extra** - Enhanced file system operations
 
-### 界面功能
-- 🔍 **缩放控制** - 50%-200%缩放预览
-- 📋 **批量选择** - 支持多选幻灯片操作
-- 🎯 **当前页面** - 高亮显示当前编辑的幻灯片
-- ⚡ **流式响应** - AI回复实时显示
+### Shared
+- **Monorepo Structure** - Shared types and utilities across frontend/backend
+- **TypeScript** - End-to-end type safety
 
-## 快速开始
+## 🚀 Quick Start
 
-### 1. 安装依赖
+### 1. Install Dependencies
 
 ```bash
-# 安装所有依赖
+# Install all dependencies for root, frontend, and backend
 npm run setup
 ```
 
-### 2. 配置环境变量
+### 2. Environment Configuration
 
-在 `backend/` 目录创建 `.env` 文件：
+Create a `.env` file in the `backend/` directory:
 
 ```env
-# AI Provider Configuration
-OPENAI_API_KEY=your_openai_api_key_here
-# 或者
+# AI Provider Configuration (choose one or both)
 ANTHROPIC_API_KEY=your_anthropic_api_key_here
+OPENAI_API_KEY=your_openai_api_key_here
 
 # Server Configuration
-PORT=3001
+PORT=3002
 NODE_ENV=development
 
-# Slides Configuration (相对于backend/src的路径)
+# File System Configuration
 SLIDES_DIR=../slides
 ```
 
-### 3. 启动开发服务器
+### 3. Start Development Servers
 
 ```bash
-# 同时启动前端和后端
+# Start both frontend and backend concurrently
 npm run dev
 
-# 或分别启动
-npm run dev:frontend  # 前端: http://localhost:3000
-npm run dev:backend   # 后端: http://localhost:3001
+# Or start individually
+npm run dev:frontend  # Frontend: http://localhost:3000
+npm run dev:backend   # Backend: http://localhost:3002
 ```
 
-## API接口
+## 📖 Usage Guide
 
-### Slides API
+### Dashboard Overview
+Access the main dashboard at `http://localhost:3000` to:
+- View active projects and recent sessions
+- Monitor API usage statistics
+- Access agent management tools
+- Configure application settings
 
-```bash
-GET    /api/slides           # 获取所有幻灯片
-GET    /api/slides/:index    # 获取特定幻灯片内容
-PUT    /api/slides/:index    # 更新幻灯片内容
-POST   /api/slides           # 创建新幻灯片
-DELETE /api/slides/:index    # 删除幻灯片
+### Chat Interface
+Navigate to `/chat/{agentId}` for full-screen AI conversations with:
+- Streaming responses and real-time tool execution
+- Context-aware project integration
+- Session history and management
+- Custom slash commands support
+
+### Project Management
+- **Create Projects**: Organize work into distinct projects with metadata
+- **Agent Associations**: Configure which agents are available per project
+- **Custom Commands**: Define project-specific slash commands
+- **Usage Tracking**: Monitor per-project API consumption
+
+### Agent System
+- **Built-in Agents**: Pre-configured agents for common tasks
+- **Subagents**: Create custom agents with specific system prompts and tool access
+- **Tool Configuration**: Control which tools each agent can access
+- **Context Builders**: Agent-specific data and context management
+
+## 🗂 Project Structure
+
 ```
-
-### AI API
-
-```bash
-GET  /api/ai/models          # 获取可用的AI模型
-POST /api/ai/chat            # AI聊天对话
-POST /api/ai/edit-slide      # AI编辑幻灯片
-POST /api/ai/generate-slide  # AI生成新幻灯片
-```
-
-## 项目结构
-
-```
-ai-editor/
-├── package.json                 # 根package.json
-├── frontend/                    # React前端
+agentstudio/
+├── package.json                    # Root package configuration
+├── shared/                         # Shared types and utilities
+│   ├── types/
+│   │   ├── agents.ts              # Agent system types
+│   │   ├── commands.ts            # Slash command types
+│   │   ├── subagents.ts           # Custom subagent types
+│   │   └── projects.ts            # Project management types
+│   └── utils/agentStorage.ts      # Agent persistence utilities
+├── frontend/                      # React application
 │   ├── src/
-│   │   ├── components/         # React组件
-│   │   │   ├── ChatPanel.tsx   # 聊天面板
-│   │   │   ├── PreviewPanel.tsx # 预览面板
-│   │   │   └── SlidePreview.tsx # 单个幻灯片预览
-│   │   ├── hooks/              # React Hooks
-│   │   │   ├── useSlides.ts    # 幻灯片数据管理
-│   │   │   └── useAI.ts        # AI功能集成
-│   │   ├── stores/             # Zustand状态管理
-│   │   │   └── useAppStore.ts  # 全局应用状态
-│   │   ├── types/              # TypeScript类型定义
-│   │   ├── utils/              # 工具函数
-│   │   └── App.tsx             # 主应用组件
-│   ├── vite.config.ts          # Vite配置
-│   └── tailwind.config.js      # Tailwind配置
-└── backend/                     # Node.js后端
+│   │   ├── components/           # React components
+│   │   │   ├── AgentChatPanel.tsx # Main chat interface
+│   │   │   ├── ProjectSelector.tsx # Project management UI
+│   │   │   ├── SubagentForm.tsx   # Custom agent creation
+│   │   │   └── tools/            # Dynamic tool components
+│   │   ├── pages/               # Application pages
+│   │   │   ├── ChatPage.tsx     # Full-screen chat interface
+│   │   │   ├── ProjectsPage.tsx # Project management
+│   │   │   ├── AgentsPage.tsx   # Agent configuration
+│   │   │   └── UsageStatsPage.tsx # Analytics dashboard
+│   │   ├── hooks/               # React Query hooks
+│   │   │   ├── useAgents.ts     # Agent management
+│   │   │   └── useUsageStats.ts # Usage analytics
+│   │   └── stores/              # Zustand state management
+│   ├── vite.config.ts           # Vite configuration
+│   └── tailwind.config.js       # Styling configuration
+└── backend/                     # Express API server
     ├── src/
-    │   ├── routes/             # API路由
-    │   │   ├── slides.ts       # 幻灯片管理API
-    │   │   └── ai.ts           # AI功能API
-    │   └── index.ts            # 服务器入口
-    ├── tsconfig.json           # TypeScript配置
-    └── .env.example            # 环境变量示例
+    │   ├── routes/              # API endpoints
+    │   │   ├── agents.ts        # Agent-based AI interactions
+    │   │   ├── projects.ts      # Project management API
+    │   │   ├── subagents.ts     # Custom agent management
+    │   │   ├── commands.ts      # Slash command API
+    │   │   └── usage.ts         # Usage statistics API
+    │   ├── services/
+    │   │   └── ccusageService.ts # Usage tracking service
+    │   └── index.ts             # Server entry point
+    └── .env.example             # Environment template
 ```
 
-## 使用方法
+## 🔧 API Endpoints
 
-### 基本使用
+### Core APIs
+- `GET /api/agents` - List available agents
+- `POST /api/agents/:id/chat` - Agent chat interactions
+- `GET /api/projects` - Project management
+- `GET /api/usage/*` - Usage statistics (daily, weekly, monthly, live)
 
-1. 启动应用后，左侧显示AI聊天界面，右侧显示幻灯片预览
-2. 与AI聊天，例如："帮我修改第1张幻灯片的标题"
-3. AI会理解你的需求并执行相应操作
-4. 修改会自动保存到对应的HTML文件中
+### Management APIs
+- `/api/subagents/*` - Custom agent CRUD operations
+- `/api/commands/*` - Slash command management
+- `/api/settings/*` - Application configuration
+- `/api/files/*` - File system operations
 
-### AI对话示例
+### Monitoring
+- `GET /api/health` - Health check endpoint
+- `GET /api/usage/summary` - Overall usage analytics
+- `GET /api/usage/live` - Real-time monitoring data
 
-```
-用户: 帮我修改第一张幻灯片，把标题改成"欢迎使用AI编辑器"
-AI: 我来帮你修改第一张幻灯片的标题...
+## 🚀 Development
 
-用户: 创建一张关于技术架构的新幻灯片
-AI: 我来为你创建一张技术架构的幻灯片...
+### Build Commands
 
-用户: 把第二张幻灯片的背景色改成蓝色
-AI: 我来修改第二张幻灯片的背景色...
-```
+```bash
+# Build both frontend and backend
+npm run build
 
-## 兼容性
+# Build individually
+npm run build:frontend
+npm run build:backend
 
-- 与现有的html-slide-player框架完全兼容
-- 支持现有的slides.js配置格式
-- 保持1280x720的幻灯片尺寸标准
-- 维护现有的CSS样式规范
-
-## 开发说明
-
-### 添加新的AI功能
-
-在 `backend/src/routes/ai.ts` 中添加新的路由：
-
-```typescript
-router.post('/new-feature', async (req, res) => {
-  // 新的AI功能实现
-});
+# Production start
+npm start
 ```
 
-### 添加新的UI组件
+### Testing
 
-在 `frontend/src/components/` 中创建新组件：
+```bash
+# Run frontend tests
+cd frontend && npm test
 
-```typescript
-export const NewComponent: React.FC = () => {
-  // 组件实现
-};
+# Run tests with UI
+cd frontend && npm run test:ui
+
+# Run tests with coverage
+cd frontend && npm run test:coverage
 ```
 
-### 状态管理
+### Code Quality
 
-使用Zustand进行全局状态管理，在 `useAppStore.ts` 中添加新状态：
+```bash
+# Frontend linting
+cd frontend && npm run lint
 
-```typescript
-interface AppState {
-  newState: SomeType;
-  setNewState: (value: SomeType) => void;
-}
+# Backend type checking
+cd backend && npm run type-check
 ```
 
-## 许可证
+### Adding Features
 
-MIT License
+1. **New Agent Types**: Extend `BUILTIN_AGENTS` in `shared/types/agents.ts`
+2. **Custom Tools**: Add components to `frontend/src/components/tools/`
+3. **API Endpoints**: Add routes in `backend/src/routes/`
+4. **UI Components**: Follow patterns in `frontend/src/components/`
+
+## 📊 Monitoring & Analytics
+
+The application includes comprehensive usage monitoring:
+
+- **Real-time Tracking**: Monitor API calls, token usage, and costs
+- **Historical Data**: Daily, weekly, and monthly usage breakdowns
+- **Burn Rate Analysis**: Track spending velocity and trends
+- **Agent-specific Metrics**: Usage statistics per agent and project
+- **Export Capabilities**: Data export for external analysis
+
+## 🔒 Security Features
+
+- **Helmet Security**: Comprehensive HTTP security headers
+- **CORS Configuration**: Controlled cross-origin resource sharing
+- **Content Security Policy**: Protection against XSS attacks
+- **Input Validation**: Zod-based runtime type checking
+- **Environment Isolation**: Secure environment variable management
+
+## 📝 License
+
+MIT License - see LICENSE file for details
+
+## 🤝 Contributing
+
+This is a sophisticated AI workspace designed for productivity and extensibility. The codebase follows modern development practices with comprehensive TypeScript coverage, React best practices, and scalable architecture patterns.
