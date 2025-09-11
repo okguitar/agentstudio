@@ -166,11 +166,34 @@ router.get('/', async (req, res) => {
 
     if (filter.search) {
       const searchLower = filter.search.toLowerCase();
-      commands = commands.filter(cmd => 
-        cmd.name.toLowerCase().includes(searchLower) ||
-        cmd.description.toLowerCase().includes(searchLower) ||
-        cmd.content.toLowerCase().includes(searchLower)
-      );
+      // Remove leading '/' if present, as it's not part of the actual command name
+      const cleanSearch = searchLower.startsWith('/') ? searchLower.slice(1) : searchLower;
+      
+      commands = commands.filter(cmd => {
+        // Basic field matching
+        const basicMatch = cmd.name.toLowerCase().includes(cleanSearch) ||
+          cmd.description.toLowerCase().includes(cleanSearch) ||
+          cmd.content.toLowerCase().includes(cleanSearch) ||
+          (cmd.namespace && cmd.namespace.toLowerCase().includes(cleanSearch));
+          
+        // Special handling for namespace pattern matching (e.g., "code:" should match "code:testcmd")
+        if (cleanSearch.endsWith(':') && cmd.namespace) {
+          const namespacePrefix = cleanSearch.slice(0, -1); // Remove the trailing ':'
+          if (cmd.namespace.toLowerCase() === namespacePrefix) {
+            return true;
+          }
+        }
+        
+        // Full namespace:name pattern matching (e.g., "code:test" should match "code:testcmd")
+        if (cleanSearch.includes(':') && cmd.namespace) {
+          const fullDisplayName = `${cmd.namespace.toLowerCase()}:${cmd.name.toLowerCase()}`;
+          if (fullDisplayName.includes(cleanSearch)) {
+            return true;
+          }
+        }
+        
+        return basicMatch;
+      });
     }
 
     // Sort by scope (project first) then by name

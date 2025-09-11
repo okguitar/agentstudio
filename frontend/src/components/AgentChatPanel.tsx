@@ -1,13 +1,23 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Clock, Square, Image, Wrench, X } from 'lucide-react';
 import { ImagePreview } from './ImagePreview';
+import { CommandSelector } from './CommandSelector';
+import { ConfirmDialog } from './ConfirmDialog';
 import { useAgentStore } from '../stores/useAgentStore';
 import { useAgentChat, useAgentSessions, useAgentSessionMessages } from '../hooks/useAgents';
+import { useCommands, useProjectCommands } from '../hooks/useCommands';
 import { useQueryClient } from '@tanstack/react-query';
 import { ChatMessageRenderer } from './ChatMessageRenderer';
 import { SessionsDropdown } from './SessionsDropdown';
 import { McpToolSelector } from './McpToolSelector';
 import type { AgentConfig } from '../types/index.js';
+import { 
+  isCommandTrigger, 
+  extractCommandSearch, 
+  formatCommandMessage, 
+  type CommandType
+} from '../utils/commandFormatter';
+import { createCommandHandler, SystemCommand } from '../utils/commandHandler';
 
 interface AgentChatPanelProps {
   agent: AgentConfig;
@@ -24,6 +34,14 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
   const [selectedImages, setSelectedImages] = useState<Array<{ id: string; file: File; preview: string }>>([]);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [showCommandSelector, setShowCommandSelector] = useState(false);
+  const [commandSearch, setCommandSearch] = useState('');
+  const [selectedCommand, setSelectedCommand] = useState<CommandType | null>(null);
+  const [selectedCommandIndex, setSelectedCommandIndex] = useState(0);
+  const [allCommands, setAllCommands] = useState<CommandType[]>([]);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [confirmMessage, setConfirmMessage] = useState('');
+  const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -49,6 +67,88 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
   const agentChatMutation = useAgentChat();
   const { data: sessionsData } = useAgentSessions(agent.id, searchTerm, projectPath);
   const { data: sessionMessagesData } = useAgentSessionMessages(agent.id, currentSessionId, projectPath);
+  
+  // Fetch commands for keyboard navigation
+  const { data: userCommands = [] } = useCommands({ scope: 'user', search: commandSearch });
+  const { data: projectCommands = [] } = useProjectCommands({
+    projectId: projectPath ? btoa(projectPath) : '',
+    search: commandSearch
+  });
+
+  // System commands definition
+  const SYSTEM_COMMANDS: SystemCommand[] = [
+    {
+      id: 'init',
+      name: 'init',
+      description: '初始化项目或重置对话上下文',
+      content: '/init',
+      scope: 'system',
+      isSystem: true
+    },
+    {
+      id: 'clear',
+      name: 'clear',
+      description: '清空当前对话历史',
+      content: '/clear',
+      scope: 'system',
+      isSystem: true
+    },
+    {
+      id: 'compact',
+      name: 'compact',
+      description: '压缩对话历史，保留关键信息',
+      content: '/compact',
+      scope: 'system',
+      isSystem: true
+    },
+    {
+      id: 'agents',
+      name: 'agents',
+      description: '管理AI代理和子代理',
+      content: '/agents',
+      scope: 'system',
+      isSystem: true
+    },
+    {
+      id: 'settings',
+      name: 'settings',
+      description: '打开设置页面',
+      content: '/settings',
+      scope: 'system',
+      isSystem: true
+    },
+    {
+      id: 'help',
+      name: 'help',
+      description: '显示帮助信息',
+      content: '/help',
+      scope: 'system',
+      isSystem: true
+    },
+  ];
+
+  // Update allCommands when command data changes
+  useEffect(() => {
+    // Filter system commands based on search term
+    const filteredSystemCommands = SYSTEM_COMMANDS.filter(cmd =>
+      cmd.name.toLowerCase().includes(commandSearch.toLowerCase()) ||
+      cmd.description.toLowerCase().includes(commandSearch.toLowerCase())
+    );
+
+    // Combine all commands
+    const combined: CommandType[] = [
+      ...filteredSystemCommands,
+      ...projectCommands,
+      ...userCommands,
+    ];
+
+    setAllCommands(combined);
+    
+    // Reset selected index when commands change
+    if (combined.length > 0 && selectedCommandIndex >= combined.length) {
+      setSelectedCommandIndex(0);
+    }
+  }, [userCommands, projectCommands, commandSearch, selectedCommandIndex]);
 
   // Calculate the actual number of tools represented by the selection
   const getActualToolCount = () => {
@@ -170,10 +270,77 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
   const handleSendMessage = async () => {
     if ((!inputMessage.trim() && selectedImages.length === 0) || isAiTyping) return;
 
-    const userMessage = inputMessage.trim();
+    let userMessage = inputMessage.trim();
     const images = [...selectedImages];
+    
+    // Check if this is a command and handle routing
+    if (isCommandTrigger(inputMessage)) {
+      const commandName = inputMessage.slice(1).split(' ')[0].toLowerCase();
+      
+      // 创建命令处理器
+      const commandHandler = createCommandHandler({
+        agentStore: useAgentStore.getState(),
+        onNewSession: () => {
+          // 创建新会话
+          setCurrentSessionId(null);
+          clearMessages();
+          queryClient.invalidateQueries({ queryKey: ['agent-sessions', agent.id] });
+        },
+        onNavigate: (path: string) => {
+          alert(`导航到: ${path}`);
+        },
+        onConfirm: (message: string, onConfirm: () => void) => {
+          setConfirmMessage(message);
+          setConfirmAction(() => onConfirm);
+          setShowConfirmDialog(true);
+        }
+      });
+      
+      // 创建命令对象（系统命令或从 selectedCommand）
+      let command = selectedCommand;
+      if (!command) {
+        // 用户手动输入的命令，创建系统命令对象
+        const SYSTEM_COMMANDS = [
+          { id: 'init', name: 'init', description: '初始化项目或重置对话上下文', content: '/init', scope: 'system' as const, isSystem: true },
+          { id: 'clear', name: 'clear', description: '清空当前对话历史', content: '/clear', scope: 'system' as const, isSystem: true },
+          { id: 'compact', name: 'compact', description: '压缩对话历史，保留关键信息', content: '/compact', scope: 'system' as const, isSystem: true },
+          { id: 'agents', name: 'agents', description: '管理AI代理和子代理', content: '/agents', scope: 'system' as const, isSystem: true },
+          { id: 'settings', name: 'settings', description: '打开设置页面', content: '/settings', scope: 'system' as const, isSystem: true },
+          { id: 'help', name: 'help', description: '显示帮助信息', content: '/help', scope: 'system' as const, isSystem: true },
+        ];
+        command = SYSTEM_COMMANDS.find(cmd => cmd.name === commandName);
+      }
+      
+      if (command) {
+        // 执行命令路由
+        const result = await commandHandler.executeCommand(command);
+        
+        if (result.shouldSendToBackend) {
+          // 继续发送到后端，格式化消息
+          const commandArgs = inputMessage.slice(command.content.length).trim() || undefined;
+          userMessage = formatCommandMessage(command, commandArgs, projectPath);
+        } else {
+          // 前端处理完成，清空输入并返回
+          setInputMessage('');
+          setSelectedImages([]);
+          setSelectedCommand(null);
+          setShowCommandSelector(false);
+          
+          if (result.message && result.action !== 'confirm') {
+            addMessage({
+              content: result.message,
+              role: 'assistant'
+            });
+          }
+          return; // 不发送到后端
+        }
+      }
+    }
+    
     setInputMessage('');
     setSelectedImages([]);
+    setSelectedCommand(null);
+    setShowCommandSelector(false);
     
     // Convert images to backend format
     const imageData = images.map(img => ({
@@ -411,11 +578,111 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Handle command selector navigation
+    if (showCommandSelector && allCommands.length > 0) {
+      // Arrow keys or Ctrl+P/N for navigation
+      if (e.key === 'ArrowUp' || (e.ctrlKey && e.key === 'p')) {
+        e.preventDefault();
+        setSelectedCommandIndex(prev => 
+          prev > 0 ? prev - 1 : allCommands.length - 1
+        );
+        return;
+      }
+      
+      if (e.key === 'ArrowDown' || (e.ctrlKey && e.key === 'n')) {
+        e.preventDefault();
+        setSelectedCommandIndex(prev => 
+          prev < allCommands.length - 1 ? prev + 1 : 0
+        );
+        return;
+      }
+      
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setShowCommandSelector(false);
+        return;
+      }
+      
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        
+        // Auto-complete to selected command if available
+        const selectedCmd = allCommands[selectedCommandIndex];
+        if (selectedCmd) {
+          handleCommandSelect(selectedCmd);
+        } else {
+          handleSendMessage();
+        }
+        return;
+      }
+    }
+  };
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    // Regular enter key handling (only when command selector is not open)
+    if (e.key === 'Enter' && !e.shiftKey && !showCommandSelector) {
       e.preventDefault();
       handleSendMessage();
     }
+  };
+  
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    setInputMessage(value);
+    
+    // Check if we should show command selector
+    if (isCommandTrigger(value)) {
+      const search = extractCommandSearch(value);
+      setCommandSearch(search);
+      setShowCommandSelector(true);
+      setSelectedCommandIndex(0); // Reset to first item when search changes
+    } else {
+      setShowCommandSelector(false);
+      setSelectedCommand(null);
+      setSelectedCommandIndex(0);
+    }
+  };
+  
+  const handleCommandSelect = (command: CommandType) => {
+    // 命令选择器只是帮助填入命令，不立即执行
+    setSelectedCommand(command);
+    setInputMessage(command.content);
+    setShowCommandSelector(false);
+    
+    // 让用户手动点击发送来执行命令
+    if (textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  };
+  
+  const handleCommandSelectorClose = () => {
+    setShowCommandSelector(false);
+  };
+  
+  const handleConfirmDialog = () => {
+    if (confirmAction) {
+      confirmAction();
+    }
+    setShowConfirmDialog(false);
+    setConfirmMessage('');
+    setConfirmAction(null);
+  };
+  
+  const handleCancelDialog = () => {
+    setShowConfirmDialog(false);
+    setConfirmMessage('');
+    setConfirmAction(null);
+  };
+  
+  const getInputPosition = () => {
+    if (!textareaRef.current) return { top: 0, left: 0 };
+    
+    const rect = textareaRef.current.getBoundingClientRect();
+    return {
+      top: rect.top, // CommandSelector will calculate the actual position
+      left: rect.left
+    };
   };
 
   const adjustTextareaHeight = () => {
@@ -575,10 +842,15 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
           <textarea
             ref={textareaRef}
             value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
             onKeyPress={handleKeyPress}
             onPaste={handlePaste}
-            placeholder={selectedImages.length > 0 ? "添加描述文字... (可选)" : "输入你的消息... (Shift+Enter 换行，Enter 发送)"}
+            placeholder={
+              selectedImages.length > 0 
+                ? "添加描述文字... (可选)"
+                : "输入你的消息... (Shift+Enter 换行，Enter 发送，/ 触发命令)"
+            }
             rows={1}
             className="w-full resize-none border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 disabled:bg-gray-50 disabled:text-gray-500"
             style={{ 
@@ -686,6 +958,24 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
         </div>
       </div>
 
+      <CommandSelector
+        isOpen={showCommandSelector}
+        onSelect={handleCommandSelect}
+        onClose={handleCommandSelectorClose}
+        searchTerm={commandSearch}
+        position={getInputPosition()}
+        projectId={projectPath ? btoa(projectPath) : undefined}
+        selectedIndex={selectedCommandIndex}
+        onSelectedIndexChange={setSelectedCommandIndex}
+      />
+      
+      <ConfirmDialog
+        isOpen={showConfirmDialog}
+        message={confirmMessage}
+        onConfirm={handleConfirmDialog}
+        onCancel={handleCancelDialog}
+      />
+      
       <ImagePreview 
         imageUrl={previewImage} 
         onClose={() => setPreviewImage(null)} 
