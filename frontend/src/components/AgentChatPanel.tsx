@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Send, Clock, Square, Image, Wrench, X } from 'lucide-react';
 import { ImagePreview } from './ImagePreview';
 import { CommandSelector } from './CommandSelector';
@@ -38,7 +38,6 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
   const [commandSearch, setCommandSearch] = useState('');
   const [selectedCommand, setSelectedCommand] = useState<CommandType | null>(null);
   const [selectedCommandIndex, setSelectedCommandIndex] = useState(0);
-  const [allCommands, setAllCommands] = useState<CommandType[]>([]);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [confirmMessage, setConfirmMessage] = useState('');
   const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null);
@@ -127,8 +126,8 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
     },
   ];
 
-  // Update allCommands when command data changes
-  useEffect(() => {
+  // Memoize allCommands to prevent unnecessary re-renders
+  const allCommands = useMemo(() => {
     // Filter system commands based on search term
     const filteredSystemCommands = SYSTEM_COMMANDS.filter(cmd =>
       cmd.name.toLowerCase().includes(commandSearch.toLowerCase()) ||
@@ -136,19 +135,23 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
     );
 
     // Combine all commands
-    const combined: CommandType[] = [
+    return [
       ...filteredSystemCommands,
       ...projectCommands,
       ...userCommands,
     ];
+  }, [userCommands, projectCommands, commandSearch]);
 
-    setAllCommands(combined);
-    
-    // Reset selected index when commands change
-    if (combined.length > 0 && selectedCommandIndex >= combined.length) {
-      setSelectedCommandIndex(0);
-    }
-  }, [userCommands, projectCommands, commandSearch, selectedCommandIndex]);
+  // Reset selected index when commands change
+  useEffect(() => {
+    setSelectedCommandIndex(prev => {
+      // Only update if index is out of bounds
+      if (allCommands.length > 0 && prev >= allCommands.length) {
+        return 0;
+      }
+      return prev;
+    });
+  }, [allCommands.length]);
 
   // Calculate the actual number of tools represented by the selection
   const getActualToolCount = () => {
@@ -634,13 +637,20 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
     // Check if we should show command selector
     if (isCommandTrigger(value)) {
       const search = extractCommandSearch(value);
-      setCommandSearch(search);
-      setShowCommandSelector(true);
-      setSelectedCommandIndex(0); // Reset to first item when search changes
+      // Only update if search term actually changed
+      if (search !== commandSearch) {
+        setCommandSearch(search);
+        setSelectedCommandIndex(0);
+      }
+      if (!showCommandSelector) {
+        setShowCommandSelector(true);
+      }
     } else {
-      setShowCommandSelector(false);
-      setSelectedCommand(null);
-      setSelectedCommandIndex(0);
+      if (showCommandSelector) {
+        setShowCommandSelector(false);
+        setSelectedCommand(null);
+        setSelectedCommandIndex(0);
+      }
     }
   };
   
