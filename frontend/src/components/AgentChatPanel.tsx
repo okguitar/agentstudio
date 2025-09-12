@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Send, Clock, Square, Image, Wrench, X } from 'lucide-react';
+import { Send, Clock, Square, Image, Wrench, X, Plus } from 'lucide-react';
 import { ImagePreview } from './ImagePreview';
 import { CommandSelector } from './CommandSelector';
 import { ConfirmDialog } from './ConfirmDialog';
@@ -22,9 +22,10 @@ import { createCommandHandler, SystemCommand } from '../utils/commandHandler';
 interface AgentChatPanelProps {
   agent: AgentConfig;
   projectPath?: string;
+  onSessionChange?: (sessionId: string | null) => void;
 }
 
-export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPath }) => {
+export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPath, onSessionChange }) => {
   const [inputMessage, setInputMessage] = useState('');
   const [showSessions, setShowSessions] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -70,7 +71,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
   // Fetch commands for keyboard navigation
   const { data: userCommands = [] } = useCommands({ scope: 'user', search: commandSearch });
   const { data: projectCommands = [] } = useProjectCommands({
-    projectId: projectPath ? btoa(projectPath) : '',
+    projectId: projectPath || '', // Pass projectPath directly as it will be detected as path
     search: commandSearch
   });
 
@@ -283,12 +284,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
       // 创建命令处理器
       const commandHandler = createCommandHandler({
         agentStore: useAgentStore.getState(),
-        onNewSession: () => {
-          // 创建新会话
-          setCurrentSessionId(null);
-          clearMessages();
-          queryClient.invalidateQueries({ queryKey: ['agent-sessions', agent.id] });
-        },
+        onNewSession: handleNewSession,
         onNavigate: (path: string) => {
           alert(`导航到: ${path}`);
         },
@@ -400,6 +396,10 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
             // Only set session ID if we don't have one (new session created by AI)
             if (!currentSessionId) {
               setCurrentSessionId(eventData.sessionId);
+              // Update URL with new session ID
+              if (onSessionChange) {
+                onSessionChange(eventData.sessionId);
+              }
               // Refresh sessions list when new session is created
               queryClient.invalidateQueries({ queryKey: ['agent-sessions', agent.id] });
             }
@@ -561,10 +561,28 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
   };
 
   const handleSwitchSession = (sessionId: string) => {
-    clearMessages();
     setCurrentSessionId(sessionId);
     setShowSessions(false);
+    // Update URL with new session ID
+    if (onSessionChange) {
+      onSessionChange(sessionId);
+    }
+    // Clear messages first, then invalidate to trigger fresh load
+    clearMessages();
     queryClient.invalidateQueries({ queryKey: ['agent-session-messages', agent.id, sessionId] });
+  };
+
+  const handleNewSession = () => {
+    // Clear current session and messages
+    setCurrentSessionId(null);
+    clearMessages();
+    setShowSessions(false);
+    // Update URL to remove session ID
+    if (onSessionChange) {
+      onSessionChange(null);
+    }
+    // Clear search term
+    setSearchTerm('');
   };
 
   const handleStopGeneration = () => {
@@ -709,8 +727,11 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
 
   // Load session messages when session changes or messages are available
   useEffect(() => {
-    if (sessionMessagesData?.messages && currentSessionId && sessionMessagesData.messages.length > 0) {
+    if (sessionMessagesData?.messages && currentSessionId) {
       loadSessionMessages(sessionMessagesData.messages);
+    } else if (currentSessionId && sessionMessagesData && sessionMessagesData.messages?.length === 0) {
+      // Handle empty session - clear messages
+      loadSessionMessages([]);
     }
   }, [sessionMessagesData, currentSessionId, loadSessionMessages]);
 
@@ -740,6 +761,13 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
             </p>
           </div>
           <div className="flex space-x-2">
+            <button
+              onClick={handleNewSession}
+              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+              title="新建会话"
+            >
+              <Plus className="w-5 h-5" />
+            </button>
             <div className="relative">
               <button
                 onClick={() => setShowSessions(!showSessions)}
@@ -974,7 +1002,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
         onClose={handleCommandSelectorClose}
         searchTerm={commandSearch}
         position={getInputPosition()}
-        projectId={projectPath ? btoa(projectPath) : undefined}
+        projectId={projectPath} // Pass projectPath as projectId, will be detected as path
         selectedIndex={selectedCommandIndex}
         onSelectedIndexChange={setSelectedCommandIndex}
       />

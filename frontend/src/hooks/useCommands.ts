@@ -124,22 +124,34 @@ export const useDeleteCommand = () => {
 };
 
 // Project-specific commands
-const fetchProjectCommands = async (projectId: string, filter: Omit<SlashCommandFilter, 'scope'> = {}): Promise<SlashCommand[]> => {
-  // First get the project info to get the path
-  const projectResponse = await fetch(`/api/agents/projects`);
-  if (!projectResponse.ok) {
-    throw new Error('Failed to fetch project info');
+const fetchProjectCommands = async (projectIdentifier: string, filter: Omit<SlashCommandFilter, 'scope'> = {}): Promise<SlashCommand[]> => {
+  if (!projectIdentifier) {
+    return [];
   }
-  const projectsData = await projectResponse.json();
-  const project = projectsData.projects.find((p: any) => p.id === projectId);
-  
-  if (!project) {
-    throw new Error('Project not found');
+
+  let projectPath: string;
+
+  // Check if projectIdentifier is already a path (starts with /)
+  if (projectIdentifier.startsWith('/')) {
+    projectPath = projectIdentifier;
+  } else {
+    // It's a project ID, need to resolve to path
+    const projectResponse = await fetch(`/api/agents/projects`);
+    if (!projectResponse.ok) {
+      throw new Error('Failed to fetch project info');
+    }
+    const projectsData = await projectResponse.json();
+    const project = projectsData.projects.find((p: any) => p.id === projectIdentifier);
+    
+    if (!project) {
+      throw new Error('Project not found');
+    }
+    projectPath = project.path;
   }
 
   const params = new URLSearchParams();
   params.append('scope', 'project');
-  params.append('projectPath', project.path);
+  params.append('projectPath', projectPath);
   if (filter.namespace) params.append('namespace', filter.namespace);
   if (filter.search) params.append('search', filter.search);
 

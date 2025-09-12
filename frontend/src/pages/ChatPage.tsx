@@ -12,18 +12,23 @@ export const ChatPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const projectPath = searchParams.get('project');
+  const sessionId = searchParams.get('session');
   const { data: agentData, isLoading, error } = useAgent(agentId!);
-  const { setCurrentAgent } = useAgentStore();
+  const { setCurrentAgent, setCurrentSessionId } = useAgentStore();
   const [showProjectSelector, setShowProjectSelector] = useState(false);
 
   const agent = agentData?.agent;
 
-  // Set current agent when data loads
+  // Set current agent when data loads, then set session ID
   useEffect(() => {
     if (agent) {
       setCurrentAgent(agent);
+      // Set session ID after agent is set to prevent it from being cleared
+      if (sessionId) {
+        setCurrentSessionId(sessionId);
+      }
     }
-  }, [agent, setCurrentAgent]);
+  }, [agent, sessionId, setCurrentAgent, setCurrentSessionId]);
 
   // Show project selector if no project path is provided and agent is loaded
   useEffect(() => {
@@ -36,8 +41,23 @@ export const ChatPage: React.FC = () => {
   const handleProjectSelect = (selectedProjectPath: string) => {
     const params = new URLSearchParams();
     params.set('project', selectedProjectPath);
+    if (sessionId) {
+      params.set('session', sessionId);
+    }
     navigate(`/chat/${agentId}?${params.toString()}`, { replace: true });
     setShowProjectSelector(false);
+  };
+
+  // Handle session change - update URL
+  const handleSessionChange = (newSessionId: string | null) => {
+    const params = new URLSearchParams();
+    if (projectPath) {
+      params.set('project', projectPath);
+    }
+    if (newSessionId) {
+      params.set('session', newSessionId);
+    }
+    navigate(`/chat/${agentId}?${params.toString()}`, { replace: true });
   };
 
   const handleProjectSelectorClose = () => {
@@ -123,7 +143,7 @@ export const ChatPage: React.FC = () => {
       // Single layout - only chat panel
       return (
         <div className="h-full bg-gray-100">
-          <AgentChatPanel agent={agent} projectPath={projectPath || undefined} />
+          <AgentChatPanel agent={agent} projectPath={projectPath || undefined} onSessionChange={handleSessionChange} />
         </div>
       );
     }
@@ -131,7 +151,7 @@ export const ChatPage: React.FC = () => {
     // Split layout - chat panel + right panel
     return (
       <SplitLayout>
-        <AgentChatPanel agent={agent} projectPath={projectPath || undefined} />
+        <AgentChatPanel agent={agent} projectPath={projectPath || undefined} onSessionChange={handleSessionChange} />
         <RightPanelComponent agent={agent} projectPath={projectPath || undefined} />
       </SplitLayout>
     );
