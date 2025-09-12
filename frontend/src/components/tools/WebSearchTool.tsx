@@ -9,8 +9,14 @@ interface WebSearchToolProps {
 export const WebSearchTool: React.FC<WebSearchToolProps> = ({ execution }) => {
   const input = execution.toolInput as WebSearchToolInput;
 
+  // 显示搜索查询作为副标题
+  const getSubtitle = () => {
+    if (!input.query) return undefined;
+    return `"${input.query}"`;
+  };
+
   return (
-    <BaseToolComponent execution={execution}>
+    <BaseToolComponent execution={execution} subtitle={getSubtitle()}>
       <div>
         <ToolInput label="搜索查询" value={input.query} />
         
