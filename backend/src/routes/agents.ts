@@ -25,27 +25,7 @@ function convertProjectPathToClaudeFormat(projectPath: string): string {
   return projectPath.replace(/\//g, '-');
 }
 
-interface ClaudeHistoryMessage {
-  type: 'summary' | 'user' | 'assistant';
-  summary?: string;
-  message?: {
-    role: 'user' | 'assistant';
-    content: any[];
-  };
-  uuid: string;
-  timestamp: string;
-  sessionId: string;
-  parentUuid?: string;
-  leafUuid?: string;
-}
-
-interface ClaudeHistorySession {
-  id: string;
-  title: string;
-  createdAt: string;
-  lastUpdated: string;
-  messages: any[];
-}
+import { ClaudeHistoryMessage, ClaudeHistorySession } from '../../../shared/types/claude-history';
 
 function readClaudeHistorySessions(projectPath: string): ClaudeHistorySession[] {
   try {

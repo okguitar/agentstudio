@@ -45,7 +45,6 @@ tmp/
 temp/
 slides.js
 /slides/
-claude-*
 .ai-sessions
 .claude-sessions
 .cc-sessions
