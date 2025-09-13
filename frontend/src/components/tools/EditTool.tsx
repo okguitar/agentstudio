@@ -1,6 +1,7 @@
 import React from 'react';
 import { BaseToolComponent, ToolInput } from './BaseToolComponent';
-import type { ToolExecution, EditToolInput } from './types';
+import { DiffViewer } from '../DiffViewer';
+import type { ToolExecution, EditToolInput, EditToolResult } from './types';
 
 interface EditToolProps {
   execution: ToolExecution;
@@ -8,6 +9,7 @@ interface EditToolProps {
 
 export const EditTool: React.FC<EditToolProps> = ({ execution }) => {
   const input = execution.toolInput as EditToolInput;
+  const result = execution.toolUseResult as EditToolResult;
 
   // 提取文件名作为副标题
   const getSubtitle = () => {
@@ -16,41 +18,40 @@ export const EditTool: React.FC<EditToolProps> = ({ execution }) => {
     return fileName;
   };
 
+  // 从 toolUseResult.structuredPatch 中获取起始行号
+  const getStartLineNumbers = () => {
+    // 从 toolUseResult 的 structuredPatch 获取
+    if (result?.structuredPatch && result.structuredPatch.length > 0) {
+      const firstPatch = result.structuredPatch[0];
+      return {
+        oldStartLine: firstPatch.oldStart,
+        newStartLine: firstPatch.newStart
+      };
+    }
+    
+    return { oldStartLine: 1, newStartLine: 1 };
+  };
+
+  const { oldStartLine, newStartLine } = getStartLineNumbers();
+
   return (
-    <BaseToolComponent execution={execution} subtitle={getSubtitle()}>
+    <BaseToolComponent execution={execution} subtitle={getSubtitle()} showResult={false}>
       <div>
         <ToolInput label="文件路径" value={input.file_path} />
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
-          <div>
-            <ToolInput 
-              label="原文本" 
-              value={input.old_string.length > 200 ? 
-                input.old_string.substring(0, 200) + '\n...(已截断)' : 
-                input.old_string
-              } 
-              isCode={true}
-              className="mb-0"
-            />
-          </div>
-          <div>
-            <ToolInput 
-              label="新文本" 
-              value={input.new_string.length > 200 ? 
-                input.new_string.substring(0, 200) + '\n...(已截断)' : 
-                input.new_string
-              } 
-              isCode={true}
-              className="mb-0"
-            />
-          </div>
-        </div>
         
         {input.replace_all && (
           <ToolInput label="全部替换" value="是" />
         )}
+        
+        <div className="mt-3">
+          <DiffViewer 
+            oldText={input.old_string}
+            newText={input.new_string}
+            oldStartLine={oldStartLine}
+            newStartLine={newStartLine}
+          />
+        </div>
       </div>
-      
     </BaseToolComponent>
   );
 };

@@ -43,6 +43,7 @@ export const ChatMessageRenderer: React.FC<ChatMessageRendererProps> = ({ messag
                 toolName={part.toolData.toolName}
                 toolInput={part.toolData.toolInput}
                 toolResult={part.toolData.toolResult}
+                toolUseResult={part.toolData.toolUseResult}
                 isError={part.toolData.isError}
                 isExecuting={part.toolData.isExecuting}
               />
@@ -114,6 +115,7 @@ export const ChatMessageRenderer: React.FC<ChatMessageRendererProps> = ({ messag
               toolName={tool.toolName}
               toolInput={tool.toolInput}
               toolResult={tool.toolResult}
+              toolUseResult={tool.toolUseResult}
               isError={tool.isError}
               isExecuting={tool.isExecuting}
             />

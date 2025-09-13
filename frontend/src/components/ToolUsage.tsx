@@ -5,6 +5,7 @@ interface ToolUsageProps {
   toolName: string;
   toolInput: Record<string, unknown>;
   toolResult?: string;
+  toolUseResult?: Record<string, unknown>;
   isError?: boolean;
   isExecuting?: boolean;
 }
@@ -16,6 +17,7 @@ const convertToToolExecution = (props: ToolUsageProps): ToolExecution => {
     toolName: props.toolName,
     toolInput: props.toolInput,
     toolResult: props.toolResult,
+    toolUseResult: props.toolUseResult,
     isExecuting: props.isExecuting || false,
     isError: props.isError || false,
     timestamp: new Date()

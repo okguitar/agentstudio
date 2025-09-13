@@ -159,6 +159,12 @@ function readClaudeHistorySessions(projectPath: string): ClaudeHistorySession[] 
                       toolPart.toolData.toolResult = typeof block.content === 'string' 
                         ? block.content 
                         : JSON.stringify(block.content);
+                      
+                      // Check if the original message has toolUseResult (from Claude Code SDK)
+                      if (msg.toolUseResult) {
+                        toolPart.toolData.toolUseResult = msg.toolUseResult;
+                      }
+                      
                       toolPart.toolData.isError = block.is_error || false;
                       break;
                     }

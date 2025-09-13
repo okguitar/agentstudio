@@ -22,6 +22,7 @@ export interface ToolUsageData {
   toolName: string;
   toolInput: Record<string, unknown>;
   toolResult?: string;
+  toolUseResult?: Record<string, unknown>; // 包含 structuredPatch 等详细信息
   isError?: boolean;
   isExecuting?: boolean;
   claudeId?: string; // Claude's tool use ID for matching with results

@@ -64,6 +64,24 @@ export interface EditToolInput extends BaseToolInput {
   replace_all?: boolean;
 }
 
+export interface StructuredPatch {
+  oldStart: number;
+  oldLines: number;
+  newStart: number;
+  newLines: number;
+  lines: string[];
+}
+
+export interface EditToolResult {
+  filePath: string;
+  oldString: string;
+  newString: string;
+  originalFile: string;
+  structuredPatch: StructuredPatch[];
+  userModified: boolean;
+  replaceAll: boolean;
+}
+
 export interface MultiEditToolInput extends BaseToolInput {
   file_path: string;
   edits: Array<{
@@ -117,6 +135,7 @@ export interface ToolExecution {
   toolName: string;
   toolInput: BaseToolInput;
   toolResult?: string;
+  toolUseResult?: EditToolResult | any; // 包含 structuredPatch 等详细信息
   isExecuting: boolean;
   isError?: boolean;
   timestamp: Date;

@@ -37,6 +37,7 @@
   "dependencies": {
     "@anthropic-ai/claude-code": "^1.0.103",
     "ccusage": "^16.2.3",
+    "diff": "^8.0.2",
     "tsx": "^4.20.4",
     "typescript": "^5.9.2"
   }
