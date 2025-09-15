@@ -5,6 +5,7 @@ import type { ToolExecution } from './types';
 import { TaskTool } from './TaskTool';
 import { BashTool } from './BashTool';
 import { BashOutputTool } from './BashOutputTool';
+import { KillBashTool } from './KillBashTool';
 import { GlobTool } from './GlobTool';
 import { GrepTool } from './GrepTool';
 import { LSTool } from './LSTool';
@@ -45,6 +46,9 @@ export const ToolRenderer: React.FC<ToolRendererProps> = ({ execution }) => {
     
     case 'BashOutput':
       return <BashOutputTool execution={execution} />;
+    
+    case 'KillBash':
+      return <KillBashTool execution={execution} />;
     
     case 'Glob':
       return <GlobTool execution={execution} />;

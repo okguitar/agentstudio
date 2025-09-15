@@ -225,7 +225,7 @@ export const McpTool: React.FC<McpToolProps> = ({ execution }) => {
   };
 
   // 构建副标题显示服务器信息
-  const subtitle = `来自 ${serverName} 服务器的 MCP 工具`;
+  const subtitle = `MCP:  ${toolName} @ ${serverName}`;
 
   return (
     <BaseToolComponent 

@@ -18,9 +18,9 @@ export const ReadTool: React.FC<ReadToolProps> = ({ execution }) => {
   };
 
   return (
-    <BaseToolComponent execution={execution} subtitle={getSubtitle()}>
+    <BaseToolComponent execution={execution} subtitle={getSubtitle()} showResult={false}>
       <div>
-        <ToolInput label="文件路径" value={input.file_path} />
+        <ToolInput label="读取文件" value={input.file_path} />
         {input.offset && (
           <ToolInput label="起始行" value={input.offset} />
         )}

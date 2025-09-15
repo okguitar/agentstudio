@@ -1,5 +1,5 @@
 import React from 'react';
-import { BaseToolComponent, ToolInput } from './BaseToolComponent';
+import { BaseToolComponent } from './BaseToolComponent';
 import type { ToolExecution, BashToolInput } from './types';
 
 interface BashToolProps {
@@ -15,18 +15,63 @@ export const BashTool: React.FC<BashToolProps> = ({ execution }) => {
     return input.command.trim();
   };
 
+  // 解析执行结果
+  const getExecutionResult = () => {
+    if (execution.isExecuting) {
+      return "执行中...";
+    }
+    if (execution.isError) {
+      return execution.toolResult || "执行出错";
+    }
+    return execution.toolResult || "";
+  };
+
   return (
-    <BaseToolComponent execution={execution} subtitle={getSubtitle()}>
-      <div>
+    <BaseToolComponent execution={execution} subtitle={getSubtitle()} showResult={false}>
+      <div className="space-y-3">
+        {/* 描述信息（如果有） */}
         {input.description && (
-          <ToolInput label="描述" value={input.description} />
+          <div className="text-sm text-gray-600 mb-2">
+            {input.description}
+          </div>
         )}
-        <ToolInput label="命令" value={input.command} isCode={true} />
+        
+        {/* 终端样式的命令执行区域 */}
+        <div className="bg-gray-900 rounded-lg p-4 font-mono text-sm">
+          {/* 命令行提示符和命令 */}
+          <div className="flex items-start">
+            <span className="text-green-400 mr-2 select-none">$</span>
+            <span className="text-white break-all flex-1">{input.command}</span>
+          </div>
+          
+          {/* 执行结果 */}
+          {!execution.isExecuting && execution.toolResult && (
+            <div className="mt-2">
+              <pre className={`whitespace-pre-wrap break-words ${
+                execution.isError 
+                  ? 'text-red-400' 
+                  : 'text-gray-300'
+              }`}>
+                {getExecutionResult()}
+              </pre>
+            </div>
+          )}
+          
+          {/* 执行中状态 */}
+          {execution.isExecuting && (
+            <div className="mt-2">
+              <span className="text-yellow-400 animate-pulse">执行中...</span>
+            </div>
+          )}
+        </div>
+        
+        {/* 额外信息 */}
         {input.timeout && (
-          <ToolInput label="超时时间" value={`${input.timeout}ms`} />
+          <div className="text-xs text-gray-500">
+            超时时间: {input.timeout}ms
+          </div>
         )}
       </div>
-      
     </BaseToolComponent>
   );
 };

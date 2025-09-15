@@ -17,16 +17,20 @@ import {
   Loader2,
   ChevronDown,
   ChevronRight,
-  Link2,  // 使用链接图标表示MCP协议连接
-  Activity  // 用于BashOutput，表示活动/输出监控
+  Link2,  // 备用图标
+  Activity,  // 用于BashOutput，表示活动/输出监控
+  Square,  // 用于KillBash，表示终止/停止操作
+  GitBranch  // 用于MCP工具，类似官方logo的分叉连接设计
 } from 'lucide-react';
 import type { ToolExecution } from './types';
+import { McpIcon } from './McpIcon';
 
 // 工具图标映射
 const TOOL_ICONS = {
   Task: Workflow,
   Bash: Terminal,
   BashOutput: Activity,
+  KillBash: Square,
   Glob: FileSearch,
   Grep: Search,
   LS: FolderOpen,
@@ -47,6 +51,7 @@ const TOOL_COLORS = {
   Task: 'text-purple-600 bg-purple-100',
   Bash: 'text-gray-800 bg-gray-100',
   BashOutput: 'text-blue-700 bg-blue-50',
+  KillBash: 'text-red-700 bg-red-50',
   Glob: 'text-blue-600 bg-blue-100',
   Grep: 'text-green-600 bg-green-100',
   LS: 'text-yellow-600 bg-yellow-100',
@@ -76,7 +81,7 @@ export const BaseToolComponent: React.FC<BaseToolProps> = ({ execution, children
   
   // 为MCP工具使用不同的图标和颜色
   const Icon = isMcpTool 
-    ? Link2 
+    ? McpIcon 
     : TOOL_ICONS[execution.toolName as keyof typeof TOOL_ICONS] || Terminal;
   
   const colorClass = isMcpTool 

@@ -40,6 +40,10 @@ export interface BashOutputToolResult {
   filterPattern?: string;
 }
 
+export interface KillBashToolInput extends BaseToolInput {
+  shell_id: string;
+}
+
 export interface GlobToolInput extends BaseToolInput {
   pattern: string;
   path?: string;

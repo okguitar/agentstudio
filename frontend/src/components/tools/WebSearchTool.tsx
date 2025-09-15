@@ -12,11 +12,11 @@ export const WebSearchTool: React.FC<WebSearchToolProps> = ({ execution }) => {
   // 显示搜索查询作为副标题
   const getSubtitle = () => {
     if (!input.query) return undefined;
-    return `"${input.query}"`;
+    return `${input.query}`;
   };
 
   return (
-    <BaseToolComponent execution={execution} subtitle={getSubtitle()}>
+    <BaseToolComponent execution={execution} subtitle={getSubtitle()} showResult={false}>
       <div>
         <ToolInput label="搜索查询" value={input.query} />
         

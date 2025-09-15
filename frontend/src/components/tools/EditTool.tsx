@@ -37,7 +37,7 @@ export const EditTool: React.FC<EditToolProps> = ({ execution }) => {
   return (
     <BaseToolComponent execution={execution} subtitle={getSubtitle()} showResult={false}>
       <div>
-        <ToolInput label="文件路径" value={input.file_path} />
+        <ToolInput label="编辑文件" value={input.file_path} />
         
         {input.replace_all && (
           <ToolInput label="全部替换" value="是" />
