@@ -59,11 +59,30 @@ function readClaudeHistorySessions(projectPath: string): ClaudeHistorySession[] 
         const summaryMessage = messages.find(msg => msg.type === 'summary');
         const title = summaryMessage?.summary || `会话 ${sessionId.slice(0, 8)}`;
         
-        // Filter user and assistant messages, but exclude tool_result-only user messages and isMeta messages
+        // Filter user and assistant messages, but exclude tool_result-only user messages, isMeta messages, 
+        // /clear command messages, and local-command-stdout messages
         const conversationMessages = messages.filter(msg => {
           // Filter out isMeta messages (rule 1)
           if ((msg as any).isMeta === true) {
             return false;
+          }
+          
+          // Filter out /clear command messages and its related output messages
+          if (msg.type === 'user' && msg.message?.content && typeof msg.message.content === 'string') {
+            // Check for /clear command format
+            if (msg.message.content.includes('<command-name>/clear</command-name>')) {
+              return false;
+            }
+            // Check for /clear command's output (local-command-stdout that follows /clear command)
+            if (msg.message.content.includes('<local-command-stdout></local-command-stdout>') && 
+                msg.parentUuid) {
+              // Find the parent message to check if it was a /clear command
+              const parentMsg = messages.find(m => m.uuid === msg.parentUuid);
+              if (parentMsg && parentMsg.message?.content && typeof parentMsg.message.content === 'string' &&
+                  parentMsg.message.content.includes('<command-name>/clear</command-name>')) {
+                return false;
+              }
+            }
           }
           
           if (msg.type === 'assistant') return true;

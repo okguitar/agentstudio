@@ -32,7 +32,7 @@ export const GrepTool: React.FC<GrepToolProps> = ({ execution }) => {
   };
 
   return (
-    <BaseToolComponent execution={execution} subtitle={getSubtitle()}>
+    <BaseToolComponent execution={execution} subtitle={getSubtitle()} showResult={false}>
       <div>
         <ToolInput label="搜索模式" value={input.pattern} isCode={true} />
         {input.path && (
