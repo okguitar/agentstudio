@@ -22,6 +22,24 @@ export interface BashToolInput extends BaseToolInput {
   timeout?: number;
 }
 
+export interface BashOutputToolInput extends BaseToolInput {
+  bash_id: string;
+  filter?: string;
+}
+
+export interface BashOutputToolResult {
+  shellId: string;
+  command: string;
+  status: 'running' | 'completed' | 'killed' | 'failed';
+  exitCode: number | null;
+  stdout: string;
+  stderr: string;
+  stdoutLines: number;
+  stderrLines: number;
+  timestamp: string;
+  filterPattern?: string;
+}
+
 export interface GlobToolInput extends BaseToolInput {
   pattern: string;
   path?: string;

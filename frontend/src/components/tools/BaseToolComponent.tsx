@@ -17,7 +17,8 @@ import {
   Loader2,
   ChevronDown,
   ChevronRight,
-  Link2  // 使用链接图标表示MCP协议连接
+  Link2,  // 使用链接图标表示MCP协议连接
+  Activity  // 用于BashOutput，表示活动/输出监控
 } from 'lucide-react';
 import type { ToolExecution } from './types';
 
@@ -25,6 +26,7 @@ import type { ToolExecution } from './types';
 const TOOL_ICONS = {
   Task: Workflow,
   Bash: Terminal,
+  BashOutput: Activity,
   Glob: FileSearch,
   Grep: Search,
   LS: FolderOpen,
@@ -44,6 +46,7 @@ const TOOL_ICONS = {
 const TOOL_COLORS = {
   Task: 'text-purple-600 bg-purple-100',
   Bash: 'text-gray-800 bg-gray-100',
+  BashOutput: 'text-blue-700 bg-blue-50',
   Glob: 'text-blue-600 bg-blue-100',
   Grep: 'text-green-600 bg-green-100',
   LS: 'text-yellow-600 bg-yellow-100',

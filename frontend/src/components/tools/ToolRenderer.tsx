@@ -4,6 +4,7 @@ import type { ToolExecution } from './types';
 // 导入所有工具组件
 import { TaskTool } from './TaskTool';
 import { BashTool } from './BashTool';
+import { BashOutputTool } from './BashOutputTool';
 import { GlobTool } from './GlobTool';
 import { GrepTool } from './GrepTool';
 import { LSTool } from './LSTool';
@@ -41,6 +42,9 @@ export const ToolRenderer: React.FC<ToolRendererProps> = ({ execution }) => {
     
     case 'Bash':
       return <BashTool execution={execution} />;
+    
+    case 'BashOutput':
+      return <BashOutputTool execution={execution} />;
     
     case 'Glob':
       return <GlobTool execution={execution} />;
