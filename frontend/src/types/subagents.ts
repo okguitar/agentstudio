@@ -4,7 +4,7 @@ export interface Subagent {
   name: string;
   description: string;
   content: string; // System prompt content
-  scope: 'user'; // Only support user-level subagents
+  scope: 'user' | 'project'; // Support both user-level and project-level subagents
   tools?: string[]; // Comma-separated list of allowed tools
   createdAt: Date;
   updatedAt: Date;
@@ -14,7 +14,7 @@ export interface SubagentCreate {
   name: string;
   description: string;
   content: string;
-  scope: 'user';
+  scope: 'user' | 'project';
   tools?: string[];
 }
 
@@ -29,7 +29,8 @@ export interface SubagentFilter {
 }
 
 export const SUBAGENT_SCOPES = [
-  { value: 'user', label: '个人Subagent', description: '存储在用户配置中，仅个人使用' }
+  { value: 'user', label: '个人Subagent', description: '存储在用户配置中，仅个人使用' },
+  { value: 'project', label: '项目Subagent', description: '存储在项目中，项目成员共享' }
 ] as const;
 
 export const COMMON_TOOLS = [

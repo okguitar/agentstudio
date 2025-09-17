@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Save, AlertCircle, Code, Edit3 } from 'lucide-react';
+import { Save, AlertCircle, Code, Edit3, Wrench, Plus } from 'lucide-react';
 import { 
   SlashCommand, 
   SlashCommandCreate, 
   SlashCommandUpdate} from '../types/commands';
 import { useCreateCommand, useUpdateCommand, useCreateProjectCommand, useUpdateProjectCommand } from '../hooks/useCommands';
-import { ToolSelector } from './ui/ToolSelector';
+import { UnifiedToolSelector } from './UnifiedToolSelector';
 
 interface CommandFormProps {
   command?: SlashCommand | null;
@@ -35,6 +35,10 @@ export const CommandForm: React.FC<CommandFormProps> = ({
   const [isCodeMode, setIsCodeMode] = useState(false);
   const [rawContent, setRawContent] = useState('');
   const [useInheritModel, setUseInheritModel] = useState(true);
+  const [showToolSelector, setShowToolSelector] = useState(false);
+  const [selectedRegularTools, setSelectedRegularTools] = useState<string[]>([]);
+  const [selectedMcpTools, setSelectedMcpTools] = useState<string[]>([]);
+  const [mcpToolsEnabled, setMcpToolsEnabled] = useState(false);
 
   const createCommand = projectId ? useCreateProjectCommand(projectId) : useCreateCommand();
   const updateCommand = projectId ? useUpdateProjectCommand(projectId) : useUpdateCommand();
@@ -122,6 +126,15 @@ export const CommandForm: React.FC<CommandFormProps> = ({
       setFormData(data);
       setUseInheritModel(!data.model);
       setRawContent(generateMarkdownContent(data));
+      
+      // 从现有命令的 allowedTools 中分离常规工具和 MCP 工具
+      if (command.allowedTools) {
+        const regular = command.allowedTools.filter(tool => !tool.startsWith('mcp__'));
+        const mcp = command.allowedTools.filter(tool => tool.startsWith('mcp__'));
+        setSelectedRegularTools(regular);
+        setSelectedMcpTools(mcp);
+        setMcpToolsEnabled(mcp.length > 0);
+      }
     } else {
       // Initialize empty rawContent for new commands
       setRawContent(generateMarkdownContent(formData));
@@ -195,10 +208,10 @@ export const CommandForm: React.FC<CommandFormProps> = ({
     try {
       const submitData = {
         ...formData,
-        namespace: formData.namespace.trim() || undefined,
-        argumentHint: formData.argumentHint.trim() || undefined,
+        namespace: (formData.namespace || '').trim() || undefined,
+        argumentHint: (formData.argumentHint || '').trim() || undefined,
         allowedTools: formData.allowedTools.length > 0 ? formData.allowedTools : undefined,
-        model: formData.model.trim() || undefined,
+        model: (formData.model || '').trim() || undefined,
       };
 
       if (isEditing) {
@@ -459,13 +472,57 @@ model: claude-3-5-sonnet-20241022
 
             {/* Allowed Tools */}
             <div>
-              <ToolSelector
-                selectedTools={formData.allowedTools}
-                onChange={(tools) => setFormData({ ...formData, allowedTools: tools as string[] })}
-                label="允许的工具"
-                emptyText="留空则继承对话权限"
-                useAgentTool={false}
-              />
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                允许的工具
+              </label>
+              <div className="flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setShowToolSelector(!showToolSelector)}
+                  className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-sm"
+                >
+                  选择工具
+                </button>
+                
+                {/* 显示工具数量详情 */}
+                {(selectedRegularTools.length > 0 || selectedMcpTools.length > 0) && (
+                  <span className="text-sm text-gray-600">
+                    常规工具 {selectedRegularTools.length} 个
+                    {selectedMcpTools.length > 0 && `, MCP工具 ${selectedMcpTools.length} 个`}
+                  </span>
+                )}
+                
+                <UnifiedToolSelector
+                  isOpen={showToolSelector}
+                  onClose={() => setShowToolSelector(false)}
+                  selectedRegularTools={selectedRegularTools}
+                  selectedMcpTools={selectedMcpTools}
+                  mcpToolsEnabled={mcpToolsEnabled}
+                  onRegularToolsChange={(tools) => {
+                    setSelectedRegularTools(tools);
+                    const allTools = mcpToolsEnabled ? [...tools, ...selectedMcpTools] : tools;
+                    setFormData({ ...formData, allowedTools: allTools });
+                  }}
+                  onMcpToolsChange={(tools) => {
+                    setSelectedMcpTools(tools);
+                    const allTools = [...selectedRegularTools, ...tools];
+                    setFormData({ ...formData, allowedTools: allTools });
+                  }}
+                  onMcpEnabledChange={(enabled) => {
+                    setMcpToolsEnabled(enabled);
+                    if (!enabled) {
+                      setSelectedMcpTools([]);
+                      setFormData({ ...formData, allowedTools: selectedRegularTools });
+                    } else {
+                      const allTools = [...selectedRegularTools, ...selectedMcpTools];
+                      setFormData({ ...formData, allowedTools: allTools });
+                    }
+                  }}
+                />
+              </div>
+              <p className="mt-1 text-sm text-gray-500">
+                留空则继承对话权限
+              </p>
             </div>
 
             {/* Command Content */}

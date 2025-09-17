@@ -12,7 +12,7 @@ import { useAgents, useUpdateAgent, useDeleteAgent, useCreateAgent } from '../ho
 import { useQueryClient } from '@tanstack/react-query';
 import { ProjectSelector } from '../components/ProjectSelector';
 import { ToolSelector } from '../components/ui/ToolSelector';
-import { formatRelativeTime } from '../utils';
+import { UnifiedToolSelector } from '../components/UnifiedToolSelector';
 import type { AgentConfig, AgentTool } from '../types/index.js';
 
 
@@ -29,6 +29,10 @@ export const AgentsPage: React.FC = () => {
   const [selectedAgentForStart, setSelectedAgentForStart] = useState<AgentConfig | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState<'all' | 'enabled' | 'disabled'>('all');
+  const [showToolSelector, setShowToolSelector] = useState(false);
+  const [selectedRegularTools, setSelectedRegularTools] = useState<string[]>([]);
+  const [selectedMcpTools, setSelectedMcpTools] = useState<string[]>([]);
+  const [mcpToolsEnabled, setMcpToolsEnabled] = useState(false);
 
   const agents = agentsData?.agents || [];
   const filteredAgents = agents.filter(agent => {
@@ -68,6 +72,15 @@ export const AgentsPage: React.FC = () => {
     setEditingAgent(agent);
     setEditForm(agent);
     setIsCreating(false);
+    
+    // 初始化工具选择状态 - 正确分离常规工具和MCP工具
+    const allEnabledTools = agent.allowedTools?.filter(tool => tool.enabled).map(tool => tool.name) || [];
+    const regularTools = allEnabledTools.filter(tool => !tool.startsWith('mcp__'));
+    const mcpTools = allEnabledTools.filter(tool => tool.startsWith('mcp__'));
+    
+    setSelectedRegularTools(regularTools);
+    setSelectedMcpTools(mcpTools);
+    setMcpToolsEnabled(mcpTools.length > 0);
   };
 
   const handleCreate = () => {
@@ -98,6 +111,27 @@ export const AgentsPage: React.FC = () => {
     setEditingAgent(null);
     setEditForm(defaultAgent);
     setIsCreating(true);
+    
+    // 初始化工具选择状态
+    const regularTools = defaultAgent.allowedTools?.filter(tool => tool.enabled).map(tool => tool.name) || [];
+    setSelectedRegularTools(regularTools);
+    setSelectedMcpTools([]);
+    setMcpToolsEnabled(false);
+  };
+
+  // 更新工具选择
+  const updateToolsFromSelector = () => {
+    const allSelectedTools = [...selectedRegularTools];
+    if (mcpToolsEnabled) {
+      allSelectedTools.push(...selectedMcpTools);
+    }
+    
+    const agentTools: AgentTool[] = allSelectedTools.map(toolName => ({
+      name: toolName,
+      enabled: true
+    }));
+    
+    return agentTools;
   };
 
   const handleSave = async () => {
@@ -107,9 +141,13 @@ export const AgentsPage: React.FC = () => {
     }
     
     try {
+      // 更新工具选择到表单
+      const allowedTools = updateToolsFromSelector();
+      
       if (isCreating) {
         const dataToSave = {
           ...editForm,
+          allowedTools,
           id: `custom-${Date.now()}`,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -126,6 +164,7 @@ export const AgentsPage: React.FC = () => {
         
         const dataToSave = {
           ...editForm,
+          allowedTools,
           enabled: editingAgent.enabled
         };
         
@@ -522,12 +561,39 @@ export const AgentsPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Allowed Tools */}
-                <ToolSelector
-                  selectedTools={editForm.allowedTools || []}
-                  onChange={(tools) => setEditForm({ ...editForm, allowedTools: tools as AgentTool[] })}
-                  useAgentTool={true}
-                />
+                {/* 工具选择 */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">启用的工具</label>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowToolSelector(!showToolSelector)}
+                      className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-sm"
+                    >
+                      选择工具
+                    </button>
+                    
+                    {/* 显示工具数量详情 */}
+                    {(selectedRegularTools.length > 0 || selectedMcpTools.length > 0) && (
+                      <span className="text-sm text-gray-600">
+                        常规工具 {selectedRegularTools.length} 个
+                        {selectedMcpTools.length > 0 && `, MCP工具 ${selectedMcpTools.length} 个`}
+                      </span>
+                    )}
+                    
+                    {/* 工具选择器弹窗 */}
+                    <UnifiedToolSelector
+                      isOpen={showToolSelector}
+                      onClose={() => setShowToolSelector(false)}
+                      selectedRegularTools={selectedRegularTools}
+                      onRegularToolsChange={setSelectedRegularTools}
+                      selectedMcpTools={selectedMcpTools}
+                      onMcpToolsChange={setSelectedMcpTools}
+                      mcpToolsEnabled={mcpToolsEnabled}
+                      onMcpEnabledChange={setMcpToolsEnabled}
+                    />
+                  </div>
+                </div>
 
                 {/* System Prompt */}
                 <div>

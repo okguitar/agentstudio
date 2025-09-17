@@ -42,20 +42,6 @@ export const UnifiedToolSelector: React.FC<UnifiedToolSelectorProps> = ({
   const [expandedServers, setExpandedServers] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<'regular' | 'mcp'>('regular');
   
-  // Add click outside to close functionality
-  useEffect(() => {
-    if (!isOpen) return;
-    
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Element;
-      if (target && !target.closest('.unified-tool-selector-popup')) {
-        onClose();
-      }
-    };
-    
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isOpen, onClose]);
 
   // Fetch MCP servers when component opens
   useEffect(() => {
@@ -148,11 +134,13 @@ export const UnifiedToolSelector: React.FC<UnifiedToolSelectorProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="unified-tool-selector-popup absolute bottom-full left-0 mb-2 w-96 max-h-[500px] bg-white border border-gray-200 rounded-lg shadow-lg z-50 flex flex-col">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]" onClick={onClose}>
+      <div className="unified-tool-selector-popup w-96 max-h-[500px] bg-white border border-gray-200 rounded-lg shadow-lg flex flex-col" onClick={(e) => e.stopPropagation()}>
       <div className="p-4 flex-shrink-0">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-medium text-gray-900">工具选择</h3>
-          <button
+          <button type="button"
+            type="button"
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
           >
@@ -162,7 +150,8 @@ export const UnifiedToolSelector: React.FC<UnifiedToolSelectorProps> = ({
 
         {/* Tabs */}
         <div className="flex space-x-1 mb-2 bg-gray-100 rounded-lg p-1">
-          <button
+          <button type="button"
+            type="button"
             onClick={() => setActiveTab('regular')}
             className={`flex-1 flex items-center justify-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
               activeTab === 'regular'
@@ -178,7 +167,8 @@ export const UnifiedToolSelector: React.FC<UnifiedToolSelectorProps> = ({
               </span>
             )}
           </button>
-          <button
+          <button type="button"
+            type="button"
             onClick={() => setActiveTab('mcp')}
             className={`flex-1 flex items-center justify-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
               activeTab === 'mcp'
@@ -206,7 +196,8 @@ export const UnifiedToolSelector: React.FC<UnifiedToolSelectorProps> = ({
               <div className="flex items-center justify-end p-2 hover:bg-gray-50 rounded">
                 <div className="flex items-center space-x-2">
                   <span className="text-sm text-gray-700 font-medium">全选</span>
-                  <button
+                  <button type="button"
+                    type="button"
                     onClick={() => {
                       if (selectedRegularTools.length === AVAILABLE_REGULAR_TOOLS.length) {
                         // 全部选中，清空选择
@@ -240,7 +231,7 @@ export const UnifiedToolSelector: React.FC<UnifiedToolSelectorProps> = ({
                     className="flex items-center justify-between p-2 hover:bg-gray-50 rounded"
                   >
                     <div className="flex items-center space-x-2">
-                      <button
+                      <button type="button"
                         onClick={() => handleRegularToolToggle(tool.name)}
                         className={`w-4 h-4 border-2 rounded flex items-center justify-center transition-colors ${
                           isSelected
@@ -302,7 +293,7 @@ export const UnifiedToolSelector: React.FC<UnifiedToolSelectorProps> = ({
               return (
                 <div key={server.name} className="border border-gray-200 rounded-lg">
                   <div className="flex items-center justify-between p-3">
-                    <button
+                    <button type="button"
                       onClick={() => toggleServerExpansion(server.name)}
                       className="flex items-center space-x-2 flex-1 text-left hover:bg-gray-50 -m-1 p-1 rounded transition-colors"
                       disabled={!isActive}
@@ -326,7 +317,7 @@ export const UnifiedToolSelector: React.FC<UnifiedToolSelectorProps> = ({
                     </button>
                     
                     {isActive && server.tools && server.tools.length > 0 && (
-                      <button
+                      <button type="button"
                         onClick={() => handleServerToolsToggle(server.name, allSelected)}
                         className={`w-4 h-4 border-2 rounded flex items-center justify-center transition-colors ${
                           allSelected
@@ -357,7 +348,7 @@ export const UnifiedToolSelector: React.FC<UnifiedToolSelectorProps> = ({
                             className="flex items-center justify-between p-2 hover:bg-gray-50 rounded"
                           >
                             <div className="flex items-center space-x-2">
-                              <button
+                              <button type="button"
                                 onClick={() => handleMcpToolToggle(toolId)}
                                 className={`w-4 h-4 border-2 rounded flex items-center justify-center transition-colors ${
                                   isSelected
@@ -390,6 +381,7 @@ export const UnifiedToolSelector: React.FC<UnifiedToolSelectorProps> = ({
             })}
           </div>
         )}
+      </div>
       </div>
     </div>
   );

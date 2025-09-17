@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Save, AlertCircle, HelpCircle, Info, Code, Edit3 } from 'lucide-react';
+import { Save, AlertCircle, HelpCircle, Info, Code, Edit3, Wrench, Plus } from 'lucide-react';
 import { 
   Subagent, 
   SubagentCreate, 
   SubagentUpdate,
   SUBAGENT_SCOPES} from '../types/subagents';
 import { useCreateSubagent, useUpdateSubagent, useCreateProjectSubagent, useUpdateProjectSubagent } from '../hooks/useSubagents';
-import { ToolSelector } from './ui/ToolSelector';
+import { UnifiedToolSelector } from './UnifiedToolSelector';
 
 interface SubagentFormProps {
   subagent?: Subagent | null;
@@ -32,6 +32,12 @@ export const SubagentForm: React.FC<SubagentFormProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isCodeMode, setIsCodeMode] = useState(false);
   const [rawContent, setRawContent] = useState('');
+  
+  // 工具选择器状态
+  const [showToolSelector, setShowToolSelector] = useState(false);
+  const [selectedRegularTools, setSelectedRegularTools] = useState<string[]>([]);
+  const [selectedMcpTools, setSelectedMcpTools] = useState<string[]>([]);
+  const [mcpToolsEnabled, setMcpToolsEnabled] = useState(false);
 
   const createSubagent = projectId ? useCreateProjectSubagent(projectId) : useCreateSubagent();
   const updateSubagent = projectId ? useUpdateProjectSubagent(projectId) : useUpdateSubagent();
@@ -92,19 +98,28 @@ export const SubagentForm: React.FC<SubagentFormProps> = ({
 
   useEffect(() => {
     if (subagent) {
+      const allTools = subagent.tools || [];
+      const mcpTools = allTools.filter(tool => tool.startsWith('mcp__'));
+      const regularTools = allTools.filter(tool => !tool.startsWith('mcp__'));
+      
       setFormData({
         name: subagent.name,
         description: subagent.description,
         content: subagent.content,
         scope: subagent.scope,
-        tools: subagent.tools || [],
+        tools: allTools,
       });
+      
+      setSelectedRegularTools(regularTools);
+      setSelectedMcpTools(mcpTools);
+      setMcpToolsEnabled(mcpTools.length > 0);
+      
       setRawContent(generateMarkdownContent({
         name: subagent.name,
         description: subagent.description,
         content: subagent.content,
         scope: subagent.scope,
-        tools: subagent.tools || [],
+        tools: allTools,
       }));
     }
   }, [subagent]);
@@ -170,10 +185,19 @@ export const SubagentForm: React.FC<SubagentFormProps> = ({
     if (isCodeMode) {
       // Switching from code mode to form mode
       const parsed = parseMarkdownContent(rawContent);
+      const allTools = parsed.tools || [];
+      const mcpTools = allTools.filter(tool => tool.startsWith('mcp__'));
+      const regularTools = allTools.filter(tool => !tool.startsWith('mcp__'));
+      
       setFormData(prev => ({
         ...prev,
         ...parsed,
+        tools: allTools,
       }));
+      
+      setSelectedRegularTools(regularTools);
+      setSelectedMcpTools(mcpTools);
+      setMcpToolsEnabled(mcpTools.length > 0);
     } else {
       // Switching from form mode to code mode
       setRawContent(generateMarkdownContent(formData));
@@ -288,7 +312,7 @@ tools: read_file, write, search_replace
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       名称 *
-                      <HelpCircle className="inline h-4 w-4 ml-1 text-gray-400" title="只能包含小写字母、数字和连字符" />
+                      <HelpCircle className="inline h-4 w-4 ml-1 text-gray-400" />
                     </label>
                     <input
                       type="text"
@@ -314,7 +338,7 @@ tools: read_file, write, search_replace
                     </label>
                     <select
                       value={formData.scope}
-                      onChange={(e) => setFormData(prev => ({ ...prev, scope: e.target.value as 'user' | 'project' }))}
+                      onChange={(e) => setFormData(prev => ({ ...prev, scope: e.target.value as 'user' | 'project' } as SubagentCreate))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-100"
                       disabled
                     >
@@ -355,13 +379,57 @@ tools: read_file, write, search_replace
 
                 {/* Tools */}
                 <div>
-                  <ToolSelector
-                    selectedTools={formData.tools || []}
-                    onChange={(tools) => setFormData(prev => ({ ...prev, tools: tools as string[] }))}
-                    label="允许的工具"
-                    emptyText="继承所有可用工具"
-                    useAgentTool={false}
-                  />
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    允许的工具
+                  </label>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowToolSelector(!showToolSelector)}
+                      className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-sm"
+                    >
+                      选择工具
+                    </button>
+                    
+                    {/* 显示工具数量详情 */}
+                    {(selectedRegularTools.length > 0 || selectedMcpTools.length > 0) && (
+                      <span className="text-sm text-gray-600">
+                        常规工具 {selectedRegularTools.length} 个
+                        {selectedMcpTools.length > 0 && `, MCP工具 ${selectedMcpTools.length} 个`}
+                      </span>
+                    )}
+                    
+                    <UnifiedToolSelector
+                      isOpen={showToolSelector}
+                      onClose={() => setShowToolSelector(false)}
+                      selectedRegularTools={selectedRegularTools}
+                      selectedMcpTools={selectedMcpTools}
+                      mcpToolsEnabled={mcpToolsEnabled}
+                      onRegularToolsChange={(tools) => {
+                        setSelectedRegularTools(tools);
+                        const allTools = mcpToolsEnabled ? [...tools, ...selectedMcpTools] : tools;
+                        setFormData({ ...formData, tools: allTools });
+                      }}
+                      onMcpToolsChange={(tools) => {
+                        setSelectedMcpTools(tools);
+                        const allTools = [...selectedRegularTools, ...tools];
+                        setFormData({ ...formData, tools: allTools });
+                      }}
+                      onMcpEnabledChange={(enabled) => {
+                        setMcpToolsEnabled(enabled);
+                        if (!enabled) {
+                          setSelectedMcpTools([]);
+                          setFormData({ ...formData, tools: selectedRegularTools });
+                        } else {
+                          const allTools = [...selectedRegularTools, ...selectedMcpTools];
+                          setFormData({ ...formData, tools: allTools });
+                        }
+                      }}
+                    />
+                  </div>
+                  <p className="mt-1 text-sm text-gray-500">
+                    留空则继承所有可用工具
+                  </p>
                 </div>
 
                 {/* System Prompt */}
