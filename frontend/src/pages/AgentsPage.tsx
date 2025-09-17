@@ -11,7 +11,6 @@ import {
 import { useAgents, useUpdateAgent, useDeleteAgent, useCreateAgent } from '../hooks/useAgents';
 import { useQueryClient } from '@tanstack/react-query';
 import { ProjectSelector } from '../components/ProjectSelector';
-import { ToolSelector } from '../components/ui/ToolSelector';
 import { UnifiedToolSelector } from '../components/UnifiedToolSelector';
 import type { AgentConfig, AgentTool } from '../types/index.js';
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Check, X, RefreshCw, AlertCircle, Wrench, ChevronDown, ChevronRight, Settings2, Minus, Plug2 } from 'lucide-react';
+import { Check, X, RefreshCw, AlertCircle, Wrench, ChevronDown, ChevronRight, Minus, Plug2 } from 'lucide-react';
 import { getAllToolsInfo, getToolDisplayName } from '../../shared/utils/toolMapping';
 
 // 使用共享的工具信息

@@ -952,9 +952,9 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
                 </button>
                 
                 {/* 显示工具数量标识 */}
-                {(selectedRegularTools.length > 0 || selectedMcpTools.length > 0) && (
+                {(selectedRegularTools.length > 0 || (mcpToolsEnabled && selectedMcpTools.length > 0)) && (
                   <span className="absolute -top-1 -right-1 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center bg-blue-600">
-                    {selectedRegularTools.length + selectedMcpTools.filter(t => t.startsWith('mcp__') && t.split('__').length === 3).length}
+                    {selectedRegularTools.length + (mcpToolsEnabled ? selectedMcpTools.filter(t => t.startsWith('mcp__') && t.split('__').length === 3).length : 0)}
                   </span>
                 )}
                 
