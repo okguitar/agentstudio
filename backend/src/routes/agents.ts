@@ -1238,6 +1238,8 @@ const ChatRequestSchema = z.object({
   sessionId: z.string().optional().nullable(),
   projectPath: z.string().optional(),
   mcpTools: z.array(z.string()).optional(),
+  permissionMode: z.enum(['default', 'acceptEdits', 'bypassPermissions', 'plan']).optional(),
+  model: z.enum(['sonnet', 'opus']).optional(),
   context: z.object({
     currentSlide: z.number().optional().nullable(),
     slideContent: z.string().optional(),
@@ -1299,7 +1301,7 @@ router.post('/chat', async (req, res) => {
       return res.status(400).json({ error: 'Invalid request body', details: validation.error });
     }
 
-    const { message, images, agentId, context, sessionId, projectPath, mcpTools } = validation.data;
+    const { message, images, agentId, context, sessionId, projectPath, mcpTools, permissionMode, model } = validation.data;
     
     // console.log('Received chat request with projectPath:', projectPath);
 
@@ -1375,12 +1377,30 @@ router.post('/chat', async (req, res) => {
       }
       
       // const claudePath = await getClaudeExecutablePath();
+      
+      // Determine permission mode: request > agent config > system default
+      let finalPermissionMode = 'default';
+      if (permissionMode) {
+        finalPermissionMode = permissionMode;
+      } else if (agent.permissionMode) {
+        finalPermissionMode = agent.permissionMode;
+      }
+      
+      // Determine model: request > agent config > system default (sonnet)
+      let finalModel = 'sonnet';
+      if (model) {
+        finalModel = model
+      } else if (agent.model) {
+        finalModel = agent.model;
+      }
+      
       const queryOptions: Options = {
         customSystemPrompt: systemPrompt,
         allowedTools,
         maxTurns: agent.maxTurns,
         cwd,
-        permissionMode: agent.permissionMode as any,
+        permissionMode: finalPermissionMode as any,
+        model: finalModel,
         // Temporarily disable custom path to let SDK find claude automatically
         // ...(claudePath && { pathToClaudeCodeExecutable: claudePath })
       };

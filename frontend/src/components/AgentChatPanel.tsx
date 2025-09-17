@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Send, Clock, Square, Image, Wrench, X, Plus } from 'lucide-react';
+import { Send, Clock, Square, Image, Wrench, X, Plus, Zap, Cpu, ChevronDown } from 'lucide-react';
 import { ImagePreview } from './ImagePreview';
 import { CommandSelector } from './CommandSelector';
 import { ConfirmDialog } from './ConfirmDialog';
@@ -9,7 +9,7 @@ import { useCommands, useProjectCommands } from '../hooks/useCommands';
 import { useQueryClient } from '@tanstack/react-query';
 import { ChatMessageRenderer } from './ChatMessageRenderer';
 import { SessionsDropdown } from './SessionsDropdown';
-import { McpToolSelector } from './McpToolSelector';
+import { UnifiedToolSelector } from './UnifiedToolSelector';
 import type { AgentConfig } from '../types/index.js';
 import { 
   isCommandTrigger, 
@@ -29,7 +29,6 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
   const [inputMessage, setInputMessage] = useState('');
   const [showSessions, setShowSessions] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [showMcpSelector, setShowMcpSelector] = useState(false);
   const [selectedMcpTools, setSelectedMcpTools] = useState<string[]>([]);
   const [mcpToolsEnabled, setMcpToolsEnabled] = useState(false);
   const [selectedImages, setSelectedImages] = useState<Array<{ id: string; file: File; preview: string }>>([]);
@@ -42,6 +41,12 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [confirmMessage, setConfirmMessage] = useState('');
   const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null);
+  const [showToolSelector, setShowToolSelector] = useState(false);
+  const [selectedRegularTools, setSelectedRegularTools] = useState<string[]>([]);
+  const [permissionMode, setPermissionMode] = useState<'default' | 'acceptEdits' | 'bypassPermissions' | 'plan'>('default');
+  const [selectedModel, setSelectedModel] = useState<'sonnet' | 'opus'>('sonnet');
+  const [showPermissionDropdown, setShowPermissionDropdown] = useState(false);
+  const [showModelDropdown, setShowModelDropdown] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -154,11 +159,6 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
     });
   }, [allCommands.length]);
 
-  // Calculate the actual number of tools represented by the selection
-  const getActualToolCount = () => {
-    // 现在只需要计算单个工具选择的数量
-    return selectedMcpTools.filter(t => t.startsWith('mcp__') && t.split('__').length === 3).length;
-  };
 
   // Image handling functions
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -371,6 +371,12 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
       
       // console.log('Sending agent chat request:', { agentId: agent.id, message: userMessage, context, sessionId: currentSessionId, projectPath });
 
+      // 合并常规工具和MCP工具
+      const allSelectedTools = [
+        ...selectedRegularTools,
+        ...(mcpToolsEnabled && selectedMcpTools.length > 0 ? selectedMcpTools : [])
+      ];
+
       // Use agent-specific SSE streaming chat - pass null as sessionId if no current session
       await agentChatMutation.mutateAsync({
         agentId: agent.id,
@@ -379,7 +385,9 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
         context,
         sessionId: currentSessionId, // Keep existing session or null for new session
         projectPath,
-        mcpTools: mcpToolsEnabled && selectedMcpTools.length > 0 ? selectedMcpTools : undefined,
+        mcpTools: allSelectedTools.length > 0 ? allSelectedTools : undefined,
+        permissionMode,
+        model: selectedModel,
         abortController,
         onMessage: (data) => {
           console.log('Received SSE message:', data);
@@ -735,6 +743,20 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
     }
   }, [sessionMessagesData, currentSessionId, loadSessionMessages]);
 
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (!target.closest('.dropdown-container')) {
+        setShowPermissionDropdown(false);
+        setShowModelDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   return (
     <div className="flex flex-col h-full bg-white">
       {/* Header */}
@@ -914,6 +936,41 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
                 className="hidden"
               />
               
+              {/* 工具选择按钮 */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowToolSelector(!showToolSelector)}
+                  className={`p-2 transition-colors rounded-lg ${
+                    showToolSelector || (selectedRegularTools.length > 0 || selectedMcpTools.length > 0)
+                      ? 'text-blue-600 bg-blue-50 hover:bg-blue-100'
+                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                  }`}
+                  title="工具选择"
+                  disabled={isAiTyping}
+                >
+                  <Wrench className="w-4 h-4" />
+                </button>
+                
+                {/* 显示工具数量标识 */}
+                {(selectedRegularTools.length > 0 || selectedMcpTools.length > 0) && (
+                  <span className="absolute -top-1 -right-1 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center bg-blue-600">
+                    {selectedRegularTools.length + selectedMcpTools.filter(t => t.startsWith('mcp__') && t.split('__').length === 3).length}
+                  </span>
+                )}
+                
+                {/* 工具选择器 - 使用新的UnifiedToolSelector */}
+                <UnifiedToolSelector
+                  isOpen={showToolSelector}
+                  onClose={() => setShowToolSelector(false)}
+                  selectedRegularTools={selectedRegularTools}
+                  onRegularToolsChange={setSelectedRegularTools}
+                  selectedMcpTools={selectedMcpTools}
+                  onMcpToolsChange={setSelectedMcpTools}
+                  mcpToolsEnabled={mcpToolsEnabled}
+                  onMcpEnabledChange={setMcpToolsEnabled}
+                />
+              </div>
+              
               {/* Tool buttons */}
               <div className="relative">
                 <button
@@ -934,42 +991,91 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
                   </span>
                 )}
               </div>
-              <div className="relative">
-                <button
-                onClick={() => setShowMcpSelector(!showMcpSelector)}
-                className={`relative p-2 transition-colors rounded-lg ${
-                  mcpToolsEnabled && selectedMcpTools.length > 0
-                    ? 'text-green-600 bg-green-50 hover:bg-green-100' 
-                    : selectedMcpTools.length > 0
-                    ? 'text-blue-600 bg-blue-50 hover:bg-blue-100'
-                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-                }`}
-                title={`MCP工具 ${selectedMcpTools.length > 0 ? `(已选择${getActualToolCount()}个${mcpToolsEnabled ? '，已启用' : '，未启用'})` : '(未选择)'}`}
-                disabled={isAiTyping}
-              >
-                <Wrench className="w-4 h-4" />
-                {selectedMcpTools.length > 0 && (
-                  <span className={`absolute -top-1 -right-1 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center ${
-                    mcpToolsEnabled ? 'bg-green-600' : 'bg-blue-600'
-                  }`}>
-                    {getActualToolCount()}
-                  </span>
-                )}
-                </button>
-                
-                {/* MCP Tool Selector Tooltip */}
-                <McpToolSelector
-                  isOpen={showMcpSelector}
-                  onClose={() => setShowMcpSelector(false)}
-                  selectedTools={selectedMcpTools}
-                  onToolsChange={setSelectedMcpTools}
-                  enabled={mcpToolsEnabled}
-                  onEnabledChange={setMcpToolsEnabled}
-                />
-              </div>
             </div>
             
             <div className="flex items-center space-x-2">
+              {/* 权限模式下拉 */}
+              <div className="relative dropdown-container">
+                <button
+                  onClick={() => setShowPermissionDropdown(!showPermissionDropdown)}
+                  className={`flex items-center space-x-1 px-3 py-2 text-sm rounded-lg transition-colors ${
+                    permissionMode !== 'default'
+                      ? 'text-blue-600 bg-blue-50 hover:bg-blue-100'
+                      : 'text-gray-600 bg-gray-50 hover:bg-gray-100'
+                  }`}
+                  disabled={isAiTyping}
+                >
+                  <Zap className="w-4 h-4" />
+                  <span className="text-xs">{permissionMode === 'default' ? '默认' : permissionMode === 'acceptEdits' ? '接受编辑' : permissionMode === 'bypassPermissions' ? '绕过权限' : '计划模式'}</span>
+                  <ChevronDown className="w-3 h-3" />
+                </button>
+                
+                {showPermissionDropdown && (
+                  <div className="absolute bottom-full left-0 mb-2 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                    {[
+                      { value: 'default', label: '默认' },
+                      { value: 'acceptEdits', label: '接受编辑' },
+                      { value: 'bypassPermissions', label: '绕过权限' },
+                      { value: 'plan', label: '计划模式' }
+                    ].map(option => (
+                      <button
+                        key={option.value}
+                        onClick={() => {
+                          setPermissionMode(option.value as any);
+                          setShowPermissionDropdown(false);
+                        }}
+                        className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg ${
+                          permissionMode === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              {/* 模型切换下拉 */}
+              <div className="relative dropdown-container">
+                <button
+                  onClick={() => setShowModelDropdown(!showModelDropdown)}
+                  className={`flex items-center space-x-1 px-3 py-2 text-sm rounded-lg transition-colors ${
+                    selectedModel === 'opus'
+                      ? 'text-purple-600 bg-purple-50 hover:bg-purple-100'
+                      : 'text-gray-600 bg-gray-50 hover:bg-gray-100'
+                  }`}
+                  disabled={isAiTyping}
+                >
+                  <Cpu className="w-4 h-4" />
+                  <span className="text-xs">{selectedModel === 'opus' ? 'Opus' : 'Sonnet'}</span>
+                  <ChevronDown className="w-3 h-3" />
+                </button>
+                
+                {showModelDropdown && (
+                  <div className="absolute bottom-full left-0 mb-2 w-24 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                    {[
+                      { value: 'sonnet', label: 'Sonnet' },
+                      { value: 'opus', label: 'Opus' }
+                    ].map(option => (
+                      <button
+                        key={option.value}
+                        onClick={() => {
+                          setSelectedModel(option.value as any);
+                          setShowModelDropdown(false);
+                        }}
+                        className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg ${
+                          selectedModel === option.value 
+                            ? (option.value === 'opus' ? 'bg-purple-50 text-purple-600' : 'bg-gray-100 text-gray-700')
+                            : 'text-gray-700'
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
               {isAiTyping ? (
                 <button
                   onClick={handleStopGeneration}

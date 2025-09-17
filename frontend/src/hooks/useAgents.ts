@@ -165,6 +165,8 @@ export const useAgentChat = () => {
       sessionId,
       projectPath,
       mcpTools,
+      permissionMode,
+      model,
       abortController,
       onMessage, 
       onError 
@@ -176,6 +178,8 @@ export const useAgentChat = () => {
       sessionId?: string | null;
       projectPath?: string;
       mcpTools?: string[];
+      permissionMode?: 'default' | 'acceptEdits' | 'bypassPermissions' | 'plan';
+      model?: 'sonnet' | 'opus';
       abortController?: AbortController;
       onMessage?: (data: unknown) => void;
       onError?: (error: unknown) => void;
@@ -186,7 +190,7 @@ export const useAgentChat = () => {
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ agentId, message, images, context, sessionId, projectPath, mcpTools }),
+          body: JSON.stringify({ agentId, message, images, context, sessionId, projectPath, mcpTools, permissionMode, model }),
           signal: abortController?.signal
         });
 

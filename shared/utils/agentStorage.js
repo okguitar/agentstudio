@@ -28,7 +28,7 @@ export class AgentStorage {
                 const now = new Date().toISOString();
                 const fullAgent = {
                     version: '1.0.0',
-                    maxTurns: 25,
+                    maxTurns: 200,
                     permissionMode: 'acceptEdits',
                     author: 'Claude Agent System',
                     createdAt: now,

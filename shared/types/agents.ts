@@ -19,6 +19,7 @@ export interface AgentConfig {
   systemPrompt: string;
   maxTurns: number;
   permissionMode: 'default' | 'acceptEdits' | 'bypassPermissions' | 'plan';
+  model: string;
   
   // Available tools
   allowedTools: AgentTool[];
