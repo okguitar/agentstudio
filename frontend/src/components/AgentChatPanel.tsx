@@ -159,6 +159,46 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
     });
   }, [allCommands.length]);
 
+  // Initialize tool selector with agent's preset tools
+  useEffect(() => {
+    if (agent?.allowedTools?.length > 0) {
+      const enabledTools = agent.allowedTools.filter(tool => tool.enabled);
+      
+      // Separate regular tools and MCP tools
+      const regularTools: string[] = [];
+      const mcpTools: string[] = [];
+      
+      enabledTools.forEach(tool => {
+        if (tool.name.includes('.') && !tool.name.startsWith('mcp__')) {
+          // MCP tool format: serverName.toolName -> mcp__serverName__toolName
+          const [serverName, toolName] = tool.name.split('.');
+          const mcpToolId = `mcp__${serverName}__${toolName}`;
+          mcpTools.push(mcpToolId);
+        } else if (!tool.name.startsWith('mcp__')) {
+          // Regular tool
+          regularTools.push(tool.name);
+        } else {
+          // Already in mcp__ format
+          mcpTools.push(tool.name);
+        }
+      });
+      
+      // Initialize selected tools with agent's preset tools
+      setSelectedRegularTools(prev => {
+        const newTools = [...new Set([...prev, ...regularTools])];
+        return newTools;
+      });
+      
+      if (mcpTools.length > 0) {
+        setMcpToolsEnabled(true);
+        setSelectedMcpTools(prev => {
+          const newTools = [...new Set([...prev, ...mcpTools])];
+          return newTools;
+        });
+      }
+    }
+  }, [agent?.allowedTools]);
+
 
   // Image handling functions
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -968,6 +1008,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
                   onMcpToolsChange={setSelectedMcpTools}
                   mcpToolsEnabled={mcpToolsEnabled}
                   onMcpEnabledChange={setMcpToolsEnabled}
+                  presetTools={agent.allowedTools}
                 />
               </div>
               

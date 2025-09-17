@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Check, X, RefreshCw, AlertCircle, Wrench, ChevronDown, ChevronRight, Minus, Plug2 } from 'lucide-react';
+import { Check, X, RefreshCw, AlertCircle, Wrench, ChevronDown, ChevronRight, Minus, Plug2, Lock } from 'lucide-react';
 import { getAllToolsInfo, getToolDisplayName } from '../../shared/utils/toolMapping';
+import type { AgentTool } from '../types/index';
 
 // 使用共享的工具信息
 const AVAILABLE_REGULAR_TOOLS = getAllToolsInfo();
@@ -24,6 +25,10 @@ interface UnifiedToolSelectorProps {
   onMcpToolsChange: (tools: string[]) => void;
   mcpToolsEnabled: boolean;
   onMcpEnabledChange: (enabled: boolean) => void;
+  // Agent预设工具配置（不可取消选择）
+  presetTools?: AgentTool[];
+  // 是否为只读模式（禁用所有交互）
+  readonly?: boolean;
 }
 
 export const UnifiedToolSelector: React.FC<UnifiedToolSelectorProps> = ({
@@ -35,6 +40,8 @@ export const UnifiedToolSelector: React.FC<UnifiedToolSelectorProps> = ({
   onMcpToolsChange,
   mcpToolsEnabled,
   onMcpEnabledChange,
+  presetTools = [],
+  readonly = false,
 }) => {
   const [servers, setServers] = useState<McpServer[]>([]);
   const [loading, setLoading] = useState(false);
@@ -71,8 +78,43 @@ export const UnifiedToolSelector: React.FC<UnifiedToolSelectorProps> = ({
     }
   };
 
+  // 检查工具是否是Agent预设工具
+  const isPresetTool = (toolName: string) => {
+    return presetTools.some(tool => tool.name === toolName && tool.enabled);
+  };
+
+  // 检查MCP工具是否是Agent预设工具
+  const isPresetMcpTool = (toolId: string) => {
+    // 直接检查工具ID是否在预设工具中（mcp__serverName__toolName格式）
+    if (presetTools.some(tool => tool.name === toolId && tool.enabled)) {
+      return true;
+    }
+    
+    // MCP工具ID格式：mcp__serverName__toolName
+    const parts = toolId.split('__');
+    if (parts.length === 3 && parts[0] === 'mcp') {
+      // 检查 serverName.toolName 格式
+      const mcpToolName = `${parts[1]}.${parts[2]}`;
+      if (presetTools.some(tool => tool.name === mcpToolName && tool.enabled)) {
+        return true;
+      }
+      
+      // 检查 mcp__serverName__toolName 格式（完整格式）
+      const fullMcpName = `mcp__${parts[1]}__${parts[2]}`;
+      if (presetTools.some(tool => tool.name === fullMcpName && tool.enabled)) {
+        return true;
+      }
+    }
+    return false;
+  };
+
   // Handle regular tool toggle
   const handleRegularToolToggle = (toolName: string) => {
+    // 如果是预设工具，不允许取消选择
+    if (isPresetTool(toolName) && selectedRegularTools.includes(toolName)) {
+      return;
+    }
+    
     if (selectedRegularTools.includes(toolName)) {
       onRegularToolsChange(selectedRegularTools.filter(t => t !== toolName));
     } else {
@@ -82,6 +124,11 @@ export const UnifiedToolSelector: React.FC<UnifiedToolSelectorProps> = ({
 
   // Handle MCP tool toggle
   const handleMcpToolToggle = (toolId: string) => {
+    // 如果是预设MCP工具，不允许取消选择
+    if (isPresetMcpTool(toolId) && selectedMcpTools.includes(toolId)) {
+      return;
+    }
+    
     if (selectedMcpTools.includes(toolId)) {
       onMcpToolsChange(selectedMcpTools.filter(id => id !== toolId));
     } else {
@@ -100,18 +147,36 @@ export const UnifiedToolSelector: React.FC<UnifiedToolSelectorProps> = ({
     setExpandedServers(newExpanded);
   };
 
+  // Check if server has preset tools
+  const serverHasPresetTools = (serverName: string) => {
+    const server = servers.find(s => s.name === serverName);
+    if (!server || !server.tools) return false;
+    
+    return server.tools.some(toolName => {
+      const toolId = `mcp__${serverName}__${toolName}`;
+      return isPresetMcpTool(toolId);
+    });
+  };
+
   // Handle server tool selection (all tools)
   const handleServerToolsToggle = (serverName: string, allSelected: boolean) => {
     const server = servers.find(s => s.name === serverName);
     if (!server || !server.tools) return;
 
+    const serverToolIds = server.tools.map(toolName => `mcp__${serverName}__${toolName}`);
+    const hasPresetTools = serverHasPresetTools(serverName);
+
     if (allSelected) {
-      // Remove all tools from this server
-      const serverToolIds = server.tools.map(toolName => `mcp__${serverName}__${toolName}`);
-      onMcpToolsChange(selectedMcpTools.filter(id => !serverToolIds.includes(id)));
+      if (hasPresetTools) {
+        // 如果有预设工具，只移除非预设工具，保留预设工具
+        const toolsToRemove = serverToolIds.filter(id => !isPresetMcpTool(id));
+        onMcpToolsChange(selectedMcpTools.filter(id => !toolsToRemove.includes(id)));
+      } else {
+        // 没有预设工具，可以移除所有工具
+        onMcpToolsChange(selectedMcpTools.filter(id => !serverToolIds.includes(id)));
+      }
     } else {
       // Add all tools from this server
-      const serverToolIds = server.tools.map(toolName => `mcp__${serverName}__${toolName}`);
       const newSelected = [...selectedMcpTools];
       serverToolIds.forEach(id => {
         if (!newSelected.includes(id)) {
@@ -129,6 +194,23 @@ export const UnifiedToolSelector: React.FC<UnifiedToolSelectorProps> = ({
     
     const serverToolIds = server.tools.map(toolName => `mcp__${serverName}__${toolName}`);
     return serverToolIds.every(id => selectedMcpTools.includes(id));
+  };
+
+  // Check if server has only preset tools selected (partial selection)
+  const isServerPartiallySelected = (serverName: string) => {
+    const server = servers.find(s => s.name === serverName);
+    if (!server || !server.tools) return false;
+    
+    const serverToolIds = server.tools.map(toolName => `mcp__${serverName}__${toolName}`);
+    const selectedServerTools = serverToolIds.filter(id => selectedMcpTools.includes(id));
+    const presetServerTools = serverToolIds.filter(id => isPresetMcpTool(id));
+    
+    // 如果有预设工具且当前选择的工具数量大于0但小于全部工具数量
+    if (presetServerTools.length > 0 && selectedServerTools.length > 0 && selectedServerTools.length < serverToolIds.length) {
+      return true;
+    }
+    
+    return false;
   };
 
   if (!isOpen) return null;
@@ -225,23 +307,40 @@ export const UnifiedToolSelector: React.FC<UnifiedToolSelectorProps> = ({
               </div>
               {AVAILABLE_REGULAR_TOOLS.map((tool) => {
                 const isSelected = selectedRegularTools.includes(tool.name);
+                const isPreset = isPresetTool(tool.name);
+                const isDisabled = readonly || (isPreset && isSelected);
+                
                 return (
                   <div
                     key={tool.name}
-                    className="flex items-center justify-between p-2 hover:bg-gray-50 rounded"
+                    className={`flex items-center justify-between p-2 rounded ${
+                      isDisabled ? 'bg-gray-50' : 'hover:bg-gray-50'
+                    }`}
                   >
                     <div className="flex items-center space-x-2">
                       <button type="button"
                         onClick={() => handleRegularToolToggle(tool.name)}
+                        disabled={isDisabled}
                         className={`w-4 h-4 border-2 rounded flex items-center justify-center transition-colors ${
                           isSelected
-                            ? 'bg-blue-600 border-blue-600 text-white'
+                            ? isPreset 
+                              ? 'bg-orange-500 border-orange-500 text-white cursor-not-allowed'
+                              : 'bg-blue-600 border-blue-600 text-white'
+                            : isDisabled
+                            ? 'border-gray-200 cursor-not-allowed'
                             : 'border-gray-300 hover:border-blue-500'
                         }`}
                       >
-                        {isSelected && <Check className="w-3 h-3" />}
+                        {isSelected && (
+                          isPreset ? <Lock className="w-3 h-3" /> : <Check className="w-3 h-3" />
+                        )}
                       </button>
-                      <span className="text-sm text-gray-700">{getToolDisplayName(tool.name)} ({tool.name})</span>
+                      <span className={`text-sm ${
+                        isDisabled ? 'text-gray-400' : 'text-gray-700'
+                      }`}>
+                        {getToolDisplayName(tool.name)} ({tool.name})
+                        {isPreset && <span className="ml-1 text-xs text-orange-600">[预设]</span>}
+                      </span>
                     </div>
                   </div>
                 );
@@ -289,6 +388,8 @@ export const UnifiedToolSelector: React.FC<UnifiedToolSelectorProps> = ({
               const hasSelectedTools = server.tools?.some(toolName => 
                 selectedMcpTools.includes(`mcp__${server.name}__${toolName}`)
               );
+              const hasPresetTools = serverHasPresetTools(server.name);
+              const isPartiallySelected = isServerPartiallySelected(server.name);
 
               return (
                 <div key={server.name} className="border border-gray-200 rounded-lg">
@@ -321,14 +422,18 @@ export const UnifiedToolSelector: React.FC<UnifiedToolSelectorProps> = ({
                         onClick={() => handleServerToolsToggle(server.name, allSelected)}
                         className={`w-4 h-4 border-2 rounded flex items-center justify-center transition-colors ${
                           allSelected
-                            ? 'bg-green-600 border-green-600 text-white'
+                            ? hasPresetTools 
+                              ? 'bg-orange-500 border-orange-500 text-white' // 有预设工具的全选状态
+                              : 'bg-green-600 border-green-600 text-white'   // 无预设工具的全选状态
                             : hasSelectedTools
-                            ? 'bg-blue-600 border-blue-600 text-white'
+                            ? hasPresetTools
+                              ? 'bg-orange-400 border-orange-400 text-white' // 有预设工具的部分选择状态
+                              : 'bg-blue-600 border-blue-600 text-white'     // 无预设工具的部分选择状态
                             : 'border-gray-300 hover:border-green-500'
                         }`}
                       >
                         {allSelected ? (
-                          <Check className="w-3 h-3" />
+                          hasPresetTools ? <Lock className="w-3 h-3" /> : <Check className="w-3 h-3" />
                         ) : hasSelectedTools ? (
                           <Minus className="w-3 h-3" />
                         ) : null}
@@ -341,24 +446,40 @@ export const UnifiedToolSelector: React.FC<UnifiedToolSelectorProps> = ({
                       {server.tools.map((toolName) => {
                         const toolId = `mcp__${server.name}__${toolName}`;
                         const isSelected = selectedMcpTools.includes(toolId);
+                        const isPreset = isPresetMcpTool(toolId);
+                        const isDisabled = readonly || (isPreset && isSelected);
                         
                         return (
                           <div
                             key={toolName}
-                            className="flex items-center justify-between p-2 hover:bg-gray-50 rounded"
+                            className={`flex items-center justify-between p-2 rounded ${
+                              isDisabled ? 'bg-gray-50' : 'hover:bg-gray-50'
+                            }`}
                           >
                             <div className="flex items-center space-x-2">
                               <button type="button"
                                 onClick={() => handleMcpToolToggle(toolId)}
+                                disabled={isDisabled}
                                 className={`w-4 h-4 border-2 rounded flex items-center justify-center transition-colors ${
                                   isSelected
-                                    ? 'bg-green-600 border-green-600 text-white'
+                                    ? isPreset 
+                                      ? 'bg-orange-500 border-orange-500 text-white cursor-not-allowed'
+                                      : 'bg-green-600 border-green-600 text-white'
+                                    : isDisabled
+                                    ? 'border-gray-200 cursor-not-allowed'
                                     : 'border-gray-300 hover:border-green-500'
                                 }`}
                               >
-                                {isSelected && <Check className="w-3 h-3" />}
+                                {isSelected && (
+                                  isPreset ? <Lock className="w-3 h-3" /> : <Check className="w-3 h-3" />
+                                )}
                               </button>
-                              <span className="text-sm text-gray-700">{toolName}</span>
+                              <span className={`text-sm ${
+                                isDisabled ? 'text-gray-400' : 'text-gray-700'
+                              }`}>
+                                {toolName}
+                                {isPreset && <span className="ml-1 text-xs text-orange-600">[预设]</span>}
+                              </span>
                             </div>
                           </div>
                         );
