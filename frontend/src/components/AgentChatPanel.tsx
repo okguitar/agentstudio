@@ -775,9 +775,18 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
 
   // Load session messages when session changes or messages are available
   useEffect(() => {
+    console.log('🔍 Session messages effect triggered:', {
+      sessionMessagesData: sessionMessagesData?.messages?.length || 0,
+      currentSessionId,
+      hasSessionMessagesData: !!sessionMessagesData,
+      messagesLength: sessionMessagesData?.messages?.length
+    });
+    
     if (sessionMessagesData?.messages && currentSessionId) {
+      console.log('✅ Loading session messages:', sessionMessagesData.messages.length);
       loadSessionMessages(sessionMessagesData.messages);
     } else if (currentSessionId && sessionMessagesData && sessionMessagesData.messages?.length === 0) {
+      console.log('🗑️ Loading empty session messages');
       // Handle empty session - clear messages
       loadSessionMessages([]);
     }
@@ -864,23 +873,34 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
           </div>
         </div>
         
-        {messages.map((message) => (
-          <div
-            key={message.id}
-            className="px-4"
-          >
+        {(() => {
+          console.log('🎨 Rendering messages:', {
+            messageCount: messages.length,
+            firstMessage: messages[0]?.id ? {
+              id: messages[0].id,
+              role: messages[0].role,
+              hasContent: !!messages[0].content,
+              hasMessageParts: !!messages[0].messageParts?.length
+            } : null
+          });
+          return messages.map((message) => (
             <div
-              className={`text-sm leading-relaxed break-words overflow-hidden ${
-                message.role === 'user'
-                  ? 'text-white p-3 rounded-lg'
-                  : 'text-gray-800'
-              }`}
-              style={message.role === 'user' ? { backgroundColor: agent.ui.primaryColor } : {}}
+              key={message.id}
+              className="px-4"
             >
-              <ChatMessageRenderer message={message as any} />
+              <div
+                className={`text-sm leading-relaxed break-words overflow-hidden ${
+                  message.role === 'user'
+                    ? 'text-white p-3 rounded-lg'
+                    : 'text-gray-800'
+                }`}
+                style={message.role === 'user' ? { backgroundColor: agent.ui.primaryColor } : {}}
+              >
+                <ChatMessageRenderer message={message as any} />
+              </div>
             </div>
-          </div>
-        ))}
+          ));
+        })()}
         
         {isAiTyping && (
           <div className="flex justify-center py-2">

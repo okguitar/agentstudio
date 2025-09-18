@@ -21,10 +21,19 @@ export const ChatPage: React.FC = () => {
 
   // Set current agent when data loads, then set session ID
   useEffect(() => {
+    console.log('🎯 ChatPage agent/session effect:', {
+      hasAgent: !!agent,
+      agentId: agent?.id,
+      sessionId,
+      urlSessionId: searchParams.get('session')
+    });
+    
     if (agent) {
+      console.log('🎯 Setting current agent:', agent.id);
       setCurrentAgent(agent);
       // Set session ID after agent is set to prevent it from being cleared
       if (sessionId) {
+        console.log('🎯 Setting session ID:', sessionId);
         setCurrentSessionId(sessionId);
       }
     }
