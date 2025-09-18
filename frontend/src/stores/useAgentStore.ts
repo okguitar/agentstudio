@@ -38,13 +38,15 @@ export const useAgentStore = create<AgentState>((set) => ({
   sidebarCollapsed: false,
   
   // Actions
-  setCurrentAgent: (agent) => set({ 
+  setCurrentAgent: (agent) => set((state) => ({
     currentAgent: agent,
-    // Clear state when switching agents
-    messages: [],
-    isAiTyping: false,
-    currentSessionId: null
-  }),
+    // Only clear messages and session when actually switching to a different agent
+    ...(state.currentAgent?.id !== agent?.id ? {
+      messages: [],
+      isAiTyping: false,
+      currentSessionId: null
+    } : {})
+  })),
   
   addMessage: (message) => set((state) => ({
     messages: [

@@ -4,7 +4,7 @@ export interface Subagent {
   name: string;
   description: string;
   content: string; // System prompt content
-  scope: 'user'; // Only support user-level subagents
+  scope: 'user' | 'project'; // Support both user-level and project-level subagents
   tools?: string[]; // Array of allowed tools
   createdAt: Date;
   updatedAt: Date;
@@ -14,7 +14,7 @@ export interface SubagentCreate {
   name: string;
   description: string;
   content: string;
-  scope: 'user';
+  scope: 'user' | 'project';
   tools?: string[];
 }
 

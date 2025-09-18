@@ -49,6 +49,9 @@ export interface AgentConfig {
   
   // Enable/disable state
   enabled: boolean;
+  
+  // Project associations
+  projects?: string[]; // Array of project paths associated with this agent
 }
 
 export interface AgentSession {
@@ -72,7 +75,7 @@ export interface AgentMessage {
 
 export interface MessagePart {
   id: string;
-  type: 'text' | 'tool';
+  type: 'text' | 'tool' | 'command' | 'compactSummary' | 'image';
   content?: string;
   toolData?: {
     id: string;
@@ -83,7 +86,14 @@ export interface MessagePart {
     isError?: boolean;
     claudeId?: string; // Claude's tool use ID for matching with results
   };
+  imageData?: {
+    id: string;
+    data: string;
+    mediaType: string;
+    filename?: string;
+  };
   order: number;
+  originalContent?: string; // For commands that need to preserve original content
 }
 
 // Built-in agent templates
