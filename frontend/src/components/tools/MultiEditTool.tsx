@@ -1,5 +1,6 @@
 import React from 'react';
 import { BaseToolComponent, ToolInput } from './BaseToolComponent';
+import { DiffViewer } from '../DiffViewer';
 import type { ToolExecution, MultiEditToolInput } from './types';
 
 interface MultiEditToolProps {
@@ -10,7 +11,7 @@ export const MultiEditTool: React.FC<MultiEditToolProps> = ({ execution }) => {
   const input = execution.toolInput as MultiEditToolInput;
 
   return (
-    <BaseToolComponent execution={execution}>
+    <BaseToolComponent execution={execution} showResult={false}>
       <div>
         <ToolInput label="文件路径" value={input.file_path} />
         
@@ -19,37 +20,25 @@ export const MultiEditTool: React.FC<MultiEditToolProps> = ({ execution }) => {
             批量编辑 ({input.edits.length} 个操作):
           </p>
           
-          <div className="space-y-3 max-h-96 overflow-y-auto">
+          <div className="space-y-4 max-h-96 overflow-y-auto">
             {input.edits.map((edit, index) => (
-              <div key={index} className="border border-gray-300 rounded-md p-3 bg-white">
-                <div className="text-xs font-medium text-gray-600 mb-2">
-                  操作 #{index + 1}
-                  {edit.replace_all && (
-                    <span className="ml-2 px-2 py-1 bg-orange-200 text-orange-800 rounded text-xs">
-                      全部替换
-                    </span>
-                  )}
+              <div key={index} className="border border-gray-200 rounded-md bg-white">
+                <div className="px-3 py-2 bg-gray-50 border-b border-gray-200 rounded-t-md">
+                  <div className="text-xs font-medium text-gray-600">
+                    操作 #{index + 1}
+                    {edit.replace_all && (
+                      <span className="ml-2 px-2 py-1 bg-orange-200 text-orange-800 rounded text-xs">
+                        全部替换
+                      </span>
+                    )}
+                  </div>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">原文本:</p>
-                    <div className="font-mono bg-red-50 p-2 rounded text-xs whitespace-pre-wrap break-words border border-red-200">
-                      {edit.old_string.length > 150 ? 
-                        edit.old_string.substring(0, 150) + '\n...(已截断)' : 
-                        edit.old_string
-                      }
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">新文本:</p>
-                    <div className="font-mono bg-green-50 p-2 rounded text-xs whitespace-pre-wrap break-words border border-green-200">
-                      {edit.new_string.length > 150 ? 
-                        edit.new_string.substring(0, 150) + '\n...(已截断)' : 
-                        edit.new_string
-                      }
-                    </div>
-                  </div>
+                <div className="p-3">
+                  <DiffViewer 
+                    oldText={edit.old_string}
+                    newText={edit.new_string}
+                  />
                 </div>
               </div>
             ))}

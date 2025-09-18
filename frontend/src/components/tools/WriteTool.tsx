@@ -1,5 +1,6 @@
 import React from 'react';
 import { BaseToolComponent, ToolInput } from './BaseToolComponent';
+import { FileContentViewer } from '../FileContentViewer';
 import type { ToolExecution, WriteToolInput } from './types';
 
 interface WriteToolProps {
@@ -17,22 +18,19 @@ export const WriteTool: React.FC<WriteToolProps> = ({ execution }) => {
   };
 
   return (
-    <BaseToolComponent execution={execution} subtitle={getSubtitle()}>
+    <BaseToolComponent execution={execution} subtitle={getSubtitle()} showResult={false}>
       <div>
         <ToolInput label="文件路径" value={input.file_path} />
-        <ToolInput 
-          label="文件内容" 
-          value={input.content.length > 500 ? 
-            input.content.substring(0, 500) + '\n...(内容已截断)' : 
-            input.content
-          } 
-          isCode={true} 
-        />
-        {input.content.length > 500 && (
-          <div className="text-xs text-gray-500 mt-1">
-            总长度: {input.content.length} 字符
+        
+        <div className="mt-3">
+          <FileContentViewer 
+            content={input.content}
+            filePath={input.file_path}
+          />
+          <div className="text-xs text-gray-500 mt-2">
+            文件大小: {input.content.length} 字符
           </div>
-        )}
+        </div>
       </div>
       
     </BaseToolComponent>

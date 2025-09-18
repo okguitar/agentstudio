@@ -17,13 +17,11 @@ import {
   Loader2,
   ChevronDown,
   ChevronRight,
-  Link2,  // 备用图标
   Activity,  // 用于BashOutput，表示活动/输出监控
   Square,  // 用于KillBash，表示终止/停止操作
-  GitBranch  // 用于MCP工具，类似官方logo的分叉连接设计
+  Plug  // 用于MCP工具
 } from 'lucide-react';
 import type { ToolExecution } from './types';
-import { McpIcon } from './McpIcon';
 
 // 工具图标映射
 const TOOL_ICONS = {
@@ -81,7 +79,7 @@ export const BaseToolComponent: React.FC<BaseToolProps> = ({ execution, children
   
   // 为MCP工具使用不同的图标和颜色
   const Icon = isMcpTool 
-    ? McpIcon 
+    ? Plug 
     : TOOL_ICONS[execution.toolName as keyof typeof TOOL_ICONS] || Terminal;
   
   const colorClass = isMcpTool 
@@ -148,12 +146,6 @@ export const BaseToolComponent: React.FC<BaseToolProps> = ({ execution, children
         )}
       </div>
 
-      {/* 错误状态显示 - 在组件外部独立显示 */}
-      {execution.isError && execution.toolResult && (
-        <div className="ml-2 mt-1 text-red-500 text-xs">
-          {cleanErrorMessage(execution.toolResult)}
-        </div>
-      )}
     </>
   );
 };
