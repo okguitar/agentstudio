@@ -27,6 +27,98 @@ function convertProjectPathToClaudeFormat(projectPath: string): string {
 
 import { ClaudeHistoryMessage, ClaudeHistorySession } from '../../../shared/types/claude-history';
 
+// Process compact context messages - detect and convert the 4-message pattern
+function processCompactContextMessages(messages: ClaudeHistoryMessage[]): ClaudeHistoryMessage[] {
+  const processedMessages: ClaudeHistoryMessage[] = [];
+  let i = 0;
+
+  while (i < messages.length) {
+    const currentMsg = messages[i];
+    
+    // Case 1: Manual compact - Check for 4-message pattern
+    if (currentMsg.isCompactSummary && currentMsg.parentUuid === null && i + 3 < messages.length) {
+      const metaMsg = messages[i + 1];
+      const commandMsg = messages[i + 2];
+      const outputMsg = messages[i + 3];
+      
+      // Verify this is the manual compact pattern
+      if (metaMsg.isMeta === true &&
+          commandMsg.type === 'user' &&
+          commandMsg.message?.content &&
+          typeof commandMsg.message.content === 'string' &&
+          commandMsg.message.content.includes('<command-name>/compact</command-name>') &&
+          commandMsg.parentUuid === metaMsg.uuid &&
+          outputMsg.type === 'user' &&
+          outputMsg.message?.content &&
+          typeof outputMsg.message.content === 'string' &&
+          outputMsg.message.content.includes('<local-command-stdout>') &&
+          outputMsg.parentUuid === commandMsg.uuid) {
+        
+        // Create synthetic user command message
+        const userCommandMessage: ClaudeHistoryMessage = {
+          type: 'user',
+          uuid: `synthetic_cmd_${commandMsg.uuid}`,
+          timestamp: commandMsg.timestamp,
+          sessionId: commandMsg.sessionId,
+          parentUuid: currentMsg.parentUuid,
+          message: {
+            role: 'user',
+            content: '/compact'
+          },
+          isCompactCommand: true
+        };
+        
+        // Create synthetic AI response with compressed content
+        const aiResponseMessage: ClaudeHistoryMessage = {
+          type: 'assistant',
+          uuid: `synthetic_ai_${currentMsg.uuid}`,
+          timestamp: currentMsg.timestamp,
+          sessionId: currentMsg.sessionId,
+          parentUuid: userCommandMessage.uuid,
+          message: {
+            role: 'assistant',
+            content: extractContentFromClaudeMessage(currentMsg) || '会话上下文已压缩'
+          },
+          isCompactSummary: true
+        };
+        
+        processedMessages.push(userCommandMessage, aiResponseMessage);
+        i += 4; // Skip all 4 messages
+        continue;
+      }
+    }
+    
+    // Case 2: Auto compact - Single message with isCompactSummary
+    if (currentMsg.isCompactSummary && currentMsg.parentUuid === null && 
+        !(i + 1 < messages.length && messages[i + 1].isMeta === true)) {
+      
+      // Create synthetic AI response for auto-compressed content
+      const aiResponseMessage: ClaudeHistoryMessage = {
+        type: 'assistant',
+        uuid: `synthetic_auto_${currentMsg.uuid}`,
+        timestamp: currentMsg.timestamp,
+        sessionId: currentMsg.sessionId,
+        parentUuid: currentMsg.parentUuid,
+        message: {
+          role: 'assistant',
+          content: extractContentFromClaudeMessage(currentMsg) || '会话上下文已自动压缩'
+        },
+        isCompactSummary: true
+      };
+      
+      processedMessages.push(aiResponseMessage);
+      i++;
+      continue;
+    }
+    
+    // Regular message - pass through
+    processedMessages.push(currentMsg);
+    i++;
+  }
+
+  return processedMessages;
+}
+
 function readClaudeHistorySessions(projectPath: string): ClaudeHistorySession[] {
   try {
     const claudeProjectPath = convertProjectPathToClaudeFormat(projectPath);
@@ -58,10 +150,12 @@ function readClaudeHistorySessions(projectPath: string): ClaudeHistorySession[] 
         // Find summary message for session title
         const summaryMessage = messages.find(msg => msg.type === 'summary');
         const title = summaryMessage?.summary || `会话 ${sessionId.slice(0, 8)}`;
-        
+
+        // Process compact context messages before filtering
+        const processedMessages = processCompactContextMessages(messages);
+
         // Filter user and assistant messages, but exclude tool_result-only user messages, isMeta messages, 
-        // /clear command messages, and local-command-stdout messages
-        const conversationMessages = messages.filter(msg => {
+        const conversationMessages = processedMessages.filter(msg => {
           // Filter out isMeta messages (rule 1)
           if ((msg as any).isMeta === true) {
             return false;
@@ -229,7 +323,6 @@ function extractContentFromClaudeMessage(msg: ClaudeHistoryMessage): string {
   
   // Handle both array and string content
   if (typeof msg.message.content === 'string') {
-    // Rule 2: Check for command message format and extract command name only
     const commandMatch = msg.message.content.match(/<command-message>.*?<\/command-message>\s*<command-name>(.+?)<\/command-name>/);
     if (commandMatch) {
       return commandMatch[1]; // Return only the command name
@@ -250,18 +343,38 @@ function extractContentFromClaudeMessage(msg: ClaudeHistoryMessage): string {
 function convertClaudeMessageToMessageParts(msg: ClaudeHistoryMessage): any[] {
   if (!msg.message?.content) return [];
   
+  // Handle compact command messages
+  if (msg.isCompactCommand) {
+    return [{
+      id: `part_0_${msg.uuid}`,
+      type: 'command',
+      content: '/compact',
+      order: 0
+    }];
+  }
+  
+  // Handle compact summary messages
+  if (msg.isCompactSummary) {
+    return [{
+      id: `part_0_${msg.uuid}`,
+      type: 'compactSummary',
+      content: msg.message.content,
+      order: 0
+    }];
+  }
+  
   // Handle string content
   if (typeof msg.message.content === 'string') {
     // Rule 2: Check for command message format and create command-specific part
     const commandMatch = msg.message.content.match(/<command-message>.*?<\/command-message>\s*<command-name>(.+?)<\/command-name>/);
     if (commandMatch) {
       return [{
-        id: `part_0_${msg.uuid}`,
-        type: 'command',
-        content: commandMatch[1], // Only the command name
-        originalContent: msg.message.content, // Keep original for reference
-        order: 0
-      }];
+          id: `part_0_${msg.uuid}`,
+          type: 'command',
+          content: commandMatch[1], // Only the command name
+          originalContent: msg.message.content, // Keep original for reference
+          order: 0
+        }];
     }
     
     return [{
@@ -321,7 +434,7 @@ function convertClaudeMessageToMessageParts(msg: ClaudeHistoryMessage): any[] {
         content: JSON.stringify(block),
         order: index
       };
-    }).filter(part => part !== null);
+    }).filter((part: any) => part !== null);
   }
   
   return [];
@@ -1161,6 +1274,14 @@ router.get('/:agentId/sessions/:sessionId/messages', (req, res) => {
       session = claudeSessions.find(s => s.id === sessionId);
       
       if (session) {
+        console.log('📨 Found session with', session.messages?.length || 0, 'messages');
+        console.log('📨 First few messages:', session.messages?.slice(0, 3).map((msg: any) => ({
+          role: msg.role,
+          hasMessageParts: !!msg.messageParts,
+          messagePartsCount: msg.messageParts?.length || 0,
+          content: msg.content?.slice(0, 50) + '...'
+        })));
+        
         // Add agentId to match expected format
         session = {
           ...session,

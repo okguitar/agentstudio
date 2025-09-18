@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { MarkdownMessage } from './MarkdownMessage';
 import { ToolUsage } from './ToolUsage';
 import { ImagePreview } from './ImagePreview';
+import { CompactSummary } from './CompactSummary';
 import type { ChatMessage } from '../types/index';
 
 interface ChatMessageRendererProps {
@@ -24,6 +25,12 @@ export const ChatMessageRenderer: React.FC<ChatMessageRendererProps> = ({ messag
             return (
               <div key={part.id} className="inline-flex items-center px-2 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-md text-sm font-mono">
                 {part.content}
+              </div>
+            );
+          } else if (part.type === 'compactSummary' && part.content) {
+            return (
+              <div key={part.id}>
+                <CompactSummary content={part.content} />
               </div>
             );
           } else if (part.type === 'text' && part.content) {

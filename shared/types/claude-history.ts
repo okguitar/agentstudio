@@ -16,7 +16,7 @@ export interface ClaudeMessageContent {
 
 export interface ClaudeMessage {
   role: 'user' | 'assistant';
-  content: any[];
+  content: string | any[];
   id?: string;
   model?: string;
   type?: string;
@@ -50,7 +50,7 @@ export interface ClaudeHistoryMessage {
   message?: ClaudeMessage;
   
   // Message hierarchy
-  parentUuid?: string;
+  parentUuid?: string | null;
   isSidechain?: boolean;
   isMeta?: boolean;
   
@@ -63,6 +63,11 @@ export interface ClaudeHistoryMessage {
   
   // Tool execution results
   toolUseResult?: any;
+  
+  // Compact context markers
+  isCompactSummary?: boolean;
+  isCompactCommand?: boolean;
+  isVisibleInTranscriptOnly?: boolean;
 }
 
 export interface ClaudeHistorySession {
