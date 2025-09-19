@@ -312,7 +312,7 @@ export const ProjectsPage: React.FC = () => {
     description: string;
   }) => {
     try {
-      const response = await fetch('/api/agents/projects/create', {
+      const response = await fetch('/api/projects/create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -378,7 +378,7 @@ export const ProjectsPage: React.FC = () => {
     
     if (confirmed) {
       try {
-        const response = await fetch(`/api/agents/projects/${project.id}`, {
+        const response = await fetch(`/api/projects/by-id/${project.id}`, {
           method: 'DELETE'
         });
         

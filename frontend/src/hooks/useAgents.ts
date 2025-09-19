@@ -99,7 +99,7 @@ export const useAgentSessions = (agentId: string, searchTerm?: string, projectPa
   return useQuery({
     queryKey: ['agent-sessions', agentId, searchTerm, projectPath],
     queryFn: async () => {
-      const url = new URL(`${window.location.origin}${API_BASE}/agents/${agentId}/sessions`);
+      const url = new URL(`${window.location.origin}${API_BASE}/sessions/${agentId}`);
       if (searchTerm && searchTerm.trim()) {
         url.searchParams.append('search', searchTerm.trim());
       }
@@ -135,7 +135,7 @@ export const useAgentSessionMessages = (agentId: string, sessionId: string | nul
         return { messages: [] };
       }
 
-      const url = new URL(`${window.location.origin}${API_BASE}/agents/${agentId}/sessions/${sessionId}/messages`);
+      const url = new URL(`${window.location.origin}${API_BASE}/sessions/${agentId}/${sessionId}/messages`);
       if (projectPath) {
         url.searchParams.set('projectPath', projectPath);
       }

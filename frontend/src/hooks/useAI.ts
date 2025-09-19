@@ -165,7 +165,7 @@ export const useSessions = (searchTerm?: string) => {
   return useQuery({
     queryKey: ['sessions', searchTerm],
     queryFn: async () => {
-      const url = new URL(`${window.location.origin}${API_BASE}/agents/ppt-editor/sessions`);
+      const url = new URL(`${window.location.origin}${API_BASE}/sessions/ppt-editor`);
       if (searchTerm && searchTerm.trim()) {
         url.searchParams.append('search', searchTerm.trim());
       }
@@ -181,7 +181,7 @@ export const useSessions = (searchTerm?: string) => {
 export const useCreateSession = () => {
   return useMutation({
     mutationFn: async (title?: string) => {
-      const response = await fetch(`${API_BASE}/agents/ppt-editor/sessions`, {
+      const response = await fetch(`${API_BASE}/sessions/ppt-editor`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -201,7 +201,7 @@ export const useCreateSession = () => {
 export const useDeleteSession = () => {
   return useMutation({
     mutationFn: async (sessionId: string) => {
-      const response = await fetch(`${API_BASE}/agents/ppt-editor/sessions/${sessionId}`, {
+      const response = await fetch(`${API_BASE}/sessions/ppt-editor/${sessionId}`, {
         method: 'DELETE'
       });
 
@@ -223,7 +223,7 @@ export const useSessionMessages = (sessionId: string | null) => {
         return { messages: [] };
       }
 
-      const response = await fetch(`${API_BASE}/agents/ppt-editor/sessions/${sessionId}/messages`);
+      const response = await fetch(`${API_BASE}/sessions/ppt-editor/${sessionId}/messages`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch session messages');

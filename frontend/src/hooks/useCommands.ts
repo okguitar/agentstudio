@@ -136,7 +136,7 @@ const fetchProjectCommands = async (projectIdentifier: string, filter: Omit<Slas
     projectPath = projectIdentifier;
   } else {
     // It's a project ID, need to resolve to path
-    const projectResponse = await fetch(`/api/agents/projects`);
+    const projectResponse = await fetch(`/api/projects`);
     if (!projectResponse.ok) {
       throw new Error('Failed to fetch project info');
     }

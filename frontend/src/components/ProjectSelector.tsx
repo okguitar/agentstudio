@@ -108,7 +108,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
       // If not found in agent.projects, check if the directory has agent sessions
       if (!isExistingProject) {
         try {
-          const response = await fetch(`/api/agents/filesystem/browse?path=${encodeURIComponent(path)}/.cc-sessions`);
+          const response = await fetch(`/api/files/browse?path=${encodeURIComponent(path)}/.cc-sessions`);
           if (response.ok) {
             const data = await response.json();
             // Check if agent's session directory exists

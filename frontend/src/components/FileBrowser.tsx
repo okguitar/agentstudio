@@ -59,7 +59,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
     setError(null);
     
     try {
-      const url = new URL('/api/agents/filesystem/browse', window.location.origin);
+      const url = new URL('/api/files/browse', window.location.origin);
       if (path) {
         url.searchParams.set('path', path);
       }
@@ -113,7 +113,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
     
     setCreatingFolder(true);
     try {
-      const response = await fetch('/api/agents/filesystem/create-directory', {
+      const response = await fetch('/api/files/create-directory', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
