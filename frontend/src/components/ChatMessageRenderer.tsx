@@ -10,9 +10,45 @@ interface ChatMessageRendererProps {
 }
 
 export const ChatMessageRenderer: React.FC<ChatMessageRendererProps> = ({ message }) => {
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [previewImages, setPreviewImages] = useState<string[]>([]);
+  const [previewIndex, setPreviewIndex] = useState<number>(0);
 
+  // Collect all image URLs from the message
+  const getAllImageUrls = () => {
+    const imageUrls: string[] = [];
+    
+    // From messageParts
+    if (message.messageParts && message.messageParts.length > 0) {
+      message.messageParts.forEach(part => {
+        if (part.type === 'image' && part.imageData) {
+          imageUrls.push(`data:${part.imageData.mediaType};base64,${part.imageData.data}`);
+        }
+      });
+    }
+    
+    // From legacy images
+    if (message.images && message.images.length > 0) {
+      message.images.forEach(image => {
+        imageUrls.push(`data:${image.mediaType};base64,${image.data}`);
+      });
+    }
+    
+    return imageUrls;
+  };
 
+  // Open image preview
+  const openImagePreview = (clickedImageUrl: string) => {
+    const allImages = getAllImageUrls();
+    const clickedIndex = allImages.indexOf(clickedImageUrl);
+    setPreviewImages(allImages);
+    setPreviewIndex(clickedIndex >= 0 ? clickedIndex : 0);
+  };
+
+  // Close image preview
+  const closeImagePreview = () => {
+    setPreviewImages([]);
+    setPreviewIndex(0);
+  };
 
   // Use messageParts if available, otherwise fall back to legacy content + toolUsage
   if (message.messageParts && message.messageParts.length > 0) {
@@ -63,7 +99,7 @@ export const ChatMessageRenderer: React.FC<ChatMessageRendererProps> = ({ messag
                   src={imageUrl}
                   alt={part.imageData.filename || 'Image'}
                   className="max-w-32 max-h-32 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity"
-                  onClick={() => setPreviewImage(imageUrl)}
+                  onClick={() => openImagePreview(imageUrl)}
                   title={part.imageData.filename || 'Click to preview'}
                 />
               </div>
@@ -73,8 +109,9 @@ export const ChatMessageRenderer: React.FC<ChatMessageRendererProps> = ({ messag
         })}
         
         <ImagePreview 
-          imageUrl={previewImage} 
-          onClose={() => setPreviewImage(null)} 
+          images={previewImages} 
+          initialIndex={previewIndex}
+          onClose={closeImagePreview} 
         />
       </div>
     );
@@ -94,7 +131,7 @@ export const ChatMessageRenderer: React.FC<ChatMessageRendererProps> = ({ messag
                 src={imageUrl}
                 alt={image.filename || 'Image'}
                 className="max-w-32 max-h-32 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity"
-                onClick={() => setPreviewImage(imageUrl)}
+                onClick={() => openImagePreview(imageUrl)}
                 title={image.filename || 'Click to preview'}
               />
             );
@@ -108,7 +145,26 @@ export const ChatMessageRenderer: React.FC<ChatMessageRendererProps> = ({ messag
           {message.role === 'assistant' ? (
             <MarkdownMessage content={message.content} />
           ) : (
-            <div className="whitespace-pre-wrap break-words">{message.content}</div>
+            (() => {
+              // Check if this is a command message format
+              const commandMatch = message.content.match(
+                /<command-message>.*?<\/command-message>\s*<command-name>(.+?)<\/command-name>/
+              );
+              
+              if (commandMatch) {
+                // Render as command block
+                return (
+                  <div className="inline-flex items-center px-2 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-md text-sm font-mono">
+                    {commandMatch[1]}
+                  </div>
+                );
+              } else {
+                // Regular text content
+                return (
+                  <div className="whitespace-pre-wrap break-words">{message.content}</div>
+                );
+              }
+            })()
           )}
         </div>
       )}
@@ -131,8 +187,9 @@ export const ChatMessageRenderer: React.FC<ChatMessageRendererProps> = ({ messag
       )}
       
       <ImagePreview 
-        imageUrl={previewImage} 
-        onClose={() => setPreviewImage(null)} 
+        images={previewImages} 
+        initialIndex={previewIndex}
+        onClose={closeImagePreview} 
       />
     </div>
   );

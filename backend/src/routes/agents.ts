@@ -77,7 +77,7 @@ function processCompactContextMessages(messages: ClaudeHistoryMessage[]): Claude
           parentUuid: userCommandMessage.uuid,
           message: {
             role: 'assistant',
-            content: extractContentFromClaudeMessage(currentMsg) || '会话上下文已压缩'
+            content: extractContentFromClaudeMessage(currentMsg, messages) || '会话上下文已压缩'
           },
           isCompactSummary: true
         };
@@ -101,7 +101,7 @@ function processCompactContextMessages(messages: ClaudeHistoryMessage[]): Claude
         parentUuid: currentMsg.parentUuid,
         message: {
           role: 'assistant',
-          content: extractContentFromClaudeMessage(currentMsg) || '会话上下文已自动压缩'
+          content: extractContentFromClaudeMessage(currentMsg, messages) || '会话上下文已自动压缩'
         },
         isCompactSummary: true
       };
@@ -202,14 +202,36 @@ function readClaudeHistorySessions(projectPath: string): ClaudeHistorySession[] 
           const msg = conversationMessages[i];
           
           if (msg.type === 'user') {
-            // User message - always add as new message
-            convertedMessages.push({
-              id: `msg_${convertedMessages.length}_${msg.uuid}`,
-              role: msg.message?.role || msg.type,
-              content: extractContentFromClaudeMessage(msg),
-              timestamp: new Date(msg.timestamp).getTime(),
-              messageParts: convertClaudeMessageToMessageParts(msg)
-            });
+            // Check if this is a local-command-stdout message
+            const content = msg.message?.content;
+            if (typeof content === 'string' && content.includes('<local-command-stdout>')) {
+              // Extract content from local-command-stdout tag
+              const outputMatch = content.match(/<local-command-stdout>([^<]*)<\/local-command-stdout>/);
+              const displayOutput = outputMatch ? outputMatch[1] : '';
+              
+              // Create AI response message
+              convertedMessages.push({
+                id: `msg_${convertedMessages.length}_${msg.uuid}`,
+                role: 'assistant',
+                content: displayOutput,
+                timestamp: new Date(msg.timestamp).getTime(),
+                messageParts: [{
+                  id: `part_0_${msg.uuid}`,
+                  type: 'text',
+                  content: displayOutput,
+                  order: 0
+                }]
+              });
+            } else {
+              // Regular user message
+              convertedMessages.push({
+                id: `msg_${convertedMessages.length}_${msg.uuid}`,
+                role: msg.message?.role || msg.type,
+                content: extractContentFromClaudeMessage(msg, messages),
+                timestamp: new Date(msg.timestamp).getTime(),
+                messageParts: convertClaudeMessageToMessageParts(msg, messages)
+              });
+            }
             i++;
           } else if (msg.type === 'assistant') {
             // Find all consecutive assistant messages and combine them
@@ -233,8 +255,8 @@ function readClaudeHistorySessions(projectPath: string): ClaudeHistorySession[] 
             
             // Combine all assistant message parts
             assistantMessages.forEach((assistantMsg) => {
-              const textContent = extractContentFromClaudeMessage(assistantMsg);
-              const msgParts = convertClaudeMessageToMessageParts(assistantMsg);
+              const textContent = extractContentFromClaudeMessage(assistantMsg, messages);
+              const msgParts = convertClaudeMessageToMessageParts(assistantMsg, messages);
               
               combinedMessage.content += textContent;
               combinedMessage.messageParts.push(...msgParts.map(part => ({
@@ -318,14 +340,31 @@ function readClaudeHistorySessions(projectPath: string): ClaudeHistorySession[] 
   }
 }
 
-function extractContentFromClaudeMessage(msg: ClaudeHistoryMessage): string {
+function extractContentFromClaudeMessage(msg: ClaudeHistoryMessage, allMessages: ClaudeHistoryMessage[] = []): string {
   if (!msg.message?.content) return '';
   
   // Handle both array and string content
   if (typeof msg.message.content === 'string') {
-    const commandMatch = msg.message.content.match(/<command-message>.*?<\/command-message>\s*<command-name>(.+?)<\/command-name>/);
+    const commandMatch = msg.message.content.match(/<command-name>(.+?)<\/command-name>/);
     if (commandMatch) {
-      return commandMatch[1]; // Return only the command name
+      // Check for two different patterns:
+      // Pattern 1: Parent is meta message (3-message local-command pattern)
+      const parentMessage = msg.parentUuid ? allMessages.find(m => m.uuid === msg.parentUuid) : null;
+      const isMetaParent = parentMessage && (parentMessage as any).isMeta === true;
+      
+      // Pattern 2: Child is meta message (2-message user-custom-command pattern)
+      const childMessage = allMessages.find(m => m.parentUuid === msg.uuid);
+      const isMetaChild = childMessage && (childMessage as any).isMeta === true;
+      
+      if (isMetaParent) {
+        // 3-message pattern: return only command name
+        return commandMatch[1];
+      } else if (isMetaChild) {
+        // 2-message pattern: return command name + args
+        const argsMatch = msg.message.content.match(/<command-args>([^<]*)<\/command-args>/);
+        const args = argsMatch ? argsMatch[1].trim() : '';
+        return args ? `${commandMatch[1]} ${args}` : commandMatch[1];
+      }
     }
     return msg.message.content;
   }
@@ -340,7 +379,7 @@ function extractContentFromClaudeMessage(msg: ClaudeHistoryMessage): string {
   return '';
 }
 
-function convertClaudeMessageToMessageParts(msg: ClaudeHistoryMessage): any[] {
+function convertClaudeMessageToMessageParts(msg: ClaudeHistoryMessage, allMessages: ClaudeHistoryMessage[] = []): any[] {
   if (!msg.message?.content) return [];
   
   // Handle compact command messages
@@ -366,15 +405,40 @@ function convertClaudeMessageToMessageParts(msg: ClaudeHistoryMessage): any[] {
   // Handle string content
   if (typeof msg.message.content === 'string') {
     // Rule 2: Check for command message format and create command-specific part
-    const commandMatch = msg.message.content.match(/<command-message>.*?<\/command-message>\s*<command-name>(.+?)<\/command-name>/);
+    const commandMatch = msg.message.content.match(/<command-name>(.+?)<\/command-name>/);
     if (commandMatch) {
-      return [{
-          id: `part_0_${msg.uuid}`,
-          type: 'command',
-          content: commandMatch[1], // Only the command name
-          originalContent: msg.message.content, // Keep original for reference
-          order: 0
-        }];
+      // Check for two different patterns:
+      // Pattern 1: Parent is meta message (3-message local-command pattern)
+      const parentMessage = msg.parentUuid ? allMessages.find(m => m.uuid === msg.parentUuid) : null;
+      const isMetaParent = parentMessage && (parentMessage as any).isMeta === true;
+      
+      // Pattern 2: Child is meta message (2-message user-custom-command pattern)
+      const childMessage = allMessages.find(m => m.parentUuid === msg.uuid);
+      const isMetaChild = childMessage && (childMessage as any).isMeta === true;
+      
+      if (isMetaParent) {
+        // 3-message pattern: show only command name
+        return [{
+            id: `part_0_${msg.uuid}`,
+            type: 'command',
+            content: commandMatch[1], // Only the command name
+            originalContent: msg.message.content, // Keep original for reference
+            order: 0
+          }];
+      } else if (isMetaChild) {
+        // 2-message pattern: show command name + args
+        const argsMatch = msg.message.content.match(/<command-args>([^<]*)<\/command-args>/);
+        const args = argsMatch ? argsMatch[1].trim() : '';
+        const displayContent = args ? `${commandMatch[1]} ${args}` : commandMatch[1];
+        
+        return [{
+            id: `part_0_${msg.uuid}`,
+            type: 'command',
+            content: displayContent, // Command name + args
+            originalContent: msg.message.content, // Keep original for reference
+            order: 0
+          }];
+      }
     }
     
     return [{

@@ -222,7 +222,6 @@ export const UnifiedToolSelector: React.FC<UnifiedToolSelectorProps> = ({
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-medium text-gray-900">工具选择</h3>
           <button type="button"
-            type="button"
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
           >
@@ -233,7 +232,6 @@ export const UnifiedToolSelector: React.FC<UnifiedToolSelectorProps> = ({
         {/* Tabs */}
         <div className="flex space-x-1 mb-2 bg-gray-100 rounded-lg p-1">
           <button type="button"
-            type="button"
             onClick={() => setActiveTab('regular')}
             className={`flex-1 flex items-center justify-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
               activeTab === 'regular'
@@ -250,7 +248,6 @@ export const UnifiedToolSelector: React.FC<UnifiedToolSelectorProps> = ({
             )}
           </button>
           <button type="button"
-            type="button"
             onClick={() => setActiveTab('mcp')}
             className={`flex-1 flex items-center justify-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
               activeTab === 'mcp'
@@ -279,7 +276,6 @@ export const UnifiedToolSelector: React.FC<UnifiedToolSelectorProps> = ({
                 <div className="flex items-center space-x-2">
                   <span className="text-sm text-gray-700 font-medium">全选</span>
                   <button type="button"
-                    type="button"
                     onClick={() => {
                       if (selectedRegularTools.length === AVAILABLE_REGULAR_TOOLS.length) {
                         // 全部选中，清空选择

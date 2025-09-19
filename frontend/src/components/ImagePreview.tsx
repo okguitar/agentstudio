@@ -1,12 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, ZoomIn, ZoomOut, RotateCw, Download } from 'lucide-react';
+import { X, ZoomIn, ZoomOut, RotateCw, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface ImagePreviewProps {
-  imageUrl: string | null;
+  images: string[];
+  initialIndex?: number;
   onClose: () => void;
 }
 
-export const ImagePreview: React.FC<ImagePreviewProps> = ({ imageUrl, onClose }) => {
+export const ImagePreview: React.FC<ImagePreviewProps> = ({ images, initialIndex = 0, onClose }) => {
+  const [currentIndex, setCurrentIndex] = useState(() => {
+    if (!images || images.length === 0) return 0;
+    return Math.min(initialIndex, images.length - 1);
+  });
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -49,25 +54,65 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({ imageUrl, onClose })
     setPosition({ x: 0, y: 0 }); // Center the image
   };
 
-  // Reset preview state when opening new image
+  // Get current image URL
+  const currentImageUrl = images && images.length > 0 ? images[currentIndex] : null;
+
+  // Navigation functions
+  const goToPrevious = () => {
+    if (images && currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1);
+    }
+  };
+
+  const goToNext = () => {
+    if (images && currentIndex < images.length - 1) {
+      setCurrentIndex(currentIndex + 1);
+    }
+  };
+
+  // Update currentIndex when images or initialIndex changes
   useEffect(() => {
-    if (imageUrl) {
+    if (images && images.length > 0) {
+      const safeIndex = Math.min(initialIndex, images.length - 1);
+      setCurrentIndex(safeIndex);
+    }
+  }, [images, initialIndex]);
+
+  // Reset preview state when changing image
+  useEffect(() => {
+    if (currentImageUrl) {
       setScale(1);
       setPosition({ x: 0, y: 0 });
       setRotation(0);
       setIsDragging(false);
       setIsImageLoaded(false);
     }
-  }, [imageUrl]);
+  }, [currentImageUrl]);
 
   // Keyboard shortcuts
   useEffect(() => {
-    if (!imageUrl) return;
+    if (!currentImageUrl) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       switch (e.key) {
         case 'Escape':
           onClose();
+          break;
+        case 'ArrowLeft':
+          e.preventDefault();
+          goToPrevious();
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          goToNext();
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          goToPrevious();
+          break;
+        case 'ArrowDown':
+          e.preventDefault();
+          goToNext();
           break;
         case '=':
         case '+':
@@ -100,7 +145,7 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({ imageUrl, onClose })
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [imageUrl]);
+  }, [currentImageUrl, currentIndex, images?.length]);
 
   // Handle zoom
   const handleZoom = (direction: 'in' | 'out') => {
@@ -150,10 +195,10 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({ imageUrl, onClose })
 
   // Handle download
   const handleDownload = () => {
-    if (imageUrl) {
+    if (currentImageUrl) {
       const link = document.createElement('a');
-      link.href = imageUrl;
-      link.download = 'image.jpg';
+      link.href = currentImageUrl;
+      link.download = `image-${currentIndex + 1}.jpg`;
       link.click();
     }
   };
@@ -166,7 +211,7 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({ imageUrl, onClose })
     setRotation(0);
   };
 
-  if (!imageUrl) return null;
+  if (!images || images.length === 0) return null;
 
   return (
     <div 
@@ -183,6 +228,15 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({ imageUrl, onClose })
     >
       {/* Toolbar */}
       <div className="absolute top-4 left-1/2 transform -translate-x-1/2 flex items-center space-x-2 bg-black bg-opacity-50 rounded-lg px-4 py-2 z-10">
+        {/* Image counter */}
+        {images.length > 1 && (
+          <>
+            <span className="text-white text-sm">
+              {currentIndex + 1} / {images.length}
+            </span>
+            <div className="w-px h-6 bg-gray-500"></div>
+          </>
+        )}
         <button
           onClick={() => handleZoom('out')}
           className="text-white hover:text-gray-300 p-2 hover:bg-white hover:bg-opacity-20 rounded transition-colors"
@@ -242,6 +296,39 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({ imageUrl, onClose })
         </button>
       </div>
 
+      {/* Navigation arrows */}
+      {images.length > 1 && (
+        <>
+          {/* Left arrow */}
+          <button
+            onClick={goToPrevious}
+            disabled={currentIndex === 0}
+            className={`absolute left-4 top-1/2 transform -translate-y-1/2 text-white p-3 rounded-full transition-all z-10 ${
+              currentIndex === 0 
+                ? 'opacity-50 cursor-not-allowed' 
+                : 'hover:text-gray-300 hover:bg-white hover:bg-opacity-20'
+            }`}
+            title="上一张 (←)"
+          >
+            <ChevronLeft className="w-8 h-8" />
+          </button>
+          
+          {/* Right arrow */}
+          <button
+            onClick={goToNext}
+            disabled={currentIndex === images.length - 1}
+            className={`absolute right-4 top-1/2 transform -translate-y-1/2 text-white p-3 rounded-full transition-all z-10 ${
+              currentIndex === images.length - 1 
+                ? 'opacity-50 cursor-not-allowed' 
+                : 'hover:text-gray-300 hover:bg-white hover:bg-opacity-20'
+            }`}
+            title="下一张 (→)"
+          >
+            <ChevronRight className="w-8 h-8" />
+          </button>
+        </>
+      )}
+
       {/* Close button */}
       <button
         onClick={onClose}
@@ -254,8 +341,8 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({ imageUrl, onClose })
       {/* Image */}
       <img
         ref={imageRef}
-        src={imageUrl}
-        alt="图片预览"
+        src={currentImageUrl}
+        alt={`图片预览 ${currentIndex + 1}/${images.length}`}
         className={`max-w-none transition-transform ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
         style={{
           transform: `translate(${position.x}px, ${position.y}px) scale(${scale}) rotate(${rotation}deg)`,
@@ -272,7 +359,10 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({ imageUrl, onClose })
 
       {/* Instructions */}
       <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white text-sm bg-black bg-opacity-50 rounded px-3 py-1">
-        鼠标拖拽移动 • 滚轮缩放 • 双击适应窗口 • ESC关闭
+        {images.length > 1 
+          ? '方向键切换 • 鼠标拖拽移动 • 滚轮缩放 • 双击适应窗口 • ESC关闭'
+          : '鼠标拖拽移动 • 滚轮缩放 • 双击适应窗口 • ESC关闭'
+        }
       </div>
     </div>
   );

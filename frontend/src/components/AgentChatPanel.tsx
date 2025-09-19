@@ -47,6 +47,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
   const [selectedModel, setSelectedModel] = useState<'sonnet' | 'opus'>('sonnet');
   const [showPermissionDropdown, setShowPermissionDropdown] = useState(false);
   const [showModelDropdown, setShowModelDropdown] = useState(false);
+  const [commandWarning, setCommandWarning] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -131,6 +132,28 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
       isSystem: true
     },
   ];
+
+  // Helper function to check if a command is defined
+  const isCommandDefined = (commandName: string) => {
+    const systemCommand = SYSTEM_COMMANDS.find(cmd => cmd.name === commandName);
+    const projectCommand = projectCommands.find(cmd => cmd.name === commandName);
+    const userCommand = userCommands.find(cmd => cmd.name === commandName);
+    return !!(systemCommand || projectCommand || userCommand);
+  };
+
+  // Helper function to check if send should be disabled
+  const isSendDisabled = () => {
+    if (isAiTyping) return true;
+    if (!inputMessage.trim() && selectedImages.length === 0) return true;
+    
+    // Check for undefined command
+    if (isCommandTrigger(inputMessage)) {
+      const commandName = inputMessage.slice(1).split(' ')[0].toLowerCase();
+      return !isCommandDefined(commandName);
+    }
+    
+    return false;
+  };
 
   // Memoize allCommands to prevent unnecessary re-renders
   const allCommands = useMemo(() => {
@@ -317,9 +340,26 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
     let userMessage = inputMessage.trim();
     const images = [...selectedImages];
     
+    // Convert images to backend format
+    const imageData = images.map(img => ({
+      id: img.id,
+      data: img.preview.split(',')[1], // Remove data:image/type;base64, prefix
+      mediaType: img.file.type as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
+      name: img.file.name
+    }));
+    
     // Check if this is a command and handle routing
     if (isCommandTrigger(inputMessage)) {
       const commandName = inputMessage.slice(1).split(' ')[0].toLowerCase();
+      
+      // Check if command is defined
+      if (!isCommandDefined(commandName)) {
+        setCommandWarning(`未知命令: /${commandName}。可用命令: ${SYSTEM_COMMANDS.map(cmd => cmd.content).join(', ')}`);
+        return;
+      }
+      
+      // Clear warning if command is valid
+      setCommandWarning(null);
       
       // 创建命令处理器
       const commandHandler = createCommandHandler({
@@ -338,16 +378,10 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
       // 创建命令对象（系统命令或从 selectedCommand）
       let command = selectedCommand;
       if (!command) {
-        // 用户手动输入的命令，创建系统命令对象
-        const SYSTEM_COMMANDS = [
-          { id: 'init', name: 'init', description: '初始化项目或重置对话上下文', content: '/init', scope: 'system' as const, isSystem: true },
-          { id: 'clear', name: 'clear', description: '清空当前对话历史', content: '/clear', scope: 'system' as const, isSystem: true },
-          { id: 'compact', name: 'compact', description: '压缩对话历史，保留关键信息', content: '/compact', scope: 'system' as const, isSystem: true },
-          { id: 'agents', name: 'agents', description: '管理AI代理和子代理', content: '/agents', scope: 'system' as const, isSystem: true },
-          { id: 'settings', name: 'settings', description: '打开设置页面', content: '/settings', scope: 'system' as const, isSystem: true },
-          { id: 'help', name: 'help', description: '显示帮助信息', content: '/help', scope: 'system' as const, isSystem: true },
-        ];
-        command = SYSTEM_COMMANDS.find(cmd => cmd.name === commandName);
+        // 用户手动输入的命令，查找对应的命令对象
+        command = SYSTEM_COMMANDS.find(cmd => cmd.name === commandName) ||
+                 projectCommands.find(cmd => cmd.name === commandName) ||
+                 userCommands.find(cmd => cmd.name === commandName);
       }
       
       if (command) {
@@ -355,11 +389,30 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
         const result = await commandHandler.executeCommand(command);
         
         if (result.shouldSendToBackend) {
-          // 继续发送到后端，格式化消息
+          // 发送到后端：使用原始用户输入
+          userMessage = inputMessage.trim();
+          
+          // 前端显示：使用格式化的命令消息
           const commandArgs = inputMessage.slice(command.content.length).trim() || undefined;
-          userMessage = formatCommandMessage(command, commandArgs, projectPath);
+          const formattedCommand = formatCommandMessage(command, commandArgs, projectPath);
+          
+          // 添加用户消息（前端显示用格式化版本）
+          addMessage({
+            content: formattedCommand,
+            role: 'user',
+            images: imageData
+          });
         } else {
-          // 前端处理完成，清空输入并返回
+          // 前端处理完成，添加格式化的用户命令消息
+          const commandArgs = inputMessage.slice(command.content.length).trim() || undefined;
+          const formattedCommand = formatCommandMessage(command, commandArgs, projectPath);
+          
+          addMessage({
+            content: formattedCommand,
+            role: 'user',
+            images: imageData
+          });
+          
           setInputMessage('');
           setSelectedImages([]);
           setSelectedCommand(null);
@@ -374,6 +427,9 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
           return; // 不发送到后端
         }
       }
+    } else {
+      // Clear warning for non-command messages
+      setCommandWarning(null);
     }
     
     setInputMessage('');
@@ -381,20 +437,15 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
     setSelectedCommand(null);
     setShowCommandSelector(false);
     
-    // Convert images to backend format
-    const imageData = images.map(img => ({
-      id: img.id,
-      data: img.preview.split(',')[1], // Remove data:image/type;base64, prefix
-      mediaType: img.file.type as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
-      filename: img.file.name
-    }));
-    
-    // Add user message with images
-    addMessage({
-      content: userMessage || '发送了图片',
-      role: 'user',
-      images: imageData
-    });
+    // Add user message with images (only for non-command messages)
+    // Commands are already added above
+    if (!isCommandTrigger(inputMessage.trim())) {
+      addMessage({
+        content: userMessage || '发送了图片',
+        role: 'user',
+        images: imageData
+      });
+    }
 
     // Build context - now simplified since each agent manages its own state
     const context = {};
@@ -435,9 +486,42 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
             type: string; 
             sessionId?: string; 
             subtype?: string; 
-            message?: { content: unknown[] }; 
-            permission_denials?: Array<{ tool_name: string; tool_input: Record<string, unknown> }> 
+            message?: { content: unknown[] } | string; 
+            permission_denials?: Array<{ tool_name: string; tool_input: Record<string, unknown> }>; 
+            error?: string;
           };
+          
+          // Handle direct error messages from Claude Code SDK
+          if (eventData.type === 'error') {
+            console.error('Claude Code SDK error:', eventData);
+            setAiTyping(false);
+            abortControllerRef.current = null;
+            
+            let errorMessage = '❌ **Claude Code SDK 错误**\n\n';
+            
+            if (eventData.error === 'Claude Code SDK failed' && eventData.message && typeof eventData.message === 'string') {
+              if (eventData.message.includes('not valid JSON')) {
+                errorMessage += '解析响应数据时出现错误，可能是由于网络中断或服务器响应格式异常。\n\n**建议操作：**\n- 检查网络连接\n- 重新发送消息\n- 如果问题持续存在，请联系管理员';
+              } else if (eventData.message.includes('timeout')) {
+                errorMessage += '请求处理超时，服务器响应时间过长。\n\n**建议操作：**\n- 简化请求内容\n- 稍后重试\n- 检查网络连接状态';
+              } else {
+                errorMessage += `${eventData.message}\n\n**建议操作：**\n- 重新发送消息\n- 如果问题持续存在，请刷新页面重试`;
+              }
+            } else {
+              errorMessage += `${eventData.error || '未知错误'}\n\n**建议操作：**\n- 重新发送消息\n- 刷新页面重试`;
+            }
+            
+            // Add error message
+            if (!aiMessageId) {
+              addMessage({
+                content: errorMessage,
+                role: 'assistant'
+              });
+            } else {
+              addTextPartToMessage(aiMessageId, '\n\n' + errorMessage);
+            }
+            return;
+          }
           
           if (eventData.type === 'connected' && eventData.sessionId) {
             console.log('Setting session ID from AI response:', eventData.sessionId);
@@ -470,7 +554,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
             }
 
             // Handle tool use and text content
-            if (eventData.message?.content && aiMessageId) {
+            if (eventData.message && typeof eventData.message === 'object' && 'content' in eventData.message && eventData.message.content && aiMessageId) {
               for (const block of eventData.message.content as Array<{ type: string; text?: string; name?: string; input?: unknown; id?: string }>) {
                 if (block.type === 'text') {
                   // Add text as a separate part
@@ -494,7 +578,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
           }
           else if (eventData.type === 'user') {
             // Tool results
-            if (eventData.message?.content && aiMessageId) {
+            if (eventData.message && typeof eventData.message === 'object' && 'content' in eventData.message && eventData.message.content && aiMessageId) {
               for (const block of eventData.message.content as Array<{ type: string; content?: unknown; is_error?: boolean; tool_use_id?: string }>) {
                 if (block.type === 'tool_result' && block.tool_use_id) {
                   // Find the tool by tool_use_id
@@ -526,13 +610,9 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
           }
           else if (eventData.type === 'result') {
             console.log('Received result, stopping AI typing...');
-            // Clear the abort controller
+            // Clear the abort controller and immediately stop typing
             abortControllerRef.current = null;
-            // Force state update immediately
-            setTimeout(() => {
-              setAiTyping(false);
-              console.log('AI typing status should be false now');
-            }, 0);
+            setAiTyping(false);
             
             // Handle different result types
             let finalMessage = '';
@@ -548,7 +628,10 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
                 finalMessage += '\n\n💡 某些操作需要用户权限确认才能执行。';
               }
             } else if (eventData.subtype === 'error_during_execution') {
-              finalMessage = '\n\n❌ **执行过程中出现错误**';
+              finalMessage = '\n\n❌ **执行过程中出现错误**\n\n请检查输入或稍后重试。';
+            } else if (eventData.subtype === 'error') {
+              // Generic error case
+              finalMessage = '\n\n❌ **处理过程中出现错误**\n\n请稍后重试或检查输入内容。';
             } else {
               finalMessage = '\n\n✅ **处理完成**';
             }
@@ -575,17 +658,36 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
             return;
           }
           
+          // Determine specific error message
+          let errorMessage = '抱歉，处理您的请求时出现了错误。';
+          
+          if (error instanceof Error) {
+            if (error.message.includes('network') || error.message.includes('fetch')) {
+              errorMessage = '❌ **网络连接错误**\n\n无法连接到AI服务，请检查网络连接后重试。';
+            } else if (error.message.includes('timeout')) {
+              errorMessage = '⏰ **请求超时**\n\n请求处理时间过长，请稍后重试。';
+            } else if (error.message.includes('rate limit') || error.message.includes('429')) {
+              errorMessage = '🚫 **请求频率限制**\n\n请求过于频繁，请稍后再试。';
+            } else if (error.message.includes('unauthorized') || error.message.includes('401')) {
+              errorMessage = '🔐 **认证失败**\n\n请检查API密钥配置。';
+            } else if (error.message.includes('forbidden') || error.message.includes('403')) {
+              errorMessage = '⛔ **权限不足**\n\n没有权限执行此操作。';
+            } else if (error.message.includes('500') || error.message.includes('internal server')) {
+              errorMessage = '🔧 **服务器内部错误**\n\n服务器遇到问题，请稍后重试。';
+            } else {
+              errorMessage = `❌ **处理错误**\n\n${error.message || '未知错误，请稍后重试。'}`;
+            }
+          }
+          
           // Add error message if no AI message was created yet
           if (!aiMessageId) {
             addMessage({
-              content: '抱歉，处理您的请求时出现了错误。请稍后再试。',
+              content: errorMessage,
               role: 'assistant'
             });
           } else {
             // Update existing message with error
-            updateMessage(aiMessageId, {
-              content: '抱歉，处理您的请求时出现了错误。请稍后再试。'
-            });
+            addTextPartToMessage(aiMessageId, '\n\n' + errorMessage);
           }
         }
       });
@@ -601,8 +703,21 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
         return;
       }
       
+      // Determine specific error message for catch block
+      let errorMessage = '❌ **连接失败**\n\n无法连接到AI服务，请检查网络连接后重试。';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+          errorMessage = '🌐 **网络连接失败**\n\n无法连接到服务器，请检查网络连接。';
+        } else if (error.message.includes('timeout')) {
+          errorMessage = '⏰ **连接超时**\n\n连接服务器超时，请稍后重试。';
+        } else {
+          errorMessage = `❌ **连接错误**\n\n${error.message || '无法连接到AI服务，请稍后重试。'}`;
+        }
+      }
+      
       addMessage({
-        content: '抱歉，无法连接到AI服务。请检查网络连接或稍后再试。',
+        content: errorMessage,
         role: 'assistant'
       });
     }
@@ -648,7 +763,37 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Handle command selector navigation
+    // Handle Enter key for both command selector and regular input
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      
+      // If command selector is showing and has commands
+      if (showCommandSelector && allCommands.length > 0) {
+        // Auto-complete to selected command if available
+        const selectedCmd = allCommands[selectedCommandIndex];
+        if (selectedCmd) {
+          handleCommandSelect(selectedCmd);
+        } else {
+          handleSendMessage();
+        }
+        return;
+      }
+      
+      // Regular enter key handling or command selector with no results
+      // Check for undefined command and show warning
+      if (isCommandTrigger(inputMessage)) {
+        const commandName = inputMessage.slice(1).split(' ')[0].toLowerCase();
+        if (!isCommandDefined(commandName)) {
+          setCommandWarning(`未知命令: /${commandName}。可用命令: ${SYSTEM_COMMANDS.map(cmd => cmd.content).join(', ')}`);
+          return;
+        }
+      }
+      
+      handleSendMessage();
+      return;
+    }
+
+    // Handle command selector navigation (non-Enter keys)
     if (showCommandSelector && allCommands.length > 0) {
       // Arrow keys or Ctrl+P/N for navigation
       if (e.key === 'ArrowUp' || (e.ctrlKey && e.key === 'p')) {
@@ -672,33 +817,22 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
         setShowCommandSelector(false);
         return;
       }
-      
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        
-        // Auto-complete to selected command if available
-        const selectedCmd = allCommands[selectedCommandIndex];
-        if (selectedCmd) {
-          handleCommandSelect(selectedCmd);
-        } else {
-          handleSendMessage();
-        }
-        return;
-      }
     }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    // Regular enter key handling (only when command selector is not open)
-    if (e.key === 'Enter' && !e.shiftKey && !showCommandSelector) {
-      e.preventDefault();
-      handleSendMessage();
-    }
+    // Enter key is now fully handled in handleKeyDown
+    // This function is kept for potential future use
   };
   
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     setInputMessage(value);
+    
+    // Clear command warning when input changes
+    if (commandWarning) {
+      setCommandWarning(null);
+    }
     
     // Check if we should show command selector
     if (isCommandTrigger(value)) {
@@ -957,6 +1091,22 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
           </div>
         )}
 
+        {/* Command Warning */}
+        {commandWarning && (
+          <div className="px-4 pt-3 pb-2">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start space-x-2">
+              <div className="flex-shrink-0">
+                <svg className="w-5 h-5 text-red-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <p className="text-sm text-red-800">{commandWarning}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Text Input */}
         <div className="p-4 pb-2">
           <textarea
@@ -1149,10 +1299,15 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
               ) : (
                 <button
                   onClick={handleSendMessage}
-                  disabled={!inputMessage.trim() && selectedImages.length === 0}
+                  disabled={isSendDisabled()}
                   className="flex items-center space-x-2 px-4 py-2 text-white rounded-lg hover:opacity-90 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 text-sm font-medium shadow-sm"
-                  style={{ backgroundColor: (inputMessage.trim() || selectedImages.length > 0) ? agent.ui.primaryColor : undefined }}
-                  title={`发送消息 (${inputMessage.trim() || selectedImages.length > 0 ? '有内容' : '无内容'})`}
+                  style={{ backgroundColor: !isSendDisabled() ? agent.ui.primaryColor : undefined }}
+                  title={
+                    isAiTyping ? 'AI正在输入中' :
+                    !inputMessage.trim() && selectedImages.length === 0 ? '无内容可发送' :
+                    isCommandTrigger(inputMessage) && !isCommandDefined(inputMessage.slice(1).split(' ')[0].toLowerCase()) ? '未知命令' :
+                    '发送消息'
+                  }
                 >
                   <Send className="w-4 h-4" />
                   <span>发送</span>
