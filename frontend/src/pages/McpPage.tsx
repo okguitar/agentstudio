@@ -54,7 +54,7 @@ export const McpPage: React.FC = () => {
   const loadMcpConfigs = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/agents/mcp-configs');
+      const response = await fetch('/api/mcp');
       if (response.ok) {
         const data = await response.json();
         setServers(data.servers || []);
@@ -96,7 +96,7 @@ export const McpPage: React.FC = () => {
           : s
       ));
 
-      const response = await fetch(`/api/agents/mcp-configs/${serverName}/validate`, {
+      const response = await fetch(`/api/mcp/${serverName}/validate`, {
         method: 'POST'
       });
       
@@ -172,7 +172,7 @@ export const McpPage: React.FC = () => {
   const handleDeleteServer = async (serverName: string) => {
     if (window.confirm(`确定要删除 "${serverName}" 配置吗？`)) {
       try {
-        const response = await fetch(`/api/agents/mcp-configs/${serverName}`, {
+        const response = await fetch(`/api/mcp/${serverName}`, {
           method: 'DELETE'
         });
         
@@ -241,7 +241,7 @@ export const McpPage: React.FC = () => {
       if (editingServer) {
         // Update existing server - only send config data, name comes from URL
         console.log('Updating existing MCP server:', editingServer.name, 'with config:', config);
-        response = await fetch(`/api/agents/mcp-configs/${editingServer.name}`, {
+        response = await fetch(`/api/mcp/${editingServer.name}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json'
@@ -254,7 +254,7 @@ export const McpPage: React.FC = () => {
           name: formData.name,
           ...config
         };
-        response = await fetch('/api/agents/mcp-configs', {
+        response = await fetch('/api/mcp', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'

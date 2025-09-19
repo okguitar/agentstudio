@@ -7,6 +7,7 @@ import { dirname, join } from 'path';
 
 import filesRouter from './routes/files.js';
 import agentsRouter from './routes/agents.js';
+import mcpRouter from './routes/mcp.js';
 import mediaRouter from './routes/media.js';
 import settingsRouter from './routes/settings.js';
 import commandsRouter from './routes/commands.js';
@@ -52,6 +53,7 @@ app.use('/slides', express.static(slidesDir));
 // Routes
 app.use('/api/files', filesRouter);
 app.use('/api/agents', agentsRouter);
+app.use('/api/mcp', mcpRouter);
 app.use('/api/settings', settingsRouter);
 app.use('/api/commands', commandsRouter);
 app.use('/api/subagents', subagentsRouter);
