@@ -126,6 +126,24 @@ export class ProjectMetadataStorage {
   }
 
   /**
+   * Get Claude project directory last modified time from filesystem
+   */
+  private getProjectLastModified(dirName: string, metadata: ProjectMetadata): string {
+    try {
+      // Use the Claude project directory path: ~/.claude/projects/{dirName}
+      const claudeProjectPath = path.join(this.projectsDir, dirName);
+      
+      // Get the directory stats
+      const stats = fs.statSync(claudeProjectPath);
+      return stats.mtime.toISOString();
+    } catch (error) {
+      console.warn(`Failed to get filesystem time for Claude project ${dirName}:`, error);
+      // Fallback to metadata lastAccessed if filesystem time is unavailable
+      return metadata.lastAccessed;
+    }
+  }
+
+  /**
    * Enrich project metadata with agent information
    */
   private enrichProjectWithAgentInfo(dirName: string, metadata: ProjectMetadata): ProjectWithAgentInfo {
@@ -168,6 +186,9 @@ export class ProjectMetadataStorage {
 
     // Extract real project path from session files
     const realProject = this.extractRealProjectPath(dirName);
+    
+    // Get actual last modified time from filesystem
+    const lastAccessed = this.getProjectLastModified(dirName, metadata);
 
     return {
       id: metadata.id,
@@ -177,7 +198,7 @@ export class ProjectMetadataStorage {
       realPath: realProject?.realPath,
       description: metadata.description,
       createdAt: metadata.createdAt,
-      lastAccessed: metadata.lastAccessed,
+      lastAccessed: lastAccessed, // Use filesystem time instead of metadata
       agents: enabledAgents,
       defaultAgent,
       defaultAgentName,

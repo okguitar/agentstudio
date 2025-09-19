@@ -11,7 +11,7 @@ import { AgentStorage } from '../../shared/utils/agentStorage.js';
 import { AgentConfig } from '../../shared/types/agents.js';
 import { ProjectMetadataStorage } from '../../shared/utils/projectMetadataStorage.js';
 
-const router = express.Router();
+const router: express.Router = express.Router();
 const execAsync = promisify(exec);
 
 // Storage instances
@@ -1499,6 +1499,7 @@ router.post('/chat', async (req, res) => {
     if (!agent.enabled) {
       return res.status(403).json({ error: 'Agent is disabled' });
     }
+
 
     // Build system prompt from agent configuration
     let systemPrompt = agent.systemPrompt;

@@ -300,6 +300,9 @@ export const ProjectsPage: React.FC = () => {
     const matchesAgent = filterAgent === 'all' || project.defaultAgent === filterAgent;
     
     return matchesSearch && matchesAgent;
+  }).sort((a, b) => {
+    // 按最后访问时间倒序排列（最近访问的在前面）
+    return new Date(b.lastAccessed).getTime() - new Date(a.lastAccessed).getTime();
   });
 
   const handleCreateProject = async (data: {
