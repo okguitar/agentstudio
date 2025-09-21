@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { Send, Clock, Square, Image, Wrench, X, Plus, Zap, Cpu, ChevronDown } from 'lucide-react';
 import { ImagePreview } from './ImagePreview';
 import { CommandSelector } from './CommandSelector';
@@ -58,7 +58,6 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
     isAiTyping,
     currentSessionId,
     addMessage,
-    updateMessage,
     addTextPartToMessage,
     addToolPartToMessage,
     updateToolPartInMessage,
@@ -170,6 +169,27 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
       ...userCommands,
     ];
   }, [userCommands, projectCommands, commandSearch]);
+
+  // Memoize rendered messages to prevent unnecessary re-renders
+  const renderedMessages = useMemo(() => {
+    return messages.map((message) => (
+      <div
+        key={message.id}
+        className="px-4"
+      >
+        <div
+          className={`text-sm leading-relaxed break-words overflow-hidden ${
+            message.role === 'user'
+              ? 'text-white p-3 rounded-lg'
+              : 'text-gray-800'
+          }`}
+          style={message.role === 'user' ? { backgroundColor: agent.ui.primaryColor } : {}}
+        >
+          <ChatMessageRenderer message={message as any} />
+        </div>
+      </div>
+    ));
+  }, [messages, agent.ui.primaryColor]);
 
   // Reset selected index when commands change
   useEffect(() => {
@@ -381,7 +401,8 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
         // 用户手动输入的命令，查找对应的命令对象
         command = SYSTEM_COMMANDS.find(cmd => cmd.name === commandName) ||
                  projectCommands.find(cmd => cmd.name === commandName) ||
-                 userCommands.find(cmd => cmd.name === commandName);
+                 userCommands.find(cmd => cmd.name === commandName) ||
+                 null;
       }
       
       if (command) {
@@ -820,12 +841,12 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyPress = useCallback((_e: React.KeyboardEvent) => {
     // Enter key is now fully handled in handleKeyDown
     // This function is kept for potential future use
-  };
+  }, []);
   
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     setInputMessage(value);
     
@@ -852,7 +873,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
         setSelectedCommandIndex(0);
       }
     }
-  };
+  }, [commandWarning, commandSearch, showCommandSelector]);
   
   const handleCommandSelect = (command: CommandType) => {
     // 命令选择器只是帮助填入命令，不立即执行
@@ -1007,34 +1028,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
           </div>
         </div>
         
-        {(() => {
-          console.log('🎨 Rendering messages:', {
-            messageCount: messages.length,
-            firstMessage: messages[0]?.id ? {
-              id: messages[0].id,
-              role: messages[0].role,
-              hasContent: !!messages[0].content,
-              hasMessageParts: !!messages[0].messageParts?.length
-            } : null
-          });
-          return messages.map((message) => (
-            <div
-              key={message.id}
-              className="px-4"
-            >
-              <div
-                className={`text-sm leading-relaxed break-words overflow-hidden ${
-                  message.role === 'user'
-                    ? 'text-white p-3 rounded-lg'
-                    : 'text-gray-800'
-                }`}
-                style={message.role === 'user' ? { backgroundColor: agent.ui.primaryColor } : {}}
-              >
-                <ChatMessageRenderer message={message as any} />
-              </div>
-            </div>
-          ));
-        })()}
+        {renderedMessages}
         
         {isAiTyping && (
           <div className="flex justify-center py-2">

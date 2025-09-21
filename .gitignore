@@ -50,3 +50,4 @@ slides.js
 .cc-sessions
 .playwright-mcp
 .claude/
+test-*

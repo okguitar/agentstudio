@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { MarkdownMessage } from './MarkdownMessage';
 import { ToolUsage } from './ToolUsage';
 import { ImagePreview } from './ImagePreview';
@@ -9,7 +9,7 @@ interface ChatMessageRendererProps {
   message: ChatMessage;
 }
 
-export const ChatMessageRenderer: React.FC<ChatMessageRendererProps> = ({ message }) => {
+const ChatMessageRendererComponent: React.FC<ChatMessageRendererProps> = ({ message }) => {
   const [previewImages, setPreviewImages] = useState<string[]>([]);
   const [previewIndex, setPreviewIndex] = useState<number>(0);
 
@@ -194,3 +194,5 @@ export const ChatMessageRenderer: React.FC<ChatMessageRendererProps> = ({ messag
     </div>
   );
 };
+
+export const ChatMessageRenderer = memo(ChatMessageRendererComponent);

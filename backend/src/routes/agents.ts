@@ -10,6 +10,7 @@ import { query, Options } from '@anthropic-ai/claude-code';
 import { AgentStorage } from '../../shared/utils/agentStorage.js';
 import { AgentConfig } from '../../shared/types/agents.js';
 import { ProjectMetadataStorage } from '../../shared/utils/projectMetadataStorage.js';
+import { sessionManager } from '../services/sessionManager.js';
 
 const router: express.Router = express.Router();
 const execAsync = promisify(exec);
@@ -58,6 +59,40 @@ const CreateAgentSchema = z.object({
 
 const UpdateAgentSchema = CreateAgentSchema.partial().omit({ id: true });
 
+
+// 获取活跃会话列表 (需要在通用获取agents路由之前)
+router.get('/sessions', (req, res) => {
+  try {
+    const activeCount = sessionManager.getActiveSessionCount();
+    const sessionsInfo = sessionManager.getSessionsInfo();
+    
+    res.json({ 
+      activeSessionCount: activeCount,
+      sessions: sessionsInfo,
+      message: `${activeCount} active Claude sessions`
+    });
+  } catch (error) {
+    console.error('Failed to get sessions:', error);
+    res.status(500).json({ error: 'Failed to retrieve session info' });
+  }
+});
+
+// 手动关闭指定会话
+router.delete('/sessions/:sessionId', async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const removed = await sessionManager.removeSession(sessionId);
+    
+    if (removed) {
+      res.json({ success: true, message: `Session ${sessionId} closed` });
+    } else {
+      res.status(404).json({ error: 'Session not found' });
+    }
+  } catch (error) {
+    console.error('Failed to close session:', error);
+    res.status(500).json({ error: 'Failed to close session' });
+  }
+});
 
 // Get all agents
 router.get('/', (req, res) => {
@@ -247,10 +282,25 @@ async function getClaudeExecutablePath(): Promise<string | null> {
   }
 }
 
-// POST /api/agents/chat - Agent-based AI chat using Claude Code SDK
+// POST /api/agents/chat - Agent-based AI chat using Claude Code SDK with session management
 router.post('/chat', async (req, res) => {
   try {
     console.log('Chat request received:', req.body);
+    
+    // 输出当前Session Manager的状态
+    console.log('📊 SessionManager状态 - 收到/chat消息时:');
+    console.log(`   活跃会话总数: ${sessionManager.getActiveSessionCount()}`);
+    const sessionsInfo = sessionManager.getSessionsInfo();
+    console.log('   会话详情:');
+    sessionsInfo.forEach(session => {
+      console.log(`     - SessionId: ${session.sessionId}`);
+      console.log(`       AgentId: ${session.agentId}`);
+      console.log(`       状态: ${session.status}`);
+      console.log(`       是否活跃: ${session.isActive}`);
+      console.log(`       空闲时间: ${Math.round(session.idleTimeMs / 1000)}秒`);
+      console.log(`       最后活动: ${new Date(session.lastActivity).toISOString()}`);
+    });
+    
     const validation = ChatRequestSchema.safeParse(req.body);
     if (!validation.success) {
       console.log('Validation failed:', validation.error);
@@ -258,8 +308,6 @@ router.post('/chat', async (req, res) => {
     }
 
     const { message, images, agentId, context, sessionId, projectPath, mcpTools, permissionMode, model } = validation.data;
-    
-    // console.log('Received chat request with projectPath:', projectPath);
 
     // Get agent configuration using global storage (agent configs are global)
     const agent = globalAgentStorage.getAgent(agentId);
@@ -271,40 +319,39 @@ router.post('/chat', async (req, res) => {
       return res.status(403).json({ error: 'Agent is disabled' });
     }
 
-
     // Build system prompt from agent configuration
     let systemPrompt = agent.systemPrompt;
 
     // Add context based on agent type and provided context
-    if (context) {
-      if (agent.ui.componentType === 'slides') {
-        // PPT-specific context
-        if (context.currentSlide !== undefined && context.currentSlide !== null) {
-          systemPrompt += `\n\nCurrent context: User is working on slide ${context.currentSlide + 1}`;
-          if (context.slideContent) {
-            systemPrompt += `\nCurrent slide content preview:\n${context.slideContent.substring(0, 500)}...`;
-          }
-        }
+    // if (context) {
+    //   if (agent.ui.componentType === 'slides') {
+    //     // PPT-specific context
+    //     if (context.currentSlide !== undefined && context.currentSlide !== null) {
+    //       systemPrompt += `\n\nCurrent context: User is working on slide ${context.currentSlide + 1}`;
+    //       if (context.slideContent) {
+    //         systemPrompt += `\nCurrent slide content preview:\n${context.slideContent.substring(0, 500)}...`;
+    //       }
+    //     }
 
-        if (context.allSlides?.length) {
-          systemPrompt += `\n\nPresentation overview: ${context.allSlides.length} slides total`;
-          systemPrompt += `\nSlides: ${context.allSlides.map((s: any) => `${s.index + 1}. ${s.title}`).join(', ')}`;
-        }
-      } else {
-        // Generic context for other agent types
-        if (context.currentItem) {
-          systemPrompt += `\n\nCurrent item context: ${JSON.stringify(context.currentItem, null, 2)}`;
-        }
+    //     if (context.allSlides?.length) {
+    //       systemPrompt += `\n\nPresentation overview: ${context.allSlides.length} slides total`;
+    //       systemPrompt += `\nSlides: ${context.allSlides.map((s: any) => `${s.index + 1}. ${s.title}`).join(', ')}`;
+    //     }
+    //   } else {
+    //     // Generic context for other agent types
+    //     if (context.currentItem) {
+    //       systemPrompt += `\n\nCurrent item context: ${JSON.stringify(context.currentItem, null, 2)}`;
+    //     }
 
-        if (context.allItems?.length) {
-          systemPrompt += `\n\nAll items overview: ${context.allItems.length} items total`;
-        }
+    //     if (context.allItems?.length) {
+    //       systemPrompt += `\n\nAll items overview: ${context.allItems.length} items total`;
+    //     }
 
-        if (context.customContext) {
-          systemPrompt += `\n\nCustom context: ${JSON.stringify(context.customContext, null, 2)}`;
-        }
-      }
-    }
+    //     if (context.customContext) {
+    //       systemPrompt += `\n\nCustom context: ${JSON.stringify(context.customContext, null, 2)}`;
+    //     }
+    //   }
+    // }
 
     // Set headers for Server-Sent Events
     res.setHeader('Content-Type', 'text/event-stream');
@@ -333,8 +380,6 @@ router.post('/chat', async (req, res) => {
         cwd = path.resolve(process.cwd(), agent.workingDirectory);
       }
       
-      // const claudePath = await getClaudeExecutablePath();
-      
       // Determine permission mode: request > agent config > system default
       let finalPermissionMode = 'default';
       if (permissionMode) {
@@ -358,8 +403,7 @@ router.post('/chat', async (req, res) => {
         cwd,
         permissionMode: finalPermissionMode as any,
         model: finalModel,
-        // Temporarily disable custom path to let SDK find claude automatically
-        // ...(claudePath && { pathToClaudeCodeExecutable: claudePath })
+        pathToClaudeCodeExecutable: "/Users/kongjie/Library/pnpm/claude",
       };
 
       // Add MCP configuration if MCP tools are selected
@@ -400,91 +444,140 @@ router.post('/chat', async (req, res) => {
         }
       }
 
-      // Resume existing Claude session if sessionId provided
+      // 会话管理逻辑
+      let claudeSession: any;
+      let actualSessionId: string | null = sessionId || null;
+
       if (sessionId) {
-        queryOptions.resume = sessionId;
-        console.log('🔄 Resuming Claude session:', sessionId);
+        // 尝试复用现有会话
+        claudeSession = sessionManager.getSession(sessionId);
+        if (claudeSession) {
+          console.log(`♻️  Using existing persistent Claude session: ${sessionId} for agent: ${agentId}`);
+        } else {
+          // 检查项目目录中是否存在会话历史
+          const sessionExists = sessionManager.checkSessionExists(sessionId, projectPath);
+          if (sessionExists) {
+            // 会话历史存在，使用 resume 参数恢复会话
+            console.log(`🔄 Found session history for ${sessionId}, resuming session for agent: ${agentId}`);
+            claudeSession = sessionManager.createNewSession(agentId, queryOptions, sessionId);
+          } else {
+            // 会话历史不存在，创建新会话但保持原始 sessionId 用于前端识别
+            console.log(`⚠️  Session ${sessionId} not found in memory or project history, creating new session for agent: ${agentId}`);
+            claudeSession = sessionManager.createNewSession(agentId, queryOptions);
+          }
+        }
       } else {
-        console.log('🆕 Starting new Claude session');
+        // 创建新的持续会话
+        claudeSession = sessionManager.createNewSession(agentId, queryOptions);
+        console.log(`🆕 Created new persistent Claude session for agent: ${agentId}`);
       }
 
-      // Check if we have images to use streaming input mode
+      // 构建消息内容
+      const messageContent: any[] = [];
+      
+      // Add text content if provided
+      if (message && message.trim()) {
+        messageContent.push({
+          type: "text",
+          text: message
+        });
+      }
+      
+      // Add image content
       if (images && images.length > 0) {
-        console.log('📸 Using streaming input mode for images:', images.map(img => ({
+        console.log('📸 Processing images:', images.map(img => ({
           id: img.id,
           mediaType: img.mediaType,
           filename: img.filename,
           size: img.data.length
         })));
 
-        // Create async generator for streaming input with images
-        async function* generateMessages() {
-          const messageContent: any[] = [];
-          
-          // Add text content if provided
-          if (message && message.trim()) {
-            messageContent.push({
-              type: "text",
-              text: message
-            });
-          }
-          
-          // Add image content
-          for (const image of images!) {
-            messageContent.push({
-              type: "image",
-              source: {
-                type: "base64",
-                media_type: image.mediaType,
-                data: image.data
-              }
-            });
-          }
-          
-          yield {
-            type: "user" as const,
-            message: {
-              role: "user" as const,
-              content: messageContent
+        for (const image of images) {
+          messageContent.push({
+            type: "image",
+            source: {
+              type: "base64",
+              media_type: image.mediaType,
+              data: image.data
             }
-          };
-        }
-
-        for await (const sdkMessage of query({
-          prompt: generateMessages() as any,
-          options: queryOptions
-        })) {
-          // Send each message as SSE event
-          const eventData = {
-            ...sdkMessage,
-            timestamp: Date.now()
-          };
-          
-          res.write(`data: ${JSON.stringify(eventData)}\n\n`);
-        }
-      } else {
-        // No images, use simple string prompt
-        for await (const sdkMessage of query({
-          prompt: message || '',
-          options: queryOptions
-        })) {
-          // Send each message as SSE event
-          const eventData = {
-            ...sdkMessage,
-            timestamp: Date.now()
-          };
-          
-          res.write(`data: ${JSON.stringify(eventData)}\n\n`);
+          });
         }
       }
+
+      const userMessage = {
+        type: "user" as const,
+        message: {
+          role: "user" as const,
+          content: messageContent
+        }
+      };
+
+      // 将消息推送到持续运行的 Claude 会话
+      await claudeSession.sendMessage(userMessage);
+
+      // 检查是否是恢复的会话
+      const isResumedSession = sessionId && sessionManager.checkSessionExists(sessionId, projectPath);
       
-    } catch (sdkError) {
-      console.error('Claude Code SDK error:', sdkError);
+      // 流式输出响应
+      for await (const sdkMessage of claudeSession.getResponseStream()) {
+        // 当收到 init 消息时，确认会话 ID
+        const responseSessionId = sdkMessage.session_id || sdkMessage.sessionId;
+        if (sdkMessage.type === 'system' && sdkMessage.subtype === 'init' && responseSessionId) {
+          if (!actualSessionId) {
+            // 如果前端没有提供 sessionId，使用 Claude SDK 返回的 sessionId
+            actualSessionId = responseSessionId;
+            sessionManager.confirmSessionId(claudeSession, responseSessionId);
+            console.log(`✅ Confirmed new persistent session ${actualSessionId} for agent: ${agentId}`);
+          } else {
+            // 如果前端提供了 sessionId，检查 Claude SDK 是否返回了相同的 sessionId
+            if (responseSessionId === actualSessionId) {
+              console.log(`✅ Resume successful - sessionId matches: ${actualSessionId} for agent: ${agentId}`);
+            } else {
+              console.warn(`⚠️ Resume failed - sessionId mismatch: expected ${actualSessionId}, got ${responseSessionId} for agent: ${agentId}`);
+              console.warn(`Using Claude SDK's new sessionId instead`);
+              // 使用 Claude SDK 返回的新 sessionId，因为强制使用原ID会导致状态不一致
+              actualSessionId = responseSessionId;
+            }
+            sessionManager.confirmSessionId(claudeSession, actualSessionId);
+          }
+        }
+
+        const eventData = {
+          ...sdkMessage,
+          agentId: agentId,
+          sessionId: actualSessionId || responseSessionId,
+          timestamp: Date.now()
+        };
+        
+        // 确保返回的 session_id 字段与 sessionId 一致
+        if (actualSessionId) {
+          eventData.session_id = actualSessionId;
+        }
+        
+        res.write(`data: ${JSON.stringify(eventData)}\n\n`);
+      }
       
-      const errorMessage = sdkError instanceof Error ? sdkError.message : 'Unknown error';
+      // 输出处理完成后的Session Manager状态
+      console.log('📊 SessionManager状态 - 处理/chat消息完成后:');
+      console.log(`   活跃会话总数: ${sessionManager.getActiveSessionCount()}`);
+      const finalSessionsInfo = sessionManager.getSessionsInfo();
+      console.log('   会话详情:');
+      finalSessionsInfo.forEach(session => {
+        console.log(`     - SessionId: ${session.sessionId}`);
+        console.log(`       AgentId: ${session.agentId}`);
+        console.log(`       状态: ${session.status}`);
+        console.log(`       是否活跃: ${session.isActive}`);
+        console.log(`       空闲时间: ${Math.round(session.idleTimeMs / 1000)}秒`);
+        console.log(`       最后活动: ${new Date(session.lastActivity).toISOString()}`);
+      });
+      
+    } catch (sessionError) {
+      console.error('Claude session error:', sessionError);
+      
+      const errorMessage = sessionError instanceof Error ? sessionError.message : 'Unknown error';
       res.write(`data: ${JSON.stringify({ 
         type: 'error', 
-        error: 'Claude Code SDK failed', 
+        error: 'Claude session failed', 
         message: errorMessage 
       })}\n\n`);
     }
@@ -499,8 +592,6 @@ router.post('/chat', async (req, res) => {
     }
   }
 });
-
-
 
 
 // Helper function to read MCP config (needed for chat functionality)
