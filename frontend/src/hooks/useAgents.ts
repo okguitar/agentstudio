@@ -201,6 +201,7 @@ export const useAgentChat = () => {
       onError?: (error: unknown) => void;
     }) => {
       try {
+        console.log('🚀 Starting SSE request to:', `${API_BASE}/agents/chat`);
         const response = await fetch(`${API_BASE}/agents/chat`, {
           method: 'POST',
           headers: {
@@ -210,8 +211,14 @@ export const useAgentChat = () => {
           signal: abortController?.signal
         });
 
+        console.log('🚀 SSE response received:', {
+          status: response.status,
+          statusText: response.statusText,
+          headers: Object.fromEntries(response.headers.entries())
+        });
+
         if (!response.ok) {
-          throw new Error('Agent chat request failed');
+          throw new Error(`Agent chat request failed: ${response.status} ${response.statusText}`);
         }
 
         // Create EventSource for SSE
@@ -221,6 +228,8 @@ export const useAgentChat = () => {
         if (!reader) {
           throw new Error('No response body');
         }
+
+        console.log('🚀 Starting SSE stream reading...');
 
         while (true) {
           // Check if request was aborted
@@ -238,11 +247,21 @@ export const useAgentChat = () => {
           for (const line of lines) {
             if (line.startsWith('data: ')) {
               try {
-                const data = JSON.parse(line.slice(6));
+                const jsonData = line.slice(6);
+                console.log('🔄 Raw SSE data:', jsonData.length > 200 ? jsonData.substring(0, 200) + '...' : jsonData);
+                const data = JSON.parse(jsonData);
+                console.log('🔄 Parsed SSE event:', {
+                  type: data.type,
+                  subtype: data.subtype,
+                  hasMessage: !!data.message,
+                  messageContentBlocks: data.message?.content?.length || 0
+                });
                 onMessage?.(data);
-              } catch {
-                console.warn('Failed to parse SSE data:', line);
+              } catch (error) {
+                console.error('❌ Failed to parse SSE data:', line, 'Error:', error);
               }
+            } else if (line.trim()) {
+              console.log('🔄 Non-data SSE line:', line);
             }
           }
         }

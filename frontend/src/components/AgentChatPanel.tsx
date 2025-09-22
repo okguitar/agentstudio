@@ -506,6 +506,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
           const eventData = data as { 
             type: string; 
             sessionId?: string; 
+            session_id?: string;
             subtype?: string; 
             message?: { content: unknown[] } | string; 
             permission_denials?: Array<{ tool_name: string; tool_input: Record<string, unknown> }>; 
@@ -544,19 +545,52 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
             return;
           }
           
-          if (eventData.type === 'connected' && eventData.sessionId) {
-            console.log('Setting session ID from AI response:', eventData.sessionId);
+          if (eventData.type === 'system' && eventData.subtype === 'init' && (eventData.sessionId || eventData.session_id)) {
+            const newSessionId = eventData.sessionId || eventData.session_id;
+            console.log('Setting session ID from AI response:', newSessionId);
             // Only set session ID if we don't have one (new session created by AI)
-            if (!currentSessionId) {
-              setCurrentSessionId(eventData.sessionId);
+            if (!currentSessionId && newSessionId) {
+              setCurrentSessionId(newSessionId);
               // Update URL with new session ID
               if (onSessionChange) {
-                onSessionChange(eventData.sessionId);
+                onSessionChange(newSessionId);
               }
               // Refresh sessions list when new session is created
               queryClient.invalidateQueries({ queryKey: ['agent-sessions', agent.id] });
             }
           } 
+          else if (eventData.type === 'session_resumed' && eventData.subtype === 'new_branch') {
+            // Handle session resume notification from backend
+            const resumeData = eventData as { 
+              originalSessionId: string; 
+              newSessionId: string; 
+              message: string; 
+              sessionId: string; 
+            };
+            
+            console.log('🔄 Session resumed with new branch:', resumeData);
+            console.log('🔄 Updating session ID from', currentSessionId, 'to', resumeData.newSessionId);
+            
+            // Update session ID to the new one (this will trigger useAgentSessionMessages to reload history)
+            setCurrentSessionId(resumeData.newSessionId);
+            
+            // Update URL with new session ID
+            if (onSessionChange) {
+              console.log('🔄 Updating URL with new session ID:', resumeData.newSessionId);
+              onSessionChange(resumeData.newSessionId);
+            }
+            
+            // Show session resume notification
+            addMessage({
+              content: `🔄 **会话已恢复**\n\n${resumeData.message}\n\n*会话ID已自动更新，历史记录已重新加载*`,
+              role: 'assistant'
+            });
+            
+            // Refresh sessions list to include the new session
+            queryClient.invalidateQueries({ queryKey: ['agent-sessions', agent.id] });
+            
+            console.log('✅ Session resume handling complete');
+          }
           else if (eventData.type === 'system' && eventData.subtype === 'init') {
             // Claude Code SDK initialization - silently initialize without showing message
             // Just ensure we have an AI message ID ready for when content starts coming
@@ -572,19 +606,26 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
               // Get the ID of the message we just added
               const state = useAgentStore.getState();
               aiMessageId = state.messages[state.messages.length - 1].id;
+              console.log('📝 Created new AI message with ID:', aiMessageId);
             }
 
             // Handle tool use and text content
             if (eventData.message && typeof eventData.message === 'object' && 'content' in eventData.message && eventData.message.content && aiMessageId) {
+              console.log('📝 Processing assistant message content blocks:', eventData.message.content.length, 'aiMessageId:', aiMessageId);
               for (const block of eventData.message.content as Array<{ type: string; text?: string; name?: string; input?: unknown; id?: string }>) {
+                console.log('📝 Processing block:', { type: block.type, hasText: !!block.text, textLength: block.text?.length, toolName: block.name });
                 if (block.type === 'text') {
                   // Add text as a separate part
                   if (block.text) {
+                    console.log('📝 Adding text part:', block.text.substring(0, 100) + (block.text.length > 100 ? '...' : ''));
                     addTextPartToMessage(aiMessageId, block.text);
+                  } else {
+                    console.warn('📝 Text block has no text content');
                   }
                 } else if (block.type === 'tool_use') {
                   // Add tool usage as a separate part
                   if (block.name) {
+                    console.log('📝 Adding tool part:', block.name, 'id:', block.id);
                     const toolData = {
                       toolName: block.name,
                       toolInput: (block.input as Record<string, unknown>) || {},
@@ -593,8 +634,16 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
                     };
                     addToolPartToMessage(aiMessageId, toolData);
                   }
+                } else {
+                  console.log('📝 Unknown block type:', block.type);
                 }
               }
+            } else {
+              console.warn('📝 No content or aiMessageId for assistant message:', { 
+                hasMessage: !!eventData.message, 
+                hasContent: !!(eventData.message as any)?.content,
+                aiMessageId 
+              });
             }
           }
           else if (eventData.type === 'user') {
@@ -602,29 +651,111 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
             if (eventData.message && typeof eventData.message === 'object' && 'content' in eventData.message && eventData.message.content && aiMessageId) {
               for (const block of eventData.message.content as Array<{ type: string; content?: unknown; is_error?: boolean; tool_use_id?: string }>) {
                 if (block.type === 'tool_result' && block.tool_use_id) {
-                  // Find the tool by tool_use_id
+                  console.log('🔧 Processing tool_result for tool_use_id:', block.tool_use_id);
+                  // Find the tool by tool_use_id - search across ALL messages, not just current
                   const state = useAgentStore.getState();
-                  const currentMessage = state.messages.find(m => m.id === aiMessageId);
-                  if (currentMessage?.messageParts) {
-                    const targetTool = currentMessage.messageParts.find((part: any) =>
-                      part.type === 'tool' && part.toolData?.claudeId === block.tool_use_id
-                    );
-                    
-                    if (targetTool?.toolData) {
-                      // Update the corresponding tool with results
-                      const toolResult = typeof block.content === 'string' 
-                        ? block.content 
-                        : Array.isArray(block.content)
-                          ? block.content.map((c: { text?: string }) => c.text || String(c)).join('')
-                          : JSON.stringify(block.content);
-                      
-                      updateToolPartInMessage(aiMessageId, targetTool.toolData.id, {
-                        toolResult,
-                        isError: block.is_error || false,
-                        isExecuting: false
-                      });
+                  let targetTool: any = null;
+                  let targetMessageId: string | null = null;
+                  
+                  // Search through all messages to find the tool with matching claudeId
+                  for (const message of state.messages) {
+                    if (message.messageParts) {
+                      const foundTool = message.messageParts.find((part: any) =>
+                        part.type === 'tool' && part.toolData?.claudeId === block.tool_use_id
+                      );
+                      if (foundTool) {
+                        targetTool = foundTool;
+                        targetMessageId = message.id;
+                        break;
+                      }
                     }
                   }
+                  
+                  console.log('🔧 Found target tool:', { 
+                    toolData: targetTool?.toolData, 
+                    messageId: targetMessageId,
+                    currentMessageId: aiMessageId 
+                  });
+                  
+                  if (targetTool?.toolData && targetMessageId) {
+                    // Update the corresponding tool with results
+                    const toolResult = typeof block.content === 'string' 
+                      ? block.content 
+                      : Array.isArray(block.content)
+                        ? block.content.map((c: { text?: string }) => c.text || String(c)).join('')
+                        : JSON.stringify(block.content);
+                    
+                    console.log('🔧 Updating tool with result, setting isExecuting: false');
+                    updateToolPartInMessage(targetMessageId, targetTool.toolData.id, {
+                      toolResult,
+                      isError: block.is_error || false,
+                      isExecuting: false
+                    });
+                  } else {
+                    console.warn('🔧 No target tool found for tool_use_id:', block.tool_use_id);
+                    // Log all available tools for debugging
+                    const allTools = state.messages.flatMap(m => 
+                      (m.messageParts || [])
+                        .filter((p: any) => p.type === 'tool')
+                        .map((p: any) => ({ 
+                          claudeId: p.toolData?.claudeId, 
+                          toolName: p.toolData?.toolName,
+                          isExecuting: p.toolData?.isExecuting 
+                        }))
+                    );
+                    console.warn('🔧 Available tools:', allTools);
+                  }
+                }
+              }
+            }
+          }
+
+          // Also check for tool results in assistant messages (alternative path)
+          if (eventData.type === 'assistant' && eventData.message && typeof eventData.message === 'object' && 'content' in eventData.message && eventData.message.content && aiMessageId) {
+            for (const block of eventData.message.content as Array<{ type: string; content?: unknown; is_error?: boolean; tool_use_id?: string }>) {
+              if (block.type === 'tool_result' && block.tool_use_id) {
+                console.log('🔧 Processing tool_result in assistant message for tool_use_id:', block.tool_use_id);
+                // Find the tool by tool_use_id - search across ALL messages, not just current
+                const state = useAgentStore.getState();
+                let targetTool: any = null;
+                let targetMessageId: string | null = null;
+                
+                // Search through all messages to find the tool with matching claudeId
+                for (const message of state.messages) {
+                  if (message.messageParts) {
+                    const foundTool = message.messageParts.find((part: any) =>
+                      part.type === 'tool' && part.toolData?.claudeId === block.tool_use_id
+                    );
+                    if (foundTool) {
+                      targetTool = foundTool;
+                      targetMessageId = message.id;
+                      break;
+                    }
+                  }
+                }
+                
+                console.log('🔧 Found target tool in assistant message:', { 
+                  toolData: targetTool?.toolData, 
+                  messageId: targetMessageId,
+                  currentMessageId: aiMessageId 
+                });
+                
+                if (targetTool?.toolData && targetMessageId) {
+                  // Update the corresponding tool with results
+                  const toolResult = typeof block.content === 'string' 
+                    ? block.content 
+                    : Array.isArray(block.content)
+                      ? block.content.map((c: { text?: string }) => c.text || String(c)).join('')
+                      : JSON.stringify(block.content);
+                  
+                  console.log('🔧 Updating tool with result in assistant message, setting isExecuting: false');
+                  updateToolPartInMessage(targetMessageId, targetTool.toolData.id, {
+                    toolResult,
+                    isError: block.is_error || false,
+                    isExecuting: false
+                  });
+                } else {
+                  console.warn('🔧 No target tool found for tool_use_id in assistant message:', block.tool_use_id);
                 }
               }
             }
@@ -634,6 +765,52 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
             // Clear the abort controller and immediately stop typing
             abortControllerRef.current = null;
             setAiTyping(false);
+            
+            // If no AI message was created yet (e.g., only result event received), create one now
+            if (!aiMessageId && eventData.subtype === 'success') {
+              console.log('📝 Creating AI message from result event - no assistant messages received');
+              const resultContent = (eventData as any).result;
+              if (resultContent && typeof resultContent === 'string') {
+                const message = {
+                  content: '',
+                  role: 'assistant' as const
+                };
+                addMessage(message);
+                // Get the ID of the message we just added
+                const state = useAgentStore.getState();
+                aiMessageId = state.messages[state.messages.length - 1].id;
+                
+                // Add the result content as text
+                addTextPartToMessage(aiMessageId, resultContent);
+                console.log('📝 Added result content to new AI message:', resultContent.substring(0, 100));
+              } else {
+                console.warn('📝 Result event with no content - creating empty success message');
+                const message = {
+                  content: '✅ 任务完成',
+                  role: 'assistant' as const
+                };
+                addMessage(message);
+                const state = useAgentStore.getState();
+                aiMessageId = state.messages[state.messages.length - 1].id;
+              }
+            }
+            
+            // Ensure all executing tools are marked as completed
+            if (aiMessageId) {
+              const state = useAgentStore.getState();
+              const currentMessage = state.messages.find(m => m.id === aiMessageId);
+              if (currentMessage?.messageParts) {
+                currentMessage.messageParts.forEach((part: any) => {
+                  if (part.type === 'tool' && part.toolData?.isExecuting) {
+                    console.log('Force completing tool:', part.toolData.toolName, 'claudeId:', part.toolData.claudeId);
+                    updateToolPartInMessage(aiMessageId, part.toolData.id, {
+                      isExecuting: false,
+                      toolResult: part.toolData.toolResult || '(执行完成)'
+                    });
+                  }
+                });
+              }
+            }
             
             // Handle different result types
             let finalMessage = '';
