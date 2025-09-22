@@ -26,6 +26,8 @@ export class MessageQueue {
    * @param message 要添加的消息
    */
   push(message: any): void {
+    console.log(`🔧 [QUEUE] push called, isEnded: ${this.isEnded}, resolvers: ${this.resolvers.length}, queue: ${this.queue.length}`);
+    
     if (this.isEnded) {
       console.warn('Cannot push to ended message queue');
       return;
@@ -33,10 +35,12 @@ export class MessageQueue {
 
     if (this.resolvers.length > 0) {
       // 有等待的消费者，直接解析
+      console.log(`🔧 [QUEUE] Resolving waiting consumer`);
       const resolve = this.resolvers.shift()!;
       resolve(message);
     } else {
       // 没有等待的消费者，加入队列
+      console.log(`🔧 [QUEUE] Adding to queue`);
       this.queue.push(message);
     }
   }

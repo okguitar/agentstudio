@@ -18,7 +18,7 @@ export class SessionManager {
   
   private cleanupInterval: NodeJS.Timeout;
   private readonly cleanupIntervalMs = 5 * 60 * 1000; // 5 分钟
-  private readonly defaultIdleTimeoutMs = 30 * 60 * 1000; // 30 分钟
+  private readonly defaultIdleTimeoutMs = Infinity; // 无限超时，即不自动清理
 
   constructor() {
     // 定期清理空闲会话
@@ -35,6 +35,34 @@ export class SessionManager {
    */
   getSession(sessionId: string): ClaudeSession | null {
     return this.sessions.get(sessionId) || null;
+  }
+
+  /**
+   * 获取指定agent的最新活跃会话
+   * @param agentId Agent ID
+   */
+  getLatestSessionForAgent(agentId: string): ClaudeSession | null {
+    const agentSessionIds = this.agentSessions.get(agentId);
+    if (!agentSessionIds || agentSessionIds.size === 0) {
+      return null;
+    }
+
+    // 找到最新的活跃会话
+    let latestSession: ClaudeSession | null = null;
+    let latestActivity = 0;
+
+    for (const sessionId of agentSessionIds) {
+      const session = this.sessions.get(sessionId);
+      if (session && session.isSessionActive()) {
+        const lastActivity = session.getLastActivity();
+        if (lastActivity > latestActivity) {
+          latestActivity = lastActivity;
+          latestSession = session;
+        }
+      }
+    }
+
+    return latestSession;
   }
 
   /**
@@ -144,6 +172,39 @@ export class SessionManager {
   }
 
   /**
+   * 替换会话ID（用于resume时Claude SDK返回新的sessionId的情况）
+   * @param session 会话实例
+   * @param oldSessionId 原始的sessionId
+   * @param newSessionId Claude SDK返回的新sessionId
+   */
+  replaceSessionId(session: ClaudeSession, oldSessionId: string, newSessionId: string): void {
+    const agentId = session.getAgentId();
+    
+    // 从原始sessionId中移除会话
+    if (this.sessions.has(oldSessionId)) {
+      this.sessions.delete(oldSessionId);
+      console.log(`🔄 Removed old session ${oldSessionId} from SessionManager`);
+    }
+    
+    // 从agent会话索引中移除原始sessionId
+    if (this.agentSessions.has(agentId)) {
+      this.agentSessions.get(agentId)!.delete(oldSessionId);
+      console.log(`🔄 Removed old session ${oldSessionId} from agent ${agentId} index`);
+    }
+    
+    // 添加新的sessionId
+    this.sessions.set(newSessionId, session);
+    
+    // 更新agent会话索引
+    if (!this.agentSessions.has(agentId)) {
+      this.agentSessions.set(agentId, new Set());
+    }
+    this.agentSessions.get(agentId)!.add(newSessionId);
+    
+    console.log(`✅ Replaced session ID ${oldSessionId} -> ${newSessionId} for agent: ${agentId}`);
+  }
+
+  /**
    * 移除指定会话
    * @param sessionId Claude SDK 返回的 sessionId
    */
@@ -177,6 +238,36 @@ export class SessionManager {
    * 清理空闲会话
    */
   private async cleanupIdleSessions(): Promise<void> {
+    // 如果设置为无限超时，则不进行自动清理，但仍然清理长时间未确认的临时会话
+    if (this.defaultIdleTimeoutMs === Infinity) {
+      const idleTempKeys: string[] = [];
+      const tempSessionTimeoutMs = 30 * 60 * 1000; // 临时会话30分钟超时
+      
+      // 仅检查临时会话（需要清理长时间未确认的）
+      for (const [tempKey, session] of this.tempSessions.entries()) {
+        if (session.isIdle(tempSessionTimeoutMs)) {
+          idleTempKeys.push(tempKey);
+        }
+      }
+
+      if (idleTempKeys.length > 0) {
+        console.log(`🧹 Cleaning up ${idleTempKeys.length} unconfirmed temp sessions (timeout: 30min)`);
+        
+        // 清理临时会话
+        for (const tempKey of idleTempKeys) {
+          const session = this.tempSessions.get(tempKey);
+          if (session) {
+            await session.close();
+            this.tempSessions.delete(tempKey);
+            console.log(`🗑️  Removed idle temp session: ${tempKey}`);
+          }
+        }
+        
+        console.log(`✅ Cleaned up ${idleTempKeys.length} idle temp sessions`);
+      }
+      return;
+    }
+
     const idleSessionIds: string[] = [];
     
     // 检查正式会话

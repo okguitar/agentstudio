@@ -15,6 +15,11 @@ export class ClaudeSession {
   private options: Options;
   private isInitialized = false;
   private resumeSessionId: string | null = null;
+  
+  // 响应分发器相关
+  private responseCallbacks: Map<string, (response: any) => void> = new Map();
+  private nextRequestId = 0;
+  private isBackgroundRunning = false;
 
   constructor(agentId: string, options: Options, resumeSessionId?: string) {
     console.log(`🔧 [DEBUG] ClaudeSession constructor started for agent: ${agentId}, resumeSessionId: ${resumeSessionId}`);
@@ -62,6 +67,7 @@ export class ClaudeSession {
   isSessionActive(): boolean {
     return this.isActive;
   }
+
 
   /**
    * 初始化 Claude 流 - 只调用一次，启动持续会话
@@ -114,31 +120,59 @@ export class ClaudeSession {
   }
 
   /**
-   * 发送消息到 Claude 会话
+   * 发送消息到 Claude 会话，返回请求ID用于响应分发
    * @param message 要发送的消息
+   * @param responseCallback 响应回调函数
    */
-  async sendMessage(message: any): Promise<void> {
+  async sendMessage(message: any, responseCallback: (response: any) => void): Promise<string> {
+    console.log(`🔧 [DEBUG] sendMessage called for agent: ${this.agentId}, isActive: ${this.isActive}, isBackgroundRunning: ${this.isBackgroundRunning}`);
+    
     if (!this.isActive) {
       throw new Error('Session is not active');
     }
     
     this.lastActivity = Date.now();
     
+    // 生成唯一的请求ID
+    const requestId = `req_${this.nextRequestId++}_${Date.now()}`;
+    console.log(`🔧 [DEBUG] Generated requestId: ${requestId} for agent: ${this.agentId}`);
+    
+    // 注册响应回调
+    this.responseCallbacks.set(requestId, responseCallback);
+    console.log(`🔧 [DEBUG] Registered callback for requestId: ${requestId}, total callbacks: ${this.responseCallbacks.size}`);
+    
+    // 启动后台响应处理器（如果还没有启动）
+    if (!this.isBackgroundRunning) {
+      console.log(`🔧 [DEBUG] Starting background response handler for agent: ${this.agentId}`);
+      this.startBackgroundResponseHandler();
+    } else {
+      console.log(`🔧 [DEBUG] Background response handler already running for agent: ${this.agentId}`);
+    }
+    
     // 将消息推送到队列中，Claude 会通过 async generator 接收
+    console.log(`🔧 [DEBUG] About to push message to queue for agent: ${this.agentId}, queueSize before: ${this.messageQueue.size()}`);
     this.messageQueue.push(message);
-    console.log(`📨 Queued message for agent: ${this.agentId}, queueSize: ${this.messageQueue.size()}`);
+    console.log(`📨 Queued message for agent: ${this.agentId}, requestId: ${requestId}, queueSize: ${this.messageQueue.size()}`);
+    
+    return requestId;
   }
 
   /**
-   * 获取 Claude 响应流
+   * 启动后台响应处理器，按顺序分发响应给各个请求
    */
-  async *getResponseStream(): AsyncIterable<any> {
-    if (!this.queryStream) {
-      throw new Error('Claude stream not initialized');
+  private async startBackgroundResponseHandler(): Promise<void> {
+    if (this.isBackgroundRunning || !this.queryStream) {
+      return;
     }
-
+    
+    this.isBackgroundRunning = true;
+    console.log(`🚀 Starting background response handler for agent: ${this.agentId}`);
+    
     try {
+      console.log(`🔧 [DEBUG] About to start for-await loop for agent: ${this.agentId}, queryStream: ${!!this.queryStream}`);
+      
       for await (const response of this.queryStream) {
+        console.log(`🔧 [DEBUG] Received response in background handler for agent: ${this.agentId}, type: ${response.type}`);
         this.lastActivity = Date.now();
         
         // 捕获 SDK 返回的 sessionId
@@ -148,12 +182,43 @@ export class ClaudeSession {
           console.log(`📝 Captured Claude sessionId: ${this.claudeSessionId} for agent: ${this.agentId}`);
         }
         
-        yield response;
+        // 获取当前最早的请求ID（FIFO队列）
+        const requestIds = Array.from(this.responseCallbacks.keys());
+        const currentRequestId = requestIds.length > 0 ? requestIds[0] : null;
+        
+        console.log(`🔧 [DEBUG] Current pending requests: ${requestIds.length}, processing: ${currentRequestId}`);
+        
+        // 分发响应给对应的请求
+        if (currentRequestId && this.responseCallbacks.has(currentRequestId)) {
+          const callback = this.responseCallbacks.get(currentRequestId)!;
+          callback(response);
+          
+          // 如果是 result 事件，该请求完成，从队列中移除
+          if (response.type === 'result') {
+            console.log(`✅ Request ${currentRequestId} completed, removing from queue`);
+            this.responseCallbacks.delete(currentRequestId);
+          }
+        } else {
+          console.log(`⚠️  No callback found for current request: ${currentRequestId}`);
+        }
       }
+      
+      console.log(`🔧 [DEBUG] For-await loop ended for agent: ${this.agentId}`);
+      this.isBackgroundRunning = false; // 重要：循环结束时重置状态
     } catch (error) {
-      console.error(`Error in Claude session for agent ${this.agentId}:`, error);
+      console.error(`Error in background response handler for agent ${this.agentId}:`, error);
       this.isActive = false;
-      throw error;
+      this.isBackgroundRunning = false;
+    }
+  }
+  
+  /**
+   * 取消指定请求的回调
+   */
+  cancelRequest(requestId: string): void {
+    if (this.responseCallbacks.has(requestId)) {
+      this.responseCallbacks.delete(requestId);
+      console.log(`🧹 Cleaned up request callback: ${requestId}`);
     }
   }
 
