@@ -22,7 +22,7 @@ export const GlobTool: React.FC<GlobToolProps> = ({ execution }) => {
     const files = result.trim().split('\n').filter(line => line.trim());
     if (files.length === 0) return result;
     
-    return `找到 ${files.length} 个匹配的文件:\n\n${result}`;
+    return result;
   };
 
   return (

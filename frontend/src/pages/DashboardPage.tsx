@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAgents } from '../hooks/useAgents';
+import { SessionsDashboard } from '../components/SessionsDashboard';
 
 export const DashboardPage: React.FC = () => {
   const { data: agentsData } = useAgents();
@@ -99,7 +100,12 @@ export const DashboardPage: React.FC = () => {
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Sessions Dashboard */}
+        <div className="lg:col-span-2">
+          <SessionsDashboard />
+        </div>
+        
         {/* Recent Agents */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-6">
@@ -156,11 +162,10 @@ export const DashboardPage: React.FC = () => {
               </div>
             )}
           </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">快速操作</h2>
+          
+          {/* Quick Actions */}
+          <div className="mt-8">
+            <h2 className="text-xl font-semibold text-gray-900 mb-6">快速操作</h2>
           
           <div className="space-y-4">
             <Link
@@ -219,39 +224,10 @@ export const DashboardPage: React.FC = () => {
               <ArrowRight className="w-5 h-5 text-gray-400 ml-auto" />
             </Link>
           </div>
+          </div>
         </div>
       </div>
 
-      {/* System Status */}
-      <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-6">系统状态</h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="text-center">
-            <div className="inline-flex items-center justify-center w-12 h-12 bg-green-100 rounded-lg mb-3">
-              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-            </div>
-            <h3 className="font-medium text-gray-900">AI服务</h3>
-            <p className="text-sm text-green-600">运行正常</p>
-          </div>
-          
-          <div className="text-center">
-            <div className="inline-flex items-center justify-center w-12 h-12 bg-green-100 rounded-lg mb-3">
-              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-            </div>
-            <h3 className="font-medium text-gray-900">数据库</h3>
-            <p className="text-sm text-green-600">连接正常</p>
-          </div>
-          
-          <div className="text-center">
-            <div className="inline-flex items-center justify-center w-12 h-12 bg-yellow-100 rounded-lg mb-3">
-              <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-            </div>
-            <h3 className="font-medium text-gray-900">MCP服务</h3>
-            <p className="text-sm text-yellow-600">部分服务离线</p>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

@@ -25,6 +25,7 @@ export const AgentsPage: React.FC = () => {
   const [editForm, setEditForm] = useState<Partial<AgentConfig>>({});
   const [isCreating, setIsCreating] = useState(false);
   const [showProjectSelector, setShowProjectSelector] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [selectedAgentForStart, setSelectedAgentForStart] = useState<AgentConfig | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState<'all' | 'enabled' | 'disabled'>('all');
@@ -88,7 +89,7 @@ export const AgentsPage: React.FC = () => {
       description: '',
       version: '1.0.0',
       systemPrompt: '',
-      maxTurns: 25,
+      maxTurns: undefined,
       permissionMode: 'default',
       allowedTools: [
         { name: 'Read', enabled: true },
@@ -135,9 +136,17 @@ export const AgentsPage: React.FC = () => {
 
   const handleSave = async () => {
     if (!editForm || !editForm.name?.trim()) {
-      alert('请填写助手名称');
+      setSaveError('请填写助手名称');
       return;
     }
+    
+    // 验证最大轮次
+    if (editForm.maxTurns !== undefined && (editForm.maxTurns < 1 || editForm.maxTurns > 100)) {
+      setSaveError('最大轮次必须在1-100之间');
+      return;
+    }
+    
+    setSaveError(null);
     
     try {
       // 更新工具选择到表单
@@ -147,6 +156,7 @@ export const AgentsPage: React.FC = () => {
         const dataToSave = {
           ...editForm,
           allowedTools,
+          maxTurns: editForm.maxTurns,
           id: `custom-${Date.now()}`,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -164,6 +174,7 @@ export const AgentsPage: React.FC = () => {
         const dataToSave = {
           ...editForm,
           allowedTools,
+          maxTurns: editForm.maxTurns,
           enabled: editingAgent.enabled
         };
         
@@ -176,10 +187,27 @@ export const AgentsPage: React.FC = () => {
       setEditingAgent(null);
       setEditForm({});
       setIsCreating(false);
+      setSaveError(null);
       queryClient.invalidateQueries({ queryKey: ['agents'] });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to save agent:', error);
-      alert(isCreating ? '创建失败，请重试。' : '保存失败，请重试。');
+      
+      // 解析后端错误信息
+      let errorMessage = isCreating ? '创建失败，请重试。' : '保存失败，请重试。';
+      if (error?.response?.data?.details?.issues?.length > 0) {
+        const issue = error.response.data.details.issues[0];
+        if (issue.path.includes('maxTurns') && issue.code === 'too_big') {
+          errorMessage = `最大轮次不能超过${issue.maximum}`;
+        } else {
+          errorMessage = issue.message || errorMessage;
+        }
+      } else if (error?.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      setSaveError(errorMessage);
     }
   };
 
@@ -354,7 +382,7 @@ export const AgentsPage: React.FC = () => {
                     <div className="space-y-1">
                       <div className="flex items-center">
                         <Settings className="w-3 h-3 mr-1 text-gray-400" />
-                        <span>最大轮次: {agent.maxTurns || 25}</span>
+                        <span>最大轮次: {agent.maxTurns !== undefined ? agent.maxTurns : '不限制'}</span>
                       </div>
                       <div className="flex items-center">
                         <Wrench className="w-3 h-3 mr-1 text-gray-400" />
@@ -464,6 +492,7 @@ export const AgentsPage: React.FC = () => {
                     setEditingAgent(null);
                     setEditForm({});
                     setIsCreating(false);
+                    setSaveError(null);
                   }}
                   className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
                 >
@@ -472,6 +501,22 @@ export const AgentsPage: React.FC = () => {
                 </button>
               </div>
             </div>
+
+            {/* Error Message */}
+            {saveError && (
+              <div className="p-4 bg-red-50 border-b border-red-200">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-red-800">{saveError}</p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Content */}
             <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
@@ -508,10 +553,28 @@ export const AgentsPage: React.FC = () => {
                         type="number"
                         min="1"
                         max="100"
-                        value={editForm.maxTurns || 25}
-                        onChange={(e) => setEditForm({ ...editForm, maxTurns: parseInt(e.target.value) })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        value={editForm.maxTurns !== undefined ? editForm.maxTurns : ''}
+                        placeholder="不限制"
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (value === '') {
+                            setEditForm({ ...editForm, maxTurns: undefined });
+                          } else {
+                            const parsed = parseInt(value);
+                            if (!isNaN(parsed)) {
+                              setEditForm({ ...editForm, maxTurns: parsed });
+                            }
+                          }
+                        }}
+                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
+                          editForm.maxTurns !== undefined && (editForm.maxTurns < 1 || editForm.maxTurns > 100)
+                            ? 'border-red-500 focus:ring-red-500'
+                            : 'border-gray-300 focus:ring-blue-500'
+                        }`}
                       />
+                      {editForm.maxTurns !== undefined && (editForm.maxTurns < 1 || editForm.maxTurns > 100) && (
+                        <p className="text-red-500 text-sm mt-1">最大轮次必须在1-100之间</p>
+                      )}
                     </div>
 
                     <div>

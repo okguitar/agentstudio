@@ -23,7 +23,7 @@ export const GrepTool: React.FC<GrepToolProps> = ({ execution }) => {
     const mode = input.output_mode || 'files_with_matches';
     
     if (mode === 'files_with_matches') {
-      return `找到 ${lines.length} 个匹配的文件:\n\n${result}`;
+      return result;
     } else if (mode === 'count') {
       return `匹配统计:\n\n${result}`;
     } else {
