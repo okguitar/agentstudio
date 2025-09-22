@@ -616,7 +616,8 @@ router.post('/chat', async (req, res) => {
       const queryOptions = await buildQueryOptions(agent, projectPath, mcpTools, permissionMode, model);
 
       // 处理会话管理
-      const { claudeSession, actualSessionId } = await handleSessionManagement(agentId, sessionId || null, projectPath, queryOptions);
+      const { claudeSession, actualSessionId: initialSessionId } = await handleSessionManagement(agentId, sessionId || null, projectPath, queryOptions);
+      let actualSessionId = initialSessionId;
       
       // 设置会话到连接管理器
       connectionManager.setClaudeSession(claudeSession);
@@ -650,6 +651,36 @@ router.post('/chat', async (req, res) => {
             claudeSession.setClaudeSessionId(responseSessionId);
             sessionManager.confirmSessionId(claudeSession, responseSessionId);
             console.log(`✅ Confirmed session ${responseSessionId} for agent: ${agentId}`);
+          } else if (currentSessionId && responseSessionId !== currentSessionId) {
+            // Resume场景：Claude SDK返回了新的session ID，需要通知前端
+            console.log(`🔄 Session resumed: ${currentSessionId} -> ${responseSessionId} for agent: ${agentId}`);
+            
+            // 更新会话管理器中的session ID映射
+            sessionManager.replaceSessionId(claudeSession, currentSessionId, responseSessionId);
+            claudeSession.setClaudeSessionId(responseSessionId);
+            
+            // 发送session resume通知给前端
+            const resumeNotification = {
+              type: 'session_resumed',
+              subtype: 'new_branch',
+              originalSessionId: currentSessionId,
+              newSessionId: responseSessionId,
+              sessionId: responseSessionId,
+              message: `会话已从历史记录恢复并创建新分支。原始会话ID: ${currentSessionId}，新会话ID: ${responseSessionId}`,
+              timestamp: Date.now()
+            };
+            
+            try {
+              if (!res.destroyed && !connectionManager.isConnectionClosed()) {
+                res.write(`data: ${JSON.stringify(resumeNotification)}\n\n`);
+                console.log(`🔄 Sent session resume notification: ${currentSessionId} -> ${responseSessionId}`);
+              }
+            } catch (writeError: unknown) {
+              console.error('Failed to write session resume notification:', writeError);
+            }
+            
+            // 更新实际的session ID为新的ID
+            actualSessionId = responseSessionId;
           } else {
             // 继续会话：使用现有session ID
             console.log(`♻️  Continued session ${currentSessionId} for agent: ${agentId}`);
