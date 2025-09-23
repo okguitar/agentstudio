@@ -258,18 +258,37 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
     const updateHeight = () => {
       if (treeContainerRef.current) {
         const containerRect = treeContainerRef.current.getBoundingClientRect();
-        const newHeight = Math.max(400, containerRect.height - 20); // 减去padding，最小高度400px
+        // 使用实际容器高度，如果获取不到则使用默认值
+        const newHeight = containerRect.height > 0 ? containerRect.height : 600;
         setContainerHeight(newHeight);
       }
     };
 
-    // 延迟执行以确保DOM已经渲染
+    // 使用 ResizeObserver 监听容器大小变化
+    let resizeObserver: ResizeObserver | null = null;
+    
+    if (treeContainerRef.current) {
+      resizeObserver = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          const { height } = entry.contentRect;
+          if (height > 0) {
+            setContainerHeight(height);
+          }
+        }
+      });
+      resizeObserver.observe(treeContainerRef.current);
+    }
+
+    // 延迟执行初始计算
     const timer = setTimeout(updateHeight, 100);
     window.addEventListener('resize', updateHeight);
     
     return () => {
       clearTimeout(timer);
       window.removeEventListener('resize', updateHeight);
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
     };
   }, [fileTreeData]); // 当数据变化时重新计算
 
@@ -576,11 +595,11 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
   }
 
   return (
-    <div className={`flex h-full bg-white border border-gray-200 rounded-lg overflow-hidden ${className}`} style={{ height }}>
+    <div className={`flex h-full bg-white border border-gray-200 rounded-lg overflow-hidden ${className}`}>
         {/* 文件树侧边栏 */}
-      <div className="w-80 border-r border-gray-200 flex flex-col">
+      <div className="w-80 border-r border-gray-200 flex flex-col h-full">
         {/* 工具栏 - 统一高度 */}
-        <div className="h-12 px-3 border-b border-gray-200 bg-gray-50 flex items-center">
+        <div className="h-12 px-3 border-b border-gray-200 bg-gray-50 flex items-center flex-shrink-0">
           <div className="flex items-center justify-between w-full">
             <h3 className="text-sm font-medium text-gray-700">文件浏览器</h3>
             <button
@@ -595,7 +614,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
         </div>
 
         {/* 文件树 */}
-        <div ref={treeContainerRef} className="flex-1 overflow-hidden">
+        <div ref={treeContainerRef} className="flex-1 min-h-0">
           {isTreeLoading ? (
             <div className="flex items-center justify-center h-32">
               <div className="flex items-center space-x-2 text-gray-500">
@@ -624,9 +643,9 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
       </div>
 
       {/* 文件预览区域 */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col h-full">
         {/* 标签栏 - 统一高度 */}
-        <div className="h-12 border-b border-gray-200 bg-gray-50 flex items-center">
+        <div className="h-12 border-b border-gray-200 bg-gray-50 flex items-center flex-shrink-0">
           {tabs.length > 0 ? (
             <div className="flex items-center h-full w-full">
               {/* 显示可见的标签 */}
@@ -719,7 +738,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
         </div>
 
         {/* 预览内容 */}
-        <div className="flex-1 bg-white">
+        <div className="flex-1 bg-white min-h-0">
           {renderFilePreview()}
         </div>
       </div>

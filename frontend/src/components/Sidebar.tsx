@@ -174,7 +174,7 @@ export const Sidebar: React.FC = () => {
   };
 
   return (
-    <div className="fixed top-0 left-0 w-64 bg-white shadow-sm border-r border-gray-200 flex flex-col h-screen z-40">
+    <div className="w-64 bg-white shadow-sm border-r border-gray-200 flex flex-col h-full z-40">
       {/* Logo */}
       <div className="px-6 py-8 flex-shrink-0">
         <div className="flex items-center space-x-3">
