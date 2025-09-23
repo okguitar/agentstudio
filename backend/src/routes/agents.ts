@@ -252,7 +252,7 @@ const ChatRequestSchema = z.object({
 // Function to get the path to system claude command
 async function getClaudeExecutablePath(): Promise<string | null> {
   try {
-    const { stdout: claudePath } = await execAsync('which glm');
+    const { stdout: claudePath } = await execAsync('which claude');
     if (!claudePath) return null;
     
     const cleanPath = claudePath.trim();
