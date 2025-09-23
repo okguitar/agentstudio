@@ -59,6 +59,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
     currentSessionId,
     addMessage,
     addTextPartToMessage,
+    addThinkingPartToMessage,
     addToolPartToMessage,
     updateToolPartInMessage,
     setAiTyping,
@@ -612,8 +613,8 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
             // Handle tool use and text content
             if (eventData.message && typeof eventData.message === 'object' && 'content' in eventData.message && eventData.message.content && aiMessageId) {
               console.log('📝 Processing assistant message content blocks:', eventData.message.content.length, 'aiMessageId:', aiMessageId);
-              for (const block of eventData.message.content as Array<{ type: string; text?: string; name?: string; input?: unknown; id?: string }>) {
-                console.log('📝 Processing block:', { type: block.type, hasText: !!block.text, textLength: block.text?.length, toolName: block.name });
+              for (const block of eventData.message.content as Array<{ type: string; text?: string; thinking?: string; name?: string; input?: unknown; id?: string }>) {
+                console.log('📝 Processing block:', { type: block.type, hasText: !!block.text, hasThinking: !!block.thinking, textLength: block.text?.length, thinkingLength: block.thinking?.length, toolName: block.name });
                 if (block.type === 'text') {
                   // Add text as a separate part
                   if (block.text) {
@@ -621,6 +622,14 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
                     addTextPartToMessage(aiMessageId, block.text);
                   } else {
                     console.warn('📝 Text block has no text content');
+                  }
+                } else if (block.type === 'thinking') {
+                  // Add thinking as a separate part
+                  if (block.thinking) {
+                    console.log('🤔 Adding thinking part:', block.thinking.substring(0, 100) + (block.thinking.length > 100 ? '...' : ''));
+                    addThinkingPartToMessage(aiMessageId, block.thinking);
+                  } else {
+                    console.warn('🤔 Thinking block has no thinking content');
                   }
                 } else if (block.type === 'tool_use') {
                   // Add tool usage as a separate part

@@ -37,7 +37,7 @@ export interface ImageData {
 
 export interface MessagePart {
   id: string;
-  type: 'text' | 'tool' | 'image' | 'command';
+  type: 'text' | 'tool' | 'image' | 'command' | 'thinking';
   content?: string;
   toolData?: ToolUsageData;
   imageData?: ImageData;

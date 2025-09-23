@@ -79,6 +79,19 @@ const ChatMessageRendererComponent: React.FC<ChatMessageRendererProps> = ({ mess
                 )}
               </div>
             );
+          } else if (part.type === 'thinking' && part.content) {
+            return (
+              <details key={part.id} className="my-2">
+                <summary className="cursor-pointer text-gray-500 text-sm hover:text-gray-700 transition-colors select-none">
+                  💭 思考过程...
+                </summary>
+                <div className="mt-2 pl-4 border-l-2 border-gray-200">
+                  <div className="text-gray-600 text-sm whitespace-pre-wrap break-words leading-relaxed italic">
+                    {part.content}
+                  </div>
+                </div>
+              </details>
+            );
           } else if (part.type === 'tool' && part.toolData) {
             return (
               <ToolUsage
@@ -104,6 +117,54 @@ const ChatMessageRendererComponent: React.FC<ChatMessageRendererProps> = ({ mess
                 />
               </div>
             );
+          } else if (part.type === 'unknown' && part.content) {
+            // Handle legacy thinking content that was saved as "unknown" type
+            // Check if the content contains thinking-related markers
+            const isThinkingContent = part.content.includes('"type":"thinking"') || 
+                                    part.content.includes('"thinking"') ||
+                                    part.content.includes('thinking');
+            
+            if (isThinkingContent) {
+              // Extract thinking content from the serialized data
+              let thinkingText = part.content;
+              
+              // Try to parse if it looks like JSON and extract thinking content
+              try {
+                if (part.content.includes('"thinking":')) {
+                  const match = part.content.match(/"thinking":"([^"]+)"/);
+                  if (match && match[1]) {
+                    thinkingText = match[1].replace(/\\n/g, '\n').replace(/\\"/g, '"');
+                  }
+                }
+              } catch (e) {
+                // If parsing fails, use the original content
+                console.warn('Failed to parse thinking content:', e);
+              }
+              
+              return (
+                <details key={part.id} className="my-2">
+                  <summary className="cursor-pointer text-gray-500 text-sm hover:text-gray-700 transition-colors select-none">
+                    💭 思考过程... (历史消息)
+                  </summary>
+                  <div className="mt-2 pl-4 border-l-2 border-gray-200">
+                    <div className="text-gray-600 text-sm whitespace-pre-wrap break-words leading-relaxed italic">
+                      {thinkingText}
+                    </div>
+                  </div>
+                </details>
+              );
+            } else {
+              // For other unknown types, render as text
+              return (
+                <div key={part.id}>
+                  {message.role === 'assistant' ? (
+                    <MarkdownMessage content={part.content} />
+                  ) : (
+                    <div className="whitespace-pre-wrap break-words">{part.content}</div>
+                  )}
+                </div>
+              );
+            }
           }
           return null;
         })}

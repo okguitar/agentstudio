@@ -19,6 +19,7 @@ interface AgentState {
   addMessage: (message: Omit<AgentMessage, 'id' | 'timestamp' | 'agentId'>) => void;
   updateMessage: (messageId: string, updates: Partial<AgentMessage>) => void;
   addTextPartToMessage: (messageId: string, text: string) => void;
+  addThinkingPartToMessage: (messageId: string, thinking: string) => void;
   addToolPartToMessage: (messageId: string, tool: Omit<ToolUsageData, 'id'>) => void;
   updateToolPartInMessage: (messageId: string, toolId: string, updates: Partial<ToolUsageData>) => void;
   setAiTyping: (typing: boolean) => void;
@@ -78,6 +79,25 @@ export const useAgentStore = create<AgentState>((set) => ({
                 id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
                 type: 'text' as const,
                 content: text,
+                order: (msg.messageParts || []).length
+              }
+            ]
+          }
+        : msg
+    )
+  })),
+  
+  addThinkingPartToMessage: (messageId, thinking) => set((state) => ({
+    messages: state.messages.map((msg) => 
+      msg.id === messageId 
+        ? {
+            ...msg,
+            messageParts: [
+              ...(msg.messageParts || []),
+              {
+                id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                type: 'thinking' as const,
+                content: thinking,
                 order: (msg.messageParts || []).length
               }
             ]

@@ -368,8 +368,8 @@ function extractContentFromClaudeMessage(msg: ClaudeHistoryMessage, allMessages:
   
   if (Array.isArray(msg.message.content)) {
     return msg.message.content
-      .filter((block: any) => block.type === 'text')
-      .map((block: any) => block.text)
+      .filter((block: any) => block.type === 'text' || block.type === 'thinking')
+      .map((block: any) => block.text || block.thinking || '')
       .join('');
   }
   
@@ -485,6 +485,14 @@ function convertClaudeMessageToMessageParts(msg: ClaudeHistoryMessage, allMessag
             mediaType: block.source?.media_type || 'image/jpeg',
             filename: `image_${index}.jpg` // Default filename since Claude history may not store original filename
           },
+          order: index
+        };
+      } else if (block.type === 'thinking') {
+        // Handle thinking content blocks
+        return {
+          id: `part_${index}_${msg.uuid}`,
+          type: 'thinking',
+          content: block.thinking || '',
           order: index
         };
       }
