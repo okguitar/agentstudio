@@ -1205,7 +1205,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
         </div>
       </div>
 
-      {/* Messages */}
+      {/* 主内容区域 - 聊天视图 */}
       <div className="flex-1 px-5 py-5 overflow-y-auto space-y-4">
         {/* Welcome message */}
         <div className="px-4">
@@ -1230,12 +1230,12 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
       </div>
 
       {/* Input Area */}
-      <div 
-        className={`border-t border-gray-200 ${isDragOver ? 'bg-blue-50 border-blue-300' : ''}`}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-      >
+        <div 
+          className={`border-t border-gray-200 ${isDragOver ? 'bg-blue-50 border-blue-300' : ''}`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
         {/* Selected Images Preview */}
         {selectedImages.length > 0 && (
           <div className="p-4 pb-2 border-b border-gray-100">
@@ -1496,7 +1496,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
             </div>
           </div>
         </div>
-      </div>
+        </div>
 
       <CommandSelector
         isOpen={showCommandSelector}
@@ -1516,9 +1516,9 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
         onCancel={handleCancelDialog}
       />
       
-      <ImagePreview 
-        imageUrl={previewImage} 
-        onClose={() => setPreviewImage(null)} 
+      <ImagePreview
+        images={previewImage ? [previewImage] : []}
+        onClose={() => setPreviewImage(null)}
       />
     </div>
   );

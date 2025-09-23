@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { AgentChatPanel } from '../components/AgentChatPanel';
 import { SplitLayout } from '../components/SplitLayout';
+import { RightPanelWrapper } from '../components/RightPanelWrapper';
 import { getAgentPlugin } from '../agents/registry';
 import { useAgentStore } from '../stores/useAgentStore';
 import { useAgent } from '../hooks/useAgents';
@@ -148,20 +149,15 @@ export const ChatPage: React.FC = () => {
 
   // Render layout based on plugin configuration
   const renderLayout = () => {
-    if (!RightPanelComponent) {
-      // Single layout - only chat panel
-      return (
-        <div className="h-full bg-gray-100">
-          <AgentChatPanel agent={agent} projectPath={projectPath || undefined} onSessionChange={handleSessionChange} />
-        </div>
-      );
-    }
-
-    // Split layout - chat panel + right panel
+    // 始终使用分栏布局，右侧根据是否有自定义组件来决定显示内容
     return (
       <SplitLayout>
         <AgentChatPanel agent={agent} projectPath={projectPath || undefined} onSessionChange={handleSessionChange} />
-        <RightPanelComponent agent={agent} projectPath={projectPath || undefined} />
+        <RightPanelWrapper 
+          agent={agent} 
+          projectPath={projectPath || undefined}
+          CustomComponent={RightPanelComponent}
+        />
       </SplitLayout>
     );
   };

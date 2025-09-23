@@ -52,7 +52,7 @@ const resolveSafePath = (filePath: string, projectPath?: string): string => {
 // GET /api/files/read - Read a single file
 router.get('/read', async (req, res) => {
   try {
-    const { path, projectPath } = req.query;
+    const { path, projectPath, binary } = req.query;
     
     if (!path || typeof path !== 'string') {
       return res.status(400).json({ error: 'File path is required' });
@@ -64,6 +64,46 @@ router.get('/read', async (req, res) => {
       return res.status(404).json({ error: 'File not found' });
     }
 
+    // 如果是二进制文件请求（如图片），直接发送文件内容
+    if (binary === 'true') {
+      const stats = await fs.stat(fullPath);
+      if (!stats.isFile()) {
+        return res.status(400).json({ error: 'Path is not a file' });
+      }
+
+      // 根据文件扩展名设置正确的Content-Type
+      const ext = path.toLowerCase().split('.').pop();
+      const mimeTypes: Record<string, string> = {
+        'png': 'image/png',
+        'jpg': 'image/jpeg',
+        'jpeg': 'image/jpeg',
+        'gif': 'image/gif',
+        'svg': 'image/svg+xml',
+        'webp': 'image/webp',
+        'ico': 'image/x-icon',
+        'bmp': 'image/bmp',
+        'tiff': 'image/tiff'
+      };
+      
+      const mimeType = mimeTypes[ext || ''] || 'application/octet-stream';
+      res.setHeader('Content-Type', mimeType);
+      res.setHeader('Cache-Control', 'public, max-age=3600'); // 1小时缓存
+      
+      // 直接发送文件流
+      const fileStream = fs.createReadStream(fullPath);
+      fileStream.pipe(res);
+      
+      fileStream.on('error', (error) => {
+        console.error('Error streaming file:', error);
+        if (!res.headersSent) {
+          res.status(500).json({ error: 'Failed to read file' });
+        }
+      });
+      
+      return;
+    }
+
+    // 对于文本文件，仍然使用utf-8编码
     const content = await fs.readFile(fullPath, 'utf-8');
     
     res.json({
