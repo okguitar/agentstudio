@@ -190,22 +190,28 @@ export const RightPanelWrapper: React.FC<RightPanelWrapperProps> = ({
       {/* 内容区域 */}
       <div className="h-full overflow-hidden">
         {CustomComponent ? (
-          // 有自定义组件：根据currentView显示对应内容
-          currentView === 'files' ? (
-            <FileExplorer 
-              projectPath={projectPath}
-              onFileSelect={(filePath) => {
-                console.log('Selected file:', filePath);
-                // 可以在这里添加文件选择的处理逻辑，比如插入到聊天中
-              }}
-              className="h-full"
-            />
-          ) : (
-            <CustomComponent 
-              agent={agent} 
-              projectPath={projectPath} 
-            />
-          )
+          // 有自定义组件：保活两个视图，通过显示/隐藏控制
+          <>
+            {/* Agent自定义视图 */}
+            <div className={`h-full ${currentView === 'custom' ? 'block' : 'hidden'}`}>
+              <CustomComponent 
+                agent={agent} 
+                projectPath={projectPath} 
+              />
+            </div>
+            
+            {/* 文件浏览器视图 */}
+            <div className={`h-full ${currentView === 'files' ? 'block' : 'hidden'}`}>
+              <FileExplorer 
+                projectPath={projectPath}
+                onFileSelect={(filePath) => {
+                  console.log('Selected file:', filePath);
+                  // 可以在这里添加文件选择的处理逻辑，比如插入到聊天中
+                }}
+                className="h-full"
+              />
+            </div>
+          </>
         ) : (
           // 无自定义组件：直接显示文件浏览器（因为隐藏按钮会隐藏整个面板）
           <FileExplorer 
