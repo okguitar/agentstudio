@@ -8,7 +8,7 @@ import {
 import { VscJson, VscCode } from 'react-icons/vsc';
 import { SiTypescript } from 'react-icons/si';
 import { useFileTree, useFileContent, type FileSystemItem } from '../hooks/useFileSystem';
-import { Loader2, ChevronRight, RefreshCw } from 'lucide-react';
+import { Loader2, ChevronRight, RefreshCw, X, ChevronDown, MoreHorizontal } from 'lucide-react';
 
 // 将 FileSystemItem 转换为 react-arborist 需要的格式
 interface FileTreeItem {
@@ -20,6 +20,15 @@ interface FileTreeItem {
   modified: string;
   isHidden: boolean;
   children?: FileTreeItem[];
+}
+
+// 标签页接口
+interface FileTab {
+  id: string;
+  name: string;
+  path: string;
+  isPinned: boolean; // 是否固定标签
+  isActive: boolean; // 是否当前活跃
 }
 
 interface FileExplorerProps {
@@ -188,15 +197,24 @@ const Node: React.FC<{ node: NodeApi<FileTreeItem>; style: React.CSSProperties; 
   );
 };
 
+// 常量定义
+const MAX_VISIBLE_TABS = 5; // 最多显示的标签数量
+
 export const FileExplorer: React.FC<FileExplorerProps> = ({ 
   projectPath, 
   onFileSelect,
   className = '',
   height = '100vh'
 }) => {
-  const [selectedFile, setSelectedFile] = useState<FileTreeItem | null>(null);
+  const [tabs, setTabs] = useState<FileTab[]>([]);
+  const [activeTabId, setActiveTabId] = useState<string | null>(null);
+  const [temporaryTabId, setTemporaryTabId] = useState<string | null>(null); // 临时标签ID
   const [containerHeight, setContainerHeight] = useState<number>(600);
+  const [showTabDropdown, setShowTabDropdown] = useState<boolean>(false);
   const treeContainerRef = useRef<HTMLDivElement>(null);
+  const tabDropdownRef = useRef<HTMLDivElement>(null);
+  const [lastClickTime, setLastClickTime] = useState<number>(0);
+  const [lastClickedPath, setLastClickedPath] = useState<string>('');
 
   // 获取项目ID用于媒体文件访问（暂时注释掉，未使用）
   // const { data: projectData } = useProjectId(projectPath);
@@ -209,22 +227,28 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
     refetch: refetchTree
   } = useFileTree(projectPath);
   
-  // 读取选中文件的内容
+  // 获取当前活跃的标签
+  const activeTab = useMemo(() => {
+    return tabs.find(tab => tab.id === activeTabId) || null;
+  }, [tabs, activeTabId]);
+
+  // 读取当前活跃标签的文件内容
   const { 
     data: fileContentData, 
     isLoading: isContentLoading,
     error: contentError
   } = useFileContent(
-    selectedFile && !selectedFile.isDirectory ? selectedFile.path : undefined,
+    activeTab ? activeTab.path : undefined,
     projectPath
   );
 
   // 调试信息
   console.log('FileExplorer Debug:', {
-    selectedFile: selectedFile?.name,
+    activeTab: activeTab?.name,
     isContentLoading,
     fileContentData,
-    contentError
+    contentError,
+    tabs: tabs.length
   });
 
   // 移除面包屑导航相关代码，因为我们现在使用树形结构
@@ -248,6 +272,20 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
       window.removeEventListener('resize', updateHeight);
     };
   }, [fileTreeData]); // 当数据变化时重新计算
+
+  // 处理点击外部关闭下拉菜单
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (tabDropdownRef.current && !tabDropdownRef.current.contains(event.target as Node)) {
+        setShowTabDropdown(false);
+      }
+    };
+
+    if (showTabDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showTabDropdown]);
 
   // 转换文件树数据为 react-arborist 需要的格式
   const treeData = useMemo((): FileTreeItem[] => {
@@ -299,22 +337,134 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
     return openState;
   }, [fileTreeData, projectPath]);
 
+  // 创建新标签页
+  const createTab = useCallback((file: FileTreeItem, isPinned: boolean = false): FileTab => {
+    return {
+      id: `tab-${file.path}`,
+      name: file.name,
+      path: file.path,
+      isPinned,
+      isActive: false
+    };
+  }, []);
+
+  // 添加或激活标签页
+  const addOrActivateTab = useCallback((file: FileTreeItem, isPinned: boolean = false) => {
+    setTabs(prevTabs => {
+      const existingTabIndex = prevTabs.findIndex(tab => tab.path === file.path);
+      
+      if (existingTabIndex !== -1) {
+        // 标签已存在，激活它
+        const updatedTabs = prevTabs.map((tab, index) => ({
+          ...tab,
+          isActive: index === existingTabIndex,
+          isPinned: isPinned || tab.isPinned // 如果要求固定，则固定
+        }));
+        setActiveTabId(updatedTabs[existingTabIndex].id);
+        return updatedTabs;
+      } else {
+        // 创建新标签
+        const newTab = createTab(file, isPinned);
+        
+        if (!isPinned && temporaryTabId) {
+          // 如果是临时标签且已有临时标签，替换临时标签
+          const updatedTabs = prevTabs.map(tab => 
+            tab.id === temporaryTabId ? { ...newTab, isActive: true } : { ...tab, isActive: false }
+          );
+          setActiveTabId(newTab.id);
+          setTemporaryTabId(newTab.id);
+          return updatedTabs;
+        } else {
+          // 添加新标签
+          const updatedTabs = [
+            ...prevTabs.map(tab => ({ ...tab, isActive: false })),
+            { ...newTab, isActive: true }
+          ];
+          setActiveTabId(newTab.id);
+          if (!isPinned) {
+            setTemporaryTabId(newTab.id);
+          }
+          return updatedTabs;
+        }
+      }
+    });
+    
+    onFileSelect?.(file.path);
+  }, [createTab, temporaryTabId, onFileSelect]);
+
+  // 关闭标签页
+  const closeTab = useCallback((tabId: string) => {
+    setTabs(prevTabs => {
+      const tabIndex = prevTabs.findIndex(tab => tab.id === tabId);
+      if (tabIndex === -1) return prevTabs;
+      
+      const newTabs = prevTabs.filter(tab => tab.id !== tabId);
+      
+      // 如果关闭的是当前活跃标签，需要激活另一个标签
+      if (activeTabId === tabId) {
+        if (newTabs.length > 0) {
+          // 优先激活相邻的标签
+          const newActiveIndex = Math.min(tabIndex, newTabs.length - 1);
+          const newActiveTab = newTabs[newActiveIndex];
+          setActiveTabId(newActiveTab.id);
+          newTabs[newActiveIndex] = { ...newActiveTab, isActive: true };
+        } else {
+          setActiveTabId(null);
+        }
+      }
+      
+      // 如果关闭的是临时标签，清除临时标签ID
+      if (temporaryTabId === tabId) {
+        setTemporaryTabId(null);
+      }
+      
+      return newTabs;
+    });
+  }, [activeTabId, temporaryTabId]);
+
+  // 激活标签页
+  const activateTab = useCallback((tabId: string) => {
+    setTabs(prevTabs => 
+      prevTabs.map(tab => ({
+        ...tab,
+        isActive: tab.id === tabId
+      }))
+    );
+    setActiveTabId(tabId);
+  }, []);
+
   // 处理文件选择
   const handleNodeSelect = useCallback((nodes: NodeApi<FileTreeItem>[]) => {
     const node = nodes[0];
     if (!node?.data) return;
 
     if (!node.data.isDirectory) {
-      // 文件：选择文件进行预览
-      setSelectedFile(node.data);
-      onFileSelect?.(node.data.path);
+      // 检测双击
+      const currentTime = Date.now();
+      const isDoubleClick = currentTime - lastClickTime < 300 && lastClickedPath === node.data.path;
+      
+      setLastClickTime(currentTime);
+      setLastClickedPath(node.data.path);
+      
+      if (isDoubleClick) {
+        // 双击：打开固定标签
+        addOrActivateTab(node.data, true);
+      } else {
+        // 单击：打开临时标签
+        setTimeout(() => {
+          // 延迟执行，避免双击时触发单击逻辑
+          if (Date.now() - currentTime >= 300) {
+            addOrActivateTab(node.data, false);
+          }
+        }, 300);
+      }
     }
     // 目录不需要特殊处理，react-arborist 会自动处理折叠/展开
-  }, [onFileSelect]);
+  }, [addOrActivateTab, lastClickTime, lastClickedPath]);
 
   // 渲染文件内容预览
   const renderFilePreview = () => {
-    if (!selectedFile) {
+    if (!activeTab) {
       return (
         <div className="flex items-center justify-center h-full text-gray-500">
           <div className="text-center">
@@ -345,20 +495,20 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
               {(contentError as Error).message}
             </p>
             <p className="text-xs mt-2 text-gray-500">
-              {selectedFile.path}
+              {activeTab.path}
             </p>
           </div>
         </div>
       );
     }
 
-    const fileType = getFileType(selectedFile.name);
+    const fileType = getFileType(activeTab.name);
 
     switch (fileType) {
       case 'image':
         // 创建一个专门用于二进制文件的URL
         const imageParams = new URLSearchParams();
-        imageParams.append('path', selectedFile.path);
+        imageParams.append('path', activeTab.path);
         if (projectPath) {
           imageParams.append('projectPath', projectPath);
         }
@@ -366,7 +516,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
         imageParams.append('binary', 'true');
         const imageUrl = `/api/files/read?${imageParams.toString()}`;
         
-        return <SimpleImagePreview imageUrl={imageUrl} fileName={selectedFile.name} />;
+        return <SimpleImagePreview imageUrl={imageUrl} fileName={activeTab.name} />;
 
       case 'text':
         if (!fileContentData) {
@@ -380,7 +530,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
           <Editor 
             height="100%" 
             theme="vs-light" 
-            language={getLanguageForFile(selectedFile.name)} 
+            language={getLanguageForFile(activeTab.name)} 
             value={fileContentData.content} 
             options={{ 
               readOnly: true,
@@ -398,7 +548,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
             <div className="text-center">
               <VscCode className="w-12 h-12 mx-auto mb-4 text-gray-300" />
               <p>不支持预览此文件类型</p>
-              <p className="text-sm mt-2">大小: {selectedFile.size ? `${(selectedFile.size / 1024).toFixed(1)} KB` : '未知'}</p>
+              <p className="text-sm mt-2">文件: {activeTab.name}</p>
             </div>
           </div>
         );
@@ -427,11 +577,11 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
 
   return (
     <div className={`flex h-full bg-white border border-gray-200 rounded-lg overflow-hidden ${className}`} style={{ height }}>
-      {/* 文件树侧边栏 */}
+        {/* 文件树侧边栏 */}
       <div className="w-80 border-r border-gray-200 flex flex-col">
-        {/* 工具栏 */}
-        <div className="p-3 border-b border-gray-200 bg-gray-50">
-          <div className="flex items-center justify-between">
+        {/* 工具栏 - 统一高度 */}
+        <div className="h-12 px-3 border-b border-gray-200 bg-gray-50 flex items-center">
+          <div className="flex items-center justify-between w-full">
             <h3 className="text-sm font-medium text-gray-700">文件浏览器</h3>
             <button
               onClick={() => refetchTree()}
@@ -475,21 +625,98 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
 
       {/* 文件预览区域 */}
       <div className="flex-1 flex flex-col">
-        {/* 预览工具栏 */}
-        {selectedFile && (
-          <div className="p-3 border-b border-gray-200 bg-gray-50">
-            <div className="flex items-center space-x-2">
-              <FileIcon node={{ data: selectedFile, isOpen: false } as NodeApi<FileTreeItem>} />
-              <h4 className="text-sm font-medium text-gray-700 truncate">{selectedFile.name}</h4>
-              <span className="text-xs text-gray-500">
-                {selectedFile.size ? `${(selectedFile.size / 1024).toFixed(1)} KB` : ''}
-              </span>
+        {/* 标签栏 - 统一高度 */}
+        <div className="h-12 border-b border-gray-200 bg-gray-50 flex items-center">
+          {tabs.length > 0 ? (
+            <div className="flex items-center h-full w-full">
+              {/* 显示可见的标签 */}
+              <div className="flex items-center h-full flex-1">
+                {tabs.slice(0, Math.min(MAX_VISIBLE_TABS, tabs.length)).map((tab) => (
+                  <div
+                    key={tab.id}
+                    className={`group relative flex items-center h-full px-3 border-r border-gray-200 cursor-pointer transition-colors ${
+                      tab.isActive
+                        ? 'bg-white text-gray-900'
+                        : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                    } ${!tab.isPinned ? 'italic' : ''}`}
+                    onClick={() => activateTab(tab.id)}
+                    title={`${tab.path} ${tab.isPinned ? '(固定)' : '(临时)'}`}
+                    style={{ minWidth: '120px', maxWidth: '180px' }}
+                  >
+                    <FileIcon node={{ data: { name: tab.name, isDirectory: false } as FileTreeItem, isOpen: false } as NodeApi<FileTreeItem>} />
+                    <span className="ml-2 text-sm truncate flex-1">{tab.name}</span>
+                    {!tab.isPinned && (
+                      <span className="ml-1 text-xs text-gray-400 flex-shrink-0">•</span>
+                    )}
+                    <button
+                      className="ml-2 p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-gray-200 transition-opacity flex-shrink-0"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        closeTab(tab.id);
+                      }}
+                      title="关闭标签"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              {/* 下拉菜单按钮 (当标签数量超过显示限制时) */}
+              {tabs.length > MAX_VISIBLE_TABS && (
+                <div className="relative" ref={tabDropdownRef}>
+                  <button
+                    className="flex items-center h-full px-3 text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors border-l border-gray-200"
+                    onClick={() => setShowTabDropdown(!showTabDropdown)}
+                    title={`还有 ${tabs.length - MAX_VISIBLE_TABS} 个标签`}
+                  >
+                    <MoreHorizontal className="w-4 h-4" />
+                    <ChevronDown className="w-3 h-3 ml-1" />
+                  </button>
+
+                  {/* 下拉菜单 */}
+                  {showTabDropdown && (
+                    <div className="absolute top-full right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-48 max-h-64 overflow-y-auto">
+                      {tabs.slice(MAX_VISIBLE_TABS).map((tab) => (
+                        <div
+                          key={tab.id}
+                          className={`flex items-center px-3 py-2 text-sm cursor-pointer hover:bg-gray-50 ${
+                            tab.isActive ? 'bg-blue-50 text-blue-900' : 'text-gray-700'
+                          } ${!tab.isPinned ? 'italic' : ''}`}
+                          onClick={() => {
+                            activateTab(tab.id);
+                            setShowTabDropdown(false);
+                          }}
+                          title={`${tab.path} ${tab.isPinned ? '(固定)' : '(临时)'}`}
+                        >
+                          <FileIcon node={{ data: { name: tab.name, isDirectory: false } as FileTreeItem, isOpen: false } as NodeApi<FileTreeItem>} />
+                          <span className="ml-2 truncate flex-1">{tab.name}</span>
+                          {!tab.isPinned && (
+                            <span className="ml-1 text-xs text-gray-400 flex-shrink-0">•</span>
+                          )}
+                          <button
+                            className="ml-2 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-gray-200 transition-opacity flex-shrink-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              closeTab(tab.id);
+                            }}
+                            title="关闭标签"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
-            <p className="text-xs text-gray-500 mt-1 truncate" title={selectedFile.path}>
-              {selectedFile.path}
-            </p>
-          </div>
-        )}
+          ) : (
+            <div className="flex items-center justify-center w-full h-full text-gray-500">
+              <span className="text-sm">暂无打开的文件</span>
+            </div>
+          )}
+        </div>
 
         {/* 预览内容 */}
         <div className="flex-1 bg-white">

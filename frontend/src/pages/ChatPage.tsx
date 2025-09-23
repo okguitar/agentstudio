@@ -17,6 +17,7 @@ export const ChatPage: React.FC = () => {
   const { data: agentData, isLoading, error } = useAgent(agentId!);
   const { setCurrentAgent, setCurrentSessionId } = useAgentStore();
   const [showProjectSelector, setShowProjectSelector] = useState(false);
+  const [hideRightPanel, setHideRightPanel] = useState(false);
 
   const agent = agentData?.agent;
 
@@ -147,16 +148,30 @@ export const ChatPage: React.FC = () => {
     );
   }
 
+  // 处理面板隐藏/显示
+  const handleTogglePanel = (hidden: boolean) => {
+    setHideRightPanel(hidden);
+  };
+
+  // 处理显示右侧面板
+  const handleShowRightPanel = () => {
+    setHideRightPanel(false);
+  };
+
   // Render layout based on plugin configuration
   const renderLayout = () => {
     // 始终使用分栏布局，右侧根据是否有自定义组件来决定显示内容
     return (
-      <SplitLayout>
+      <SplitLayout 
+        hideRightPanel={hideRightPanel}
+        onShowRightPanel={handleShowRightPanel}
+      >
         <AgentChatPanel agent={agent} projectPath={projectPath || undefined} onSessionChange={handleSessionChange} />
         <RightPanelWrapper 
           agent={agent} 
           projectPath={projectPath || undefined}
           CustomComponent={RightPanelComponent}
+          onTogglePanel={handleTogglePanel}
         />
       </SplitLayout>
     );
