@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { SlashCommand, SlashCommandCreate, SlashCommandUpdate, SlashCommandFilter } from '../types/commands';
+import { API_BASE } from '../lib/config';
 
-const API_BASE = 'http://localhost:3002/api';
 
 // API functions
 const fetchCommands = async (filter: SlashCommandFilter = {}): Promise<SlashCommand[]> => {

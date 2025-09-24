@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Subagent, SubagentCreate, SubagentUpdate, SubagentFilter } from '../types/subagents';
-
-const API_BASE = 'http://localhost:3002/api';
+import { API_BASE } from '../lib/config';
 
 // API functions
 const fetchSubagents = async (filter: SubagentFilter = {}): Promise<Subagent[]> => {
