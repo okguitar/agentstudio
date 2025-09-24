@@ -6,8 +6,7 @@ import 'prismjs/components/prism-markup';
 import 'prismjs/components/prism-css';
 import type { Slide } from '../../../types/index.js';
 import { useSlideContent } from '../hooks/useSlides';
-
-const API_BASE = import.meta.env.DEV ? 'http://localhost:3002' : '';
+import { API_BASE, MEDIA_BASE } from '../../../lib/config';
 
 interface SlidePreviewProps {
   slide: Slide;
@@ -32,7 +31,7 @@ export const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, totalSlides, 
     
     const fetchProjectId = async () => {
       try {
-        const url = new URL(`${API_BASE}/api/files/project-id`, window.location.origin);
+        const url = new URL(`${API_BASE}/files/project-id`, window.location.origin);
         url.searchParams.set('projectPath', projectPath);
         const response = await fetch(url);
         
@@ -69,7 +68,7 @@ export const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, totalSlides, 
     iframe.addEventListener('error', handleError);
     
     // Use media proxy URL: /media/{project-id}/{relative-path}
-    iframe.src = `${API_BASE}/media/${projectId}/${slide.path}`;
+    iframe.src = `${MEDIA_BASE}/${projectId}/${slide.path}`;
 
     return () => {
       iframe.removeEventListener('load', handleLoad);
