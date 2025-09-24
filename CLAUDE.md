@@ -72,7 +72,7 @@ npm run setup                # Install all dependencies (root, frontend, backend
 
 ### Development
 ```bash
-npm run dev                  # Start both frontend (3000) and backend (3002)
+npm run dev                  # Start both frontend (3000) and backend (4936)
 npm run dev:frontend         # Frontend only
 npm run dev:backend          # Backend only
 ```
@@ -108,7 +108,7 @@ OPENAI_API_KEY=your_openai_api_key_here
 ANTHROPIC_API_KEY=your_anthropic_api_key_here
 
 # Server Configuration  
-PORT=3002  # Backend runs on port 3002, frontend on 3000
+PORT=4936  # Backend runs on port 4936, frontend on 3000
 NODE_ENV=development
 
 # File System

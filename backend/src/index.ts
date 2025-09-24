@@ -14,7 +14,6 @@ import settingsRouter from './routes/settings.js';
 import commandsRouter from './routes/commands.js';
 import subagentsRouter from './routes/subagents.js';
 import projectsRouter from './routes/projects.js';
-import { usageRouter } from './routes/usage.js';
 
 dotenv.config();
 
@@ -22,7 +21,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const app = express();
-const PORT = process.env.PORT || 3002;
+const PORT = process.env.PORT || 4936;
 
 // Middleware
 app.use(helmet({
@@ -60,7 +59,6 @@ app.use('/api/settings', settingsRouter);
 app.use('/api/commands', commandsRouter);
 app.use('/api/subagents', subagentsRouter);
 app.use('/api/projects', projectsRouter);
-app.use('/api/usage', usageRouter);
 app.use('/media', mediaRouter);
 
 // Health check

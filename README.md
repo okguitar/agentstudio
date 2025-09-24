@@ -63,7 +63,7 @@ ANTHROPIC_API_KEY=your_anthropic_api_key_here
 OPENAI_API_KEY=your_openai_api_key_here
 
 # Server Configuration
-PORT=3002
+PORT=4936
 NODE_ENV=development
 
 # File System Configuration
@@ -78,7 +78,7 @@ npm run dev
 
 # Or start individually
 npm run dev:frontend  # Frontend: http://localhost:3000
-npm run dev:backend   # Backend: http://localhost:3002
+npm run dev:backend   # Backend: http://localhost:4936
 ```
 
 ## 📖 Usage Guide
