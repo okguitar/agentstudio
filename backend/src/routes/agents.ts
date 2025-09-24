@@ -778,6 +778,7 @@ router.post('/chat', async (req, res) => {
 });
 
 
+
 // Helper function to read MCP config (needed for chat functionality)
 const readMcpConfig = () => {
   const mcpConfigPath = path.join(os.homedir(), '.claude-agent', 'mcp-server.json');

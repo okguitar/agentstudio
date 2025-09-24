@@ -21,6 +21,10 @@ export default defineConfig({
         target: 'http://127.0.0.1:3002',
         changeOrigin: true,
       },
+      '/media': {
+        target: 'http://127.0.0.1:3002',
+        changeOrigin: true,
+      },
     },
   },
 })

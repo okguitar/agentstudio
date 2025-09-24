@@ -45,6 +45,9 @@ const AppContent: React.FC = () => {
           <Route path="commands" element={<CommandsPage />} />
           <Route path="subagents" element={<SubagentsPage />} />
         </Route>
+        
+        {/* Catch-all route for unmatched paths (excludes /media/* which should be handled by backend) */}
+        <Route path="*" element={<Layout><div className="p-4 text-center">Page not found</div></Layout>} />
       </Routes>
     </Router>
   );

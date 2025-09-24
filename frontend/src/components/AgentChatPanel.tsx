@@ -1154,25 +1154,25 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
         className="px-5 py-4 border-b border-gray-200 text-white"
         style={{ background: `linear-gradient(135deg, ${agent.ui.primaryColor}, ${agent.ui.primaryColor}dd)` }}
       >
-        <div className="flex items-center justify-between">
-          <div className="flex-1">
-            <h1 className="text-lg font-semibold mb-1 flex items-center space-x-2">
-              <span className="text-2xl">{agent.ui.icon}</span>
-              <span>{agent.ui.headerTitle}</span>
+        <div className="flex items-center justify-between min-h-[60px]">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-lg font-semibold mb-1 flex items-center space-x-2 min-h-[28px]">
+              <span className="text-2xl flex-shrink-0">{agent.ui.icon}</span>
+              <span className="truncate">{agent.ui.headerTitle}</span>
               {projectPath && (
-                <span className="text-xs opacity-75 font-normal truncate" title={projectPath}>
+                <span className="text-xs opacity-75 font-normal truncate flex-shrink-0" title={projectPath}>
                   📁 {projectPath.split('/').pop() || projectPath}
                 </span>
               )}
             </h1>
-            <p className="text-sm opacity-90">
+            <p className="text-sm opacity-90 truncate">
               {currentSessionId ? 
                 (sessionsData?.sessions?.find((s: any) => s.id === currentSessionId)?.title || '当前会话') : 
                 agent.ui.headerDescription
               }
             </p>
           </div>
-          <div className="flex space-x-2">
+          <div className="flex space-x-2 flex-shrink-0 ml-4">
             <button
               onClick={handleNewSession}
               className="p-2 hover:bg-white/20 rounded-lg transition-colors"
