@@ -16,7 +16,6 @@
     "@ai-sdk/openai": "^1.0.7",
     "@anthropic-ai/claude-code": "^1.0.103",
     "ai": "^5.0.22",
-    "ccusage": "^15.3.1",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "eventsource": "^4.0.0",
