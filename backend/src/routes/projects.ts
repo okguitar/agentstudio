@@ -180,20 +180,6 @@ router.put('/:dirName/agents/:agentId', async (req, res) => {
   }
 });
 
-// POST /api/projects/:dirName/agents/:agentId/usage - Record agent usage
-router.post('/:dirName/agents/:agentId/usage', async (req, res) => {
-  try {
-    const { dirName, agentId } = req.params;
-    
-    projectStorage.recordAgentUsage(dirName, agentId);
-    const updatedProject = projectStorage.getProject(dirName);
-    
-    res.json({ project: updatedProject });
-  } catch (error) {
-    console.error('Error recording agent usage:', error);
-    res.status(500).json({ error: 'Failed to record agent usage' });
-  }
-});
 
 // GET /api/projects/:dirName/check-agent - Check if project needs agent selection
 router.get('/:dirName/check-agent', async (req, res) => {

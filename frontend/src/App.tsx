@@ -6,7 +6,6 @@ import { DashboardPage } from './pages/DashboardPage';
 import { AgentsPage } from './pages/AgentsPage';
 import { ProjectsPage } from './pages/ProjectsPage';
 import { McpPage } from './pages/McpPage';
-import { UsageStatsPage } from './pages/UsageStatsPage';
 import { SettingsLayout } from './components/SettingsLayout';
 import { GeneralSettingsPage } from './pages/settings/GeneralSettingsPage';
 import { VersionSettingsPage } from './pages/settings/VersionSettingsPage';
@@ -36,7 +35,6 @@ const AppContent: React.FC = () => {
         <Route path="/agents" element={<Layout><AgentsPage /></Layout>} />
         <Route path="/projects" element={<Layout><ProjectsPage /></Layout>} />
         <Route path="/mcp" element={<Layout><McpPage /></Layout>} />
-        <Route path="/analytics" element={<Layout><UsageStatsPage /></Layout>} />
         <Route path="/settings" element={<Layout><SettingsLayout /></Layout>}>
           <Route index element={<GeneralSettingsPage />} />
           <Route path="general" element={<GeneralSettingsPage />} />

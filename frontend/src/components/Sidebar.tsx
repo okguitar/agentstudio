@@ -37,11 +37,6 @@ const navigationItems = [
     icon: Server,
   },
   {
-    name: '使用统计',
-    href: '/analytics',
-    icon: BarChart3,
-  },
-  {
     name: '系统设置',
     href: '/settings',
     icon: Settings,
