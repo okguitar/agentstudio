@@ -15,10 +15,13 @@ export class SessionManager {
   private agentSessions: Map<string, Set<string>> = new Map();
   // 临时会话索引：tempKey -> ClaudeSession，等待 sessionId 确认
   private tempSessions: Map<string, ClaudeSession> = new Map();
+  // 心跳记录：sessionId -> lastHeartbeatTime
+  private sessionHeartbeats: Map<string, number> = new Map();
   
   private cleanupInterval: NodeJS.Timeout;
-  private readonly cleanupIntervalMs = 5 * 60 * 1000; // 5 分钟
+  private readonly cleanupIntervalMs = 1 * 60 * 1000; // 1 分钟检查一次
   private readonly defaultIdleTimeoutMs = Infinity; // 无限超时，即不自动清理
+  private readonly heartbeatTimeoutMs = Infinity; // 无限心跳超时，不自动清理
 
   constructor() {
     // 定期清理空闲会话
@@ -158,6 +161,9 @@ export class SessionManager {
       // 添加到正式索引
       this.sessions.set(sessionId, session);
       
+      // 初始化心跳记录
+      this.sessionHeartbeats.set(sessionId, Date.now());
+      
       // 更新 agent 会话索引
       const agentId = session.getAgentId();
       if (!this.agentSessions.has(agentId)) {
@@ -186,6 +192,16 @@ export class SessionManager {
       console.log(`🔄 Removed old session ${oldSessionId} from SessionManager`);
     }
     
+    // 从心跳记录中移除原始sessionId并添加新的
+    const oldHeartbeat = this.sessionHeartbeats.get(oldSessionId);
+    if (oldHeartbeat) {
+      this.sessionHeartbeats.delete(oldSessionId);
+      this.sessionHeartbeats.set(newSessionId, oldHeartbeat);
+    } else {
+      // 如果没有旧的心跳记录，则初始化新的
+      this.sessionHeartbeats.set(newSessionId, Date.now());
+    }
+    
     // 从agent会话索引中移除原始sessionId
     if (this.agentSessions.has(agentId)) {
       this.agentSessions.get(agentId)!.delete(oldSessionId);
@@ -202,6 +218,51 @@ export class SessionManager {
     this.agentSessions.get(agentId)!.add(newSessionId);
     
     console.log(`✅ Replaced session ID ${oldSessionId} -> ${newSessionId} for agent: ${agentId}`);
+  }
+
+  /**
+   * 更新会话心跳时间
+   * @param sessionId 会话ID
+   * @returns 是否成功更新
+   */
+  updateHeartbeat(sessionId: string): boolean {
+    if (this.sessions.has(sessionId)) {
+      this.sessionHeartbeats.set(sessionId, Date.now());
+      console.log(`💓 Updated heartbeat for session: ${sessionId}`);
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * 获取会话的最后心跳时间
+   * @param sessionId 会话ID
+   * @returns 最后心跳时间，如果不存在返回null
+   */
+  getLastHeartbeat(sessionId: string): number | null {
+    return this.sessionHeartbeats.get(sessionId) || null;
+  }
+
+  /**
+   * 检查会话是否心跳超时
+   * @param sessionId 会话ID
+   * @returns 是否超时
+   */
+  isHeartbeatTimedOut(sessionId: string): boolean {
+    const lastHeartbeat = this.sessionHeartbeats.get(sessionId);
+    if (!lastHeartbeat) {
+      return true; // 没有心跳记录认为是超时
+    }
+    return Date.now() - lastHeartbeat > this.heartbeatTimeoutMs;
+  }
+
+  /**
+   * 检查会话是否在 SessionManager 中存在
+   * @param sessionId 会话ID
+   * @returns 是否存在
+   */
+  hasActiveSession(sessionId: string): boolean {
+    return this.sessions.has(sessionId);
   }
 
   /**
@@ -222,6 +283,9 @@ export class SessionManager {
     // 从主索引移除
     this.sessions.delete(sessionId);
     
+    // 从心跳记录移除
+    this.sessionHeartbeats.delete(sessionId);
+    
     // 从 agent 会话索引移除
     if (this.agentSessions.has(agentId)) {
       this.agentSessions.get(agentId)!.delete(sessionId);
@@ -235,36 +299,68 @@ export class SessionManager {
   }
 
   /**
-   * 清理空闲会话
+   * 手动清理指定会话（提供给前端使用）
+   * @param sessionId 会话ID
+   * @returns 是否成功清理
+   */
+  async manualCleanupSession(sessionId: string): Promise<boolean> {
+    console.log(`🧹 Manual cleanup requested for session: ${sessionId}`);
+    return await this.removeSession(sessionId);
+  }
+
+  /**
+   * 清理空闲会话和心跳超时会话
    */
   private async cleanupIdleSessions(): Promise<void> {
-    // 如果设置为无限超时，则不进行自动清理，但仍然清理长时间未确认的临时会话
-    if (this.defaultIdleTimeoutMs === Infinity) {
-      const idleTempKeys: string[] = [];
-      const tempSessionTimeoutMs = 30 * 60 * 1000; // 临时会话30分钟超时
-      
-      // 仅检查临时会话（需要清理长时间未确认的）
-      for (const [tempKey, session] of this.tempSessions.entries()) {
-        if (session.isIdle(tempSessionTimeoutMs)) {
-          idleTempKeys.push(tempKey);
+    // 只有在心跳超时不是无限期时才清理心跳超时的会话
+    if (this.heartbeatTimeoutMs !== Infinity) {
+      const heartbeatTimedOutSessions: string[] = [];
+      for (const [sessionId, session] of this.sessions.entries()) {
+        if (this.isHeartbeatTimedOut(sessionId)) {
+          heartbeatTimedOutSessions.push(sessionId);
         }
       }
 
-      if (idleTempKeys.length > 0) {
-        console.log(`🧹 Cleaning up ${idleTempKeys.length} unconfirmed temp sessions (timeout: 30min)`);
+      if (heartbeatTimedOutSessions.length > 0) {
+        console.log(`💔 Cleaning up ${heartbeatTimedOutSessions.length} heartbeat timed-out sessions (timeout: ${this.heartbeatTimeoutMs / 1000}s)`);
         
-        // 清理临时会话
-        for (const tempKey of idleTempKeys) {
-          const session = this.tempSessions.get(tempKey);
-          if (session) {
-            await session.close();
-            this.tempSessions.delete(tempKey);
-            console.log(`🗑️  Removed idle temp session: ${tempKey}`);
-          }
+        for (const sessionId of heartbeatTimedOutSessions) {
+          await this.removeSession(sessionId);
+          console.log(`🗑️  Removed heartbeat timed-out session: ${sessionId}`);
         }
         
-        console.log(`✅ Cleaned up ${idleTempKeys.length} idle temp sessions`);
+        console.log(`✅ Cleaned up ${heartbeatTimedOutSessions.length} heartbeat timed-out sessions`);
       }
+    }
+
+    // 清理长时间未确认的临时会话
+    const idleTempKeys: string[] = [];
+    const tempSessionTimeoutMs = 30 * 60 * 1000; // 临时会话30分钟超时
+    
+    for (const [tempKey, session] of this.tempSessions.entries()) {
+      if (session.isIdle(tempSessionTimeoutMs)) {
+        idleTempKeys.push(tempKey);
+      }
+    }
+
+    if (idleTempKeys.length > 0) {
+      console.log(`🧹 Cleaning up ${idleTempKeys.length} unconfirmed temp sessions (timeout: 30min)`);
+      
+      // 清理临时会话
+      for (const tempKey of idleTempKeys) {
+        const session = this.tempSessions.get(tempKey);
+        if (session) {
+          await session.close();
+          this.tempSessions.delete(tempKey);
+          console.log(`🗑️  Removed idle temp session: ${tempKey}`);
+        }
+      }
+      
+      console.log(`✅ Cleaned up ${idleTempKeys.length} idle temp sessions`);
+    }
+
+    // 如果设置为无限超时，则不进行基于活动时间的自动清理
+    if (this.defaultIdleTimeoutMs === Infinity) {
       return;
     }
 
@@ -277,27 +373,27 @@ export class SessionManager {
       }
     }
 
-    // 检查临时会话（也需要清理长时间未确认的）
-    const idleTempKeys: string[] = [];
+    // 检查基于活动时间的临时会话清理
+    const idleActivityTempKeys: string[] = [];
     for (const [tempKey, session] of this.tempSessions.entries()) {
       if (session.isIdle(this.defaultIdleTimeoutMs)) {
-        idleTempKeys.push(tempKey);
+        idleActivityTempKeys.push(tempKey);
       }
     }
 
-    if (idleSessionIds.length === 0 && idleTempKeys.length === 0) {
+    if (idleSessionIds.length === 0 && idleActivityTempKeys.length === 0) {
       return;
     }
 
-    console.log(`🧹 Starting cleanup of ${idleSessionIds.length + idleTempKeys.length} idle sessions`);
+    console.log(`🧹 Starting cleanup of ${idleSessionIds.length + idleActivityTempKeys.length} idle sessions`);
 
     // 清理正式会话
     for (const sessionId of idleSessionIds) {
       await this.removeSession(sessionId);
     }
 
-    // 清理临时会话
-    for (const tempKey of idleTempKeys) {
+    // 清理基于活动时间的临时会话
+    for (const tempKey of idleActivityTempKeys) {
       const session = this.tempSessions.get(tempKey);
       if (session) {
         await session.close();
@@ -306,7 +402,7 @@ export class SessionManager {
       }
     }
 
-    console.log(`✅ Cleaned up ${idleSessionIds.length + idleTempKeys.length} idle sessions`);
+    console.log(`✅ Cleaned up ${idleSessionIds.length + idleActivityTempKeys.length} idle sessions`);
   }
 
   /**
@@ -325,7 +421,10 @@ export class SessionManager {
     isActive: boolean;
     lastActivity: number;
     idleTimeMs: number;
+    lastHeartbeat: number | null;
+    heartbeatTimedOut: boolean;
     status: 'confirmed' | 'pending';
+    projectPath: string | null;
   }> {
     const now = Date.now();
     const result: Array<{
@@ -334,18 +433,25 @@ export class SessionManager {
       isActive: boolean;
       lastActivity: number;
       idleTimeMs: number;
+      lastHeartbeat: number | null;
+      heartbeatTimedOut: boolean;
       status: 'confirmed' | 'pending';
+      projectPath: string | null;
     }> = [];
 
     // 添加正式会话
     for (const [sessionId, session] of this.sessions.entries()) {
+      const lastHeartbeat = this.getLastHeartbeat(sessionId);
       result.push({
         sessionId,
         agentId: session.getAgentId(),
         isActive: session.isSessionActive(),
         lastActivity: session.getLastActivity(),
         idleTimeMs: now - session.getLastActivity(),
-        status: 'confirmed'
+        lastHeartbeat,
+        heartbeatTimedOut: this.isHeartbeatTimedOut(sessionId),
+        status: 'confirmed',
+        projectPath: session.getProjectPath()
       });
     }
 
@@ -357,7 +463,10 @@ export class SessionManager {
         isActive: session.isSessionActive(),
         lastActivity: session.getLastActivity(),
         idleTimeMs: now - session.getLastActivity(),
-        status: 'pending'
+        lastHeartbeat: null,
+        heartbeatTimedOut: false,
+        status: 'pending',
+        projectPath: session.getProjectPath()
       });
     }
 
@@ -383,6 +492,7 @@ export class SessionManager {
     this.sessions.clear();
     this.tempSessions.clear();
     this.agentSessions.clear();
+    this.sessionHeartbeats.clear();
     
     console.log('✅ SessionManager shutdown complete');
   }

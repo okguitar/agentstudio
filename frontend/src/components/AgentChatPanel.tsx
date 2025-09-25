@@ -7,6 +7,7 @@ import { useAgentStore } from '../stores/useAgentStore';
 import { useAgentChat, useAgentSessions, useAgentSessionMessages } from '../hooks/useAgents';
 import { useCommands, useProjectCommands } from '../hooks/useCommands';
 import { useClaudeVersions } from '../hooks/useClaudeVersions';
+import { useSessionHeartbeatOnSuccess } from '../hooks/useSessionHeartbeatOnSuccess';
 import { useQueryClient } from '@tanstack/react-query';
 import { ChatMessageRenderer } from './ChatMessageRenderer';
 import { SessionsDropdown } from './SessionsDropdown';
@@ -51,6 +52,8 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
   const [selectedClaudeVersion, setSelectedClaudeVersion] = useState<string | undefined>(undefined);
   const [showVersionDropdown, setShowVersionDropdown] = useState(false);
   const [commandWarning, setCommandWarning] = useState<string | null>(null);
+  const [hasSuccessfulResponse, setHasSuccessfulResponse] = useState(false);
+  const [isNewSession, setIsNewSession] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -76,6 +79,16 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
   const agentChatMutation = useAgentChat();
   const { data: sessionsData } = useAgentSessions(agent.id, searchTerm, projectPath);
   const { data: sessionMessagesData } = useAgentSessionMessages(agent.id, currentSessionId, projectPath);
+  
+  // 会话心跳 - 基于 AI 响应成功状态
+  useSessionHeartbeatOnSuccess({
+    agentId: agent.id,
+    sessionId: currentSessionId,
+    projectPath,
+    enabled: !!currentSessionId,
+    isNewSession,
+    hasSuccessfulResponse
+  });
   
   // Fetch commands for keyboard navigation
   const { data: userCommands = [] } = useCommands({ scope: 'user', search: commandSearch });
@@ -559,6 +572,8 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
             // Only set session ID if we don't have one (new session created by AI)
             if (!currentSessionId && newSessionId) {
               setCurrentSessionId(newSessionId);
+              // This is a new session being created
+              setIsNewSession(true);
               // Update URL with new session ID
               if (onSessionChange) {
                 onSessionChange(newSessionId);
@@ -581,6 +596,8 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
             
             // Update session ID to the new one (this will trigger useAgentSessionMessages to reload history)
             setCurrentSessionId(resumeData.newSessionId);
+            // This is a resumed session creating a new branch
+            setIsNewSession(true); // 恢复会话创建新分支，视为新会话
             
             // Update URL with new session ID
             if (onSessionChange) {
@@ -782,6 +799,12 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
             abortControllerRef.current = null;
             setAiTyping(false);
             
+            // Mark as successful response if result is successful
+            if (eventData.subtype === 'success') {
+              setHasSuccessfulResponse(true);
+              console.log('✅ Marked session as having successful response for heartbeat');
+            }
+            
             // If no AI message was created yet (e.g., only result event received), create one now
             if (!aiMessageId && eventData.subtype === 'success') {
               console.log('📝 Creating AI message from result event - no assistant messages received');
@@ -940,6 +963,9 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
   const handleSwitchSession = (sessionId: string) => {
     setCurrentSessionId(sessionId);
     setShowSessions(false);
+    // Reset heartbeat states for resumed session
+    setIsNewSession(false);
+    setHasSuccessfulResponse(false); // 恢复会话时重置，等待检查存在性
     // Update URL with new session ID
     if (onSessionChange) {
       onSessionChange(sessionId);
@@ -954,6 +980,9 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
     setCurrentSessionId(null);
     clearMessages();
     setShowSessions(false);
+    // Reset heartbeat states
+    setIsNewSession(true);
+    setHasSuccessfulResponse(false);
     // Update URL to remove session ID
     if (onSessionChange) {
       onSessionChange(null);

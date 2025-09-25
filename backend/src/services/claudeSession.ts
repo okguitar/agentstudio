@@ -15,6 +15,7 @@ export class ClaudeSession {
   private options: Options;
   private isInitialized = false;
   private resumeSessionId: string | null = null;
+  private projectPath: string | null = null;
   
   // 响应分发器相关
   private responseCallbacks: Map<string, (response: any) => void> = new Map();
@@ -27,6 +28,8 @@ export class ClaudeSession {
     this.options = { ...options };
     this.messageQueue = new MessageQueue();
     this.resumeSessionId = resumeSessionId || null;
+    // 从 options.cwd 获取项目路径
+    this.projectPath = options.cwd || null;
     
     // 如果提供了 resumeSessionId，设置为当前 claudeSessionId
     if (this.resumeSessionId) {
@@ -59,6 +62,13 @@ export class ClaudeSession {
    */
   getAgentId(): string {
     return this.agentId;
+  }
+
+  /**
+   * 获取项目路径
+   */
+  getProjectPath(): string | null {
+    return this.projectPath;
   }
 
   /**

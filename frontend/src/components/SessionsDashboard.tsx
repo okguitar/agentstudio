@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Clock, 
   MessageCircle, 
@@ -6,9 +6,12 @@ import {
   RefreshCw,
   CheckCircle,
   Loader,
-  Bot
+  Bot,
+  Trash2,
+  Heart,
+  AlertTriangle
 } from 'lucide-react';
-import { useSessions, closeSession, SessionInfo } from '../hooks/useSessions';
+import { useSessions, closeSession, cleanupSession, SessionInfo } from '../hooks/useSessions';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAgents } from '../hooks/useAgents';
 import { Link } from 'react-router-dom';
@@ -17,13 +20,20 @@ export const SessionsDashboard: React.FC = () => {
   const { data: sessionsData, isLoading, error, refetch } = useSessions();
   const { data: agentsData } = useAgents();
   const queryClient = useQueryClient();
+  const [cleanupLoading, setCleanupLoading] = useState<string | null>(null);
+  // 不再需要从 URL 获取项目路径，直接使用后端返回的
 
-  const handleCloseSession = async (sessionId: string) => {
+
+  const handleCleanupSession = async (agentId: string, sessionId: string) => {
     try {
-      await closeSession(sessionId);
+      setCleanupLoading(sessionId);
+      await cleanupSession(agentId, sessionId);
       queryClient.invalidateQueries({ queryKey: ['sessions'] });
     } catch (error) {
-      console.error('Failed to close session:', error);
+      console.error('Failed to cleanup session:', error);
+      alert('清理会话失败，请重试');
+    } finally {
+      setCleanupLoading(null);
     }
   };
 
@@ -47,6 +57,15 @@ export const SessionsDashboard: React.FC = () => {
     } else {
       return `${seconds}秒`;
     }
+  };
+
+  const formatHeartbeatTime = (lastHeartbeat: number | null) => {
+    if (!lastHeartbeat) {
+      return '无心跳';
+    }
+    const now = Date.now();
+    const diff = now - lastHeartbeat;
+    return formatIdleTime(diff);
   };
 
   const getAgentInfo = (agentId: string) => {
@@ -154,10 +173,25 @@ export const SessionsDashboard: React.FC = () => {
                         </span>
                       </span>
                     </div>
-                    <div className="flex items-center space-x-3 text-xs text-gray-500 mt-1">
-                      <span>ID: {session.sessionId.substring(0, 8)}...</span>
-                      <span>最后活动: {formatTime(session.lastActivity)}</span>
-                      <span>空闲: {formatIdleTime(session.idleTimeMs)}</span>
+                    <div className="flex flex-col space-y-1 mt-1">
+                      <div className="flex items-center space-x-3 text-xs text-gray-500">
+                        <span>ID: {session.sessionId}</span>
+                        <span>最后活动: {formatTime(session.lastActivity)}</span>
+                      </div>
+                      <div className="flex items-center space-x-3 text-xs">
+                        <div className="flex items-center space-x-1">
+                          <Heart className={`w-3 h-3 ${session.lastHeartbeat ? 'text-red-500' : 'text-gray-400'}`} />
+                          <span className={session.lastHeartbeat ? 'text-gray-600' : 'text-gray-400'}>
+                            心跳距今: {formatHeartbeatTime(session.lastHeartbeat)}
+                          </span>
+                        </div>
+                        {session.heartbeatTimedOut && (
+                          <div className="flex items-center space-x-1 text-yellow-600">
+                            <AlertTriangle className="w-3 h-3" />
+                            <span>心跳超时</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -165,18 +199,23 @@ export const SessionsDashboard: React.FC = () => {
                 {/* Actions */}
                 <div className="flex items-center space-x-2">
                   <Link
-                    to={`/chat/${session.agentId}?sessionId=${session.sessionId}`}
+                    to={`/chat/${session.agentId}?session=${session.sessionId}${session.projectPath ? `&project=${encodeURIComponent(session.projectPath)}` : ''}`}
                     className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
                     title="打开聊天窗口"
                   >
                     <MessageCircle className="w-4 h-4" />
                   </Link>
                   <button
-                    onClick={() => handleCloseSession(session.sessionId)}
-                    className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
-                    title="关闭会话"
+                    onClick={() => handleCleanupSession(session.agentId, session.sessionId)}
+                    disabled={cleanupLoading === session.sessionId}
+                    className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                    title="清理会话"
                   >
-                    <X className="w-4 h-4" />
+                    {cleanupLoading === session.sessionId ? (
+                      <Loader className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-4 h-4" />
+                    )}
                   </button>
                 </div>
               </div>

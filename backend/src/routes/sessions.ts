@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import { AgentStorage } from '../../shared/utils/agentStorage.js';
 import { ClaudeHistoryMessage, ClaudeHistorySession } from '../../../shared/types/claude-history';
+import { sessionManager } from '../services/sessionManager.js';
 
 const router: express.Router = express.Router();
 
@@ -509,6 +510,20 @@ function convertClaudeMessageToMessageParts(msg: ClaudeHistoryMessage, allMessag
   return [];
 }
 
+// GET /api/sessions/_status - Get all sessions status (for monitoring)
+router.get('/_status', (req, res) => {
+  try {
+    const sessionsInfo = sessionManager.getSessionsInfo();
+    res.json({
+      activeSessionCount: sessionManager.getActiveSessionCount(),
+      sessions: sessionsInfo
+    });
+  } catch (error) {
+    console.error('Failed to get sessions status:', error);
+    res.status(500).json({ error: 'Failed to get sessions status' });
+  }
+});
+
 // GET /api/sessions/:agentId - Get agent sessions
 router.get('/:agentId', (req, res) => {
   try {
@@ -649,6 +664,85 @@ router.delete('/:agentId/:sessionId', (req, res) => {
   } catch (error) {
     console.error('Failed to delete agent session:', error);
     res.status(500).json({ error: 'Failed to delete agent session' });
+  }
+});
+
+// POST /api/sessions/:agentId/:sessionId/heartbeat - Update session heartbeat
+router.post('/:agentId/:sessionId/heartbeat', (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    
+    // Update heartbeat in SessionManager
+    const success = sessionManager.updateHeartbeat(sessionId);
+    
+    if (success) {
+      res.json({ 
+        success: true, 
+        timestamp: Date.now(),
+        message: 'Heartbeat updated successfully'
+      });
+    } else {
+      res.status(404).json({ 
+        success: false,
+        error: 'Session not found or not active'
+      });
+    }
+  } catch (error) {
+    console.error('Failed to update session heartbeat:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to update heartbeat' 
+    });
+  }
+});
+
+// DELETE /api/sessions/:agentId/:sessionId/cleanup - Manual cleanup session
+router.delete('/:agentId/:sessionId/cleanup', async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    
+    // Manual cleanup session in SessionManager
+    const success = await sessionManager.manualCleanupSession(sessionId);
+    
+    if (success) {
+      res.json({ 
+        success: true, 
+        message: 'Session cleaned up successfully'
+      });
+    } else {
+      res.status(404).json({ 
+        success: false,
+        error: 'Session not found'
+      });
+    }
+  } catch (error) {
+    console.error('Failed to cleanup session:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to cleanup session' 
+    });
+  }
+});
+
+// GET /api/sessions/:agentId/:sessionId/check - Check if session exists in SessionManager
+router.get('/:agentId/:sessionId/check', (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    
+    // Check if session exists in SessionManager
+    const exists = sessionManager.hasActiveSession(sessionId);
+    
+    res.json({ 
+      exists,
+      sessionId,
+      message: exists ? 'Session is active in SessionManager' : 'Session not found in SessionManager'
+    });
+  } catch (error) {
+    console.error('Failed to check session:', error);
+    res.status(500).json({ 
+      exists: false,
+      error: 'Failed to check session' 
+    });
   }
 });
 
