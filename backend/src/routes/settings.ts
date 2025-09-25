@@ -4,6 +4,16 @@ import { join } from 'path';
 import { homedir } from 'os';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { 
+  getAllVersions, 
+  getDefaultVersionId, 
+  setDefaultVersion, 
+  createVersion, 
+  updateVersion, 
+  deleteVersion, 
+  initializeSystemVersion 
+} from '../../../shared/utils/claudeVersionStorage';
+import { ClaudeVersionCreate, ClaudeVersionUpdate } from '../../../shared/types/claude-versions';
 
 const router = express.Router();
 const execAsync = promisify(exec);
@@ -405,6 +415,121 @@ router.post('/update-claude', async (req, res) => {
       message: error.message,
       output: error.stdout || null,
       stderr: error.stderr || null
+    });
+  }
+});
+
+// Claude 版本管理 API
+
+// GET /api/settings/claude-versions - 获取所有 Claude 版本
+router.get('/claude-versions', async (req, res) => {
+  try {
+    // 首先确保系统版本存在
+    try {
+      const { stdout: claudePath } = await execAsync('which claude');
+      if (claudePath) {
+        await initializeSystemVersion(claudePath.trim());
+      }
+    } catch (error) {
+      console.warn('No system claude found:', error);
+    }
+    
+    const versions = await getAllVersions();
+    const defaultVersionId = await getDefaultVersionId();
+    
+    res.json({
+      versions,
+      defaultVersionId
+    });
+  } catch (error) {
+    console.error('Error getting Claude versions:', error);
+    res.status(500).json({
+      error: 'Failed to get Claude versions',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// POST /api/settings/claude-versions - 创建新的 Claude 版本
+router.post('/claude-versions', async (req, res) => {
+  try {
+    const data: ClaudeVersionCreate = req.body;
+    
+    // 验证必填字段
+    if (!data.name || !data.alias || !data.executablePath) {
+      return res.status(400).json({
+        error: 'Missing required fields',
+        message: 'name, alias, and executablePath are required'
+      });
+    }
+    
+    const version = await createVersion(data);
+    res.json(version);
+  } catch (error) {
+    console.error('Error creating Claude version:', error);
+    const status = error instanceof Error && error.message.includes('已存在') ? 409 : 500;
+    res.status(status).json({
+      error: 'Failed to create Claude version',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// PUT /api/settings/claude-versions/:id - 更新 Claude 版本
+router.put('/claude-versions/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const data: ClaudeVersionUpdate = req.body;
+    
+    const version = await updateVersion(id, data);
+    res.json(version);
+  } catch (error) {
+    console.error('Error updating Claude version:', error);
+    const status = error instanceof Error && (
+      error.message.includes('不存在') || 
+      error.message.includes('已存在') ||
+      error.message.includes('不允许')
+    ) ? 400 : 500;
+    res.status(status).json({
+      error: 'Failed to update Claude version',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// DELETE /api/settings/claude-versions/:id - 删除 Claude 版本
+router.delete('/claude-versions/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    await deleteVersion(id);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting Claude version:', error);
+    const status = error instanceof Error && (
+      error.message.includes('不存在') || 
+      error.message.includes('不允许')
+    ) ? 400 : 500;
+    res.status(status).json({
+      error: 'Failed to delete Claude version',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// PUT /api/settings/claude-versions/:id/set-default - 设置默认版本
+router.put('/claude-versions/:id/set-default', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    await setDefaultVersion(id);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error setting default Claude version:', error);
+    const status = error instanceof Error && error.message.includes('不存在') ? 400 : 500;
+    res.status(status).json({
+      error: 'Failed to set default Claude version',
+      message: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 });

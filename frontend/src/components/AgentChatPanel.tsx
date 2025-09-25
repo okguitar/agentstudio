@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { Send, Clock, Square, Image, Wrench, X, Plus, Zap, Cpu, ChevronDown } from 'lucide-react';
+import { Send, Clock, Square, Image, Wrench, X, Plus, Zap, Cpu, ChevronDown, Terminal } from 'lucide-react';
 import { ImagePreview } from './ImagePreview';
 import { CommandSelector } from './CommandSelector';
 import { ConfirmDialog } from './ConfirmDialog';
 import { useAgentStore } from '../stores/useAgentStore';
 import { useAgentChat, useAgentSessions, useAgentSessionMessages } from '../hooks/useAgents';
 import { useCommands, useProjectCommands } from '../hooks/useCommands';
+import { useClaudeVersions } from '../hooks/useClaudeVersions';
 import { useQueryClient } from '@tanstack/react-query';
 import { ChatMessageRenderer } from './ChatMessageRenderer';
 import { SessionsDropdown } from './SessionsDropdown';
@@ -43,10 +44,12 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
   const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null);
   const [showToolSelector, setShowToolSelector] = useState(false);
   const [selectedRegularTools, setSelectedRegularTools] = useState<string[]>([]);
-  const [permissionMode, setPermissionMode] = useState<'default' | 'acceptEdits' | 'bypassPermissions' | 'plan'>('default');
+  const [permissionMode, setPermissionMode] = useState<'default' | 'acceptEdits' | 'bypassPermissions'>('acceptEdits');
   const [selectedModel, setSelectedModel] = useState<'sonnet' | 'opus'>('sonnet');
   const [showPermissionDropdown, setShowPermissionDropdown] = useState(false);
   const [showModelDropdown, setShowModelDropdown] = useState(false);
+  const [selectedClaudeVersion, setSelectedClaudeVersion] = useState<string | undefined>(undefined);
+  const [showVersionDropdown, setShowVersionDropdown] = useState(false);
   const [commandWarning, setCommandWarning] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -80,6 +83,9 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
     projectId: projectPath || '', // Pass projectPath directly as it will be detected as path
     search: commandSearch
   });
+  
+  // Claude版本数据
+  const { data: claudeVersionsData } = useClaudeVersions();
 
   // System commands definition
   const SYSTEM_COMMANDS: SystemCommand[] = [
@@ -501,6 +507,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
         mcpTools: allSelectedTools.length > 0 ? allSelectedTools : undefined,
         permissionMode,
         model: selectedModel,
+        claudeVersion: selectedClaudeVersion,
         abortController,
         onMessage: (data) => {
           console.log('Received SSE message:', data);
@@ -562,7 +569,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
           } 
           else if (eventData.type === 'session_resumed' && eventData.subtype === 'new_branch') {
             // Handle session resume notification from backend
-            const resumeData = eventData as { 
+            const resumeData = eventData as any as { 
               originalSessionId: string; 
               newSessionId: string; 
               message: string; 
@@ -812,7 +819,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
                 currentMessage.messageParts.forEach((part: any) => {
                   if (part.type === 'tool' && part.toolData?.isExecuting) {
                     console.log('Force completing tool:', part.toolData.toolName, 'claudeId:', part.toolData.claudeId);
-                    updateToolPartInMessage(aiMessageId, part.toolData.id, {
+                    updateToolPartInMessage(aiMessageId!, part.toolData.id, {
                       isExecuting: false,
                       toolResult: part.toolData.toolResult || '(执行完成)'
                     });
@@ -1140,6 +1147,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
       if (!target.closest('.dropdown-container')) {
         setShowPermissionDropdown(false);
         setShowModelDropdown(false);
+        setShowVersionDropdown(false);
       }
     };
 
@@ -1407,7 +1415,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
                       { value: 'default', label: '默认' },
                       { value: 'acceptEdits', label: '接受编辑' },
                       { value: 'bypassPermissions', label: '绕过权限' },
-                      { value: 'plan', label: '计划模式' }
+                      // { value: 'plan', label: '计划模式' }
                     ].map(option => (
                       <button
                         key={option.value}
@@ -1466,6 +1474,74 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
                   </div>
                 )}
               </div>
+              
+              {/* Claude版本选择下拉 - 只在有多个版本时显示 */}
+              {claudeVersionsData?.versions && claudeVersionsData.versions.length > 1 && (
+                <div className="relative dropdown-container">
+                  <button
+                    onClick={() => setShowVersionDropdown(!showVersionDropdown)}
+                    className={`flex items-center space-x-1 px-3 py-2 text-sm rounded-lg transition-colors ${
+                      selectedClaudeVersion
+                        ? 'text-green-600 bg-green-50 hover:bg-green-100'
+                        : 'text-gray-600 bg-gray-50 hover:bg-gray-100'
+                    }`}
+                    disabled={isAiTyping}
+                    title="选择Claude版本"
+                  >
+                    <Terminal className="w-4 h-4" />
+                    <span className="text-xs">
+                      {selectedClaudeVersion
+                        ? claudeVersionsData.versions.find(v => v.id === selectedClaudeVersion)?.alias || '自定义'
+                        : 'Claude'
+                      }
+                    </span>
+                    <ChevronDown className="w-3 h-3" />
+                  </button>
+                  
+                  {showVersionDropdown && (
+                    <div className="absolute bottom-full left-0 mb-2 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                      {/* 默认版本选项 */}
+                      <button
+                        onClick={() => {
+                          setSelectedClaudeVersion(undefined);
+                          setShowVersionDropdown(false);
+                        }}
+                        className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 first:rounded-t-lg ${
+                          !selectedClaudeVersion ? 'bg-gray-100 text-gray-700' : 'text-gray-700'
+                        }`}
+                      >
+                        Claude
+                      </button>
+                      
+                      {/* 其他版本选项 */}
+                      {claudeVersionsData.versions
+                        .filter(version => version.id !== claudeVersionsData.defaultVersionId)
+                        .map(version => (
+                          <button
+                            key={version.id}
+                            onClick={() => {
+                              setSelectedClaudeVersion(version.id);
+                              setShowVersionDropdown(false);
+                            }}
+                            className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 last:rounded-b-lg ${
+                              selectedClaudeVersion === version.id 
+                                ? 'bg-green-50 text-green-600' 
+                                : 'text-gray-700'
+                            }`}
+                          >
+                            <div className="flex items-center space-x-2">
+                              <span>{version.name}</span>
+                              {version.isSystem && (
+                                <span className="text-xs text-gray-500">(系统)</span>
+                              )}
+                            </div>
+                          </button>
+                        ))
+                      }
+                    </div>
+                  )}
+                </div>
+              )}
               
               {isAiTyping ? (
                 <button

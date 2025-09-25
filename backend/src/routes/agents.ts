@@ -11,6 +11,7 @@ import { AgentStorage } from '../../shared/utils/agentStorage.js';
 import { AgentConfig } from '../../shared/types/agents.js';
 import { ProjectMetadataStorage } from '../../shared/utils/projectMetadataStorage.js';
 import { sessionManager } from '../services/sessionManager.js';
+import { getAllVersions, getDefaultVersionId } from '../../../shared/utils/claudeVersionStorage';
 
 const router: express.Router = express.Router();
 const execAsync = promisify(exec);
@@ -231,6 +232,7 @@ const ChatRequestSchema = z.object({
   mcpTools: z.array(z.string()).optional(),
   permissionMode: z.enum(['default', 'acceptEdits', 'bypassPermissions', 'plan']).optional(),
   model: z.enum(['sonnet', 'opus']).optional(),
+  claudeVersion: z.string().optional(), // Claude版本ID
   context: z.object({
     currentSlide: z.number().optional().nullable(),
     slideContent: z.string().optional(),
@@ -380,7 +382,7 @@ function setupSSEConnectionManagement(req: express.Request, res: express.Respons
 /**
  * 构建查询选项
  */
-async function buildQueryOptions(agent: any, projectPath: string | undefined, mcpTools: string[] | undefined, permissionMode: string | undefined, model: string | undefined): Promise<any> {
+async function buildQueryOptions(agent: any, projectPath: string | undefined, mcpTools: string[] | undefined, permissionMode: string | undefined, model: string | undefined, claudeVersion?: string | undefined): Promise<any> {
   // Use Claude Code SDK with agent-specific settings
   // If projectPath is provided, use it as cwd; otherwise fall back to agent's workingDirectory
   let cwd = process.cwd();
@@ -416,12 +418,43 @@ async function buildQueryOptions(agent: any, projectPath: string | undefined, mc
     allowedTools.push(...mcpTools);
   }
 
+  // 获取Claude可执行路径 - 支持版本选择
   let executablePath: string | null = null;
+  let environmentVariables: Record<string, string> = {};
+  
   try {
-    executablePath = await getClaudeExecutablePath();
+    if (claudeVersion) {
+      // 使用指定版本
+      const versions = await getAllVersions();
+      const selectedVersion = versions.find(v => v.id === claudeVersion);
+      if (selectedVersion) {
+        executablePath = selectedVersion.executablePath;
+        environmentVariables = selectedVersion.environmentVariables || {};
+        console.log(`🎯 Using specified Claude version: ${selectedVersion.alias} (${selectedVersion.executablePath})`);
+      } else {
+        console.warn(`⚠️ Specified Claude version not found: ${claudeVersion}, falling back to default`);
+        executablePath = await getClaudeExecutablePath();
+      }
+    } else {
+      // 使用默认版本
+      const defaultVersionId = await getDefaultVersionId();
+      if (defaultVersionId) {
+        const versions = await getAllVersions();
+        const defaultVersion = versions.find(v => v.id === defaultVersionId);
+        if (defaultVersion) {
+          executablePath = defaultVersion.executablePath;
+          environmentVariables = defaultVersion.environmentVariables || {};
+          console.log(`🎯 Using default Claude version: ${defaultVersion.alias} (${defaultVersion.executablePath})`);
+        } else {
+          executablePath = await getClaudeExecutablePath();
+        }
+      } else {
+        executablePath = await getClaudeExecutablePath();
+      }
+    }
   } catch (error) {
     console.error('Failed to get Claude executable path:', error);
-    executablePath = null;
+    executablePath = await getClaudeExecutablePath();
   }
   
   const queryOptions: any = {
@@ -436,6 +469,12 @@ async function buildQueryOptions(agent: any, projectPath: string | undefined, mc
   // Only add pathToClaudeCodeExecutable if we have a valid path
   if (executablePath) {
     queryOptions.pathToClaudeCodeExecutable = executablePath;
+  }
+  
+  // Add environment variables if any
+  if (Object.keys(environmentVariables).length > 0) {
+    queryOptions.environmentVariables = environmentVariables;
+    console.log(`🌍 Using environment variables:`, environmentVariables);
   }
 
   // Add MCP configuration if MCP tools are selected
@@ -589,7 +628,7 @@ router.post('/chat', async (req, res) => {
       return res.status(400).json({ error: 'Invalid request body', details: validation.error });
     }
 
-    const { message, images, agentId, sessionId, projectPath, mcpTools, permissionMode, model } = validation.data;
+    const { message, images, agentId, sessionId, projectPath, mcpTools, permissionMode, model, claudeVersion } = validation.data;
 
     // 获取 agent 配置
     const agent = globalAgentStorage.getAgent(agentId);
@@ -613,7 +652,7 @@ router.post('/chat', async (req, res) => {
 
     try {
       // 构建查询选项
-      const queryOptions = await buildQueryOptions(agent, projectPath, mcpTools, permissionMode, model);
+      const queryOptions = await buildQueryOptions(agent, projectPath, mcpTools, permissionMode, model, claudeVersion);
 
       // 处理会话管理
       const { claudeSession, actualSessionId: initialSessionId } = await handleSessionManagement(agentId, sessionId || null, projectPath, queryOptions);
