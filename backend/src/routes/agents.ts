@@ -428,9 +428,14 @@ async function buildQueryOptions(agent: any, projectPath: string | undefined, mc
       const versions = await getAllVersions();
       const selectedVersion = versions.find(v => v.id === claudeVersion);
       if (selectedVersion) {
-        executablePath = selectedVersion.executablePath;
+        if (selectedVersion.executablePath) {
+          executablePath = selectedVersion.executablePath; // 还要 trim 一下
+          executablePath = executablePath.trim();
+        } else {
+          executablePath = await getClaudeExecutablePath();
+        }
         environmentVariables = selectedVersion.environmentVariables || {};
-        console.log(`🎯 Using specified Claude version: ${selectedVersion.alias} (${selectedVersion.executablePath})`);
+        console.log(`🎯 Using specified Claude version: ${selectedVersion.alias} (${executablePath})`);
       } else {
         console.warn(`⚠️ Specified Claude version not found: ${claudeVersion}, falling back to default`);
         executablePath = await getClaudeExecutablePath();
@@ -456,6 +461,8 @@ async function buildQueryOptions(agent: any, projectPath: string | undefined, mc
     console.error('Failed to get Claude executable path:', error);
     executablePath = await getClaudeExecutablePath();
   }
+
+  console.log(`🎯 Using Claude executable path: ${executablePath}`);
   
   const queryOptions: any = {
     customSystemPrompt: agent.systemPrompt,
@@ -473,7 +480,8 @@ async function buildQueryOptions(agent: any, projectPath: string | undefined, mc
   
   // Add environment variables if any
   if (Object.keys(environmentVariables).length > 0) {
-    queryOptions.environmentVariables = environmentVariables;
+    // 合并用户环境变量和当前进程环境变量，避免丢失关键的系统环境变量如PATH
+    queryOptions.env = { ...process.env, ...environmentVariables };
     console.log(`🌍 Using environment variables:`, environmentVariables);
   }
 
