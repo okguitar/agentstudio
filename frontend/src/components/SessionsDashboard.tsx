@@ -11,10 +11,10 @@ import {
   Heart,
   AlertTriangle
 } from 'lucide-react';
-import { useSessions, closeSession, cleanupSession, SessionInfo } from '../hooks/useSessions';
+import { useSessions, cleanupSession, SessionInfo } from '../hooks/useSessions';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAgents } from '../hooks/useAgents';
-import { Link } from 'react-router-dom';
+import { smartNavigate, showNavigationNotification } from '../utils/smartNavigation';
 
 export const SessionsDashboard: React.FC = () => {
   const { data: sessionsData, isLoading, error, refetch } = useSessions();
@@ -34,6 +34,30 @@ export const SessionsDashboard: React.FC = () => {
       alert('清理会话失败，请重试');
     } finally {
       setCleanupLoading(null);
+    }
+  };
+
+  const handleOpenChat = async (session: SessionInfo) => {
+    const url = `/chat/${session.agentId}?session=${session.sessionId}${session.projectPath ? `&project=${encodeURIComponent(session.projectPath)}` : ''}`;
+    
+    try {
+      const result = await smartNavigate(url, session.agentId, session.sessionId);
+      
+      // 显示操作结果
+      showNavigationNotification(result);
+      
+      // 记录详细日志
+      console.log(`🎯 Navigation result:`, result);
+      
+    } catch (error) {
+      console.error('Navigation failed:', error);
+      // 降级：直接打开链接
+      window.open(url);
+      showNavigationNotification({
+        action: 'failed',
+        success: false,
+        message: '导航失败，已降级处理'
+      });
     }
   };
 
@@ -174,15 +198,35 @@ export const SessionsDashboard: React.FC = () => {
                       </span>
                     </div>
                     <div className="flex flex-col space-y-1 mt-1">
-                      <div className="flex items-center space-x-3 text-xs text-gray-500">
-                        <span>ID: {session.sessionId}</span>
-                        <span>最后活动: {formatTime(session.lastActivity)}</span>
+                      {/* 第一行：会话ID和Agent ID */}
+                      <div className="flex items-center space-x-4 text-xs">
+                        <span className="text-gray-500">
+                          <span className="font-medium text-gray-700">会话:</span> {session.sessionId}
+                        </span>
+                        <span className="text-gray-500">
+                          <span className="font-medium text-gray-700">Agent:</span> {session.agentId}
+                        </span>
                       </div>
-                      <div className="flex items-center space-x-3 text-xs">
+                      
+                      {/* 第二行：项目路径（如果存在）*/}
+                      {session.projectPath && (
+                        <div className="text-xs text-gray-500">
+                          <span className="font-medium text-gray-700">项目:</span> 
+                          <span className="ml-1 font-mono bg-gray-100 px-1 py-0.5 rounded text-gray-600">
+                            {session.projectPath}
+                          </span>
+                        </div>
+                      )}
+                      
+                      {/* 第三行：时间和心跳信息 */}
+                      <div className="flex items-center space-x-4 text-xs">
+                        <span className="text-gray-500">
+                          <span className="font-medium text-gray-700">活动:</span> {formatTime(session.lastActivity)}
+                        </span>
                         <div className="flex items-center space-x-1">
                           <Heart className={`w-3 h-3 ${session.lastHeartbeat ? 'text-red-500' : 'text-gray-400'}`} />
                           <span className={session.lastHeartbeat ? 'text-gray-600' : 'text-gray-400'}>
-                            心跳距今: {formatHeartbeatTime(session.lastHeartbeat)}
+                            {formatHeartbeatTime(session.lastHeartbeat)}
                           </span>
                         </div>
                         {session.heartbeatTimedOut && (
@@ -198,13 +242,13 @@ export const SessionsDashboard: React.FC = () => {
 
                 {/* Actions */}
                 <div className="flex items-center space-x-2">
-                  <Link
-                    to={`/chat/${session.agentId}?session=${session.sessionId}${session.projectPath ? `&project=${encodeURIComponent(session.projectPath)}` : ''}`}
+                  <button
+                    onClick={() => handleOpenChat(session)}
                     className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
                     title="打开聊天窗口"
                   >
                     <MessageCircle className="w-4 h-4" />
-                  </Link>
+                  </button>
                   <button
                     onClick={() => handleCleanupSession(session.agentId, session.sessionId)}
                     disabled={cleanupLoading === session.sessionId}
