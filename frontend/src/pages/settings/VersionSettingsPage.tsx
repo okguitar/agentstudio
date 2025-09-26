@@ -241,9 +241,18 @@ export const VersionSettingsPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">版本管理</h2>
-        <p className="text-gray-600">管理多个 Claude Code 版本，指定可执行路径、别名和环境变量</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">版本管理</h2>
+          <p className="text-gray-600">管理多个 Claude Code 版本，指定可执行路径、别名和环境变量</p>
+        </div>
+        <button
+          onClick={handleCreate}
+          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          <span>添加版本</span>
+        </button>
       </div>
 
       {/* 隐藏原有的当前版本功能 */}
@@ -435,20 +444,6 @@ export const VersionSettingsPage: React.FC = () => {
       {/* Claude版本管理 */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <div className="space-y-6">
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Claude 版本管理</h3>
-              <p className="text-sm text-gray-600 mt-1">管理多个 Claude Code 版本，指定可执行路径、别名和环境变量</p>
-            </div>
-            <button
-              onClick={handleCreate}
-              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              <span>添加版本</span>
-            </button>
-          </div>
 
           {/* 版本列表 */}
           {isLoadingClaudeVersions ? (
