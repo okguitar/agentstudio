@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
+import { tabManager } from '../utils/tabManager';
 import { API_BASE } from '../lib/config';
 
 interface UseSessionHeartbeatOptions {
@@ -21,7 +22,7 @@ export const useSessionHeartbeat = ({
   interval = 30000, // 30秒
   shouldCheckExistence = false
 }: UseSessionHeartbeatOptions) => {
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<number | null>(null);
   const lastHeartbeatRef = useRef<number>(0);
   const isActiveRef = useRef<boolean>(true);
   const existenceCheckedRef = useRef<boolean>(false);
@@ -71,6 +72,9 @@ export const useSessionHeartbeat = ({
         const data = await response.json();
         lastHeartbeatRef.current = data.timestamp;
         console.log(`💓 Session heartbeat sent successfully: ${sessionId}`);
+        
+        // 同时更新TabManager活跃状态
+        tabManager.updateCurrentTabActivity(agentId, sessionId);
       } else {
         console.warn(`⚠️ Failed to send heartbeat for session ${sessionId}:`, response.status);
       }
@@ -84,7 +88,7 @@ export const useSessionHeartbeat = ({
     isActiveRef.current = !document.hidden;
     
     if (isActiveRef.current && enabled && sessionId) {
-      // 页面重新可见时立即发送心跳
+      // 页面重新可见时立即发送心跳（虽然现在后台也在发送，但重新可见时立即发送一次确保同步）
       sendHeartbeat();
     }
   }, [sendHeartbeat, enabled, sessionId]);
@@ -111,11 +115,9 @@ export const useSessionHeartbeat = ({
     // 立即发送一次心跳
     sendHeartbeat();
     
-    // 设置定时器
+    // 设置定时器 - 无论标签页是否活跃都发送心跳
     intervalRef.current = setInterval(() => {
-      if (isActiveRef.current) {
-        sendHeartbeat();
-      }
+      sendHeartbeat();
     }, interval);
   }, [enabled, sessionId, sendHeartbeat, interval, shouldCheckExistence, checkSessionExists]);
 
