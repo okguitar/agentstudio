@@ -8,6 +8,7 @@ import { useAgentChat, useAgentSessions, useAgentSessionMessages } from '../hook
 import { useCommands, useProjectCommands } from '../hooks/useCommands';
 import { useClaudeVersions } from '../hooks/useClaudeVersions';
 import { useSessionHeartbeatOnSuccess } from '../hooks/useSessionHeartbeatOnSuccess';
+import { tabManager } from '../utils/tabManager';
 import { useQueryClient } from '@tanstack/react-query';
 import { ChatMessageRenderer } from './ChatMessageRenderer';
 import { SessionsDropdown } from './SessionsDropdown';
@@ -89,6 +90,23 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
     isNewSession,
     hasSuccessfulResponse
   });
+
+  // TabManager 智能监听和标签页管理
+  useEffect(() => {
+    // 启动智能监听
+    const cleanup = tabManager.startSmartMonitoring();
+    
+    return cleanup;
+  }, []); // 只在组件挂载时启动一次
+
+  // 设置唤起监听器（当会话ID变化时）
+  useEffect(() => {
+    if (currentSessionId && agent.id) {
+      console.log(`🎯 Setting up wakeup listener for session: ${currentSessionId}`);
+      const cleanup = tabManager.setupWakeupListener(agent.id, currentSessionId);
+      return cleanup;
+    }
+  }, [currentSessionId, agent.id]);
   
   // Fetch commands for keyboard navigation
   const { data: userCommands = [] } = useCommands({ scope: 'user', search: commandSearch });
@@ -613,6 +631,25 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
             
             // Refresh sessions list to include the new session
             queryClient.invalidateQueries({ queryKey: ['agent-sessions', agent.id] });
+
+            // 🆕 TabManager 会话恢复处理
+            if (currentSessionId && resumeData.originalSessionId && resumeData.newSessionId) {
+              // 立即更新TabManager状态
+              tabManager.handleSessionResume(
+                agent.id,
+                resumeData.originalSessionId,
+                resumeData.newSessionId
+              );
+              
+              // 记录恢复事件以供智能监听使用
+              tabManager.recordSessionResume(
+                agent.id,
+                resumeData.originalSessionId,
+                resumeData.newSessionId
+              );
+              
+              console.log(`🎯 TabManager updated for session resume: ${resumeData.originalSessionId} → ${resumeData.newSessionId}`);
+            }
             
             console.log('✅ Session resume handling complete');
           }
