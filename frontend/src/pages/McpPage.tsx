@@ -22,12 +22,16 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { formatRelativeTime } from '../utils';
 
 interface McpServerConfig {
   name: string;
-  command: string;
-  args: string[];
+  type: 'stdio' | 'http';
+  // For stdio type
+  command?: string;
+  args?: string[];
+  // For http type
+  url?: string;
+  // Common fields
   timeout?: number;
   autoApprove?: string[];
   status?: 'active' | 'error' | 'validating';
@@ -46,6 +50,7 @@ export const McpPage: React.FC = () => {
   const [editingServer, setEditingServer] = useState<McpServerConfig | null>(null);
   const [formData, setFormData] = useState({
     name: '',
+    type: 'stdio' as 'stdio' | 'http',
     config: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -146,24 +151,35 @@ export const McpPage: React.FC = () => {
   };
 
   const filteredServers = servers.filter(server => {
-    const matchesSearch = server.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
-                         server.command.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
-                         server.args.join(' ').toLowerCase().includes(debouncedSearchQuery.toLowerCase());
-    return matchesSearch;
+    const searchLower = debouncedSearchQuery.toLowerCase();
+    const matchesName = server.name.toLowerCase().includes(searchLower);
+    const matchesCommand = server.command?.toLowerCase().includes(searchLower) || false;
+    const matchesArgs = server.args?.join(' ').toLowerCase().includes(searchLower) || false;
+    const matchesUrl = server.url?.toLowerCase().includes(searchLower) || false;
+
+    return matchesName || matchesCommand || matchesArgs || matchesUrl;
   });
 
 
 
   const handleEditServer = (server: McpServerConfig) => {
     setEditingServer(server);
-    const config = {
-      command: server.command,
-      args: server.args,
+    let config: any = {
+      type: server.type,
       ...(server.timeout && { timeout: server.timeout }),
       ...(server.autoApprove && { autoApprove: server.autoApprove })
     };
+
+    if (server.type === 'stdio') {
+      config.command = server.command;
+      config.args = server.args;
+    } else if (server.type === 'http') {
+      config.url = server.url;
+    }
+
     setFormData({
       name: server.name,
+      type: server.type,
       config: JSON.stringify(config, null, 2)
     });
     setShowAddModal(true);
@@ -190,21 +206,108 @@ export const McpPage: React.FC = () => {
   };
 
   const resetForm = () => {
-    setFormData({ 
-      name: '', 
+    setFormData({
+      name: '',
+      type: 'stdio',
       config: ''
     });
     setEditingServer(null);
   };
 
-  const validateConfig = (str: string): boolean => {
+  const handleImportFromClaudeCode = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/mcp/claude-code');
+
+      if (response.ok) {
+        const result = await response.json();
+        const claudeCodeServers = result.servers || [];
+
+        if (claudeCodeServers.length === 0) {
+          alert('没有找到Claude Code的MCP配置');
+          return;
+        }
+
+        // Import each server that doesn't already exist
+        let importedCount = 0;
+        let skippedCount = 0;
+
+        for (const claudeServer of claudeCodeServers) {
+          // Check if server already exists
+          const existingServer = servers.find(s => s.name === claudeServer.name);
+          if (existingServer) {
+            skippedCount++;
+            continue;
+          }
+
+          // Import the server
+          const importData: any = {
+            name: claudeServer.name,
+            type: claudeServer.type,
+            ...(claudeServer.timeout && { timeout: claudeServer.timeout }),
+            ...(claudeServer.autoApprove && { autoApprove: claudeServer.autoApprove })
+          };
+
+          if (claudeServer.type === 'stdio') {
+            importData.command = claudeServer.command;
+            importData.args = claudeServer.args;
+          } else if (claudeServer.type === 'http') {
+            importData.url = claudeServer.url;
+          }
+
+          const importResponse = await fetch('/api/mcp', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(importData)
+          });
+
+          if (importResponse.ok) {
+            const importResult = await importResponse.json();
+            setServers(prev => [importResult.server, ...prev]);
+            importedCount++;
+          }
+        }
+
+        if (importedCount > 0) {
+          alert(`成功导入 ${importedCount} 个MCP服务器配置${skippedCount > 0 ? `，跳过 ${skippedCount} 个已存在的配置` : ''}`);
+        } else {
+          alert('所有配置都已存在，没有导入新的配置');
+        }
+      } else {
+        const error = await response.json();
+        throw new Error(error.error || '导入失败');
+      }
+    } catch (error) {
+      console.error('Failed to import from Claude Code:', error);
+      alert(`从Claude Code导入失败: ${error instanceof Error ? error.message : '未知错误'}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const validateConfig = (str: string, type: 'stdio' | 'http'): boolean => {
     if (!str.trim()) return false; // Required field
     try {
       const parsed = JSON.parse(str);
-      // 检查必须的字段
-      if (!parsed.command || !Array.isArray(parsed.args)) {
+
+      // 检查type字段
+      if (!parsed.type || parsed.type !== type) {
         return false;
       }
+
+      // 根据类型检查必须的字段
+      if (type === 'stdio') {
+        if (!parsed.command || !Array.isArray(parsed.args)) {
+          return false;
+        }
+      } else if (type === 'http') {
+        if (!parsed.url || typeof parsed.url !== 'string') {
+          return false;
+        }
+      }
+
       // 检查可选字段的类型
       if (parsed.timeout && typeof parsed.timeout !== 'number') {
         return false;
@@ -226,8 +329,9 @@ export const McpPage: React.FC = () => {
       return;
     }
 
-    if (!validateConfig(formData.config)) {
-      alert('配置格式不正确，请确保包含必需的 command 和 args 字段，并且格式正确');
+    if (!validateConfig(formData.config, formData.type)) {
+      const requiredFields = formData.type === 'stdio' ? 'type, command 和 args' : 'type 和 url';
+      alert(`配置格式不正确，请确保包含必需的 ${requiredFields} 字段，并且格式正确`);
       return;
     }
 
@@ -338,6 +442,12 @@ export const McpPage: React.FC = () => {
             </div>
           </div>
           <button
+            onClick={handleImportFromClaudeCode}
+            className="flex items-center space-x-2 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors whitespace-nowrap"
+          >
+            <span>从Claude Code导入</span>
+          </button>
+          <button
             onClick={() => setShowAddModal(true)}
             className="flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
           >
@@ -375,6 +485,9 @@ export const McpPage: React.FC = () => {
                   服务
                 </TableHead>
                 <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  类型
+                </TableHead>
+                <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
                   状态
                 </TableHead>
                 <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -393,10 +506,16 @@ export const McpPage: React.FC = () => {
                 >
                   <TableCell className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <div className="text-xl mr-3">🖥️</div>
+                      <div className="text-xl mr-3">{server.type === 'http' ? '🌐' : '🖥️'}</div>
                       <div>
                         <div className="text-sm font-medium text-gray-900">
                           {server.name}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {server.type === 'stdio'
+                            ? `${server.command} ${server.args?.join(' ') || ''}`.trim()
+                            : server.url
+                          }
                         </div>
                         {server.status === 'error' && server.error && (
                           <div className="text-sm text-red-600 truncate max-w-xs">
@@ -405,6 +524,15 @@ export const McpPage: React.FC = () => {
                         )}
                       </div>
                     </div>
+                  </TableCell>
+                  <TableCell className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
+                      server.type === 'http'
+                        ? 'bg-blue-100 text-blue-800'
+                        : 'bg-purple-100 text-purple-800'
+                    }`}>
+                      {server.type === 'http' ? 'HTTP' : 'Stdio'}
+                    </span>
                   </TableCell>
                   <TableCell className="px-6 py-4 whitespace-nowrap">
                     {server.status === 'active' && (
@@ -512,7 +640,7 @@ export const McpPage: React.FC = () => {
                   <button
                     type="submit"
                     form="mcp-config-form"
-                    disabled={isSubmitting || !formData.name.trim() || !validateConfig(formData.config)}
+                    disabled={isSubmitting || !formData.name.trim() || !validateConfig(formData.config, formData.type)}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isSubmitting ? '保存中...' : editingServer ? '保存配置' : '添加配置'}
@@ -541,15 +669,21 @@ export const McpPage: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Configuration JSON */}
+                  {/* MCP Type */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      配置 * (JSON格式)
+                      MCP 类型 *
                     </label>
-                    <textarea
-                      value={formData.config}
-                      onChange={(e) => setFormData({ ...formData, config: e.target.value })}
-                      placeholder={`{
+                    <select
+                      value={formData.type}
+                      onChange={(e) => {
+                        const newType = e.target.value as 'stdio' | 'http';
+                        setFormData({
+                          ...formData,
+                          type: newType,
+                          config: newType === 'stdio'
+                            ? `{
+  "type": "stdio",
   "command": "npx",
   "args": [
     "-y",
@@ -560,19 +694,79 @@ export const McpPage: React.FC = () => {
   "autoApprove": [
     "interactive_feedback"
   ]
+}`
+                            : `{
+  "type": "http",
+  "url": "http://127.0.0.1:3845/mcp",
+  "timeout": 6000,
+  "autoApprove": [
+    "interactive_feedback"
+  ]
+}`
+                        });
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
+                    >
+                      <option value="stdio">Stdio (本地进程)</option>
+                      <option value="http">HTTP (远程服务)</option>
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      选择 MCP 服务器的连接类型
+                    </p>
+                  </div>
+
+                  {/* Configuration JSON */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      配置 * (JSON格式)
+                    </label>
+                    <textarea
+                      value={formData.config}
+                      onChange={(e) => setFormData({ ...formData, config: e.target.value })}
+                      placeholder={formData.type === 'stdio'
+                        ? `{
+  "type": "stdio",
+  "command": "npx",
+  "args": [
+    "-y",
+    "@playwright/mcp@latest",
+    "--extension"
+  ],
+  "timeout": 6000,
+  "autoApprove": [
+    "interactive_feedback"
+  ]
+}`
+                        : `{
+  "type": "http",
+  "url": "http://127.0.0.1:3845/mcp",
+  "timeout": 6000,
+  "autoApprove": [
+    "interactive_feedback"
+  ]
 }`}
                       rows={15}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
                       required
                     />
-                    {formData.config && !validateConfig(formData.config) && (
-                      <p className="text-xs text-red-600 mt-1">⚠️ 配置格式不正确，请确保包含必需的 command 和 args 字段</p>
+                    {formData.config && !validateConfig(formData.config, formData.type) && (
+                      <p className="text-xs text-red-600 mt-1">
+                        ⚠️ 配置格式不正确，请确保包含必需的 {formData.type === 'stdio' ? 'type, command 和 args' : 'type 和 url'} 字段
+                      </p>
                     )}
                     <div className="mt-2 text-xs text-gray-500">
                       <p><strong>必需字段：</strong></p>
                       <ul className="list-disc ml-4 mt-1">
-                        <li><code>command</code>: 字符串，执行命令（如 "npx", "uvx"）</li>
-                        <li><code>args</code>: 数组，命令参数</li>
+                        <li><code>type</code>: 字符串，MCP 类型（"stdio" 或 "http"）</li>
+                        {formData.type === 'stdio' ? (
+                          <>
+                            <li><code>command</code>: 字符串，执行命令（如 "npx", "uvx"）</li>
+                            <li><code>args</code>: 数组，命令参数</li>
+                          </>
+                        ) : (
+                          <li><code>url</code>: 字符串，HTTP MCP 服务器的 URL</li>
+                        )}
                       </ul>
                       <p className="mt-2"><strong>可选字段：</strong></p>
                       <ul className="list-disc ml-4 mt-1">

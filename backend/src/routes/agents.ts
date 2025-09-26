@@ -505,12 +505,19 @@ async function buildQueryOptions(agent: any, projectPath: string | undefined, mc
         for (const serverName of serverNames) {
           const serverConfig = mcpConfigContent.mcpServers?.[serverName];
           if (serverConfig && serverConfig.status === 'active') {
-            mcpServers[serverName] = {
-              type: 'stdio',
-              command: serverConfig.command,
-              args: serverConfig.args || [],
-              env: serverConfig.env || {}
-            };
+            if (serverConfig.type === 'http') {
+              mcpServers[serverName] = {
+                type: 'http',
+                url: serverConfig.url
+              };
+            } else if (serverConfig.type === 'stdio') {
+              mcpServers[serverName] = {
+                type: 'stdio',
+                command: serverConfig.command,
+                args: serverConfig.args || [],
+                env: serverConfig.env || {}
+              };
+            }
           }
         }
         
