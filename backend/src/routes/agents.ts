@@ -465,7 +465,7 @@ async function buildQueryOptions(agent: any, projectPath: string | undefined, mc
   console.log(`🎯 Using Claude executable path: ${executablePath}`);
   
   const queryOptions: any = {
-    customSystemPrompt: agent.systemPrompt,
+    appendSystemPrompt: agent.systemPrompt,
     allowedTools,
     maxTurns: agent.maxTurns,
     cwd,
