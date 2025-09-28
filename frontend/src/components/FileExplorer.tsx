@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { Tree, NodeApi } from 'react-arborist';
+import { Tree, NodeApi, TreeApi } from 'react-arborist';
 import Editor from '@monaco-editor/react';
 import { 
   FaFolder, FaFolderOpen, FaFile, FaCss3Alt, FaHtml5, FaJsSquare, 
@@ -65,7 +65,10 @@ const ICON_MAP = new Map([
 
 const FileIcon: React.FC<{ node: NodeApi<FileTreeItem> }> = ({ node }) => {
   if (node.data.isDirectory) {
-    return node.isOpen ? 
+    // 检查是否有子项来决定是否显示为打开状态
+    // 只有当目录真正展开且有子项时才显示为打开状态
+    const hasLoadedChildren = node.data.children && node.data.children.length > 0;
+    return (node.isOpen && hasLoadedChildren) ? 
       <FaFolderOpen color="#87b3d6" /> : 
       <FaFolder color="#87b3d6" />;
   }
@@ -150,11 +153,32 @@ const getFileType = (fileName: string): 'text' | 'image' | 'binary' => {
 };
 
 // 自定义节点渲染组件
-const Node: React.FC<{ node: NodeApi<FileTreeItem>; style: React.CSSProperties; dragHandle?: (el: HTMLDivElement | null) => void }> = ({ 
+const Node: React.FC<{ 
+  node: NodeApi<FileTreeItem>; 
+  style: React.CSSProperties; 
+  dragHandle?: (el: HTMLDivElement | null) => void;
+  isLoading?: boolean;
+  onDirectoryToggle?: (node: NodeApi<FileTreeItem>) => void;
+  onFileSelect?: (node: NodeApi<FileTreeItem>) => void;
+}> = ({ 
   node, 
   style, 
-  dragHandle 
+  dragHandle,
+  isLoading = false,
+  onDirectoryToggle,
+  onFileSelect
 }) => {
+  const handleClick = useCallback((e: React.MouseEvent) => {
+    e.preventDefault(); // 阻止默认行为
+    e.stopPropagation(); // 阻止事件冒泡
+    
+    if (node.data.isDirectory) {
+      onDirectoryToggle?.(node);
+    } else {
+      onFileSelect?.(node);
+    }
+  }, [node, onDirectoryToggle, onFileSelect]);
+
   return (
     <div 
       style={style} 
@@ -162,20 +186,18 @@ const Node: React.FC<{ node: NodeApi<FileTreeItem>; style: React.CSSProperties; 
       className={`flex items-center cursor-pointer px-2 py-1 hover:bg-gray-100 ${
         node.isSelected ? 'bg-blue-100 text-blue-900' : 'text-gray-700'
       }`}
-      onClick={() => {
-        // 文件夹点击时切换展开/收起状态
-        if (node.data.isDirectory) {
-          node.toggle();
-        } else {
-          // 文件点击时选择
-          node.select();
-        }
-      }}
+      onClick={handleClick}
     >
       {/* 展开/收起箭头 - 只对文件夹显示 */}
       {node.data.isDirectory && (
         <span className="mr-1 flex items-center">
-          <ChevronRight className={`w-3 h-3 transition-transform text-gray-400 ${node.isOpen ? 'rotate-90' : ''}`} />
+          {isLoading ? (
+            <Loader2 className="w-3 h-3 animate-spin text-gray-400" />
+          ) : (
+            <ChevronRight className={`w-3 h-3 transition-transform text-gray-400 ${
+              node.isOpen && node.data.children && node.data.children.length > 0 ? 'rotate-90' : ''
+            }`} />
+          )}
         </span>
       )}
       
@@ -213,13 +235,19 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
   const [showTabDropdown, setShowTabDropdown] = useState<boolean>(false);
   const treeContainerRef = useRef<HTMLDivElement>(null);
   const tabDropdownRef = useRef<HTMLDivElement>(null);
+  const treeApiRef = useRef<TreeApi<FileTreeItem> | null>(null);
   const [lastClickTime, setLastClickTime] = useState<number>(0);
   const [lastClickedPath, setLastClickedPath] = useState<string>('');
+  
+  // 懒加载相关状态
+  const [loadedDirectories, setLoadedDirectories] = useState<Set<string>>(new Set());
+  const [dynamicTreeData, setDynamicTreeData] = useState<FileTreeItem[]>([]);
+  const [loadingDirectories, setLoadingDirectories] = useState<Set<string>>(new Set());
 
   // 获取项目ID用于媒体文件访问（暂时注释掉，未使用）
   // const { data: projectData } = useProjectId(projectPath);
   
-  // 使用新的文件树 hook，递归加载整个项目目录
+  // 使用新的文件树 hook，懒加载根目录
   const { 
     data: fileTreeData, 
     isLoading: isTreeLoading, 
@@ -242,14 +270,142 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
     projectPath
   );
 
-  // 调试信息
-  console.log('FileExplorer Debug:', {
-    activeTab: activeTab?.name,
-    isContentLoading,
-    fileContentData,
-    contentError,
-    tabs: tabs.length
-  });
+
+  // 初始化动态树数据
+  useEffect(() => {
+    if (fileTreeData) {
+      const convertToTreeData = (items: FileSystemItem[]): FileTreeItem[] => {
+        return items.map(item => {
+          const treeItem = {
+            id: item.path,
+            name: item.name,
+            path: item.path,
+            isDirectory: item.isDirectory,
+            size: item.size,
+            modified: item.modified,
+            isHidden: item.isHidden,
+            children: item.children ? convertToTreeData(item.children) : undefined,
+          };
+          
+          
+          return treeItem;
+        });
+      };
+      
+      // 收集所有已经有子项的目录路径，标记为已加载
+      const collectLoadedDirectories = (items: FileSystemItem[], loaded: Set<string> = new Set()): Set<string> => {
+        items.forEach(item => {
+          if (item.isDirectory && item.children && item.children.length > 0) {
+            loaded.add(item.path);
+            collectLoadedDirectories(item.children, loaded);
+          }
+        });
+        return loaded;
+      };
+
+      const loadedDirs = collectLoadedDirectories(fileTreeData);
+      setLoadedDirectories(loadedDirs);
+      setDynamicTreeData(convertToTreeData(fileTreeData));
+    }
+  }, [fileTreeData]);
+
+  // 懒加载目录子项的函数
+  const loadDirectoryChildren = useCallback(async (dirPath: string): Promise<void> => {
+    if (loadedDirectories.has(dirPath) || loadingDirectories.has(dirPath)) {
+      console.log('Directory already loaded or loading:', dirPath);
+      return; // 已加载或正在加载
+    }
+
+    console.log('Starting to load directory:', dirPath);
+    setLoadingDirectories(prev => new Set(prev).add(dirPath));
+
+    try {
+      const searchParams = new URLSearchParams();
+      searchParams.append('path', dirPath);
+      
+      const response = await fetch(`/api/files/browse?${searchParams.toString()}`);
+      if (!response.ok) {
+        throw new Error('Failed to browse directory');
+      }
+      
+      const data = await response.json();
+      const childItems: FileSystemItem[] = [];
+
+      for (const item of data.items) {
+        if (item.isHidden) continue; // 跳过隐藏文件
+        
+        if (item.isDirectory) {
+          childItems.push({
+            ...item,
+            children: [] // 空数组表示尚未加载
+          });
+        } else {
+          childItems.push(item);
+        }
+      }
+
+      console.log('Loaded', childItems.length, 'items for directory:', dirPath);
+
+      // 更新动态树数据
+      setDynamicTreeData(prevData => {
+        const updateChildren = (items: FileTreeItem[]): FileTreeItem[] => {
+          return items.map(item => {
+            if (item.path === dirPath) {
+              const updatedItem = {
+                ...item,
+                children: childItems.map(child => {
+                  const treeChild = {
+                    id: child.path,
+                    name: child.name,
+                    path: child.path,
+                    isDirectory: child.isDirectory,
+                    size: child.size,
+                    modified: child.modified,
+                    isHidden: child.isHidden,
+                    children: child.isDirectory ? [] : undefined, // 只有目录才有 children 数组
+                  };
+                  
+                  
+                  return treeChild;
+                })
+              };
+              return updatedItem;
+            } else if (item.children) {
+              return {
+                ...item,
+                children: updateChildren(item.children)
+              };
+            }
+            return item;
+          });
+        };
+        
+        return updateChildren(prevData);
+      });
+
+      setLoadedDirectories(prev => new Set(prev).add(dirPath));
+      console.log('Successfully loaded directory:', dirPath);
+      
+      // 使用 TreeApi 关闭新加载的子目录，确保它们显示为折叠状态
+      if (treeApiRef.current) {
+        childItems.forEach(child => {
+          if (child.isDirectory) {
+            // 确保新加载的子目录都是关闭状态
+            treeApiRef.current?.close(child.path);
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Failed to load directory children:', error);
+      throw error; // 重新抛出错误，让调用者可以处理
+    } finally {
+      setLoadingDirectories(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(dirPath);
+        return newSet;
+      });
+    }
+  }, [loadedDirectories, loadingDirectories]);
 
   // 移除面包屑导航相关代码，因为我们现在使用树形结构
 
@@ -306,55 +462,30 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
     }
   }, [showTabDropdown]);
 
-  // 转换文件树数据为 react-arborist 需要的格式
-  const treeData = useMemo((): FileTreeItem[] => {
-    if (!fileTreeData) return [];
+  // 使用动态树数据，它会在需要时懒加载
+  const treeData = dynamicTreeData;
 
-    const convertToTreeData = (items: FileSystemItem[]): FileTreeItem[] => {
-      return items.map(item => ({
-        id: item.path,
-        name: item.name,
-        path: item.path,
-        isDirectory: item.isDirectory,
-        size: item.size,
-        modified: item.modified,
-        isHidden: item.isHidden,
-        children: item.children ? convertToTreeData(item.children) : undefined,
-      }));
-    };
-
-    return convertToTreeData(fileTreeData);
-  }, [fileTreeData]);
-
-  // 创建初始展开状态 - 只展开根目录下的第一层目录
+  // 创建初始展开状态 - 明确设置所有目录为关闭状态
   const initialOpenState = useMemo(() => {
-    if (!fileTreeData || !projectPath) return {};
-    
     const openState: Record<string, boolean> = {};
     
-    // 只展开根目录下的直接子目录，不展开更深层的目录
-    fileTreeData.forEach(item => {
-      if (item.isDirectory) {
-        openState[item.path] = true;
-        // 确保子目录不被展开
-        if (item.children) {
-          const markChildrenClosed = (children: FileSystemItem[]) => {
-            children.forEach(child => {
-              if (child.isDirectory) {
-                openState[child.path] = false;
-                if (child.children) {
-                  markChildrenClosed(child.children);
-                }
-              }
-            });
-          };
-          markChildrenClosed(item.children);
+    const setDirectoriesClosed = (items: FileTreeItem[]) => {
+      items.forEach(item => {
+        if (item.isDirectory) {
+          openState[item.id] = false; // 明确设置为关闭
+          if (item.children) {
+            setDirectoriesClosed(item.children);
+          }
         }
-      }
-    });
+      });
+    };
+    
+    if (dynamicTreeData && dynamicTreeData.length > 0) {
+      setDirectoriesClosed(dynamicTreeData);
+    }
     
     return openState;
-  }, [fileTreeData, projectPath]);
+  }, [dynamicTreeData]);
 
   // 创建新标签页
   const createTab = useCallback((file: FileTreeItem, isPinned: boolean = false): FileTab => {
@@ -452,33 +583,73 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
     setActiveTabId(tabId);
   }, []);
 
-  // 处理文件选择
-  const handleNodeSelect = useCallback((nodes: NodeApi<FileTreeItem>[]) => {
-    const node = nodes[0];
-    if (!node?.data) return;
+  // 防抖状态 - 防止双重触发
+  const [lastToggleTime, setLastToggleTime] = useState<Record<string, number>>({});
 
-    if (!node.data.isDirectory) {
-      // 检测双击
-      const currentTime = Date.now();
-      const isDoubleClick = currentTime - lastClickTime < 300 && lastClickedPath === node.data.path;
-      
-      setLastClickTime(currentTime);
-      setLastClickedPath(node.data.path);
-      
-      if (isDoubleClick) {
-        // 双击：打开固定标签
-        addOrActivateTab(node.data, true);
+  // 处理目录展开/收起
+  const handleDirectoryToggle = useCallback((node: NodeApi<FileTreeItem>) => {
+    // 防抖处理 - 防止短时间内重复触发
+    const currentTime = Date.now();
+    const lastTime = lastToggleTime[node.data.path] || 0;
+    if (currentTime - lastTime < 300) {
+      console.log('Debounce: ignoring rapid click for', node.data.path);
+      return;
+    }
+    
+    setLastToggleTime(prev => ({
+      ...prev,
+      [node.data.path]: currentTime
+    }));
+
+    // 处理目录的展开/收起
+    const wasOpen = node.isOpen;
+    const hasLoadedChildren = node.data.children && node.data.children.length > 0;
+    const hasBeenLoaded = loadedDirectories.has(node.data.path);
+    
+    if (wasOpen) {
+      // 如果目录已经展开，直接收起
+      node.close();
+    } else {
+      // 目录已关闭，需要展开
+      if (!hasLoadedChildren && !hasBeenLoaded) {
+        // 需要加载子项的情况：先展开目录（显示加载状态），然后加载数据
+        node.open(); // 立即展开以显示加载状态
+        loadDirectoryChildren(node.data.path).catch(error => {
+          console.error('Failed to load directory children:', error);
+          // 如果加载失败，关闭目录
+          node.close();
+        });
       } else {
-        // 单击：打开临时标签
-        setTimeout(() => {
-          // 延迟执行，避免双击时触发单击逻辑
-          if (Date.now() - currentTime >= 300) {
-            addOrActivateTab(node.data, false);
-          }
-        }, 300);
+        // 已经加载过子项但目录是关闭的，直接展开
+        node.open();
       }
     }
-    // 目录不需要特殊处理，react-arborist 会自动处理折叠/展开
+  }, [lastToggleTime, loadedDirectories, loadDirectoryChildren]);
+
+  // 处理文件选择
+  const handleFileSelect = useCallback((node: NodeApi<FileTreeItem>) => {
+    // 先选中节点以显示高亮状态
+    node.select();
+    
+    // 检测双击
+    const currentTime = Date.now();
+    const isDoubleClick = currentTime - lastClickTime < 300 && lastClickedPath === node.data.path;
+    
+    setLastClickTime(currentTime);
+    setLastClickedPath(node.data.path);
+    
+    if (isDoubleClick) {
+      // 双击：打开固定标签
+      addOrActivateTab(node.data, true);
+    } else {
+      // 单击：打开临时标签
+      setTimeout(() => {
+        // 延迟执行，避免双击时触发单击逻辑
+        if (Date.now() - currentTime >= 300) {
+          addOrActivateTab(node.data, false);
+        }
+      }, 300);
+    }
   }, [addOrActivateTab, lastClickTime, lastClickedPath]);
 
   // 渲染文件内容预览
@@ -603,7 +774,16 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
           <div className="flex items-center justify-between w-full">
             <h3 className="text-sm font-medium text-gray-700">文件浏览器</h3>
             <button
-              onClick={() => refetchTree()}
+              onClick={() => {
+                console.log('Refreshing file tree...');
+                // 重置懒加载状态
+                setLoadedDirectories(new Set());
+                setLoadingDirectories(new Set());
+                // 不要在这里清空动态树数据，让refetchTree触发后再更新
+                // setDynamicTreeData([]);
+                // 重新获取根目录数据
+                refetchTree();
+              }}
               className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded transition-colors"
               title="刷新"
               disabled={isTreeLoading}
@@ -629,14 +809,21 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
           ) : (
             <Tree 
               data={treeData}
-              onSelect={handleNodeSelect}
               width={320}
               height={containerHeight}
               indent={16}
               rowHeight={32}
               initialOpenState={initialOpenState}
+              ref={treeApiRef}
             >
-              {Node}
+              {(props) => (
+                <Node 
+                  {...props} 
+                  isLoading={loadingDirectories.has(props.node.data.path)}
+                  onDirectoryToggle={handleDirectoryToggle}
+                  onFileSelect={handleFileSelect}
+                />
+              )}
             </Tree>
           )}
         </div>

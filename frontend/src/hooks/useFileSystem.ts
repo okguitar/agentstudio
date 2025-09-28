@@ -75,10 +75,10 @@ export const useFileContent = (filePath?: string, projectPath?: string) => {
   });
 };
 
-// 递归构建完整的文件树结构
-export const useFileTree = (projectPath?: string) => {
+// 递归构建完整的文件树结构（原有实现，保留以备后用）
+export const useFileTreeRecursive = (projectPath?: string) => {
   return useQuery({
-    queryKey: ['file-tree', projectPath],
+    queryKey: ['file-tree-recursive', projectPath],
     queryFn: async () => {
       if (!projectPath) {
         throw new Error('Project path is required');
@@ -127,6 +127,88 @@ export const useFileTree = (projectPath?: string) => {
       return await buildFileTree(projectPath);
     },
     enabled: !!projectPath,
+    staleTime: 30000, // 30秒内认为数据是新鲜的
+  });
+};
+
+// 懒加载文件树结构 - 只加载指定目录的直接子项
+export const useFileTree = (projectPath?: string) => {
+  return useQuery({
+    queryKey: ['file-tree-lazy', projectPath],
+    queryFn: async (): Promise<FileSystemItem[]> => {
+      if (!projectPath) {
+        throw new Error('Project path is required');
+      }
+
+      const searchParams = new URLSearchParams();
+      searchParams.append('path', projectPath);
+      
+      const response = await fetch(`/api/files/browse?${searchParams.toString()}`);
+      if (!response.ok) {
+        throw new Error('Failed to browse directory');
+      }
+      
+      const data: FileSystemResponse = await response.json();
+      const items: FileSystemItem[] = [];
+
+      for (const item of data.items) {
+        if (item.isHidden) continue; // 跳过隐藏文件
+        
+        if (item.isDirectory) {
+          // 对于目录，不预加载子项，而是在需要时懒加载
+          items.push({
+            ...item,
+            children: [] // 空数组表示尚未加载
+          });
+        } else {
+          items.push(item);
+        }
+      }
+
+      return items;
+    },
+    enabled: !!projectPath,
+    staleTime: 30000, // 30秒内认为数据是新鲜的
+  });
+};
+
+// 懒加载目录子项
+export const useDirectoryChildren = (dirPath?: string) => {
+  return useQuery({
+    queryKey: ['directory-children', dirPath],
+    queryFn: async (): Promise<FileSystemItem[]> => {
+      if (!dirPath) {
+        throw new Error('Directory path is required');
+      }
+
+      const searchParams = new URLSearchParams();
+      searchParams.append('path', dirPath);
+      
+      const response = await fetch(`/api/files/browse?${searchParams.toString()}`);
+      if (!response.ok) {
+        throw new Error('Failed to browse directory');
+      }
+      
+      const data: FileSystemResponse = await response.json();
+      const items: FileSystemItem[] = [];
+
+      for (const item of data.items) {
+        if (item.isHidden) continue; // 跳过隐藏文件
+        
+        if (item.isDirectory) {
+          // 对于目录，不预加载子项
+          items.push({
+            ...item,
+            children: [] // 空数组表示尚未加载
+          });
+        } else {
+          items.push(item);
+        }
+      }
+
+      return items;
+    },
+    enabled: !!dirPath,
     staleTime: 30000, // 30秒内认为数据是新鲜的
   });
 };
