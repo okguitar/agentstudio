@@ -65,10 +65,9 @@ const ICON_MAP = new Map([
 
 const FileIcon: React.FC<{ node: NodeApi<FileTreeItem> }> = ({ node }) => {
   if (node.data.isDirectory) {
-    // 检查是否有子项来决定是否显示为打开状态
-    // 只有当目录真正展开且有子项时才显示为打开状态
-    const hasLoadedChildren = node.data.children && node.data.children.length > 0;
-    return (node.isOpen && hasLoadedChildren) ? 
+    // 如果目录已展开，就显示为打开状态，不管是否有子项
+    // 这样空目录展开时也能正确显示为打开状态
+    return node.isOpen ? 
       <FaFolderOpen color="#87b3d6" /> : 
       <FaFolder color="#87b3d6" />;
   }
@@ -195,7 +194,7 @@ const Node: React.FC<{
             <Loader2 className="w-3 h-3 animate-spin text-gray-400" />
           ) : (
             <ChevronRight className={`w-3 h-3 transition-transform text-gray-400 ${
-              node.isOpen && node.data.children && node.data.children.length > 0 ? 'rotate-90' : ''
+              node.isOpen ? 'rotate-90' : ''
             }`} />
           )}
         </span>
@@ -387,7 +386,8 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
       console.log('Successfully loaded directory:', dirPath);
       
       // 使用 TreeApi 关闭新加载的子目录，确保它们显示为折叠状态
-      if (treeApiRef.current) {
+      // 但是如果当前目录为空，不要关闭它，让用户看到空目录状态
+      if (treeApiRef.current && childItems.length > 0) {
         childItems.forEach(child => {
           if (child.isDirectory) {
             // 确保新加载的子目录都是关闭状态
