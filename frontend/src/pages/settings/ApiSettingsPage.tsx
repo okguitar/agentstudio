@@ -17,7 +17,13 @@ export const ApiSettingsPage: React.FC = () => {
 
   // Load current settings
   useEffect(() => {
-    setApiHost(getCurrentHost());
+    const currentHost = getCurrentHost();
+    // 如果没有设置过host，则使用本地开发环境作为默认值
+    if (!currentHost || currentHost === '') {
+      setApiHost('http://127.0.0.1:4936');
+    } else {
+      setApiHost(currentHost);
+    }
   }, []);
 
   const testConnection = async (host: string) => {
@@ -82,6 +88,12 @@ export const ApiSettingsPage: React.FC = () => {
     }
   };
 
+  const handleQuickSelect = (url: string) => {
+    setApiHost(url);
+    setConnectionStatus('unknown');
+    setErrorMessage('');
+  };
+
   const getStatusIcon = () => {
     switch (connectionStatus) {
       case 'success':
@@ -141,6 +153,31 @@ export const ApiSettingsPage: React.FC = () => {
                 )}
                 <span>测试连接</span>
               </button>
+            </div>
+            
+            {/* Quick Select Buttons */}
+            <div className="mt-3">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">快捷选择：</p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => handleQuickSelect('http://127.0.0.1:4936')}
+                  className="px-3 py-1.5 text-xs bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 
+                           text-gray-700 dark:text-gray-300 rounded-md border border-gray-300 dark:border-gray-600 
+                           transition-colors duration-200 flex items-center space-x-1"
+                >
+                  <span>@</span>
+                  <span>http://127.0.0.1:4936</span>
+                </button>
+                <button
+                  onClick={() => handleQuickSelect('https://srv.agentstudio.cc')}
+                  className="px-3 py-1.5 text-xs bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 
+                           text-gray-700 dark:text-gray-300 rounded-md border border-gray-300 dark:border-gray-600 
+                           transition-colors duration-200 flex items-center space-x-1"
+                >
+                  <span>@</span>
+                  <span>https://srv.agentstudio.cc</span>
+                </button>
+              </div>
             </div>
           </div>
 

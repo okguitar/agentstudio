@@ -11,7 +11,6 @@ import { GeneralSettingsPage } from './pages/settings/GeneralSettingsPage';
 import { VersionSettingsPage } from './pages/settings/VersionSettingsPage';
 import { MemorySettingsPage } from './pages/settings/MemorySettingsPage';
 import { SubagentsPage } from './pages/settings/SubagentsPage';
-import { ApiSettingsPage } from './pages/settings/ApiSettingsPage';
 import { CommandsPage } from './pages/CommandsPage';
 import { ChatPage } from './pages/ChatPage';
 
@@ -39,7 +38,6 @@ const AppContent: React.FC = () => {
         <Route path="/settings" element={<Layout><SettingsLayout /></Layout>}>
           <Route index element={<GeneralSettingsPage />} />
           <Route path="general" element={<GeneralSettingsPage />} />
-          <Route path="api" element={<ApiSettingsPage />} />
           <Route path="versions" element={<VersionSettingsPage />} />
           <Route path="memory" element={<MemorySettingsPage />} />
           <Route path="commands" element={<CommandsPage />} />

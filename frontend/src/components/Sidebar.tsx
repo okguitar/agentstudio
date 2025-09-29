@@ -13,6 +13,7 @@ import {
   Brain,
   Palette
 } from 'lucide-react';
+import { ApiSettingsModal } from './ApiSettingsModal';
 
 const navigationItems = [
   {
@@ -46,11 +47,6 @@ const navigationItems = [
         icon: Palette,
       },
       {
-        name: 'API设置',
-        href: '/settings/api',
-        icon: Server,
-      },
-      {
         name: '版本管理',
         href: '/settings/versions',
         icon: Terminal,
@@ -80,6 +76,7 @@ export const Sidebar: React.FC = () => {
     // Auto-expand the settings menu if we're on a settings page
     return location.pathname.startsWith('/settings') ? ['系统设置'] : [];
   });
+  const [showApiModal, setShowApiModal] = useState(false);
 
   const toggleMenu = (itemName: string) => {
     setExpandedMenus(prev => 
@@ -196,10 +193,25 @@ export const Sidebar: React.FC = () => {
 
       {/* Footer */}
       <div className="flex-shrink-0 p-4 border-t border-gray-200">
-        <div className="text-xs text-gray-500 text-center">
-          版本 1.0.0
+        <div className="flex items-center justify-between">
+          <div className="text-xs text-gray-500">
+            版本 1.0.0
+          </div>
+          <button
+            onClick={() => setShowApiModal(true)}
+            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
+            title="API服务器设置"
+          >
+            <Server className="w-4 h-4" />
+          </button>
         </div>
       </div>
+
+      {/* API Settings Modal */}
+      <ApiSettingsModal 
+        isOpen={showApiModal}
+        onClose={() => setShowApiModal(false)}
+      />
     </div>
   );
 };
