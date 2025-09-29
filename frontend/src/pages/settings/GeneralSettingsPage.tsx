@@ -4,7 +4,7 @@ import {
   Moon,
   Sun,
   Monitor,
-  Terminal
+  // Terminal
 } from 'lucide-react';
 
 export const GeneralSettingsPage: React.FC = () => {

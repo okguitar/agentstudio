@@ -100,7 +100,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
     if (isDirectory) {
       // Normalize paths for comparison
       const normalizedPath = path.replace(/\/$/, ''); // Remove trailing slash
-      const normalizedProjects = agentProjects.map(p => p.path.replace(/\/$/, ''));
+      const normalizedProjects = agentProjects.map((p: any) => p.path.replace(/\/$/, ''));
       
       // Check if this directory is already in agent's projects
       let isExistingProject = normalizedProjects.includes(normalizedPath);
@@ -237,7 +237,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
             ) : agentProjects.length > 0 ? (
               <div className="flex-1 overflow-hidden">
                 <div className="space-y-2 max-h-full overflow-y-auto">
-                  {agentProjects.map((project, index) => (
+                  {agentProjects.map((project: any, index: number) => (
                     <button
                       key={project.id || index}
                       onClick={() => onProjectSelect(project.path)}

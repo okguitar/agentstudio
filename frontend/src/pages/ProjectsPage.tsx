@@ -8,7 +8,7 @@ import {
   Trash2,
   Folder,
   X,
-  Settings,
+  // Settings,
   Brain,
   Command,
   Bot

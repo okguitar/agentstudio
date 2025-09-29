@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { SlashCommand } from '../types/commands';
 import { useCommands, useProjectCommands } from '../hooks/useCommands';
 import { SystemCommand } from '../utils/commandHandler';
@@ -75,7 +75,7 @@ export const CommandSelector: React.FC<CommandSelectorProps> = ({
   searchTerm,
   position,
   projectId,
-  onKeyDown,
+  // onKeyDown,
   selectedIndex = 0,
   onSelectedIndexChange,
 }) => {

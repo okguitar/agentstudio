@@ -22,7 +22,7 @@ export type CommandType = SlashCommand | SystemCommand;
 function processFileRefs(content: string, projectPath?: string): string {
   if (!projectPath) return content;
   
-  return content.replace(/@([\w.-]+(?:\/[\w.-]+)*(?:\.\w+)?)/g, (match, filepath) => {
+  return content.replace(/@([\w.-]+(?:\/[\w.-]+)*(?:\.\w+)?)/g, (_match, filepath) => {
     // 如果已经是绝对路径，直接返回
     if (filepath.startsWith('/')) {
       return filepath;
@@ -86,15 +86,15 @@ export function parseCommandInput(text: string): { command: string; args?: strin
  * 检查命令是否需要参数
  */
 export function commandNeedsArguments(command: CommandType): boolean {
-  return !!command.argumentHint;
+  return !!(command as any).argumentHint;
 }
 
 /**
  * 生成命令的完整输入提示
  */
 export function getCommandPlaceholder(command: CommandType): string {
-  if (command.argumentHint) {
-    return `/${command.name} ${command.argumentHint}`;
+  if ((command as any).argumentHint) {
+    return `/${command.name} ${(command as any).argumentHint}`;
   }
   return `/${command.name}`;
 }

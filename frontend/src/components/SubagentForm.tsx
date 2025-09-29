@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, AlertCircle, HelpCircle, Info, Code, Edit3, Wrench, Plus } from 'lucide-react';
+import { Save, AlertCircle, HelpCircle, Info, Code, Edit3 } from 'lucide-react';
 import { 
   Subagent, 
   SubagentCreate, 

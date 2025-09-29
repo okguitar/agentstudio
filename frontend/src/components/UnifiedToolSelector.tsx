@@ -48,7 +48,6 @@ export const UnifiedToolSelector: React.FC<UnifiedToolSelectorProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [expandedServers, setExpandedServers] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<'regular' | 'mcp'>('regular');
-  
 
   // Fetch MCP servers when component opens
   useEffect(() => {
@@ -197,21 +196,21 @@ export const UnifiedToolSelector: React.FC<UnifiedToolSelectorProps> = ({
   };
 
   // Check if server has only preset tools selected (partial selection)
-  const isServerPartiallySelected = (serverName: string) => {
-    const server = servers.find(s => s.name === serverName);
-    if (!server || !server.tools) return false;
-    
-    const serverToolIds = server.tools.map(toolName => `mcp__${serverName}__${toolName}`);
-    const selectedServerTools = serverToolIds.filter(id => selectedMcpTools.includes(id));
-    const presetServerTools = serverToolIds.filter(id => isPresetMcpTool(id));
-    
-    // 如果有预设工具且当前选择的工具数量大于0但小于全部工具数量
-    if (presetServerTools.length > 0 && selectedServerTools.length > 0 && selectedServerTools.length < serverToolIds.length) {
-      return true;
-    }
-    
-    return false;
-  };
+  // const isServerPartiallySelected = (serverName: string) => {
+  //   const server = servers.find(s => s.name === serverName);
+  //   if (!server || !server.tools) return false;
+  //   
+  //   const serverToolIds = server.tools.map(toolName => `mcp__${serverName}__${toolName}`);
+  //   const selectedServerTools = serverToolIds.filter(id => selectedMcpTools.includes(id));
+  //   const presetServerTools = serverToolIds.filter(id => isPresetMcpTool(id));
+  //   
+  //   // 如果有预设工具且当前选择的工具数量大于0但小于全部工具数量
+  //   if (presetServerTools.length > 0 && selectedServerTools.length > 0 && selectedServerTools.length < serverToolIds.length) {
+  //     return true;
+  //   }
+  //   
+  //   return false;
+  // };
 
   if (!isOpen) return null;
 
@@ -385,7 +384,7 @@ export const UnifiedToolSelector: React.FC<UnifiedToolSelectorProps> = ({
                 selectedMcpTools.includes(`mcp__${server.name}__${toolName}`)
               );
               const hasPresetTools = serverHasPresetTools(server.name);
-              const isPartiallySelected = isServerPartiallySelected(server.name);
+              // const isPartiallySelected = isServerPartiallySelected(server.name);
 
               return (
                 <div key={server.name} className="border border-gray-200 rounded-lg">

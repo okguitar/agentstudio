@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FileText, Folder, GripVertical, X, Eye, EyeOff } from 'lucide-react';
+import { FileText, Folder, GripVertical, EyeOff } from 'lucide-react';
 import { FileExplorer } from './FileExplorer';
 import type { AgentConfig } from '../types/index.js';
 

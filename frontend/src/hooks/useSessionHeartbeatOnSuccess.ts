@@ -27,7 +27,7 @@ export const useSessionHeartbeatOnSuccess = ({
   isNewSession = false,
   hasSuccessfulResponse = false
 }: UseSessionHeartbeatOnSuccessOptions) => {
-  const previousSessionIdRef = useRef<string | null>(null);
+  const previousSessionIdRef = useRef<string | null | undefined>(null);
   const heartbeatStartedRef = useRef<boolean>(false);
 
   // 确定是否应该启用心跳

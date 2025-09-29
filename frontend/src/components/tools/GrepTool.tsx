@@ -19,7 +19,7 @@ export const GrepTool: React.FC<GrepToolProps> = ({ execution }) => {
   const formatGrepResult = (result: string) => {
     if (!result.trim()) return '没有找到匹配项';
     
-    const lines = result.trim().split('\n');
+    // const lines = result.trim().split('\n');
     const mode = input.output_mode || 'files_with_matches';
     
     if (mode === 'files_with_matches') {

@@ -128,22 +128,21 @@ export const FileContentViewer: React.FC<FileContentViewerProps> = ({
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
             components={{
-              code({ inline, className, children, ...props }) {
+              code({ inline, className, children }: any) {
                 const match = /language-(\w+)/.exec(className || '');
                 return !inline && match ? (
                   <SyntaxHighlighter
-                    style={tomorrow}
+                    style={tomorrow as any}
                     language={match[1]}
                     PreTag="div"
                     className="rounded-md text-sm overflow-auto"
                     wrapLines={true}
                     wrapLongLines={true}
-                    {...props}
                   >
                     {String(children).replace(/\n$/, '')}
                   </SyntaxHighlighter>
                 ) : (
-                  <code className="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono" {...props}>
+                  <code className="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono">
                     {children}
                   </code>
                 );

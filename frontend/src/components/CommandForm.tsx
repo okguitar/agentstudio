@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, AlertCircle, Code, Edit3, Wrench, Plus } from 'lucide-react';
+import { Save, AlertCircle, Code, Edit3 } from 'lucide-react';
 import { 
   SlashCommand, 
   SlashCommandCreate, 
@@ -210,7 +210,7 @@ export const CommandForm: React.FC<CommandFormProps> = ({
         ...formData,
         namespace: (formData.namespace || '').trim() || undefined,
         argumentHint: (formData.argumentHint || '').trim() || undefined,
-        allowedTools: formData.allowedTools.length > 0 ? formData.allowedTools : undefined,
+        allowedTools: formData.allowedTools && formData.allowedTools.length > 0 ? formData.allowedTools : undefined,
         model: (formData.model || '').trim() || undefined,
       };
 
@@ -221,7 +221,6 @@ export const CommandForm: React.FC<CommandFormProps> = ({
           argumentHint: submitData.argumentHint,
           allowedTools: submitData.allowedTools,
           model: submitData.model,
-          namespace: submitData.namespace,
         };
         await updateCommand.mutateAsync({ id: command.id, updates: updateData });
       } else {

@@ -4,8 +4,8 @@ import {
   Search,
   Edit,
   Trash2,
-  Globe,
-  User,
+  // Globe,
+  // User,
   AlertCircle,
   Clock,
   Tag,
@@ -54,9 +54,9 @@ export const CommandsPage: React.FC = () => {
     return true;
   });
 
-  const getScopeIcon = (scope: 'project' | 'user') => {
-    return scope === 'project' ? Globe : User;
-  };
+  // const getScopeIcon = (scope: 'project' | 'user') => {
+  //   return scope === 'project' ? Globe : User;
+  // };
 
 
 
@@ -179,7 +179,7 @@ export const CommandsPage: React.FC = () => {
             </TableHeader>
             <TableBody>
               {filteredCommands.map((command, index) => {
-                const ScopeIcon = getScopeIcon(command.scope);
+                // const ScopeIcon = getScopeIcon(command.scope);
                 return (
                   <TableRow 
                     key={command.id + '-' + index}

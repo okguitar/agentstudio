@@ -63,7 +63,7 @@ const ChatMessageRendererComponent: React.FC<ChatMessageRendererProps> = ({ mess
                 {part.content}
               </div>
             );
-          } else if (part.type === 'compactSummary' && part.content) {
+          } else if (part.type === 'text' && part.content && part.content.includes('compactSummary')) {
             return (
               <div key={part.id}>
                 <CompactSummary content={part.content} />
@@ -117,7 +117,7 @@ const ChatMessageRendererComponent: React.FC<ChatMessageRendererProps> = ({ mess
                 />
               </div>
             );
-          } else if (part.type === 'unknown' && part.content) {
+          } else if (part.type === 'text' && part.content && part.content.includes('unknown')) {
             // Handle legacy thinking content that was saved as "unknown" type
             // Check if the content contains thinking-related markers
             const isThinkingContent = part.content.includes('"type":"thinking"') || 

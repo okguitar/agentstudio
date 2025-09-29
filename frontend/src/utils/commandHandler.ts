@@ -22,27 +22,27 @@ export interface CommandExecutionResult {
 // 前端命令处理器
 export class CommandHandler {
   private agentStore: any;
-  private router?: any;
+  // private router?: any;
   private onNewSession?: () => void;
   private onNavigate?: (path: string) => void;
   private onConfirm?: (message: string, onConfirm: () => void) => void;
 
   constructor(dependencies: {
     agentStore: any;
-    router?: any;
+    // router?: any;
     onNewSession?: () => void;
     onNavigate?: (path: string) => void;
     onConfirm?: (message: string, onConfirm: () => void) => void;
   }) {
     this.agentStore = dependencies.agentStore;
-    this.router = dependencies.router;
+    // this.router = dependencies.router;
     this.onNewSession = dependencies.onNewSession;
     this.onNavigate = dependencies.onNavigate;
     this.onConfirm = dependencies.onConfirm;
   }
 
   // 执行命令
-  async executeCommand(command: CommandType, args?: string): Promise<CommandExecutionResult> {
+  async executeCommand(command: CommandType, _args?: string): Promise<CommandExecutionResult> {
     const commandName = command.name.toLowerCase();
     
     switch (commandName) {
@@ -66,7 +66,7 @@ export class CommandHandler {
       
       default:
         // 自定义命令默认发送到后端
-        return this.handleCustomCommand(command, args);
+        return this.handleCustomCommand(command, _args);
     }
   }
 
@@ -163,7 +163,7 @@ export class CommandHandler {
     };
   }
 
-  private handleCustomCommand(command: CommandType, args?: string): CommandExecutionResult {
+  private handleCustomCommand(command: CommandType, _args?: string): CommandExecutionResult {
     // 自定义命令根据类型决定处理方式
     
     // 检查是否是导航类命令（根据命令名或namespace判断）

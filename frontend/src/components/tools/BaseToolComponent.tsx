@@ -88,9 +88,9 @@ export const BaseToolComponent: React.FC<BaseToolProps> = ({ execution, children
 
 
   // 清理错误信息，移除 <tool_use_error> 标签
-  const cleanErrorMessage = (message: string) => {
-    return message.replace(/<\/?tool_use_error>/g, '').trim();
-  };
+  // const cleanErrorMessage = (message: string) => {
+  //   return message.replace(/<\/?tool_use_error>/g, '').trim();
+  // };
 
 
   return (

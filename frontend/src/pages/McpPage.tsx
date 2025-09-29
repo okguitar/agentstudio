@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { 
-  Server, 
   Plus, 
-  Settings, 
   Trash2, 
   Search,
   CheckCircle,
@@ -10,8 +8,8 @@ import {
   Loader2,
   AlertTriangle,
   Edit,
-  Clock,
-  Terminal,
+  // Clock,
+  // Terminal,
   Tag
 } from 'lucide-react';
 import {

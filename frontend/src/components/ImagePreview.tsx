@@ -55,7 +55,7 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({ images, initialIndex
   };
 
   // Get current image URL
-  const currentImageUrl = images && images.length > 0 ? images[currentIndex] : null;
+  const currentImageUrl = images && images.length > 0 ? images[currentIndex] : '';
 
   // Navigation functions
   const goToPrevious = () => {

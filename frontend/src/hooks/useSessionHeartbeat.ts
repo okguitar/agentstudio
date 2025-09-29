@@ -118,7 +118,7 @@ export const useSessionHeartbeat = ({
     // 设置定时器 - 无论标签页是否活跃都发送心跳
     intervalRef.current = setInterval(() => {
       sendHeartbeat();
-    }, interval);
+    }, interval) as unknown as number;
   }, [enabled, sessionId, sendHeartbeat, interval, shouldCheckExistence, checkSessionExists]);
 
   // 停止心跳
