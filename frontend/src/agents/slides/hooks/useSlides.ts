@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { SlidesResponse, SlideContent } from '../../../types/index.js';
-
-const API_BASE = '/api';
+import { API_BASE } from '../../../lib/config.js';
 
 // Helper function to parse slides configuration from content
 const parseSlidesConfig = (configContent: string): { slides: string[], title: string } => {

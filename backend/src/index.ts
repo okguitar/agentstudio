@@ -37,11 +37,57 @@ app.use(helmet({
     }
   }
 }));
+// Configure CORS origins
+const getAllowedOrigins = () => {
+  const defaultOrigins = [
+    'http://localhost:3000', 
+    'http://127.0.0.1:3000', 
+    'http://localhost:3001',
+    'https://localhost:3000',
+    'https://localhost:3001'
+  ];
+  
+  // Add custom origins from environment variable
+  const customOrigins = process.env.CORS_ORIGINS ? 
+    process.env.CORS_ORIGINS.split(',').map(origin => origin.trim()) : [];
+  
+  return [...defaultOrigins, ...customOrigins];
+};
+
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:3001'],
+  origin: (origin, callback) => {
+    const allowedOrigins = getAllowedOrigins();
+    
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Check if the origin is allowed
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    // Allow Vercel preview URLs (*.vercel.app)
+    if (origin.endsWith('.vercel.app')) {
+      return callback(null, true);
+    }
+    
+    // Allow any localhost with any port for development
+    if (origin.match(/^https?:\/\/localhost(:\d+)?$/)) {
+      return callback(null, true);
+    }
+    
+    // Allow 127.0.0.1 with any port for development
+    if (origin.match(/^https?:\/\/127\.0\.0\.1(:\d+)?$/)) {
+      return callback(null, true);
+    }
+    
+    const msg = `The CORS policy for this site does not allow access from the specified Origin: ${origin}`;
+    return callback(new Error(msg), false);
+  },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'X-Requested-With'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range']
 }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));

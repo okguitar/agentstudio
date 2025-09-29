@@ -4,7 +4,6 @@ import {
   LayoutDashboard, 
   Bot, 
   Server, 
-  BarChart3, 
   Settings,
   FolderOpen,
   Command,
@@ -45,6 +44,11 @@ const navigationItems = [
         name: '通用设置',
         href: '/settings/general',
         icon: Palette,
+      },
+      {
+        name: 'API设置',
+        href: '/settings/api',
+        icon: Server,
       },
       {
         name: '版本管理',

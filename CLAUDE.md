@@ -113,6 +113,10 @@ NODE_ENV=development
 
 # File System
 SLIDES_DIR=../slides  # Relative to backend/src
+
+# CORS Configuration (optional)
+# Add custom origins for production deployments
+CORS_ORIGINS=https://your-frontend.vercel.app,https://custom-domain.com
 ```
 
 ## Key Development Patterns
@@ -130,6 +134,13 @@ SLIDES_DIR=../slides  # Relative to backend/src
 - Tool execution visualization with real-time feedback
 - Context-aware agents with project-specific configurations
 
+### API Configuration System
+- Dynamic API endpoint configuration via `frontend/src/lib/config.ts`
+- User-configurable backend host through settings UI (`/settings/api`)
+- Automatic detection of development vs production environment
+- LocalStorage-based persistence of custom API endpoints
+- Built-in connection testing for API validation
+
 ### Slide Management
 - Slides are HTML files with embedded CSS
 - Each slide maintains 1280x720 dimensions
@@ -141,6 +152,29 @@ SLIDES_DIR=../slides  # Relative to backend/src
 - Maintains slides.js configuration format
 - Preserves existing CSS styling conventions
 - Uses same file structure and naming patterns
+
+## Deployment and Production
+
+### Frontend Deployment to Vercel
+The project includes `vercel.json` configuration for seamless deployment:
+- Automatic build via `pnpm --filter frontend run build`
+- SPA routing support with proper rewrites
+- Security headers and static file caching
+- Framework detection for optimized deployments
+
+### CORS and Cross-Origin Configuration
+Backend includes comprehensive CORS support:
+- Automatic support for localhost development (any port)
+- Built-in support for all `*.vercel.app` domains
+- Custom domain support via `CORS_ORIGINS` environment variable
+- Dynamic origin validation for security
+
+### API Endpoint Configuration
+Frontend supports flexible API configuration:
+- Development: Auto-detects `http://127.0.0.1:4936`
+- Production: Defaults to `https://agentstudio.cc`
+- User-configurable via `/settings/api` with connection testing
+- Persistent configuration via LocalStorage
 
 ## Development Guidelines
 
@@ -177,8 +211,10 @@ ai-editor/
     │   │   └── usage.ts         # Usage statistics API
     │   ├── services/
     │   │   └── ccusageService.ts # ccusage integration service
-    │   └── index.ts             # Server entry point
+    │   └── index.ts             # Server entry point (includes CORS config)
     └── .env.example             # Environment variables template
+├── vercel.json                   # Vercel deployment configuration
+└── DEPLOYMENT.md                 # Detailed deployment guide
 ```
 
 ### Adding New AI Features
@@ -211,3 +247,17 @@ ai-editor/
 - **Statistics API**: Endpoints for daily, weekly, monthly, and live usage data
 - **Usage Dashboard**: Frontend `UsageStatsPage.tsx` displays consumption metrics
 - **Monitoring**: Real-time burn rate and usage summaries via `/api/usage/*` endpoints
+
+### API Configuration Guidelines
+When modifying API endpoints or adding new hooks:
+1. **Import API_BASE**: Always use `import { API_BASE } from '../lib/config.js'` instead of hardcoded paths
+2. **Avoid Hardcoded URLs**: Never use '/api/...' directly in fetch calls
+3. **Dynamic Configuration**: Support both development and production environments
+4. **Connection Testing**: Implement health checks for new API endpoints at `/api/health`
+
+### Deployment Architecture Patterns
+The project supports multiple deployment configurations:
+- **Frontend**: Vercel (CDN-optimized) + **Backend**: Local/Self-hosted
+- **Frontend**: Vercel + **Backend**: Cloud server (full remote)
+- **Frontend**: Local build + **Backend**: Local (full local)
+- **Frontend**: Any static host + **Backend**: Any server with CORS configured

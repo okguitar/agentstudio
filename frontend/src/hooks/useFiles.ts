@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-
-const API_BASE = '/api';
+import { API_BASE } from '../lib/config.js';
 
 export interface FileData {
   path: string;
