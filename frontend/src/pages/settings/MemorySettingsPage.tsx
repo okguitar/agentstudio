@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE } from '../../lib/config';
 import { 
   Save,
   Brain,
@@ -19,7 +20,7 @@ export const MemorySettingsPage: React.FC = () => {
   const loadGlobalMemory = async () => {
     setIsLoadingMemory(true);
     try {
-      const response = await fetch('/api/settings/global-memory');
+      const response = await fetch(`${API_BASE}/settings/global-memory`);
       if (response.ok) {
         const data = await response.text();
         setGlobalMemory(data);
@@ -33,7 +34,7 @@ export const MemorySettingsPage: React.FC = () => {
 
   const saveGlobalMemory = async () => {
     try {
-      const response = await fetch('/api/settings/global-memory', {
+      const response = await fetch(`${API_BASE}/settings/global-memory`, {
         method: 'POST',
         headers: {
           'Content-Type': 'text/plain',

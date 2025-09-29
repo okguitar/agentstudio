@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { API_BASE } from '../lib/config';
 
 export interface FileSystemItem {
   name: string;
@@ -272,7 +273,7 @@ export const useCreateDirectory = () => {
       parentPath: string; 
       directoryName: string; 
     }) => {
-      const response = await fetch('/api/files/create-directory', {
+      const response = await fetch(`${API_BASE}/files/create-directory`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

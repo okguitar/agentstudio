@@ -70,7 +70,7 @@ export const ApiSettingsPage: React.FC = () => {
   };
 
   const handleReset = () => {
-    const defaultHost = import.meta.env.DEV ? 'http://127.0.0.1:4936' : 'https://agentstudio.cc';
+    const defaultHost = 'http://127.0.0.1:4936'; // 默认使用本地开发服务器
     setApiHost(defaultHost);
     setConnectionStatus('unknown');
     setErrorMessage('');

@@ -1,13 +1,26 @@
-let HOST = 'https://agentstudio.cc';
-
-if (import.meta.env.DEV) {
-  HOST = 'http://127.0.0.1:4936';
+// 获取环境变量中的API基础URL
+const getApiBaseFromEnv = (): string => {
+  // 优先使用环境变量
+  if (import.meta.env.VITE_API_BASE) {
+    return import.meta.env.VITE_API_BASE;
+  }
   
-} else {
-  // 检查localstorage 中是否有设置了 HOST
-  const host = localStorage.getItem('HOST');
-  if (host) {
-    HOST = host;
+  // 开发环境默认配置
+  if (import.meta.env.DEV) {
+    return 'http://127.0.0.1:4936';
+  }
+  
+  // 生产环境默认使用本地开发服务器（可通过localStorage覆盖）
+  return 'http://127.0.0.1:4936';
+};
+
+let HOST = getApiBaseFromEnv();
+
+// 在生产环境中，允许通过localStorage覆盖HOST设置
+if (!import.meta.env.DEV && typeof window !== 'undefined') {
+  const savedHost = localStorage.getItem('HOST');
+  if (savedHost) {
+    HOST = savedHost;
   }
 }
 

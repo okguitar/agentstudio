@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { API_BASE } from '../lib/config';
 
 export interface SessionInfo {
   sessionId: string;
@@ -19,7 +20,7 @@ export interface SessionsResponse {
 }
 
 const fetchSessions = async (): Promise<SessionsResponse> => {
-  const response = await fetch('/api/agents/sessions');
+  const response = await fetch(`${API_BASE}/agents/sessions`);
   if (!response.ok) {
     throw new Error('Failed to fetch sessions');
   }

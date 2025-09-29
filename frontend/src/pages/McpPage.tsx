@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { API_BASE } from '../lib/config';
 import { 
   Plus, 
   Trash2, 
@@ -57,7 +58,7 @@ export const McpPage: React.FC = () => {
   const loadMcpConfigs = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/mcp');
+      const response = await fetch(`${API_BASE}/mcp`);
       if (response.ok) {
         const data = await response.json();
         setServers(data.servers || []);
@@ -215,7 +216,7 @@ export const McpPage: React.FC = () => {
   const handleImportFromClaudeCode = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/mcp/claude-code');
+      const response = await fetch(`${API_BASE}/mcp/claude-code`);
 
       if (response.ok) {
         const result = await response.json();
@@ -253,7 +254,7 @@ export const McpPage: React.FC = () => {
             importData.url = claudeServer.url;
           }
 
-          const importResponse = await fetch('/api/mcp', {
+          const importResponse = await fetch(`${API_BASE}/mcp`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
@@ -356,7 +357,7 @@ export const McpPage: React.FC = () => {
           name: formData.name,
           ...config
         };
-        response = await fetch('/api/mcp', {
+        response = await fetch(`${API_BASE}/mcp`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'

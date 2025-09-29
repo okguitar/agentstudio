@@ -1,12 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ClaudeVersion, ClaudeVersionCreate, ClaudeVersionUpdate, ClaudeVersionResponse } from '@agentstudio/shared/types/claude-versions';
+import { API_BASE } from '../lib/config';
 
 // 获取所有Claude版本
 export const useClaudeVersions = () => {
   return useQuery<ClaudeVersionResponse>({
     queryKey: ['claude-versions'],
     queryFn: async () => {
-      const response = await fetch('/api/settings/claude-versions');
+      const response = await fetch(`${API_BASE}/settings/claude-versions`);
       if (!response.ok) {
         throw new Error('Failed to fetch Claude versions');
       }
@@ -21,7 +22,7 @@ export const useCreateClaudeVersion = () => {
   
   return useMutation({
     mutationFn: async (data: ClaudeVersionCreate): Promise<ClaudeVersion> => {
-      const response = await fetch('/api/settings/claude-versions', {
+      const response = await fetch(`${API_BASE}/settings/claude-versions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

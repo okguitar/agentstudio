@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE } from '../lib/config';
 import { 
   Plus, 
   Search, 
@@ -273,7 +274,7 @@ export const ProjectsPage: React.FC = () => {
     const fetchProjects = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/api/projects');
+        const response = await fetch(`${API_BASE}/projects`);
         if (response.ok) {
           const data = await response.json();
           setProjects(data.projects || []);
@@ -312,7 +313,7 @@ export const ProjectsPage: React.FC = () => {
     description: string;
   }) => {
     try {
-      const response = await fetch('/api/projects/create', {
+      const response = await fetch(`${API_BASE}/projects/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

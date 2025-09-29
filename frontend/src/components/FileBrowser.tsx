@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE } from '../lib/config';
 import { 
   Folder, 
   File, 
@@ -113,7 +114,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
     
     setCreatingFolder(true);
     try {
-      const response = await fetch('/api/files/create-directory', {
+      const response = await fetch(`${API_BASE}/files/create-directory`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
