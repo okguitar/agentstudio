@@ -9,6 +9,7 @@ import { VscJson, VscCode } from 'react-icons/vsc';
 import { SiTypescript } from 'react-icons/si';
 import { useFileTree, useFileContent, type FileSystemItem } from '../hooks/useFileSystem';
 import { Loader2, ChevronRight, RefreshCw, X, ChevronDown, MoreHorizontal } from 'lucide-react';
+import { eventBus, EVENTS } from '../utils/eventBus';
 
 // 将 FileSystemItem 转换为 react-arborist 需要的格式
 interface FileTreeItem {
@@ -407,6 +408,16 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
     }
   }, [loadedDirectories, loadingDirectories]);
 
+  // 刷新文件树的统一方法
+  const refreshFileTree = useCallback(() => {
+    console.log('Refreshing file tree...');
+    // 重置懒加载状态
+    setLoadedDirectories(new Set());
+    setLoadingDirectories(new Set());
+    // 重新获取根目录数据
+    refetchTree();
+  }, [refetchTree]);
+
   // 移除面包屑导航相关代码，因为我们现在使用树形结构
 
   // 计算容器高度
@@ -461,6 +472,26 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
   }, [showTabDropdown]);
+
+  // 监听AI回复完成事件，自动刷新文件浏览器
+  useEffect(() => {
+    const handleAiResponseComplete = (eventData: { agentId: string; sessionId: string | null; projectPath?: string }) => {
+      console.log('🔄 Received AI_RESPONSE_COMPLETE event in FileExplorer:', eventData);
+      
+      // 检查是否与当前项目路径匹配
+      if (eventData.projectPath === projectPath) {
+        console.log('🔄 Auto-refreshing file tree after AI response completion');
+        refreshFileTree();
+      }
+    };
+
+    eventBus.on(EVENTS.AI_RESPONSE_COMPLETE, handleAiResponseComplete);
+
+    // 清理事件监听器
+    return () => {
+      eventBus.off(EVENTS.AI_RESPONSE_COMPLETE, handleAiResponseComplete);
+    };
+  }, [projectPath, refreshFileTree]);
 
   // 使用动态树数据，它会在需要时懒加载
   const treeData = dynamicTreeData;
@@ -774,16 +805,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
           <div className="flex items-center justify-between w-full">
             <h3 className="text-sm font-medium text-gray-700">文件浏览器</h3>
             <button
-              onClick={() => {
-                console.log('Refreshing file tree...');
-                // 重置懒加载状态
-                setLoadedDirectories(new Set());
-                setLoadingDirectories(new Set());
-                // 不要在这里清空动态树数据，让refetchTree触发后再更新
-                // setDynamicTreeData([]);
-                // 重新获取根目录数据
-                refetchTree();
-              }}
+              onClick={refreshFileTree}
               className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded transition-colors"
               title="刷新"
               disabled={isTreeLoading}
