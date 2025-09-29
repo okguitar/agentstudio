@@ -23,7 +23,7 @@ import { SlashCommand, SlashCommandFilter } from '../types/commands';
 import { useCommands, useDeleteCommand } from '../hooks/useCommands';
 import { CommandForm } from '../components/CommandForm';
 import { formatRelativeTime } from '../utils';
-import { getToolDisplayName } from '../../shared/utils/toolMapping';
+import { getToolDisplayName } from '@agentstudio/shared/utils/toolMapping';
 
 export const CommandsPage: React.FC = () => {
   const [filter] = useState<SlashCommandFilter>({ scope: 'user' });

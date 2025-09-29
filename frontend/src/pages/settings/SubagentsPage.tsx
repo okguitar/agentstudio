@@ -20,7 +20,7 @@ import { Subagent } from '../../types/subagents';
 import { useSubagents, useDeleteSubagent } from '../../hooks/useSubagents';
 import { SubagentForm } from '../../components/SubagentForm';
 import { formatRelativeTime } from '../../utils';
-import { getToolDisplayName } from '../../../shared/utils/toolMapping';
+import { getToolDisplayName } from '@agentstudio/shared/utils/toolMapping';
 
 export const SubagentsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');

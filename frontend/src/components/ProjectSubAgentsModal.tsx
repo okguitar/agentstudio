@@ -22,7 +22,7 @@ import { Subagent } from '../types/subagents';
 import { useProjectSubagents, useDeleteProjectSubagent } from '../hooks/useSubagents';
 import { SubagentForm } from '../components/SubagentForm';
 import { formatRelativeTime } from '../utils';
-import { getToolDisplayName } from '../../shared/utils/toolMapping';
+import { getToolDisplayName } from '@agentstudio/shared/utils/toolMapping';
 
 interface Project {
   id: string;

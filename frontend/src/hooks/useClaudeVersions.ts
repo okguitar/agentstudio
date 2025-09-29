@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ClaudeVersion, ClaudeVersionCreate, ClaudeVersionUpdate, ClaudeVersionResponse } from '../../../shared/types/claude-versions';
+import { ClaudeVersion, ClaudeVersionCreate, ClaudeVersionUpdate, ClaudeVersionResponse } from '@agentstudio/shared/types/claude-versions';
 
 // 获取所有Claude版本
 export const useClaudeVersions = () => {

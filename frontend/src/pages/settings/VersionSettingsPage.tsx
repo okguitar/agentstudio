@@ -16,7 +16,7 @@ import {
   FolderOpen
 } from 'lucide-react';
 import { useClaudeVersions, useCreateClaudeVersion, useUpdateClaudeVersion, useDeleteClaudeVersion, useSetDefaultClaudeVersion } from '../../hooks/useClaudeVersions';
-import { ClaudeVersion, ClaudeVersionCreate, ClaudeVersionUpdate } from '../../../../shared/types/claude-versions';
+import { ClaudeVersion, ClaudeVersionCreate, ClaudeVersionUpdate } from '@agentstudio/shared/types/claude-versions';
 import { FileBrowser } from '../../components/FileBrowser';
 
 export const VersionSettingsPage: React.FC = () => {

@@ -12,8 +12,8 @@ import {
   updateVersion, 
   deleteVersion, 
   initializeSystemVersion 
-} from '../../../shared/utils/claudeVersionStorage';
-import { ClaudeVersionCreate, ClaudeVersionUpdate } from '../../../shared/types/claude-versions';
+} from '@agentstudio/shared/utils/claudeVersionStorage';
+import { ClaudeVersionCreate, ClaudeVersionUpdate } from '@agentstudio/shared/types/claude-versions';
 
 const router = express.Router();
 const execAsync = promisify(exec);

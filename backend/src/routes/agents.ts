@@ -7,11 +7,11 @@ import { spawn } from 'child_process';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { query, Options } from '@anthropic-ai/claude-code';
-import { AgentStorage } from '../../shared/utils/agentStorage.js';
-import { AgentConfig } from '../../shared/types/agents.js';
-import { ProjectMetadataStorage } from '../../shared/utils/projectMetadataStorage.js';
+import { AgentStorage } from '@agentstudio/shared/utils/agentStorage';
+import { AgentConfig } from '@agentstudio/shared/types/agents';
+import { ProjectMetadataStorage } from '@agentstudio/shared/utils/projectMetadataStorage';
 import { sessionManager } from '../services/sessionManager.js';
-import { getAllVersions, getDefaultVersionId } from '../../../shared/utils/claudeVersionStorage';
+import { getAllVersions, getDefaultVersionId } from '@agentstudio/shared/utils/claudeVersionStorage';
 
 const router: express.Router = express.Router();
 const execAsync = promisify(exec);

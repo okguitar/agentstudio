@@ -23,7 +23,7 @@ import { SlashCommand } from '../types/commands';
 import { useProjectCommands, useDeleteProjectCommand } from '../hooks/useCommands';
 import { CommandForm } from '../components/CommandForm';
 import { formatRelativeTime } from '../utils';
-import { getToolDisplayName } from '../../shared/utils/toolMapping';
+import { getToolDisplayName } from '@agentstudio/shared/utils/toolMapping';
 
 interface Project {
   id: string;

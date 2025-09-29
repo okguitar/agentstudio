@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { promisify } from 'util';
 import matter from 'gray-matter';
-import { SlashCommand, SlashCommandCreate, SlashCommandUpdate, SlashCommandFilter } from '../../../shared/types/commands';
+import { SlashCommand, SlashCommandCreate, SlashCommandUpdate, SlashCommandFilter } from '@agentstudio/shared/types/commands';
 
 const router = express.Router();
 const readdir = promisify(fs.readdir);
