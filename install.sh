@@ -96,20 +96,55 @@ setup_user_and_dirs() {
     log "Setting up user and directories..."
     
     # Create user if not exists
-    if ! id "$USER_NAME" >/dev/null 2>&1; then
+    local user_exists=false
+    if [[ "$OS" == "linux" ]]; then
+        if id "$USER_NAME" >/dev/null 2>&1; then
+            user_exists=true
+        fi
+    elif [[ "$OS" == "macos" ]]; then
+        if dscl . -read /Users/$USER_NAME >/dev/null 2>&1; then
+            user_exists=true
+        fi
+    fi
+    
+    if [[ "$user_exists" == "false" ]]; then
         if [[ "$OS" == "linux" ]]; then
             useradd -r -m -s /bin/bash "$USER_NAME"
+            success "Created user: $USER_NAME"
         elif [[ "$OS" == "macos" ]]; then
-            # Create user on macOS
-            dscl . -create /Users/$USER_NAME
-            dscl . -create /Users/$USER_NAME UserShell /bin/bash
-            dscl . -create /Users/$USER_NAME RealName "Agent Studio Service"
-            dscl . -create /Users/$USER_NAME UniqueID 501
-            dscl . -create /Users/$USER_NAME PrimaryGroupID 20
-            dscl . -create /Users/$USER_NAME NFSHomeDirectory /Users/$USER_NAME
-            createhomedir -c > /dev/null
+            # Create user on macOS - find available UID
+            log "Creating user $USER_NAME on macOS..."
+            
+            # Find an available UID starting from 501
+            local uid=501
+            while dscl . -list /Users uid | grep -q " $uid$"; do
+                ((uid++))
+                if [ "$uid" -gt 600 ]; then
+                    error "Could not find available UID for user creation"
+                    exit 1
+                fi
+            done
+            
+            # Create the user
+            local create_result
+            create_result=$(dscl . -create /Users/$USER_NAME 2>&1)
+            if [ $? -eq 0 ]; then
+                dscl . -create /Users/$USER_NAME UserShell /bin/bash
+                dscl . -create /Users/$USER_NAME RealName "Agent Studio Service"
+                dscl . -create /Users/$USER_NAME UniqueID $uid
+                dscl . -create /Users/$USER_NAME PrimaryGroupID 20
+                dscl . -create /Users/$USER_NAME NFSHomeDirectory /Users/$USER_NAME
+                createhomedir -c >/dev/null 2>&1 || true
+                success "Created user: $USER_NAME (UID: $uid)"
+            else
+                if echo "$create_result" | grep -q "eDSRecordAlreadyExists"; then
+                    log "User $USER_NAME already exists (detected during creation)"
+                else
+                    error "Failed to create user $USER_NAME: $create_result"
+                    exit 1
+                fi
+            fi
         fi
-        success "Created user: $USER_NAME"
     else
         log "User $USER_NAME already exists"
     fi

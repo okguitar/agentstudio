@@ -173,14 +173,11 @@ run_installation() {
     
     cd "$TEMP_DIR"
     
-    # Debug: Show current directory contents
-    log "Current directory: $(pwd)"
-    log "Files in directory:"
-    ls -la
-    
     # Check if install.sh exists
     if [ ! -f "install.sh" ]; then
         error "install.sh not found in downloaded repository"
+        log "Current directory contents:"
+        ls -la
         exit 1
     fi
     
@@ -259,7 +256,6 @@ main() {
     run_installation
     configure_service
     start_service
-    cleanup
     
     echo ""
     echo "🎉 Installation Complete!"
@@ -278,10 +274,13 @@ main() {
     echo "For more information, visit:"
     echo "  https://github.com/$GITHUB_REPO"
     echo ""
+    
+    # Clean up temp files at the end
+    cleanup
 }
 
-# Handle script interruption
-trap cleanup EXIT INT TERM
+# Handle script interruption (but not normal exit)
+trap cleanup INT TERM
 
 # Run main function
 main "$@"
