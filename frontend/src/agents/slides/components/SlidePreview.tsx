@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { Eye, Code } from 'lucide-react';
 import Prism from 'prismjs';
 import 'prismjs/themes/prism-tomorrow.css';
@@ -14,7 +14,11 @@ interface SlidePreviewProps {
   projectPath?: string;
 }
 
-export const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, totalSlides, projectPath }) => {
+export interface SlidePreviewRef {
+  refreshIframe: () => void;
+}
+
+export const SlidePreview = forwardRef<SlidePreviewRef, SlidePreviewProps>(({ slide, totalSlides, projectPath }, ref) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -24,6 +28,18 @@ export const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, totalSlides, 
   const [scale, setScale] = useState(1);
   
   const { data: slideContent } = useSlideContent(slide.index, projectPath);
+
+  // Expose refresh method via ref
+  useImperativeHandle(ref, () => ({
+    refreshIframe: () => {
+      const iframe = iframeRef.current;
+      if (iframe && projectId && slide.path) {
+        const timestamp = Date.now();
+        const url = `${MEDIA_BASE}/${projectId}/${slide.path}?t=${timestamp}`;
+        iframe.src = url;
+      }
+    }
+  }), [projectId, slide.path]);
 
   // Fetch project ID
   useEffect(() => {
@@ -238,4 +254,4 @@ export const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, totalSlides, 
       </div>
     </div>
   );
-};
+});
