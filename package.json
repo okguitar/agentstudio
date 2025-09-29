@@ -17,7 +17,14 @@
     "test": "pnpm --recursive run test --if-present",
     "lint": "pnpm --recursive run lint --if-present",
     "type-check": "pnpm --recursive run type-check --if-present",
-    "clean": "pnpm --recursive run clean --if-present"
+    "clean": "pnpm --recursive run clean --if-present",
+    "install:service": "sudo chmod +x install.sh && sudo ./install.sh",
+    "service": "./scripts/agent-studio-service",
+    "service:start": "./scripts/agent-studio-service start",
+    "service:stop": "./scripts/agent-studio-service stop",
+    "service:status": "./scripts/agent-studio-service status",
+    "service:logs": "./scripts/agent-studio-service logs",
+    "service:restart": "./scripts/agent-studio-service restart"
   },
   "keywords": [
     "ai",
@@ -31,11 +38,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/jeffkit/agentstudio.git"
+    "url": "https://github.com/git-men/agentstudio.git"
   },
-  "homepage": "https://github.com/jeffkit/agentstudio#readme",
+  "homepage": "https://github.com/git-men/agentstudio#readme",
   "bugs": {
-    "url": "https://github.com/jeffkit/agentstudio/issues"
+    "url": "https://github.com/git-men/agentstudio/issues"
   },
   "devDependencies": {
     "typescript": "^5.9.2",
