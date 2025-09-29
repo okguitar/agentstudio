@@ -3,15 +3,21 @@
   "version": "0.1.0",
   "description": "Claude-powered AgentStudio with React frontend and Node.js backend, built on top of Claude Code SDK",
   "type": "module",
+  "private": true,
+  "packageManager": "pnpm@9.0.0",
   "scripts": {
-    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
-    "dev:frontend": "cd frontend && npm run dev",
-    "dev:backend": "cd backend && npm run dev",
-    "build": "npm run build:frontend && npm run build:backend",
-    "build:frontend": "cd frontend && npm run build",
-    "build:backend": "cd backend && npm run build",
-    "start": "cd backend && npm start",
-    "setup": "npm install && cd frontend && npm install && cd ../backend && npm install"
+    "dev": "pnpm --parallel run dev",
+    "dev:frontend": "pnpm --filter frontend run dev",
+    "dev:backend": "pnpm --filter backend run dev",
+    "build": "pnpm --filter shared run type-check && pnpm --filter frontend run build && pnpm --filter backend run build",
+    "build:frontend": "pnpm --filter frontend run build",
+    "build:backend": "pnpm --filter backend run build",
+    "start": "pnpm --filter backend run start",
+    "setup": "pnpm install",
+    "test": "pnpm --recursive run test --if-present",
+    "lint": "pnpm --recursive run lint --if-present",
+    "type-check": "pnpm --recursive run type-check --if-present",
+    "clean": "pnpm --recursive run clean --if-present"
   },
   "keywords": [
     "ai",
@@ -32,14 +38,7 @@
     "url": "https://github.com/jeffkit/agentstudio/issues"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2",
-    "eventsource": "^4.0.0"
-  },
-  "dependencies": {
-    "@anthropic-ai/claude-code": "^1.0.103",
-    "diff": "^8.0.2",
-    "node-fetch": "^3.3.2",
-    "tsx": "^4.20.4",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "concurrently": "^8.2.2"
   }
 }

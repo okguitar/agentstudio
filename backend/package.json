@@ -1,7 +1,7 @@
 {
-  "name": "ai-ppt-editor-backend",
-  "version": "1.0.0",
-  "description": "Backend API for AI PPT Editor",
+  "name": "@agentstudio/backend",
+  "version": "0.1.0",
+  "description": "Backend API for AgentStudio",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
@@ -12,6 +12,7 @@
     "migrate-projects": "node scripts/migrate-projects.js"
   },
   "dependencies": {
+    "@agentstudio/shared": "workspace:*",
     "@ai-sdk/anthropic": "^1.0.5",
     "@ai-sdk/openai": "^1.0.7",
     "@anthropic-ai/claude-code": "^1.0.103",
