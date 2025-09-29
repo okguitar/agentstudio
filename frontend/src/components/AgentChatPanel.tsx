@@ -21,6 +21,7 @@ import {
   type CommandType
 } from '../utils/commandFormatter';
 import { createCommandHandler, SystemCommand } from '../utils/commandHandler';
+import { eventBus, EVENTS } from '../utils/eventBus';
 
 interface AgentChatPanelProps {
   agent: AgentConfig;
@@ -840,6 +841,14 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
             if (eventData.subtype === 'success') {
               setHasSuccessfulResponse(true);
               console.log('✅ Marked session as having successful response for heartbeat');
+              
+              // 发送AI回复完成事件，通知其他组件刷新
+              eventBus.emit(EVENTS.AI_RESPONSE_COMPLETE, {
+                agentId: agent.id,
+                sessionId: currentSessionId,
+                projectPath
+              });
+              console.log('📡 Emitted AI_RESPONSE_COMPLETE event');
             }
             
             // If no AI message was created yet (e.g., only result event received), create one now
