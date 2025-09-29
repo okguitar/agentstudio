@@ -1,14 +1,13 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import type { AgentConfig, ChatContext, ImageData } from '../types/index.js';
-
-const API_BASE = '/api';
+import { API_BASE } from '../lib/config.js';
 
 // Agent management hooks
 export const useAgents = (enabled?: boolean, type?: string) => {
   return useQuery<{ agents: AgentConfig[] }>({
     queryKey: ['agents', enabled, type],
     queryFn: async () => {
-      const url = new URL(`${window.location.origin}${API_BASE}/agents`);
+      const url = new URL(`${API_BASE}/agents`);
       if (enabled !== undefined) {
         url.searchParams.append('enabled', String(enabled));
       }
@@ -99,7 +98,7 @@ export const useAgentSessions = (agentId: string, searchTerm?: string, projectPa
   return useQuery({
     queryKey: ['agent-sessions', agentId, searchTerm, projectPath],
     queryFn: async () => {
-      const url = new URL(`${window.location.origin}${API_BASE}/sessions/${agentId}`);
+      const url = new URL(`${API_BASE}/sessions/${agentId}`);
       if (searchTerm && searchTerm.trim()) {
         url.searchParams.append('search', searchTerm.trim());
       }
@@ -135,7 +134,7 @@ export const useAgentSessionMessages = (agentId: string, sessionId: string | nul
         return { messages: [] };
       }
 
-      const url = new URL(`${window.location.origin}${API_BASE}/sessions/${agentId}/${sessionId}/messages`);
+      const url = new URL(`${API_BASE}/sessions/${agentId}/${sessionId}/messages`);
       if (projectPath) {
         url.searchParams.set('projectPath', projectPath);
       }

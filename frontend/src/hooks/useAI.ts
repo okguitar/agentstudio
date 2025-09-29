@@ -1,7 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import type { AIModelsResponse, ChatContext } from '../types/index.js';
-
-const API_BASE = '/api';
+import { API_BASE } from '../lib/config.js';
 
 // Get available AI models
 export const useAIModels = () => {
@@ -165,7 +164,7 @@ export const useSessions = (searchTerm?: string) => {
   return useQuery({
     queryKey: ['sessions', searchTerm],
     queryFn: async () => {
-      const url = new URL(`${window.location.origin}${API_BASE}/sessions/ppt-editor`);
+      const url = new URL(`${API_BASE}/sessions/ppt-editor`);
       if (searchTerm && searchTerm.trim()) {
         url.searchParams.append('search', searchTerm.trim());
       }
