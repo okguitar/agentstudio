@@ -60,7 +60,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
     setError(null);
     
     try {
-      const url = new URL('/api/files/browse', window.location.origin);
+      const url = new URL('/files/browse', API_BASE);
       if (path) {
         url.searchParams.set('path', path);
       }

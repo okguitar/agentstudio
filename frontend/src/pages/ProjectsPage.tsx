@@ -379,7 +379,7 @@ export const ProjectsPage: React.FC = () => {
     
     if (confirmed) {
       try {
-        const response = await fetch(`/api/projects/by-id/${project.id}`, {
+        const response = await fetch(`${API_BASE}/projects/by-id/${project.id}`, {
           method: 'DELETE'
         });
         
@@ -413,7 +413,7 @@ export const ProjectsPage: React.FC = () => {
 
     try {
       // Call API to select agent for project
-      const response = await fetch(`/api/projects/${agentSelectProject.dirName}/select-agent`, {
+      const response = await fetch(`${API_BASE}/projects/${agentSelectProject.dirName}/select-agent`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

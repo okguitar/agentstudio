@@ -33,7 +33,7 @@ export const useFileSystemBrowse = (path?: string) => {
         searchParams.append('path', path);
       }
       
-      const response = await fetch(`/api/files/browse?${searchParams.toString()}`);
+      const response = await fetch(`${API_BASE}/files/browse?${searchParams.toString()}`);
       if (!response.ok) {
         throw new Error('Failed to browse directory');
       }
@@ -58,7 +58,7 @@ export const useFileContent = (filePath?: string, projectPath?: string) => {
         searchParams.append('projectPath', projectPath);
       }
       
-      const response = await fetch(`/api/files/read?${searchParams.toString()}`);
+      const response = await fetch(`${API_BASE}/files/read?${searchParams.toString()}`);
       if (!response.ok) {
         if (response.status === 403) {
           throw new Error('访问被拒绝：文件在项目目录之外');
@@ -90,7 +90,7 @@ export const useFileTreeRecursive = (projectPath?: string) => {
         const searchParams = new URLSearchParams();
         searchParams.append('path', dirPath);
         
-        const response = await fetch(`/api/files/browse?${searchParams.toString()}`);
+        const response = await fetch(`${API_BASE}/files/browse?${searchParams.toString()}`);
         if (!response.ok) {
           console.warn(`Failed to browse directory: ${dirPath}`);
           return [];
@@ -144,7 +144,7 @@ export const useFileTree = (projectPath?: string) => {
       const searchParams = new URLSearchParams();
       searchParams.append('path', projectPath);
       
-      const response = await fetch(`/api/files/browse?${searchParams.toString()}`);
+      const response = await fetch(`${API_BASE}/files/browse?${searchParams.toString()}`);
       if (!response.ok) {
         throw new Error('Failed to browse directory');
       }
@@ -185,7 +185,7 @@ export const useDirectoryChildren = (dirPath?: string) => {
       const searchParams = new URLSearchParams();
       searchParams.append('path', dirPath);
       
-      const response = await fetch(`/api/files/browse?${searchParams.toString()}`);
+      const response = await fetch(`${API_BASE}/files/browse?${searchParams.toString()}`);
       if (!response.ok) {
         throw new Error('Failed to browse directory');
       }
@@ -233,7 +233,7 @@ export const useFileWrite = () => {
         searchParams.append('projectPath', projectPath);
       }
       
-      const response = await fetch(`/api/files/write?${searchParams.toString()}`, {
+      const response = await fetch(`${API_BASE}/files/write?${searchParams.toString()}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -312,7 +312,7 @@ export const useProjectId = (projectPath?: string) => {
       const searchParams = new URLSearchParams();
       searchParams.append('projectPath', projectPath);
       
-      const response = await fetch(`/api/files/project-id?${searchParams.toString()}`);
+      const response = await fetch(`${API_BASE}/files/project-id?${searchParams.toString()}`);
       if (!response.ok) {
         throw new Error('Failed to get project ID');
       }

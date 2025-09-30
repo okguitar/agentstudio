@@ -8,6 +8,7 @@ import {
 import { VscJson, VscCode } from 'react-icons/vsc';
 import { SiTypescript } from 'react-icons/si';
 import { useFileTree, useFileContent, type FileSystemItem } from '../hooks/useFileSystem';
+import { API_BASE } from '../lib/config';
 import { Loader2, ChevronRight, RefreshCw, X, ChevronDown, MoreHorizontal } from 'lucide-react';
 import { eventBus, EVENTS } from '../utils/eventBus';
 
@@ -323,7 +324,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
       const searchParams = new URLSearchParams();
       searchParams.append('path', dirPath);
       
-      const response = await fetch(`/api/files/browse?${searchParams.toString()}`);
+      const response = await fetch(`${API_BASE}/files/browse?${searchParams.toString()}`);
       if (!response.ok) {
         throw new Error('Failed to browse directory');
       }
@@ -735,7 +736,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
         }
         // 添加binary标记，告诉后端这是二进制文件
         imageParams.append('binary', 'true');
-        const imageUrl = `/api/files/read?${imageParams.toString()}`;
+        const imageUrl = `${API_BASE}/files/read?${imageParams.toString()}`;
         
         return <SimpleImagePreview imageUrl={imageUrl} fileName={activeTab.name} />;
 

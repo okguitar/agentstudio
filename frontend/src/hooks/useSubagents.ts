@@ -122,7 +122,7 @@ export const useDeleteSubagent = () => {
 // Project-specific subagents
 const fetchProjectSubagents = async (projectId: string, filter: SubagentFilter = {}): Promise<Subagent[]> => {
   // First get the project info to get the path
-  const projectResponse = await fetch(`/api/projects`);
+  const projectResponse = await fetch(`${API_BASE}/projects`);
   if (!projectResponse.ok) {
     throw new Error('Failed to fetch project info');
   }
@@ -155,7 +155,7 @@ export const useProjectSubagents = (filter: { projectId: string; search?: string
 // Project-specific subagent creation
 const createProjectSubagent = async (projectId: string, subagent: SubagentCreate): Promise<Subagent> => {
   // First get the project info to get the path
-  const projectResponse = await fetch(`/api/projects`);
+  const projectResponse = await fetch(`${API_BASE}/projects`);
   if (!projectResponse.ok) {
     throw new Error('Failed to fetch project info');
   }
@@ -186,7 +186,7 @@ const createProjectSubagent = async (projectId: string, subagent: SubagentCreate
 // Project-specific subagent update
 const updateProjectSubagent = async (projectId: string, data: { id: string } & SubagentUpdate): Promise<Subagent> => {
   // First get the project info to get the path
-  const projectResponse = await fetch(`/api/projects`);
+  const projectResponse = await fetch(`${API_BASE}/projects`);
   if (!projectResponse.ok) {
     throw new Error('Failed to fetch project info');
   }
@@ -218,7 +218,7 @@ const updateProjectSubagent = async (projectId: string, data: { id: string } & S
 // Project-specific subagent deletion
 const deleteProjectSubagent = async (projectId: string, id: string): Promise<void> => {
   // First get the project info to get the path
-  const projectResponse = await fetch(`/api/projects`);
+  const projectResponse = await fetch(`${API_BASE}/projects`);
   if (!projectResponse.ok) {
     throw new Error('Failed to fetch project info');
   }

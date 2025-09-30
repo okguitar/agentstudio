@@ -49,7 +49,7 @@ export const useUpdateClaudeVersion = () => {
   
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: ClaudeVersionUpdate }): Promise<ClaudeVersion> => {
-      const response = await fetch(`/api/settings/claude-versions/${id}`, {
+      const response = await fetch(`${API_BASE}/settings/claude-versions/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -76,7 +76,7 @@ export const useDeleteClaudeVersion = () => {
   
   return useMutation({
     mutationFn: async (id: string): Promise<void> => {
-      const response = await fetch(`/api/settings/claude-versions/${id}`, {
+      const response = await fetch(`${API_BASE}/settings/claude-versions/${id}`, {
         method: 'DELETE',
       });
       
@@ -97,7 +97,7 @@ export const useSetDefaultClaudeVersion = () => {
   
   return useMutation({
     mutationFn: async (id: string): Promise<void> => {
-      const response = await fetch(`/api/settings/claude-versions/${id}/set-default`, {
+      const response = await fetch(`${API_BASE}/settings/claude-versions/${id}/set-default`, {
         method: 'PUT',
       });
       

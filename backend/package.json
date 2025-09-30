@@ -15,7 +15,7 @@
     "@agentstudio/shared": "workspace:*",
     "@ai-sdk/anthropic": "^1.0.5",
     "@ai-sdk/openai": "^1.0.7",
-    "@anthropic-ai/claude-code": "^1.0.103",
+    "@anthropic-ai/claude-code": "^2.0.1",
     "ai": "^5.0.22",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",

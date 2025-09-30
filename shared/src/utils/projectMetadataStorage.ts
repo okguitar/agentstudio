@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { ProjectMetadata, ProjectWithAgentInfo, ProjectAgentConfig } from '../types/projects.js';
+import { ProjectMetadata, ProjectWithAgentInfo } from '../types/projects.js';
 import { AgentStorage } from './agentStorage.js';
 
 export class ProjectMetadataStorage {

@@ -146,7 +146,7 @@ const fetchProjectCommands = async (projectIdentifier: string, filter: Omit<Slas
     projectPath = projectIdentifier;
   } else {
     // It's a project ID, need to resolve to path
-    const projectResponse = await fetch(`/api/projects`);
+    const projectResponse = await fetch(`${API_BASE}/projects`);
     if (!projectResponse.ok) {
       throw new Error('Failed to fetch project info');
     }
@@ -183,7 +183,7 @@ export const useProjectCommands = (filter: { projectId: string; search?: string 
 // Project-specific command creation
 const createProjectCommand = async (projectId: string, command: SlashCommandCreate): Promise<SlashCommand> => {
   // First get the project info to get the path
-  const projectResponse = await fetch(`/api/agents/projects`);
+  const projectResponse = await fetch(`${API_BASE}/agents/projects`);
   if (!projectResponse.ok) {
     throw new Error('Failed to fetch project info');
   }
@@ -216,7 +216,7 @@ const createProjectCommand = async (projectId: string, command: SlashCommandCrea
 // Project-specific command update
 const updateProjectCommand = async (projectId: string, data: { id: string; updates: SlashCommandUpdate }): Promise<SlashCommand> => {
   // First get the project info to get the path
-  const projectResponse = await fetch(`/api/agents/projects`);
+  const projectResponse = await fetch(`${API_BASE}/agents/projects`);
   if (!projectResponse.ok) {
     throw new Error('Failed to fetch project info');
   }
@@ -250,7 +250,7 @@ const updateProjectCommand = async (projectId: string, data: { id: string; updat
 // Project-specific command deletion
 const deleteProjectCommand = async (projectId: string, id: string): Promise<void> => {
   // First get the project info to get the path
-  const projectResponse = await fetch(`/api/agents/projects`);
+  const projectResponse = await fetch(`${API_BASE}/agents/projects`);
   if (!projectResponse.ok) {
     throw new Error('Failed to fetch project info');
   }

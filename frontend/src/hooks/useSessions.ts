@@ -58,7 +58,7 @@ export const useSessions = () => {
 };
 
 export const closeSession = async (sessionId: string): Promise<void> => {
-  const response = await fetch(`/api/agents/sessions/${sessionId}`, {
+  const response = await fetch(`${API_BASE}/agents/sessions/${sessionId}`, {
     method: 'DELETE',
   });
   
@@ -68,7 +68,7 @@ export const closeSession = async (sessionId: string): Promise<void> => {
 };
 
 export const cleanupSession = async (agentId: string, sessionId: string): Promise<void> => {
-  const response = await fetch(`/api/sessions/${agentId}/${sessionId}/cleanup`, {
+  const response = await fetch(`${API_BASE}/sessions/${agentId}/${sessionId}/cleanup`, {
     method: 'DELETE',
   });
   
