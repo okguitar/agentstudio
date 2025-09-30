@@ -383,11 +383,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Community feedback and contributions
 
 
-## 🚗 Claude/Codex Carpool Service, a more efficient way to use Claude Code / Codex CLI.
+## Links
 
-**[ctok.ai](https://ctok.ai/)**   <small>✅ Claude Code<br>✅ Codex CLI</small> Claude Code / Codex CLI carpool service.
+| link | type | service | description |
+|:---|:---|:---|:---|
+| **[ctok.ai](https://ctok.ai/)** | 🤝 community | <small>✅ Claude Code<br>✅ Codex CLI</small> | Claude Code / Codex CLI carpool service. |
 
----
 
 ## 中文文档
 
