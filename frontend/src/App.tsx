@@ -13,6 +13,7 @@ import { MemorySettingsPage } from './pages/settings/MemorySettingsPage';
 import { SubagentsPage } from './pages/settings/SubagentsPage';
 import { CommandsPage } from './pages/CommandsPage';
 import { ChatPage } from './pages/ChatPage';
+import LandingPage from './pages/LandingPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -27,11 +28,14 @@ const AppContent: React.FC = () => {
   return (
     <Router>
       <Routes>
+        {/* Landing page (new homepage) */}
+        <Route path="/" element={<LandingPage />} />
+        
         {/* Chat page without layout (full screen) */}
         <Route path="/chat/:agentId" element={<ChatPage />} />
         
         {/* Admin pages with layout */}
-        <Route path="/" element={<Layout><DashboardPage /></Layout>} />
+        <Route path="/dashboard" element={<Layout><DashboardPage /></Layout>} />
         <Route path="/agents" element={<Layout><AgentsPage /></Layout>} />
         <Route path="/projects" element={<Layout><ProjectsPage /></Layout>} />
         <Route path="/mcp" element={<Layout><McpPage /></Layout>} />
