@@ -6,3 +6,45 @@ body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
 }
+
+/* API Status text breathing effect for disconnected state */
+@keyframes text-breathing {
+  0% {
+    opacity: 0.6;
+    color: rgb(239 68 68); /* red-500 */
+  }
+  50% {
+    opacity: 1;
+    color: rgb(220 38 38); /* red-600 */
+    text-shadow: 0 0 4px rgba(239, 68, 68, 0.5);
+  }
+  100% {
+    opacity: 0.6;
+    color: rgb(239 68 68); /* red-500 */
+  }
+}
+
+.api-text-breathing {
+  animation: text-breathing 2s ease-in-out infinite;
+  font-weight: 500;
+}
+
+/* Keep the old breathing animation for potential future use */
+@keyframes breathing {
+  0% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+}
+
+.api-breathing {
+  animation: breathing 2s ease-in-out infinite;
+}
