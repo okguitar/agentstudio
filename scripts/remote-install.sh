@@ -2,15 +2,18 @@
 
 # Agent Studio Remote Installation Script
 # This script downloads and installs Agent Studio backend with all dependencies
-# Usage: curl -fsSL https://raw.githubusercontent.com/git-men/agentstudio/main/scripts/remote-install.sh | sudo bash
+# Usage: curl -fsSL https://raw.githubusercontent.com/git-men/agentstudio/main/scripts/remote-install.sh | bash
 
 set -e
 
 # Configuration
 GITHUB_REPO="git-men/agentstudio"
 GITHUB_BRANCH="main"
-TEMP_DIR="/tmp/agent-studio-install"
+TEMP_DIR="/tmp/agent-studio-remote-$(date +%s)"
 SERVICE_NAME="agent-studio"
+USER_HOME="$HOME"
+INSTALL_DIR="$USER_HOME/.agent-studio"
+SERVICE_PORT="4936"
 
 # Colors for output
 RED='\033[0;31m'
@@ -36,11 +39,23 @@ success() {
     echo -e "${GREEN}[SUCCESS]${NC} $1"
 }
 
-# Check if running as root
-check_root() {
-    if [ "$EUID" -ne 0 ]; then
-        error "Please run this script as root (use sudo)"
-        exit 1
+# Check installation environment
+check_environment() {
+    log "Installing Agent Studio to user directory: $INSTALL_DIR"
+    log "Current user: $USER"
+    
+    # Check if previous installation exists and is writable
+    if [ -d "$INSTALL_DIR" ]; then
+        log "Found existing installation directory..."
+        if [ -w "$INSTALL_DIR" ]; then
+            log "Cleaning existing installation..."
+            rm -rf "$INSTALL_DIR"
+            success "Cleanup completed"
+        else
+            error "$INSTALL_DIR exists but is not writable"
+            error "Please remove it manually: rm -rf $INSTALL_DIR"
+            exit 1
+        fi
     fi
 }
 
@@ -67,83 +82,44 @@ detect_os() {
     log "Detected OS: $OS ($DISTRO)"
 }
 
-# Install Node.js
-install_nodejs() {
-    log "Installing Node.js..."
+# Check Node.js installation
+check_nodejs() {
+    log "Checking Node.js installation..."
     
     if command -v node >/dev/null 2>&1; then
         NODE_VERSION=$(node --version | cut -d'v' -f2 | cut -d'.' -f1)
         if [ "$NODE_VERSION" -ge 18 ]; then
-            success "Node.js $(node --version) is already installed"
+            success "Node.js $(node --version) is available"
             return
         else
-            warn "Node.js version is too old: $(node --version). Installing latest..."
+            warn "Node.js version is too old: $(node --version). Please install Node.js 18 or later."
         fi
+    else
+        error "Node.js is not installed. Please install Node.js 18 or later first."
+        error "Visit: https://nodejs.org/"
+        exit 1
     fi
-    
-    if [[ "$OS" == "linux" ]]; then
-        # Install Node.js using NodeSource repository (works for most Linux distros)
-        log "Adding NodeSource repository..."
-        curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -
-        
-        if [[ "$DISTRO" == "debian" ]]; then
-            apt-get install -y nodejs
-        elif [[ "$DISTRO" == "redhat" ]]; then
-            yum install -y nodejs npm
-        elif [[ "$DISTRO" == "arch" ]]; then
-            pacman -S --noconfirm nodejs npm
-        else
-            error "Unsupported Linux distribution"
-            exit 1
-        fi
-    elif [[ "$OS" == "macos" ]]; then
-        # Install Node.js using Homebrew on macOS
-        if ! command -v brew >/dev/null 2>&1; then
-            log "Installing Homebrew..."
-            /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-        fi
-        brew install node
-    fi
-    
-    success "Node.js $(node --version) installed successfully"
 }
 
-# Install pnpm
-install_pnpm() {
-    log "Installing pnpm..."
-    
+# Check pnpm installation
+check_pnpm() {
     if command -v pnpm >/dev/null 2>&1; then
-        success "pnpm is already installed"
+        success "pnpm is available"
         return
     fi
     
-    # Install pnpm globally
-    npm install -g pnpm
-    success "pnpm installed successfully"
+    log "pnpm not found, will use npm instead"
 }
 
-# Install git if not present
-install_git() {
+# Check git installation
+check_git() {
     if command -v git >/dev/null 2>&1; then
+        success "Git is available"
         return
     fi
     
-    log "Installing git..."
-    
-    if [[ "$DISTRO" == "debian" ]]; then
-        apt-get update && apt-get install -y git curl
-    elif [[ "$DISTRO" == "redhat" ]]; then
-        yum install -y git curl
-    elif [[ "$DISTRO" == "arch" ]]; then
-        pacman -S --noconfirm git curl
-    elif [[ "$OS" == "macos" ]]; then
-        # Git is usually pre-installed on macOS
-        if ! command -v git >/dev/null 2>&1; then
-            xcode-select --install
-        fi
-    fi
-    
-    success "Git installed successfully"
+    error "Git is not installed. Please install git first."
+    exit 1
 }
 
 # Download and extract Agent Studio
@@ -169,25 +145,136 @@ download_agent_studio() {
 
 # Run the main installation
 run_installation() {
-    log "Running Agent Studio installation..."
+    log "Installing Agent Studio to user directory..."
     
+    # Create directories
+    log "Creating directories..."
+    mkdir -p "$INSTALL_DIR"
+    mkdir -p "$USER_HOME/.agent-studio-logs"
+    mkdir -p "$USER_HOME/.agent-studio-config"
+    mkdir -p "$USER_HOME/slides"
+    
+    # Copy files
+    log "Copying application files..."
     cd "$TEMP_DIR"
+    cp -r ./* "$INSTALL_DIR/"
     
-    # Check if install.sh exists
-    if [ ! -f "install.sh" ]; then
-        error "install.sh not found in downloaded repository"
-        log "Current directory contents:"
-        ls -la
-        exit 1
+    cd "$INSTALL_DIR"
+    
+    # Install dependencies and try to build
+    log "Installing dependencies..."
+    BUILD_SUCCESS=false
+    
+    if command -v pnpm >/dev/null 2>&1; then
+        log "Using pnpm for installation..."
+        pnpm install --prod
+        
+        # Try to build
+        log "Attempting to build backend..."
+        if pnpm run build:backend 2>/dev/null; then
+            BUILD_SUCCESS=true
+            success "Build successful"
+        else
+            warn "Build failed, installing dev dependencies..."
+            echo "y" | pnpm install
+        fi
+    else
+        log "Using npm for installation..."
+        npm install --production
+        
+        # Try to build
+        log "Attempting to build backend..."
+        if npm run build:backend 2>/dev/null; then
+            BUILD_SUCCESS=true
+            success "Build successful"
+        else
+            warn "Build failed, installing dev dependencies..."
+            npm install
+        fi
     fi
     
-    chmod +x install.sh
-    chmod +x scripts/agent-studio-service 2>/dev/null || true
-    chmod +x scripts/macos-logrotate.sh 2>/dev/null || true
+    # Create start script in installation directory
+    log "Creating start script..."
+    if [ "$BUILD_SUCCESS" = true ]; then
+        # Production mode
+        cat > "$INSTALL_DIR/start.sh" << 'EOF'
+#!/bin/bash
+echo "🚀 Starting Agent Studio Backend (Production Mode)..."
+cd "$HOME/.agent-studio"
+export NODE_ENV=production
+export PORT=4936
+export SLIDES_DIR="$HOME/slides"
+echo "📂 Working directory: $(pwd)"
+echo "🌐 Backend port: 4936"
+echo "📑 Slides directory: $HOME/slides"
+echo ""
+echo "✨ Access the application at:"
+echo "   https://agentstudio-frontend.vercel.app/"
+echo ""
+echo "💡 Configure the backend URL in the web interface:"
+echo "   Settings → API Configuration → http://localhost:4936"
+echo ""
+node backend/dist/index.js
+EOF
+    else
+        # Development mode
+        cat > "$INSTALL_DIR/start.sh" << 'EOF'
+#!/bin/bash
+echo "🚀 Starting Agent Studio Backend (Development Mode)..."
+cd "$HOME/.agent-studio"
+export NODE_ENV=development
+export PORT=4936
+export SLIDES_DIR="$HOME/slides"
+echo "📂 Working directory: $(pwd)"
+echo "🌐 Backend port: 4936"
+echo "📑 Slides directory: $HOME/slides"
+echo ""
+echo "✨ Access the application at:"
+echo "   https://agentstudio-frontend.vercel.app/"
+echo ""
+echo "💡 Configure the backend URL in the web interface:"
+echo "   Settings → API Configuration → http://localhost:4936"
+echo ""
+if command -v pnpm >/dev/null 2>&1; then
+    pnpm run dev:backend
+else
+    npm run dev:backend
+fi
+EOF
+    fi
+
+    chmod +x "$INSTALL_DIR/start.sh"
+
+    # Create stop script
+    cat > "$INSTALL_DIR/stop.sh" << 'EOF'
+#!/bin/bash
+echo "🛑 Stopping Agent Studio Backend..."
+pkill -f "node backend" || echo "No process running"
+pkill -f "tsx backend" || echo "No development process running"
+EOF
+
+    chmod +x "$INSTALL_DIR/stop.sh"
     
-    ./install.sh
+    # Create config file
+    log "Creating configuration file..."
+    cat > "$USER_HOME/.agent-studio-config/config.env" << EOF
+# Agent Studio 配置
+NODE_ENV=production
+PORT=$SERVICE_PORT
+SLIDES_DIR=$USER_HOME/slides
+
+# 可选: AI 提供商
+# OPENAI_API_KEY=your_key_here
+# ANTHROPIC_API_KEY=your_key_here
+EOF
     
     success "Agent Studio installation completed"
+    
+    if [ "$BUILD_SUCCESS" = true ]; then
+        success "Build successful - will run in production mode"
+    else
+        warn "Build failed - will run in development mode (slower startup)"
+    fi
 }
 
 # Cleanup temp files
@@ -206,31 +293,43 @@ configure_service() {
     echo ""
     echo "The service can run without additional configuration."
     echo "API keys can be added later if needed by editing:"
-    echo "  /etc/$SERVICE_NAME/config.env"
+    echo "  $USER_HOME/.agent-studio-config/config.env"
 }
 
 # Start the service
 start_service() {
     echo ""
-    read -p "Would you like to start the Agent Studio service now? (y/N): " -n 1 -r
+    read -p "Would you like to start the Agent Studio backend now? (y/N): " -n 1 -r
     echo ""
-    
+
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        log "Starting Agent Studio service..."
-        
-        if command -v agent-studio >/dev/null 2>&1; then
-            agent-studio start
-            
-            # Wait a moment and check status
-            sleep 3
-            agent-studio status
+        log "Starting Agent Studio backend..."
+
+        if [ -f "$INSTALL_DIR/start.sh" ]; then
+            log "Running start script..."
+            "$INSTALL_DIR/start.sh" &
+
+            # Wait a moment and check if service started
+            sleep 5
+            if curl -s http://localhost:4936/api/health >/dev/null 2>&1; then
+                success "Backend started successfully!"
+                echo ""
+                echo "✨ Access the application at:"
+                echo "   https://agentstudio-frontend.vercel.app/"
+                echo ""
+                echo "💡 Configure the backend URL in the web interface:"
+                echo "   Settings → API Configuration → http://localhost:4936"
+            else
+                warn "Backend may still be starting up..."
+                log "You can check the status by running the start script again"
+            fi
         else
-            error "Service command not found. Please check the installation."
+            error "Start script not found. Please check the installation."
         fi
     else
         echo ""
-        echo "To start the service later, run:"
-        echo "  agent-studio start"
+        echo "To start the backend later, run:"
+        echo "  $INSTALL_DIR/start.sh"
     fi
 }
 
@@ -240,18 +339,18 @@ main() {
     echo "║       Agent Studio Remote Installer      ║"
     echo "║                                          ║"
     echo "║  This will install:                      ║"
-    echo "║  • Node.js 18+ (if not installed)       ║"
-    echo "║  • pnpm package manager                  ║"
-    echo "║  • Agent Studio Backend                  ║"
-    echo "║  • System service (ready to use)        ║"
+    echo "║  • Agent Studio Backend (user-local)    ║"
+    echo "║  • Dependencies (npm/pnpm)              ║"
+    echo "║  • Start/Stop scripts                   ║"
+    echo "║  • Configuration files                  ║"
     echo "╚══════════════════════════════════════════╝"
     echo ""
     
-    check_root
+    check_environment
     detect_os
-    install_git
-    install_nodejs
-    install_pnpm
+    check_git
+    check_nodejs
+    check_pnpm
     download_agent_studio
     run_installation
     configure_service
@@ -260,16 +359,22 @@ main() {
     echo ""
     echo "🎉 Installation Complete!"
     echo ""
-    echo "Agent Studio Backend is now installed and configured."
+    echo "Agent Studio Backend is now installed in your user directory."
     echo ""
     echo "Useful commands:"
-    echo "  agent-studio start      # Start the service"
-    echo "  agent-studio stop       # Stop the service"
-    echo "  agent-studio status     # Check service status"
-    echo "  agent-studio logs       # View logs"
-    echo "  agent-studio config     # Edit configuration"
+    echo "  $INSTALL_DIR/start.sh    # Start the backend"
+    echo "  $INSTALL_DIR/stop.sh     # Stop the backend"
     echo ""
-    echo "The service will be available at: http://localhost:4936"
+    echo "Configuration file:"
+    echo "  $USER_HOME/.agent-studio-config/config.env"
+    echo ""
+    echo "✨ Access the application at:"
+    echo "   https://agentstudio-frontend.vercel.app/"
+    echo ""
+    echo "💡 After starting the backend, configure the backend URL in the web interface:"
+    echo "   Settings → API Configuration → http://localhost:4936"
+    echo ""
+    echo "📁 Slides directory: $USER_HOME/slides"
     echo ""
     echo "For more information, visit:"
     echo "  https://github.com/$GITHUB_REPO"
