@@ -8,7 +8,7 @@ import {
   AlertCircle,
   X
 } from 'lucide-react';
-import { getCurrentHost, setHost } from '../lib/config.js';
+import { getCurrentHost, setHost } from '../lib/config';
 
 interface ApiSettingsModalProps {
   isOpen: boolean;
@@ -21,7 +21,7 @@ export const ApiSettingsModal: React.FC<ApiSettingsModalProps> = ({ isOpen, onCl
   const [connectionStatus, setConnectionStatus] = useState<'unknown' | 'success' | 'error'>('unknown');
   const [errorMessage, setErrorMessage] = useState('');
 
-  // Load current settings
+  // Load current settings when modal opens
   useEffect(() => {
     if (isOpen) {
       const currentHost = getCurrentHost();
@@ -31,6 +31,8 @@ export const ApiSettingsModal: React.FC<ApiSettingsModalProps> = ({ isOpen, onCl
       } else {
         setApiHost(currentHost);
       }
+      setConnectionStatus('unknown');
+      setErrorMessage('');
     }
   }, [isOpen]);
 
@@ -80,7 +82,6 @@ export const ApiSettingsModal: React.FC<ApiSettingsModalProps> = ({ isOpen, onCl
     if (connectionStatus === 'success') {
       setHost(apiHost.trim());
       alert('设置已保存，页面将刷新以应用新设置');
-      onClose();
       window.location.reload();
     }
   };
@@ -107,11 +108,11 @@ export const ApiSettingsModal: React.FC<ApiSettingsModalProps> = ({ isOpen, onCl
   const getStatusIcon = () => {
     switch (connectionStatus) {
       case 'success':
-        return <CheckCircle className="w-5 h-5 text-green-500" />;
+        return <CheckCircle className="w-4 h-4 text-green-500" />;
       case 'error':
-        return <XCircle className="w-5 h-5 text-red-500" />;
+        return <XCircle className="w-4 h-4 text-red-500" />;
       default:
-        return <AlertCircle className="w-5 h-5 text-gray-500" />;
+        return <AlertCircle className="w-4 h-4 text-gray-500" />;
     }
   };
 
@@ -130,7 +131,7 @@ export const ApiSettingsModal: React.FC<ApiSettingsModalProps> = ({ isOpen, onCl
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center space-x-3">
@@ -146,108 +147,104 @@ export const ApiSettingsModal: React.FC<ApiSettingsModalProps> = ({ isOpen, onCl
         </div>
 
         {/* Content */}
-        <div className="p-6">
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="api-host" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                API服务器地址
-              </label>
-              <div className="flex space-x-2">
-                <input
-                  id="api-host"
-                  type="url"
-                  value={apiHost}
-                  onChange={(e) => setApiHost(e.target.value)}
-                  placeholder="http://localhost:4936 或 https://your-domain.com"
-                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm 
-                           focus:outline-none focus:ring-blue-500 focus:border-blue-500 
-                           dark:bg-gray-700 dark:text-white"
-                />
+        <div className="p-6 space-y-4">
+          <div>
+            <label htmlFor="api-host" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              API服务器地址
+            </label>
+            <div className="flex space-x-2">
+              <input
+                id="api-host"
+                type="url"
+                value={apiHost}
+                onChange={(e) => setApiHost(e.target.value)}
+                placeholder="http://localhost:4936 或 https://your-domain.com"
+                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm 
+                         focus:outline-none focus:ring-blue-500 focus:border-blue-500 
+                         dark:bg-gray-700 dark:text-white text-sm"
+              />
+              <button
+                onClick={handleTest}
+                disabled={isConnecting || !apiHost.trim()}
+                className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md 
+                         disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1 text-sm"
+              >
+                {isConnecting ? (
+                  <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Server className="w-3 h-3" />
+                )}
+                <span>测试</span>
+              </button>
+            </div>
+            
+            {/* Quick Select Buttons */}
+            <div className="mt-3">
+              <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">快捷选择：</p>
+              <div className="flex flex-wrap gap-2">
                 <button
-                  onClick={handleTest}
-                  disabled={isConnecting || !apiHost.trim()}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md 
-                           disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                  onClick={() => handleQuickSelect('http://127.0.0.1:4936')}
+                  className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 
+                           text-gray-700 dark:text-gray-300 rounded border border-gray-300 dark:border-gray-600 
+                           transition-colors duration-200"
                 >
-                  {isConnecting ? (
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <Server className="w-4 h-4" />
-                  )}
-                  <span>测试连接</span>
+                  本地开发
+                </button>
+                <button
+                  onClick={() => handleQuickSelect('https://srv.agentstudio.cc')}
+                  className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 
+                           text-gray-700 dark:text-gray-300 rounded border border-gray-300 dark:border-gray-600 
+                           transition-colors duration-200"
+                >
+                  官方服务器
                 </button>
               </div>
-              
-              {/* Quick Select Buttons */}
-              <div className="mt-3">
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">快捷选择：</p>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={() => handleQuickSelect('http://127.0.0.1:4936')}
-                    className="px-3 py-1.5 text-xs bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 
-                             text-gray-700 dark:text-gray-300 rounded-md border border-gray-300 dark:border-gray-600 
-                             transition-colors duration-200 flex items-center space-x-1"
-                  >
-                    <span>@</span>
-                    <span>http://127.0.0.1:4936</span>
-                  </button>
-                  <button
-                    onClick={() => handleQuickSelect('https://srv.agentstudio.cc')}
-                    className="px-3 py-1.5 text-xs bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 
-                             text-gray-700 dark:text-gray-300 rounded-md border border-gray-300 dark:border-gray-600 
-                             transition-colors duration-200 flex items-center space-x-1"
-                  >
-                    <span>@</span>
-                    <span>https://srv.agentstudio.cc</span>
-                  </button>
-                </div>
-              </div>
             </div>
+          </div>
 
-            {/* Connection Status */}
-            <div className="flex items-center space-x-2">
-              {getStatusIcon()}
-              <span className={`text-sm ${
-                connectionStatus === 'success' ? 'text-green-600 dark:text-green-400' :
-                connectionStatus === 'error' ? 'text-red-600 dark:text-red-400' :
-                'text-gray-600 dark:text-gray-400'
-              }`}>
-                连接状态: {getStatusText()}
-              </span>
+          {/* Connection Status */}
+          <div className="flex items-center space-x-2">
+            {getStatusIcon()}
+            <span className={`text-sm ${
+              connectionStatus === 'success' ? 'text-green-600 dark:text-green-400' :
+              connectionStatus === 'error' ? 'text-red-600 dark:text-red-400' :
+              'text-gray-600 dark:text-gray-400'
+            }`}>
+              连接状态: {getStatusText()}
+            </span>
+          </div>
+
+          {errorMessage && (
+            <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+              <p className="text-sm text-red-600 dark:text-red-400">{errorMessage}</p>
             </div>
+          )}
 
-            {errorMessage && (
-              <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
-                <p className="text-sm text-red-600 dark:text-red-400">{errorMessage}</p>
-              </div>
-            )}
-
-            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md p-4">
-              <h4 className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-2">使用说明：</h4>
-              <ul className="text-sm text-blue-700 dark:text-blue-400 space-y-1">
-                <li>• 在本地开发时，使用 <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">http://localhost:4936</code></li>
-                <li>• 在生产环境中，使用您的服务器域名，如 <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">https://your-domain.com</code></li>
-                <li>• 确保服务器支持CORS访问，允许前端域名访问</li>
-                <li>• 修改后需要刷新页面才能生效</li>
-              </ul>
-            </div>
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md p-3">
+            <h4 className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-2">使用说明：</h4>
+            <ul className="text-xs text-blue-700 dark:text-blue-400 space-y-1">
+              <li>• 本地开发时使用 <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">http://localhost:4936</code></li>
+              <li>• 生产环境使用您的服务器域名</li>
+              <li>• 确保服务器支持CORS访问</li>
+              <li>• 修改后页面会自动刷新</li>
+            </ul>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="flex justify-between p-6 border-t border-gray-200 dark:border-gray-700">
+        <div className="flex justify-between items-center p-6 border-t border-gray-200 dark:border-gray-700">
           <button
             onClick={handleReset}
-            className="flex items-center space-x-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-md"
+            className="flex items-center space-x-2 px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-md text-sm"
           >
             <RotateCcw className="w-4 h-4" />
-            <span>重置为默认</span>
+            <span>重置</span>
           </button>
 
-          <div className="flex space-x-3">
+          <div className="flex space-x-2">
             <button
               onClick={onClose}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
+              className="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-md text-sm"
             >
               取消
             </button>
@@ -255,10 +252,10 @@ export const ApiSettingsModal: React.FC<ApiSettingsModalProps> = ({ isOpen, onCl
               onClick={handleSave}
               disabled={isConnecting || connectionStatus === 'error'}
               className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md 
-                       disabled:opacity-50 disabled:cursor-not-allowed"
+                       disabled:opacity-50 disabled:cursor-not-allowed text-sm"
             >
               <Save className="w-4 h-4" />
-              <span>保存设置</span>
+              <span>保存</span>
             </button>
           </div>
         </div>
