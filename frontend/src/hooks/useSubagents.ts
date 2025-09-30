@@ -1,17 +1,26 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Subagent, SubagentCreate, SubagentUpdate, SubagentFilter } from '../types/subagents';
-import { API_BASE } from '../lib/config';
+import { API_BASE, isApiUnavailableError } from '../lib/config';
 
 // API functions
 const fetchSubagents = async (filter: SubagentFilter = {}): Promise<Subagent[]> => {
-  const params = new URLSearchParams();
-  if (filter.search) params.append('search', filter.search);
+  try {
+    const params = new URLSearchParams();
+    if (filter.search) params.append('search', filter.search);
 
-  const response = await fetch(`${API_BASE}/subagents?${params}`);
-  if (!response.ok) {
-    throw new Error('Failed to fetch subagents');
+    const response = await fetch(`${API_BASE}/subagents?${params}`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch subagents');
+    }
+    return response.json();
+  } catch (error) {
+    // If it's an API unavailable error, return empty data instead of throwing
+    if (isApiUnavailableError(error)) {
+      return [];
+    }
+    // For other errors, still throw
+    throw error;
   }
-  return response.json();
 };
 
 const fetchSubagent = async (id: string): Promise<Subagent> => {
@@ -67,6 +76,7 @@ export const useSubagents = (filter: SubagentFilter = {}) => {
   return useQuery({
     queryKey: ['subagents', filter],
     queryFn: () => fetchSubagents(filter),
+    retry: false, // Disable auto retry for list pages
   });
 };
 

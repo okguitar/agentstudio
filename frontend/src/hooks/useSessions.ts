@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { API_BASE } from '../lib/config';
+import { API_BASE, isApiUnavailableError } from '../lib/config';
 
 export interface SessionInfo {
   sessionId: string;
@@ -20,18 +20,40 @@ export interface SessionsResponse {
 }
 
 const fetchSessions = async (): Promise<SessionsResponse> => {
-  const response = await fetch(`${API_BASE}/agents/sessions`);
-  if (!response.ok) {
-    throw new Error('Failed to fetch sessions');
+  try {
+    const response = await fetch(`${API_BASE}/agents/sessions`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch sessions');
+    }
+    return response.json();
+  } catch (error) {
+    // If it's an API unavailable error, return empty data instead of throwing
+    if (isApiUnavailableError(error)) {
+      return {
+        activeSessionCount: 0,
+        sessions: [],
+        message: 'API service unavailable'
+      };
+    }
+    // For other errors, still throw
+    throw error;
   }
-  return response.json();
 };
 
 export const useSessions = () => {
   return useQuery({
     queryKey: ['sessions'],
     queryFn: fetchSessions,
-    refetchInterval: 5000, // Refresh every 5 seconds
+    refetchInterval: 5000, // Normal refresh every 5 seconds
+    retry: (failureCount, error) => {
+      // Don't retry if it's an API unavailable error (though this shouldn't happen now)
+      if (isApiUnavailableError(error)) {
+        return false;
+      }
+      // For other errors, retry up to 3 times
+      return failureCount < 3;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 };
 

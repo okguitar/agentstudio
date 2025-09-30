@@ -1,20 +1,29 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { SlashCommand, SlashCommandCreate, SlashCommandUpdate, SlashCommandFilter } from '../types/commands';
-import { API_BASE } from '../lib/config';
+import { API_BASE, isApiUnavailableError } from '../lib/config';
 
 
 // API functions
 const fetchCommands = async (filter: SlashCommandFilter = {}): Promise<SlashCommand[]> => {
-  const params = new URLSearchParams();
-  if (filter.scope && filter.scope !== 'all') params.append('scope', filter.scope);
-  if (filter.namespace) params.append('namespace', filter.namespace);
-  if (filter.search) params.append('search', filter.search);
+  try {
+    const params = new URLSearchParams();
+    if (filter.scope && filter.scope !== 'all') params.append('scope', filter.scope);
+    if (filter.namespace) params.append('namespace', filter.namespace);
+    if (filter.search) params.append('search', filter.search);
 
-  const response = await fetch(`${API_BASE}/commands?${params}`);
-  if (!response.ok) {
-    throw new Error('Failed to fetch commands');
+    const response = await fetch(`${API_BASE}/commands?${params}`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch commands');
+    }
+    return response.json();
+  } catch (error) {
+    // If it's an API unavailable error, return empty data instead of throwing
+    if (isApiUnavailableError(error)) {
+      return [];
+    }
+    // For other errors, still throw
+    throw error;
   }
-  return response.json();
 };
 
 const fetchCommand = async (id: string): Promise<SlashCommand> => {
@@ -76,6 +85,7 @@ export const useCommands = (filter?: SlashCommandFilter) => {
     queryKey: ['commands', filter],
     queryFn: () => fetchCommands(filter),
     staleTime: 1000 * 60 * 5, // 5 minutes
+    retry: false, // Disable auto retry for list pages
   });
 };
 

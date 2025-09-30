@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -14,11 +14,12 @@ import {
   Palette
 } from 'lucide-react';
 import { ApiSettingsModal } from './ApiSettingsModal';
+import { getCurrentHost } from '../lib/config';
 
 const navigationItems = [
   {
     name: '仪表板',
-    href: '/',
+    href: '/dashboard',
     icon: LayoutDashboard,
   },
   {
@@ -77,6 +78,52 @@ export const Sidebar: React.FC = () => {
     return location.pathname.startsWith('/settings') ? ['系统设置'] : [];
   });
   const [showApiModal, setShowApiModal] = useState(false);
+  const [apiStatus, setApiStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking');
+
+  // Check API health status
+  const checkApiHealth = async () => {
+    try {
+      const currentHost = getCurrentHost();
+      if (!currentHost) {
+        setApiStatus('disconnected');
+        return;
+      }
+
+      const healthUrl = `${currentHost}/api/health`;
+      const response = await fetch(healthUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        signal: AbortSignal.timeout(3000) // 3 second timeout
+      });
+
+      if (response.ok) {
+        setApiStatus('connected');
+      } else {
+        setApiStatus('disconnected');
+      }
+    } catch (error) {
+      setApiStatus('disconnected');
+    }
+  };
+
+  // Initial health check and periodic checks
+  useEffect(() => {
+    checkApiHealth(); // Initial check
+
+    // Check every 30 seconds
+    const interval = setInterval(checkApiHealth, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Also check when modal closes (in case settings were changed)
+  useEffect(() => {
+    if (!showApiModal && apiStatus !== 'checking') {
+      setTimeout(checkApiHealth, 1000); // Check 1 second after modal closes
+    }
+  }, [showApiModal, apiStatus]);
 
   const toggleMenu = (itemName: string) => {
     setExpandedMenus(prev => 
@@ -92,7 +139,32 @@ export const Sidebar: React.FC = () => {
     if (hasSubmenu) {
       return location.pathname.startsWith(href);
     }
-    return location.pathname === href || (href === '/' && location.pathname === '/');
+    return location.pathname === href;
+  };
+
+  // Get API status button styles
+  const getApiButtonStyles = () => {
+    switch (apiStatus) {
+      case 'connected':
+        return {
+          iconClass: 'w-4 h-4 text-green-500',
+          buttonClass: 'p-1.5 text-green-500 hover:text-green-600 hover:bg-green-50 rounded-md transition-colors',
+          title: 'API服务器设置 - 连接正常'
+        };
+      case 'disconnected':
+        return {
+          iconClass: 'w-4 h-4 text-red-500',
+          buttonClass: 'p-1.5 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors',
+          title: 'API服务器设置 - 连接失败'
+        };
+      case 'checking':
+      default:
+        return {
+          iconClass: 'w-4 h-4 text-gray-400',
+          buttonClass: 'p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors',
+          title: 'API服务器设置 - 检查中...'
+        };
+    }
   };
 
   const renderNavItem = (item: any) => {
@@ -153,7 +225,6 @@ export const Sidebar: React.FC = () => {
       <li key={item.name}>
         <NavLink
           to={item.href}
-          end={item.href === '/'}
           className={({ isActive }) =>
             `flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
               isActive
@@ -197,13 +268,32 @@ export const Sidebar: React.FC = () => {
           <div className="text-xs text-gray-500">
             版本 1.0.0
           </div>
-          <button
-            onClick={() => setShowApiModal(true)}
-            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
-            title="API服务器设置"
-          >
-            <Server className="w-4 h-4" />
-          </button>
+          
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setShowApiModal(true)}
+              className={getApiButtonStyles().buttonClass}
+              title={getApiButtonStyles().title}
+            >
+              <Server className={getApiButtonStyles().iconClass} />
+            </button>
+            {apiStatus === 'disconnected' && (
+              <span className="text-xs text-red-500 api-text-breathing cursor-pointer" 
+                    onClick={() => setShowApiModal(true)}>
+                服务不可用
+              </span>
+            )}
+            {apiStatus === 'connected' && (
+              <span className="text-xs text-green-600">
+                服务正常
+              </span>
+            )}
+            {apiStatus === 'checking' && (
+              <span className="text-xs text-gray-500">
+                检查中...
+              </span>
+            )}
+          </div>
         </div>
       </div>
 

@@ -140,6 +140,7 @@ export const SessionsDashboard: React.FC = () => {
   }
 
   const sessions = sessionsData?.sessions || [];
+  const activeSessionCount = sessionsData?.activeSessionCount || 0;
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -151,7 +152,7 @@ export const SessionsDashboard: React.FC = () => {
           <div>
             <h2 className="text-xl font-semibold text-gray-900">活跃会话</h2>
             <p className="text-sm text-gray-500">
-              当前活跃: {sessionsData?.activeSessionCount || 0} 个会话
+              当前活跃: {activeSessionCount} 个会话
             </p>
           </div>
         </div>

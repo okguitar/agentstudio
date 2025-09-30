@@ -46,4 +46,39 @@ export const setHost = (newHost: string): void => {
   window.location.reload();
 };
 
+// Helper function to check if error is due to API server being unavailable
+export const isApiUnavailableError = (error: any): boolean => {
+  if (!error) return false;
+  
+  // Network errors (fetch failed, connection refused, etc.)
+  if (error.name === 'TypeError' && error.message?.includes('fetch')) {
+    return true;
+  }
+  
+  // Connection timeout or abort errors
+  if (error.name === 'AbortError' || error.message?.includes('AbortError')) {
+    return true;
+  }
+  
+  // Connection refused or network unreachable
+  if (error.message?.includes('ERR_CONNECTION_REFUSED') || 
+      error.message?.includes('ERR_NETWORK') ||
+      error.message?.includes('Failed to fetch') ||
+      error.message?.includes('NetworkError')) {
+    return true;
+  }
+  
+  // HTTP status codes that indicate server unavailable
+  if (error.status && (
+    error.status === 0 ||      // Network error
+    error.status === 502 ||    // Bad Gateway
+    error.status === 503 ||    // Service Unavailable
+    error.status === 504       // Gateway Timeout
+  )) {
+    return true;
+  }
+  
+  return false;
+};
+
 export { API_BASE, MEDIA_BASE, HOST };
