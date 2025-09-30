@@ -60,12 +60,13 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
     setError(null);
     
     try {
-      const url = new URL('/files/browse', API_BASE);
+      const searchParams = new URLSearchParams();
       if (path) {
-        url.searchParams.set('path', path);
+        searchParams.set('path', path);
       }
       
-      const response = await fetch(url.toString());
+      const url = `${API_BASE}/files/browse?${searchParams.toString()}`;
+      const response = await fetch(url);
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to browse directory');

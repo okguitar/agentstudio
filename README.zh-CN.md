@@ -385,3 +385,7 @@ cd frontend && pnpm run test:ui
 - 📖 [文档](https://github.com/git-men/agentstudio/wiki)
 - 🐛 [问题报告](https://github.com/git-men/agentstudio/issues)
 - 💬 [讨论区](https://github.com/git-men/agentstudio/discussions)
+
+## 🚗 Claude/Codex 拼车服务, 一种更省力的使用 Claude Code / Codex CLI的方式。
+
+**[ctok.ai](https://ctok.ai/)**   <small>✅ Claude Code<br>✅ Codex CLI</small>  热心网友提供 Claude Code / Codex CLI 拼车

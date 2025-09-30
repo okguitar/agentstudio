@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Bot, 
@@ -73,6 +73,7 @@ const navigationItems = [
 
 export const Sidebar: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [expandedMenus, setExpandedMenus] = useState<string[]>(() => {
     // Auto-expand the settings menu if we're on a settings page
     return location.pathname.startsWith('/settings') ? ['系统设置'] : [];
@@ -244,7 +245,10 @@ export const Sidebar: React.FC = () => {
     <div className="w-64 bg-white shadow-sm border-r border-gray-200 flex flex-col h-full z-40">
       {/* Logo */}
       <div className="px-6 py-8 flex-shrink-0">
-        <div className="flex items-center space-x-3">
+        <button 
+          onClick={() => navigate('/')}
+          className="flex items-center space-x-3 w-full text-left hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-lg p-2"
+        >
           <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
             <img src="/cc-studio.png" alt="CC Studio" className="w-10 h-10" />
           </div>
@@ -252,7 +256,7 @@ export const Sidebar: React.FC = () => {
             <h1 className="text-xl font-bold text-gray-900">CC Studio</h1>
             <p className="text-sm text-gray-500">Claude Code Studio</p>
           </div>
-        </div>
+        </button>
       </div>
 
       {/* Navigation */}

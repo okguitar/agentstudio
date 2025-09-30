@@ -171,7 +171,7 @@ Please respond in Chinese.`,
       componentType: 'code'
     },
     tags: ['coding', 'development', 'review', 'debugging'],
-    enabled: true
+    enabled: false
   },
   {
     id: 'document-writer',
