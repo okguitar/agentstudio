@@ -27,7 +27,7 @@ async function ensureDir(dirPath: string) {
 }
 
 // GET /api/projects - Get all projects
-router.get('/', async (req, res) => {
+router.get('/', async (_req, res) => {
   try {
     const projects = projectStorage.getAllProjects();
     res.json({ projects });
@@ -475,7 +475,6 @@ router.put('/by-id/:projectId', (req, res) => {
     // Find project by ID
     const agents = globalAgentStorage.getAllAgents();
     let targetProject = null;
-    let targetAgent = null;
     
     for (const agent of agents) {
       if (agent.projects && agent.projects.length > 0) {
@@ -483,7 +482,6 @@ router.put('/by-id/:projectId', (req, res) => {
           const id = `${agent.id}-${Buffer.from(projectPath).toString('base64').replace(/[+/=]/g, '').slice(-8)}`;
           if (id === projectId) {
             targetProject = projectPath;
-            targetAgent = agent;
             break;
           }
         }
@@ -537,10 +535,33 @@ router.delete('/by-id/:projectId', (req, res) => {
   try {
     const { projectId } = req.params;
     
-    // Find project by ID
+    // Check if it's a new format project ID (starts with "project_")
+    if (projectId.startsWith('project_')) {
+      // Handle new project metadata format
+      const allProjects = projectStorage.getAllProjects();
+      const project = allProjects.find(p => p.id === projectId);
+      
+      if (!project) {
+        return res.status(404).json({ error: 'Project not found' });
+      }
+      
+      // Delete project metadata
+      const success = projectStorage.deleteProject(project.dirName);
+      if (!success) {
+        return res.status(404).json({ error: 'Project not found' });
+      }
+      
+      res.json({ 
+        success: true, 
+        message: 'Project removed successfully',
+        note: 'Project directory was not deleted from filesystem'
+      });
+      return;
+    }
+    
+    // Handle legacy agent project format
     const agents = globalAgentStorage.getAllAgents();
     let targetProject = null;
-    let targetAgent = null;
     
     for (const agent of agents) {
       if (agent.projects && agent.projects.length > 0) {
@@ -549,7 +570,6 @@ router.delete('/by-id/:projectId', (req, res) => {
           const id = `${agent.id}-${Buffer.from(projectPath).toString('base64').replace(/[+/=]/g, '').slice(-8)}`;
           if (id === projectId) {
             targetProject = projectPath;
-            targetAgent = agent;
             
             // Remove project from agent's projects list
             agent.projects.splice(i, 1);
