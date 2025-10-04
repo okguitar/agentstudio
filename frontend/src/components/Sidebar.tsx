@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Bot, 
-  Server, 
+import {
+  LayoutDashboard,
+  Bot,
+  Server,
   Settings,
   FolderOpen,
   Command,
@@ -13,57 +13,58 @@ import {
   Brain,
   Palette
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { ApiSettingsModal } from './ApiSettingsModal';
 import { getCurrentHost } from '../lib/config';
 
-const navigationItems = [
+const getNavigationItems = (t: (key: string) => string) => [
   {
-    name: '仪表板',
+    name: t('nav.dashboard'),
     href: '/dashboard',
     icon: LayoutDashboard,
   },
   {
-    name: '项目管理',
+    name: t('nav.projects'),
     href: '/projects',
     icon: FolderOpen,
   },
   {
-    name: 'Agent管理',
+    name: t('nav.agents'),
     href: '/agents',
     icon: Bot,
   },
   {
-    name: 'MCP服务',
+    name: t('nav.mcp'),
     href: '/mcp',
     icon: Server,
   },
   {
-    name: '系统设置',
+    name: t('nav.settings'),
     href: '/settings',
     icon: Settings,
     submenu: [
       {
-        name: '通用设置',
+        name: t('nav.settingsSubmenu.general'),
         href: '/settings/general',
         icon: Palette,
       },
       {
-        name: '版本管理',
+        name: t('nav.settingsSubmenu.versions'),
         href: '/settings/versions',
         icon: Terminal,
       },
       {
-        name: '全局记忆',
+        name: t('nav.settingsSubmenu.memory'),
         href: '/settings/memory',
         icon: Brain,
       },
       {
-        name: '自定义命令',
+        name: t('nav.settingsSubmenu.commands'),
         href: '/settings/commands',
         icon: Command,
       },
       {
-        name: 'Subagent管理',
+        name: t('nav.settingsSubmenu.subagents'),
         href: '/settings/subagents',
         icon: Bot,
       },
@@ -72,14 +73,17 @@ const navigationItems = [
 ];
 
 export const Sidebar: React.FC = () => {
+  const { t } = useTranslation('pages');
   const location = useLocation();
   const navigate = useNavigate();
   const [expandedMenus, setExpandedMenus] = useState<string[]>(() => {
     // Auto-expand the settings menu if we're on a settings page
-    return location.pathname.startsWith('/settings') ? ['系统设置'] : [];
+    return location.pathname.startsWith('/settings') ? [t('nav.settings')] : [];
   });
   const [showApiModal, setShowApiModal] = useState(false);
   const [apiStatus, setApiStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking');
+
+  const navigationItems = getNavigationItems(t);
 
   // Check API health status
   const checkApiHealth = async () => {
@@ -126,15 +130,15 @@ export const Sidebar: React.FC = () => {
     }
   }, [showApiModal, apiStatus]);
 
-  const toggleMenu = (itemName: string) => {
-    setExpandedMenus(prev => 
-      prev.includes(itemName) 
-        ? prev.filter(name => name !== itemName)
-        : [...prev, itemName]
+  const toggleMenu = (itemKey: string) => {
+    setExpandedMenus(prev =>
+      prev.includes(itemKey)
+        ? prev.filter(key => key !== itemKey)
+        : [...prev, itemKey]
     );
   };
 
-  const isMenuExpanded = (itemName: string) => expandedMenus.includes(itemName);
+  const isMenuExpanded = (itemKey: string) => expandedMenus.includes(itemKey);
   
   const isItemActive = (href: string, hasSubmenu: boolean) => {
     if (hasSubmenu) {
@@ -150,20 +154,20 @@ export const Sidebar: React.FC = () => {
         return {
           iconClass: 'w-4 h-4 text-green-500',
           buttonClass: 'p-1.5 text-green-500 hover:text-green-600 hover:bg-green-50 rounded-md transition-colors',
-          title: 'API服务器设置 - 连接正常'
+          title: t('footer.apiServerStatus.connected')
         };
       case 'disconnected':
         return {
           iconClass: 'w-4 h-4 text-red-500',
           buttonClass: 'p-1.5 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors',
-          title: 'API服务器设置 - 连接失败'
+          title: t('footer.apiServerStatus.disconnected')
         };
       case 'checking':
       default:
         return {
           iconClass: 'w-4 h-4 text-gray-400',
           buttonClass: 'p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors',
-          title: 'API服务器设置 - 检查中...'
+          title: t('footer.apiServerStatus.checking')
         };
     }
   };
@@ -175,7 +179,7 @@ export const Sidebar: React.FC = () => {
 
     if (hasSubmenu) {
       return (
-        <li key={item.name}>
+        <li key={item.nameKey}>
           <div className="space-y-1">
             {/* Parent Menu Item */}
             <button
@@ -270,9 +274,9 @@ export const Sidebar: React.FC = () => {
       <div className="flex-shrink-0 p-4 border-t border-gray-200">
         <div className="flex items-center justify-between">
           <div className="text-xs text-gray-500">
-            版本 1.0.0
+            {t('footer.version', { version: '1.0.0' })}
           </div>
-          
+
           <div className="flex items-center space-x-2">
             <button
               onClick={() => setShowApiModal(true)}
@@ -282,19 +286,19 @@ export const Sidebar: React.FC = () => {
               <Server className={getApiButtonStyles().iconClass} />
             </button>
             {apiStatus === 'disconnected' && (
-              <span className="text-xs text-red-500 api-text-breathing cursor-pointer" 
+              <span className="text-xs text-red-500 api-text-breathing cursor-pointer"
                     onClick={() => setShowApiModal(true)}>
-                服务不可用
+                {t('footer.serviceStatus.unavailable')}
               </span>
             )}
             {apiStatus === 'connected' && (
               <span className="text-xs text-green-600">
-                服务正常
+                {t('footer.serviceStatus.normal')}
               </span>
             )}
             {apiStatus === 'checking' && (
               <span className="text-xs text-gray-500">
-                检查中...
+                {t('footer.serviceStatus.checking')}
               </span>
             )}
           </div>

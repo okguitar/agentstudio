@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Folder, FolderPlus, X, Search } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import type { AgentConfig } from '../types/index.js';
 import { useCreateProject, useAgentProjects } from '../hooks/useAgents.js';
 import { FileBrowser } from './FileBrowser.js';
@@ -17,6 +18,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
   onProjectSelect,
   onClose
 }) => {
+  const { t } = useTranslation('components');
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [showFileBrowser, setShowFileBrowser] = useState(false);
   const [showNewProjectBrowser, setShowNewProjectBrowser] = useState(false);
@@ -49,7 +51,9 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
       onProjectSelect(result.project.path);
     } catch (error) {
       console.error('Failed to create project:', error);
-      alert(`创建项目失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      alert(t('projectSelector.createProjectFailed', {
+        error: error instanceof Error ? error.message : t('projectSelector.unknownError')
+      }));
     } finally {
       setIsCreatingProject(false);
     }
@@ -85,7 +89,9 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
       onProjectSelect(result.project.path);
     } catch (error) {
       console.error('Failed to create project:', error);
-      alert(`创建项目失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      alert(t('projectSelector.createProjectFailed', {
+        error: error instanceof Error ? error.message : t('projectSelector.unknownError')
+      }));
     } finally {
       setIsCreatingProject(false);
       setShowProjectNameDialog(false);
@@ -138,9 +144,9 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
       } else {
         // Directory is not a project yet, ask user if they want to import it
         const confirmed = window.confirm(
-          `该目录尚未作为 ${agent.name} 的项目。\n\n是否要将此目录导入作为新项目？\n\n路径: ${path}`
+          t('projectSelector.importConfirmation', { agentName: agent.name, path })
         );
-        
+
         if (confirmed) {
           // Add this directory to agent's projects and select it
           onProjectSelect(path);
@@ -159,7 +165,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
             <div className="text-2xl">{agent.ui.icon}</div>
             <div>
               <h3 className="text-lg font-semibold text-gray-900">{agent.name}</h3>
-              <p className="text-sm text-gray-500">选择项目目录</p>
+              <p className="text-sm text-gray-500">{t('projectSelector.selectProjectDirectory')}</p>
             </div>
           </div>
           <button
@@ -174,7 +180,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
         <div className="flex flex-1 min-h-0 flex-col md:flex-row">
           {/* Left Panel - Action Buttons */}
           <div className="w-full md:w-1/2 p-6 md:border-r border-gray-200">
-            <h4 className="text-base font-medium text-gray-900 mb-4">项目操作</h4>
+            <h4 className="text-base font-medium text-gray-900 mb-4">{t('projectSelector.projectActions')}</h4>
             <div className="space-y-3">
               <button
                 onClick={handleNewProject}
@@ -187,14 +193,14 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
                 </div>
                 <div className="text-left flex-1">
                   <div className="font-medium text-gray-900">
-                    {isCreatingProject ? '正在创建项目...' : '快速新建项目'}
+                    {isCreatingProject ? t('projectSelector.creatingProject') : t('projectSelector.quickCreateProject')}
                   </div>
                   <div className="text-sm text-gray-500 mt-1">
-                    在 ~/claude-code-projects 中自动创建
+                    {t('projectSelector.quickCreateDescription')}
                   </div>
                 </div>
               </button>
-              
+
               <button
                 onClick={handleNewProjectWithCustomLocation}
                 disabled={isCreatingProject}
@@ -204,11 +210,11 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
                   <FolderPlus className="w-6 h-6 text-gray-600" />
                 </div>
                 <div className="text-left flex-1">
-                  <div className="font-medium text-gray-900">自定义位置新建</div>
-                  <div className="text-sm text-gray-500 mt-1">选择目录和项目名称</div>
+                  <div className="font-medium text-gray-900">{t('projectSelector.customLocationCreate')}</div>
+                  <div className="text-sm text-gray-500 mt-1">{t('projectSelector.customLocationDescription')}</div>
                 </div>
               </button>
-              
+
               <button
                 onClick={handleBrowseProject}
                 className="w-full flex items-center space-x-4 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
@@ -217,8 +223,8 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
                   <Search className="w-6 h-6 text-gray-600" />
                 </div>
                 <div className="text-left flex-1">
-                  <div className="font-medium text-gray-900">浏览选择项目</div>
-                  <div className="text-sm text-gray-500 mt-1">通过文件浏览器选择项目目录</div>
+                  <div className="font-medium text-gray-900">{t('projectSelector.browseProject')}</div>
+                  <div className="text-sm text-gray-500 mt-1">{t('projectSelector.browseDescription')}</div>
                 </div>
               </button>
             </div>
@@ -226,13 +232,13 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
 
           {/* Right Panel - Recent Projects */}
           <div className="w-full md:w-1/2 p-6 flex flex-col min-h-[300px] md:min-h-0">
-            <h4 className="text-base font-medium text-gray-900 mb-4">最近使用的项目</h4>
-            
+            <h4 className="text-base font-medium text-gray-900 mb-4">{t('projectSelector.recentProjects')}</h4>
+
             {projectsLoading ? (
               <div className="flex-1 flex items-center justify-center">
                 <div className="text-center text-gray-500">
                   <div className="animate-spin w-8 h-8 border-4 border-gray-300 border-t-blue-600 rounded-full mx-auto mb-3"></div>
-                  <p className="text-sm">正在加载项目...</p>
+                  <p className="text-sm">{t('projectSelector.loadingProjects')}</p>
                 </div>
               </div>
             ) : agentProjects.length > 0 ? (
@@ -258,7 +264,9 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
                           {project.path}
                         </div>
                         <div className="text-xs text-gray-400 mt-1">
-                          最后访问: {new Date(project.lastAccessed).toLocaleString()}
+                          {t('projectSelector.lastAccessed', {
+                            date: new Date(project.lastAccessed).toLocaleString()
+                          })}
                         </div>
                       </div>
                     </button>
@@ -269,8 +277,8 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
               <div className="flex-1 flex items-center justify-center">
                 <div className="text-center text-gray-500">
                   <Folder className="w-16 h-16 text-gray-300 mx-auto mb-3" />
-                  <p className="text-base font-medium">暂无最近使用的项目</p>
-                  <p className="text-sm text-gray-400 mt-1">创建新项目开始使用</p>
+                  <p className="text-base font-medium">{t('projectSelector.noRecentProjects')}</p>
+                  <p className="text-sm text-gray-400 mt-1">{t('projectSelector.createProjectToStart')}</p>
                 </div>
               </div>
             )}
@@ -283,7 +291,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
             onClick={onClose}
             className="px-6 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
           >
-            取消
+            {t('projectSelector.cancel')}
           </button>
         </div>
       </div>
@@ -291,18 +299,18 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
       {/* File Browser Modal for Browsing Projects */}
       {showFileBrowser && (
         <FileBrowser
-          title="选择项目目录"
+          title={t('projectSelector.selectProjectDirectory')}
           allowFiles={false}
           allowDirectories={true}
           onSelect={handleFileSelect}
           onClose={() => setShowFileBrowser(false)}
         />
       )}
-      
+
       {/* File Browser Modal for New Project Directory */}
       {showNewProjectBrowser && (
         <FileBrowser
-          title="选择新项目的父目录"
+          title={t('projectSelector.selectParentDirectory')}
           allowFiles={false}
           allowDirectories={true}
           allowNewDirectory={true}
@@ -333,8 +341,9 @@ interface ProjectNameDialogProps {
 }
 
 const ProjectNameDialog: React.FC<ProjectNameDialogProps> = ({ parentDirectory, onConfirm, onCancel }) => {
+  const { t } = useTranslation('components');
   const [projectName, setProjectName] = useState('');
-  
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (projectName.trim()) {
@@ -346,7 +355,7 @@ const ProjectNameDialog: React.FC<ProjectNameDialogProps> = ({ parentDirectory, 
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
       <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">创建新项目</h3>
+          <h3 className="text-lg font-semibold text-gray-900">{t('projectSelector.dialog.createNewProject')}</h3>
           <button
             onClick={onCancel}
             className="text-gray-400 hover:text-gray-600"
@@ -354,47 +363,47 @@ const ProjectNameDialog: React.FC<ProjectNameDialogProps> = ({ parentDirectory, 
             <X className="w-5 h-5" />
           </button>
         </div>
-        
+
         <div className="mb-4">
           <p className="text-sm text-gray-600 mb-2">
-            项目将在以下目录中创建：
+            {t('projectSelector.dialog.projectWillBeCreatedAt')}
           </p>
           <div className="p-2 bg-gray-100 rounded text-sm font-mono text-gray-800 break-all">
             {parentDirectory}
           </div>
         </div>
-        
+
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label htmlFor="projectName" className="block text-sm font-medium text-gray-700 mb-2">
-              项目名称
+              {t('projectSelector.dialog.projectName')}
             </label>
             <input
               id="projectName"
               type="text"
               value={projectName}
               onChange={(e) => setProjectName(e.target.value)}
-              placeholder="输入项目名称"
+              placeholder={t('projectSelector.dialog.projectNamePlaceholder')}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               autoFocus
               required
             />
           </div>
-          
+
           <div className="flex justify-end space-x-3">
             <button
               type="button"
               onClick={onCancel}
               className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
             >
-              取消
+              {t('projectSelector.dialog.cancel')}
             </button>
             <button
               type="submit"
               disabled={!projectName.trim()}
               className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              创建项目
+              {t('projectSelector.dialog.createProject')}
             </button>
           </div>
         </form>

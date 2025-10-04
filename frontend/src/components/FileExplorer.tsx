@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Tree, NodeApi, TreeApi } from 'react-arborist';
 import Editor from '@monaco-editor/react';
-import { 
-  FaFolder, FaFolderOpen, FaFile, FaCss3Alt, FaHtml5, FaJsSquare, 
+import {
+  FaFolder, FaFolderOpen, FaFile, FaCss3Alt, FaHtml5, FaJsSquare,
   FaReact, FaMarkdown, FaImage, FaPython, FaJava, FaFilePdf, FaFileWord
 } from 'react-icons/fa';
 import { VscJson, VscCode } from 'react-icons/vsc';
@@ -98,6 +99,7 @@ const getLanguageForFile = (fileName: string = ''): string => {
 
 // 简单的图片预览组件
 const SimpleImagePreview: React.FC<{ imageUrl: string; fileName: string }> = ({ imageUrl, fileName }) => {
+  const { t } = useTranslation('components');
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
 
@@ -106,7 +108,7 @@ const SimpleImagePreview: React.FC<{ imageUrl: string; fileName: string }> = ({ 
       {hasError ? (
         <div className="text-center text-gray-500">
           <FaImage className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-          <p>图片加载失败</p>
+          <p>{t('fileExplorer.imageLoadFailed')}</p>
           <p className="text-sm mt-2">{fileName}</p>
         </div>
       ) : (
@@ -116,8 +118,8 @@ const SimpleImagePreview: React.FC<{ imageUrl: string; fileName: string }> = ({ 
               <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
             </div>
           )}
-          <img 
-            src={imageUrl} 
+          <img
+            src={imageUrl}
             alt={fileName}
             className="max-w-full max-h-full object-contain bg-white rounded shadow-lg"
             onLoad={() => setIsLoading(false)}
@@ -223,12 +225,13 @@ const Node: React.FC<{
 // 常量定义
 const MAX_VISIBLE_TABS = 5; // 最多显示的标签数量
 
-export const FileExplorer: React.FC<FileExplorerProps> = ({ 
-  projectPath, 
+export const FileExplorer: React.FC<FileExplorerProps> = ({
+  projectPath,
   onFileSelect,
   className = '',
   height = '100vh'
 }) => {
+  const { t } = useTranslation('components');
   const [tabs, setTabs] = useState<FileTab[]>([]);
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
   const [temporaryTabId, setTemporaryTabId] = useState<string | null>(null); // 临时标签ID
@@ -691,7 +694,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
         <div className="flex items-center justify-center h-full text-gray-500">
           <div className="text-center">
             <FaFile className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-            <p>选择一个文件进行预览</p>
+            <p>{t('fileExplorer.selectFile')}</p>
           </div>
         </div>
       );
@@ -702,7 +705,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
         <div className="flex items-center justify-center h-full">
           <div className="flex items-center space-x-2 text-gray-500">
             <Loader2 className="w-5 h-5 animate-spin" />
-            <span>加载中...</span>
+            <span>{t('fileExplorer.loading')}</span>
           </div>
         </div>
       );
@@ -712,7 +715,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
       return (
         <div className="flex items-center justify-center h-full text-red-500">
           <div className="text-center">
-            <p className="font-medium">加载文件失败</p>
+            <p className="font-medium">{t('fileExplorer.loadFailed')}</p>
             <p className="text-sm mt-2 bg-red-50 px-3 py-2 rounded border border-red-200">
               {(contentError as Error).message}
             </p>
@@ -744,23 +747,23 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
         if (!fileContentData) {
           return (
             <div className="flex items-center justify-center h-full text-gray-500">
-              <p>无法获取文件内容</p>
+              <p>{t('fileExplorer.cannotReadFile')}</p>
             </div>
           );
         }
         return (
-          <Editor 
-            height="100%" 
-            theme="vs-light" 
-            language={getLanguageForFile(activeTab.name)} 
-            value={fileContentData.content} 
-            options={{ 
+          <Editor
+            height="100%"
+            theme="vs-light"
+            language={getLanguageForFile(activeTab.name)}
+            value={fileContentData.content}
+            options={{
               readOnly: true,
               minimap: { enabled: false },
               fontSize: 14,
               wordWrap: 'on',
               scrollBeyondLastLine: false,
-            }} 
+            }}
           />
         );
 
@@ -769,8 +772,8 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
           <div className="flex items-center justify-center h-full text-gray-500">
             <div className="text-center">
               <VscCode className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-              <p>不支持预览此文件类型</p>
-              <p className="text-sm mt-2">文件: {activeTab.name}</p>
+              <p>{t('fileExplorer.previewNotSupported')}</p>
+              <p className="text-sm mt-2">{t('fileExplorer.fileLabel')}: {activeTab.name}</p>
             </div>
           </div>
         );
@@ -781,16 +784,16 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
     return (
       <div className={`flex items-center justify-center h-full text-red-500 ${className}`} style={{ height }}>
         <div className="text-center">
-          <p className="font-medium">加载项目文件失败</p>
+          <p className="font-medium">{t('fileExplorer.loadFailed')}</p>
           <p className="text-sm mt-2 bg-red-50 px-3 py-2 rounded border border-red-200">
             {(treeError as Error).message}
           </p>
-          <p className="text-xs mt-2 text-gray-500">项目路径: {projectPath}</p>
-          <button 
+          <p className="text-xs mt-2 text-gray-500">{t('fileExplorer.projectPath')}: {projectPath}</p>
+          <button
             onClick={() => refetchTree()}
             className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
           >
-            重新加载
+            {t('fileExplorer.retry')}
           </button>
         </div>
       </div>
@@ -804,11 +807,11 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
         {/* 工具栏 - 统一高度 */}
         <div className="h-12 px-3 border-b border-gray-200 bg-gray-50 flex items-center flex-shrink-0">
           <div className="flex items-center justify-between w-full">
-            <h3 className="text-sm font-medium text-gray-700">文件浏览器</h3>
+            <h3 className="text-sm font-medium text-gray-700">{t('fileExplorer.title')}</h3>
             <button
               onClick={refreshFileTree}
               className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded transition-colors"
-              title="刷新"
+              title={t('common:actions.refresh')}
               disabled={isTreeLoading}
             >
               <RefreshCw className={`w-4 h-4 ${isTreeLoading ? 'animate-spin' : ''}`} />
@@ -822,15 +825,15 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
             <div className="flex items-center justify-center h-32">
               <div className="flex items-center space-x-2 text-gray-500">
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span className="text-sm">加载项目文件...</span>
+                <span className="text-sm">{t('fileExplorer.loading')}</span>
               </div>
             </div>
           ) : treeData.length === 0 ? (
             <div className="flex items-center justify-center h-32 text-gray-500">
-              <p className="text-sm">项目目录为空</p>
+              <p className="text-sm">{t('fileExplorer.emptyDirectory')}</p>
             </div>
           ) : (
-            <Tree 
+            <Tree
               data={treeData}
               width={320}
               height={containerHeight}
@@ -840,8 +843,8 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
               ref={treeApiRef}
             >
               {(props) => (
-                <Node 
-                  {...props} 
+                <Node
+                  {...props}
                   isLoading={loadingDirectories.has(props.node.data.path)}
                   onDirectoryToggle={handleDirectoryToggle}
                   onFileSelect={handleFileSelect}
@@ -883,7 +886,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                         e.stopPropagation();
                         closeTab(tab.id);
                       }}
-                      title="关闭标签"
+                      title={t('common:actions.close')}
                     >
                       <X className="w-3 h-3" />
                     </button>
@@ -897,7 +900,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                   <button
                     className="flex items-center h-full px-3 text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors border-l border-gray-200"
                     onClick={() => setShowTabDropdown(!showTabDropdown)}
-                    title={`还有 ${tabs.length - MAX_VISIBLE_TABS} 个标签`}
+                    title={`${tabs.length - MAX_VISIBLE_TABS} more tabs`}
                   >
                     <MoreHorizontal className="w-4 h-4" />
                     <ChevronDown className="w-3 h-3 ml-1" />
@@ -929,7 +932,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                               e.stopPropagation();
                               closeTab(tab.id);
                             }}
-                            title="关闭标签"
+                            title={t('common:actions.close')}
                           >
                             <X className="w-3 h-3" />
                           </button>
@@ -942,7 +945,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
             </div>
           ) : (
             <div className="flex items-center justify-center w-full h-full text-gray-500">
-              <span className="text-sm">暂无打开的文件</span>
+              <span className="text-sm">{t('fileExplorer.noFiles')}</span>
             </div>
           )}
         </div>

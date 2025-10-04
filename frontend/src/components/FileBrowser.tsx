@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { API_BASE } from '../lib/config';
-import { 
-  Folder, 
-  File, 
-  ArrowUp, 
-  Home, 
-  X, 
-  Eye, 
+import {
+  Folder,
+  File,
+  ArrowUp,
+  Home,
+  X,
+  Eye,
   EyeOff,
   ChevronRight,
-  FolderPlus 
+  FolderPlus
 } from 'lucide-react';
 
 interface FileItem {
@@ -38,7 +39,7 @@ interface FileBrowserProps {
 }
 
 export const FileBrowser: React.FC<FileBrowserProps> = ({
-  title = '选择文件或目录',
+  title,
   initialPath,
   allowFiles = true,
   allowDirectories = true,
@@ -46,6 +47,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
   onSelect,
   onClose
 }) => {
+  const { t } = useTranslation('components');
   const [data, setData] = useState<FileBrowserData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -69,14 +71,14 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
       const response = await fetch(url);
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to browse directory');
+        throw new Error(errorData.error || t('fileBrowser.errors.browseFailed'));
       }
-      
+
       const result: FileBrowserData = await response.json();
       setData(result);
     } catch (error) {
       console.error('Failed to fetch directory:', error);
-      setError(error instanceof Error ? error.message : '加载目录失败');
+      setError(error instanceof Error ? error.message : t('fileBrowser.errors.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -125,21 +127,21 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
           directoryName: newFolderName.trim()
         })
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || '创建目录失败');
+        throw new Error(errorData.error || t('fileBrowser.errors.createFailed'));
       }
-      
+
       // Refresh current directory to show new folder
       await fetchDirectory(data.currentPath);
-      
+
       // Reset dialog state
       setShowNewFolderDialog(false);
       setNewFolderName('');
     } catch (error) {
       console.error('Failed to create directory:', error);
-      alert(error instanceof Error ? error.message : '创建目录失败');
+      alert(error instanceof Error ? error.message : t('fileBrowser.errors.createFailed'));
     } finally {
       setCreatingFolder(false);
     }
@@ -160,7 +162,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
       <div className="bg-white rounded-lg w-full max-w-4xl max-h-[80vh] mx-4 flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+          <h3 className="text-lg font-semibold text-gray-900">{title || t('fileBrowser.title')}</h3>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600"
@@ -174,38 +176,38 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
           <button
             onClick={goToHome}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            title="主目录"
+            title={t('fileBrowser.toolbar.homeDirectory')}
           >
             <Home className="w-4 h-4" />
           </button>
-          
+
           <button
             onClick={goToParent}
             disabled={!data?.parentPath}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            title="上级目录"
+            title={t('fileBrowser.toolbar.parentDirectory')}
           >
             <ArrowUp className="w-4 h-4" />
           </button>
-          
+
           <div className="flex-1 px-3 py-2 bg-gray-50 rounded text-sm text-gray-600 font-mono">
-            {data?.currentPath || '加载中...'}
+            {data?.currentPath || t('fileBrowser.toolbar.loadingPath')}
           </div>
-          
+
           {allowNewDirectory && (
             <button
               onClick={() => setShowNewFolderDialog(true)}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              title="新建目录"
+              title={t('fileBrowser.toolbar.newDirectory')}
             >
               <FolderPlus className="w-4 h-4" />
             </button>
           )}
-          
+
           <button
             onClick={() => setShowHidden(!showHidden)}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            title={showHidden ? '隐藏隐藏文件' : '显示隐藏文件'}
+            title={showHidden ? t('fileBrowser.toolbar.hideHidden') : t('fileBrowser.toolbar.showHidden')}
           >
             {showHidden ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
@@ -219,7 +221,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
             </div>
           ) : error ? (
             <div className="flex items-center justify-center h-64 text-red-600">
-              <p>错误: {error}</p>
+              <p>{t('fileBrowser.errors.error')}: {error}</p>
             </div>
           ) : (
             <div 
@@ -232,10 +234,10 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
               <table className="w-full">
                 <thead className="bg-gray-50 sticky top-0">
                   <tr>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">名称</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">大小</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">修改时间</th>
-                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('fileBrowser.table.name')}</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('fileBrowser.table.size')}</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('fileBrowser.table.modified')}</th>
+                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t('fileBrowser.table.actions')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -276,23 +278,23 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
                         <button
                           onClick={() => handleItemSelect(item)}
                           disabled={
-                            (item.isDirectory && !allowDirectories) || 
+                            (item.isDirectory && !allowDirectories) ||
                             (!item.isDirectory && !allowFiles)
                           }
                           className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
-                          选择
+                          {t('fileBrowser.actions.select')}
                         </button>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              
+
               {filteredItems.length === 0 && (
                 <div className="text-center py-12 text-gray-500">
                   <Folder className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p>此目录为空</p>
+                  <p>{t('fileBrowser.emptyDirectory')}</p>
                 </div>
               )}
             </div>
@@ -303,14 +305,14 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
         <div className="p-4 border-t border-gray-200 flex justify-between items-center">
           <div className="text-sm text-gray-500">
             {filteredItems.length > 0 && (
-              <span>{filteredItems.length} 个项目</span>
+              <span>{t('fileBrowser.footer.itemsCount', { count: filteredItems.length })}</span>
             )}
           </div>
           <button
             onClick={onClose}
             className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
           >
-            取消
+            {t('fileBrowser.actions.cancel')}
           </button>
         </div>
       </div>
@@ -320,7 +322,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">新建目录</h3>
+              <h3 className="text-lg font-semibold text-gray-900">{t('fileBrowser.dialog.newFolder')}</h3>
               <button
                 onClick={() => {
                   setShowNewFolderDialog(false);
@@ -331,26 +333,26 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <div className="mb-4">
               <p className="text-sm text-gray-600 mb-2">
-                在以下位置创建新目录：
+                {t('fileBrowser.dialog.createAt')}
               </p>
               <div className="p-2 bg-gray-100 rounded text-sm font-mono text-gray-800 break-all">
                 {data?.currentPath}
               </div>
             </div>
-            
+
             <div className="mb-6">
               <label htmlFor="folderName" className="block text-sm font-medium text-gray-700 mb-2">
-                目录名称
+                {t('fileBrowser.dialog.folderName')}
               </label>
               <input
                 id="folderName"
                 type="text"
                 value={newFolderName}
                 onChange={(e) => setNewFolderName(e.target.value)}
-                placeholder="输入目录名称"
+                placeholder={t('fileBrowser.dialog.folderNamePlaceholder')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 autoFocus
                 onKeyPress={(e) => {
@@ -360,7 +362,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
                 }}
               />
             </div>
-            
+
             <div className="flex justify-end space-x-3">
               <button
                 onClick={() => {
@@ -370,14 +372,14 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
                 disabled={creatingFolder}
                 className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors disabled:opacity-50"
               >
-                取消
+                {t('fileBrowser.actions.cancel')}
               </button>
               <button
                 onClick={handleCreateNewFolder}
                 disabled={!newFolderName.trim() || creatingFolder}
                 className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {creatingFolder ? '创建中...' : '创建目录'}
+                {creatingFolder ? t('fileBrowser.actions.creating') : t('fileBrowser.actions.createFolder')}
               </button>
             </div>
           </div>

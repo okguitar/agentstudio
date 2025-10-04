@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Save, AlertCircle, HelpCircle, Info, Code, Edit3 } from 'lucide-react';
-import { 
-  Subagent, 
-  SubagentCreate, 
+import {
+  Subagent,
+  SubagentCreate,
   SubagentUpdate,
   SUBAGENT_SCOPES} from '../types/subagents';
 import { useCreateSubagent, useUpdateSubagent, useCreateProjectSubagent, useUpdateProjectSubagent } from '../hooks/useSubagents';
 import { UnifiedToolSelector } from './UnifiedToolSelector';
+import { useTranslation } from 'react-i18next';
 
 interface SubagentFormProps {
   subagent?: Subagent | null;
@@ -21,6 +22,8 @@ export const SubagentForm: React.FC<SubagentFormProps> = ({
   onClose,
   onSuccess,
 }) => {
+  const { t } = useTranslation('components');
+
   const [formData, setFormData] = useState<SubagentCreate>({
     name: '',
     description: '',
@@ -128,17 +131,17 @@ export const SubagentForm: React.FC<SubagentFormProps> = ({
     const newErrors: Record<string, string> = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = '名称不能为空';
+      newErrors.name = t('subagentForm.validation.nameRequired');
     } else if (!/^[a-z0-9-]+$/.test(formData.name)) {
-      newErrors.name = '名称只能包含小写字母、数字和连字符';
+      newErrors.name = t('subagentForm.validation.nameFormat');
     }
 
     if (!formData.description.trim()) {
-      newErrors.description = '描述不能为空';
+      newErrors.description = t('subagentForm.validation.descriptionRequired');
     }
 
     if (!formData.content.trim()) {
-      newErrors.content = '系统提示词不能为空';
+      newErrors.content = t('subagentForm.validation.contentRequired');
     }
 
     setErrors(newErrors);
@@ -176,7 +179,7 @@ export const SubagentForm: React.FC<SubagentFormProps> = ({
       onClose();
     } catch (error) {
       console.error('Error saving subagent:', error);
-      setErrors({ submit: error instanceof Error ? error.message : '保存失败' });
+      setErrors({ submit: error instanceof Error ? error.message : t('subagentForm.errors.saveFailed') });
     }
   };
 
@@ -214,7 +217,7 @@ export const SubagentForm: React.FC<SubagentFormProps> = ({
         <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
           <div className="flex items-center space-x-4">
             <h2 className="text-xl font-semibold text-gray-900">
-              {isEditing ? '编辑 Subagent' : '创建 Subagent'}
+              {isEditing ? t('subagentForm.title.edit') : t('subagentForm.title.create')}
             </h2>
             {/* Mode Switch */}
             <div className="flex items-center bg-gray-100 rounded-lg p-1">
@@ -222,25 +225,25 @@ export const SubagentForm: React.FC<SubagentFormProps> = ({
                 type="button"
                 onClick={() => !isCodeMode || handleModeToggle()}
                 className={`flex items-center space-x-1 px-3 py-1.5 rounded-md text-sm transition-colors ${
-                  !isCodeMode 
-                    ? 'bg-white text-blue-600 shadow-sm' 
+                  !isCodeMode
+                    ? 'bg-white text-blue-600 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
                 <Edit3 className="h-4 w-4" />
-                <span>表单</span>
+                <span>{t('subagentForm.mode.form')}</span>
               </button>
               <button
                 type="button"
                 onClick={() => isCodeMode || handleModeToggle()}
                 className={`flex items-center space-x-1 px-3 py-1.5 rounded-md text-sm transition-colors ${
-                  isCodeMode 
-                    ? 'bg-white text-blue-600 shadow-sm' 
+                  isCodeMode
+                    ? 'bg-white text-blue-600 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
                 <Code className="h-4 w-4" />
-                <span>代码</span>
+                <span>{t('subagentForm.mode.code')}</span>
               </button>
             </div>
           </div>
@@ -250,7 +253,7 @@ export const SubagentForm: React.FC<SubagentFormProps> = ({
               onClick={onClose}
               className="px-4 py-2 text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors"
             >
-              取消
+              {t('subagentForm.actions.cancel')}
             </button>
             <button
               type="submit"
@@ -261,10 +264,10 @@ export const SubagentForm: React.FC<SubagentFormProps> = ({
               <Save className="h-4 w-4" />
               <span>
                 {isLoading
-                  ? '保存中...'
+                  ? t('subagentForm.actions.saving')
                   : isEditing
-                  ? '保存更改'
-                  : '创建 Subagent'}
+                  ? t('subagentForm.actions.saveChanges')
+                  : t('subagentForm.actions.create')}
               </span>
             </button>
           </div>
@@ -279,28 +282,20 @@ export const SubagentForm: React.FC<SubagentFormProps> = ({
                 <div className="flex items-start space-x-2 p-3 bg-blue-50 rounded-lg">
                   <Info className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
                   <div className="text-sm text-blue-800">
-                    <p className="font-medium">代码模式</p>
-                    <p>在此模式下，你可以直接编辑 Markdown 格式的 subagent 文件，包括 YAML frontmatter 和系统提示词内容。</p>
+                    <p className="font-medium">{t('subagentForm.codeMode.title')}</p>
+                    <p>{t('subagentForm.codeMode.description')}</p>
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Subagent 文件内容
+                    {t('subagentForm.codeMode.label')}
                   </label>
                   <textarea
                     value={rawContent}
                     onChange={(e) => setRawContent(e.target.value)}
                     className="w-full h-96 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
-                    placeholder="---
-name: my-subagent
-description: 专门处理特定任务的subagent
-tools: read_file, write, search_replace
----
-
-你是一个专门处理...的AI助手。
-
-你的任务是..."
+                    placeholder={t('subagentForm.codeMode.placeholder')}
                   />
                 </div>
               </div>
@@ -311,7 +306,7 @@ tools: read_file, write, search_replace
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      名称 *
+                      {t('subagentForm.fields.name.label')}
                       <HelpCircle className="inline h-4 w-4 ml-1 text-gray-400" />
                     </label>
                     <input
@@ -321,7 +316,7 @@ tools: read_file, write, search_replace
                       className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                         errors.name ? 'border-red-500' : 'border-gray-300'
                       }`}
-                      placeholder="my-subagent"
+                      placeholder={t('subagentForm.fields.name.placeholder')}
                       disabled={isEditing}
                     />
                     {errors.name && (
@@ -334,7 +329,7 @@ tools: read_file, write, search_replace
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      作用域
+                      {t('subagentForm.fields.scope.label')}
                     </label>
                     <select
                       value={formData.scope}
@@ -343,7 +338,7 @@ tools: read_file, write, search_replace
                       disabled
                     >
                       {projectId ? (
-                        <option value="project">项目 Subagent</option>
+                        <option value="project">{t('subagentForm.fields.scope.projectScope')}</option>
                       ) : (
                         SUBAGENT_SCOPES.map(scope => (
                           <option key={scope.value} value={scope.value}>
@@ -358,7 +353,7 @@ tools: read_file, write, search_replace
                 {/* Description */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    描述 *
+                    {t('subagentForm.fields.description.label')}
                   </label>
                   <input
                     type="text"
@@ -367,7 +362,7 @@ tools: read_file, write, search_replace
                     className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                       errors.description ? 'border-red-500' : 'border-gray-300'
                     }`}
-                    placeholder="描述这个subagent的用途和应该在什么时候被调用"
+                    placeholder={t('subagentForm.fields.description.placeholder')}
                   />
                   {errors.description && (
                     <p className="mt-1 text-sm text-red-600 flex items-center">
@@ -380,7 +375,7 @@ tools: read_file, write, search_replace
                 {/* Tools */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    允许的工具
+                    {t('subagentForm.fields.tools.label')}
                   </label>
                   <div className="flex items-center space-x-2">
                     <button
@@ -388,14 +383,14 @@ tools: read_file, write, search_replace
                       onClick={() => setShowToolSelector(!showToolSelector)}
                       className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-sm"
                     >
-                      选择工具
+                      {t('subagentForm.fields.tools.selectTools')}
                     </button>
-                    
+
                     {/* 显示工具数量详情 */}
                     {(selectedRegularTools.length > 0 || selectedMcpTools.length > 0) && (
                       <span className="text-sm text-gray-600">
-                        常规工具 {selectedRegularTools.length} 个
-                        {selectedMcpTools.length > 0 && `, MCP工具 ${selectedMcpTools.length} 个`}
+                        {t('subagentForm.fields.tools.regularToolsCount', { count: selectedRegularTools.length })}
+                        {selectedMcpTools.length > 0 && `, ${t('subagentForm.fields.tools.mcpToolsCount', { count: selectedMcpTools.length })}`}
                       </span>
                     )}
                     
@@ -428,14 +423,14 @@ tools: read_file, write, search_replace
                     />
                   </div>
                   <p className="mt-1 text-sm text-gray-500">
-                    留空则继承所有可用工具
+                    {t('subagentForm.fields.tools.hint')}
                   </p>
                 </div>
 
                 {/* System Prompt */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    系统提示词 *
+                    {t('subagentForm.fields.content.label')}
                   </label>
                   <textarea
                     value={formData.content}
@@ -443,13 +438,7 @@ tools: read_file, write, search_replace
                     className={`w-full h-48 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y ${
                       errors.content ? 'border-red-500' : 'border-gray-300'
                     }`}
-                    placeholder="你是一个专门处理...的AI助手。
-
-你的任务是...
-
-请确保...
-
-当遇到...时，你应该..."
+                    placeholder={t('subagentForm.fields.content.placeholder')}
                   />
                   {errors.content && (
                     <p className="mt-1 text-sm text-red-600 flex items-center">

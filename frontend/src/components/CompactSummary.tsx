@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronRight, Archive } from 'lucide-react';
 import { MarkdownMessage } from './MarkdownMessage';
+import { useTranslation } from 'react-i18next';
 
 interface CompactSummaryProps {
   content: string | any;
 }
 
 export const CompactSummary: React.FC<CompactSummaryProps> = ({ content }) => {
+  const { t } = useTranslation('components');
+
   // Ensure content is a string
-  const displayContent = typeof content === 'string' ? content : 
+  const displayContent = typeof content === 'string' ? content :
     Array.isArray(content) ? content.map(item => item.text || JSON.stringify(item)).join('') :
     String(content);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -22,12 +25,12 @@ export const CompactSummary: React.FC<CompactSummaryProps> = ({ content }) => {
         <div className="flex items-center space-x-2">
           <Archive className="w-4 h-4 text-gray-600" />
           <span className="text-sm font-medium text-gray-700">
-            已压缩上下文
+            {t('compactSummary.title')}
           </span>
         </div>
         <div className="flex items-center space-x-1">
           <span className="text-xs text-gray-500">
-            {isExpanded ? '收起' : '展开查看'}
+            {isExpanded ? t('compactSummary.collapse') : t('compactSummary.expand')}
           </span>
           {isExpanded ? (
             <ChevronDown className="w-4 h-4 text-gray-500" />

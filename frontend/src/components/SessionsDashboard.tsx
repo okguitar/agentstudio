@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { 
-  Clock, 
-  MessageCircle, 
-  X, 
+import {
+  Clock,
+  MessageCircle,
+  X,
   RefreshCw,
   CheckCircle,
   Loader,
@@ -15,13 +15,14 @@ import { useSessions, cleanupSession, SessionInfo } from '../hooks/useSessions';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAgents } from '../hooks/useAgents';
 import { smartNavigate, showNavigationNotification } from '../utils/smartNavigation';
+import { useTranslation } from 'react-i18next';
 
 export const SessionsDashboard: React.FC = () => {
+  const { t } = useTranslation('components');
   const { data: sessionsData, isLoading, error, refetch } = useSessions();
   const { data: agentsData } = useAgents();
   const queryClient = useQueryClient();
   const [cleanupLoading, setCleanupLoading] = useState<string | null>(null);
-  // 不再需要从 URL 获取项目路径，直接使用后端返回的
 
 
   const handleCleanupSession = async (agentId: string, sessionId: string) => {
@@ -31,7 +32,7 @@ export const SessionsDashboard: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['sessions'] });
     } catch (error) {
       console.error('Failed to cleanup session:', error);
-      alert('清理会话失败，请重试');
+      alert(t('sessionsDashboard.errors.cleanupFailed'));
     } finally {
       setCleanupLoading(null);
     }
@@ -56,7 +57,7 @@ export const SessionsDashboard: React.FC = () => {
       showNavigationNotification({
         action: 'failed',
         success: false,
-        message: '导航失败，已降级处理'
+        message: t('sessionsDashboard.errors.navigationFailed')
       });
     }
   };
@@ -75,17 +76,17 @@ export const SessionsDashboard: React.FC = () => {
     const hours = Math.floor(minutes / 60);
 
     if (hours > 0) {
-      return `${hours}小时${minutes % 60}分钟`;
+      return t('sessionsDashboard.time.hoursMinutes', { hours, minutes: minutes % 60 });
     } else if (minutes > 0) {
-      return `${minutes}分钟${seconds % 60}秒`;
+      return t('sessionsDashboard.time.minutesSeconds', { minutes, seconds: seconds % 60 });
     } else {
-      return `${seconds}秒`;
+      return t('sessionsDashboard.time.seconds', { seconds });
     }
   };
 
   const formatHeartbeatTime = (lastHeartbeat: number | null) => {
     if (!lastHeartbeat) {
-      return '无心跳';
+      return t('sessionsDashboard.heartbeat.none');
     }
     const now = Date.now();
     const diff = now - lastHeartbeat;
@@ -116,7 +117,7 @@ export const SessionsDashboard: React.FC = () => {
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-center py-8">
           <RefreshCw className="w-6 h-6 animate-spin text-gray-400 mr-2" />
-          <span className="text-gray-500">加载会话信息...</span>
+          <span className="text-gray-500">{t('sessionsDashboard.loadingMessage')}</span>
         </div>
       </div>
     );
@@ -127,12 +128,12 @@ export const SessionsDashboard: React.FC = () => {
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="text-center py-8">
           <X className="w-12 h-12 mx-auto mb-3 text-red-400" />
-          <p className="text-red-600 mb-3">加载会话信息失败</p>
+          <p className="text-red-600 mb-3">{t('sessionsDashboard.errors.loadFailed')}</p>
           <button
             onClick={() => refetch()}
             className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
           >
-            重试
+            {t('common:actions.refresh')}
           </button>
         </div>
       </div>
@@ -150,16 +151,16 @@ export const SessionsDashboard: React.FC = () => {
             <MessageCircle className="w-5 h-5 text-blue-600" />
           </div>
           <div>
-            <h2 className="text-xl font-semibold text-gray-900">活跃会话</h2>
+            <h2 className="text-xl font-semibold text-gray-900">{t('sessionsDashboard.title')}</h2>
             <p className="text-sm text-gray-500">
-              当前活跃: {activeSessionCount} 个会话
+              {t('sessionsDashboard.activeCount', { count: activeSessionCount })}
             </p>
           </div>
         </div>
         <button
           onClick={() => refetch()}
           className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-          title="刷新"
+          title={t('common:actions.refresh')}
         >
           <RefreshCw className="w-4 h-4" />
         </button>
@@ -168,8 +169,8 @@ export const SessionsDashboard: React.FC = () => {
       {sessions.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
           <MessageCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
-          <p>暂无活跃会话</p>
-          <p className="text-sm mt-1">开始与助手对话即可创建会话</p>
+          <p>{t('sessionsDashboard.empty.noSessions')}</p>
+          <p className="text-sm mt-1">{t('sessionsDashboard.empty.startChatHint')}</p>
         </div>
       ) : (
         <div className="space-y-3 max-h-96 overflow-y-auto">
@@ -193,8 +194,8 @@ export const SessionsDashboard: React.FC = () => {
                       <span className={`inline-flex items-center px-2 py-1 text-xs rounded-full ${getStatusColor(session)}`}>
                         {getStatusIcon(session)}
                         <span className="ml-1">
-                          {session.status === 'pending' ? '等待中' : 
-                           session.isActive ? '活跃' : '空闲'}
+                          {session.status === 'pending' ? t('sessionsDashboard.status.pending') :
+                           session.isActive ? t('sessionsDashboard.status.active') : t('sessionsDashboard.status.idle')}
                         </span>
                       </span>
                     </div>
@@ -202,27 +203,27 @@ export const SessionsDashboard: React.FC = () => {
                       {/* 第一行：会话ID和Agent ID */}
                       <div className="flex items-center space-x-4 text-xs">
                         <span className="text-gray-500">
-                          <span className="font-medium text-gray-700">会话:</span> {session.sessionId}
+                          <span className="font-medium text-gray-700">{t('sessionsDashboard.labels.session')}:</span> {session.sessionId}
                         </span>
                         <span className="text-gray-500">
-                          <span className="font-medium text-gray-700">Agent:</span> {session.agentId}
+                          <span className="font-medium text-gray-700">{t('sessionsDashboard.labels.agent')}:</span> {session.agentId}
                         </span>
                       </div>
-                      
+
                       {/* 第二行：项目路径（如果存在）*/}
                       {session.projectPath && (
                         <div className="text-xs text-gray-500">
-                          <span className="font-medium text-gray-700">项目:</span> 
+                          <span className="font-medium text-gray-700">{t('sessionsDashboard.labels.project')}:</span>
                           <span className="ml-1 font-mono bg-gray-100 px-1 py-0.5 rounded text-gray-600">
                             {session.projectPath}
                           </span>
                         </div>
                       )}
-                      
+
                       {/* 第三行：时间和心跳信息 */}
                       <div className="flex items-center space-x-4 text-xs">
                         <span className="text-gray-500">
-                          <span className="font-medium text-gray-700">活动:</span> {formatTime(session.lastActivity)}
+                          <span className="font-medium text-gray-700">{t('sessionsDashboard.labels.activity')}:</span> {formatTime(session.lastActivity)}
                         </span>
                         <div className="flex items-center space-x-1">
                           <Heart className={`w-3 h-3 ${session.lastHeartbeat ? 'text-red-500' : 'text-gray-400'}`} />
@@ -233,7 +234,7 @@ export const SessionsDashboard: React.FC = () => {
                         {session.heartbeatTimedOut && (
                           <div className="flex items-center space-x-1 text-yellow-600">
                             <AlertTriangle className="w-3 h-3" />
-                            <span>心跳超时</span>
+                            <span>{t('sessionsDashboard.heartbeat.timeout')}</span>
                           </div>
                         )}
                       </div>
@@ -246,7 +247,7 @@ export const SessionsDashboard: React.FC = () => {
                   <button
                     onClick={() => handleOpenChat(session)}
                     className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
-                    title="打开聊天窗口"
+                    title={t('sessionsDashboard.actions.openChat')}
                   >
                     <MessageCircle className="w-4 h-4" />
                   </button>
@@ -254,7 +255,7 @@ export const SessionsDashboard: React.FC = () => {
                     onClick={() => handleCleanupSession(session.agentId, session.sessionId)}
                     disabled={cleanupLoading === session.sessionId}
                     className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                    title="清理会话"
+                    title={t('sessionsDashboard.actions.cleanup')}
                   >
                     {cleanupLoading === session.sessionId ? (
                       <Loader className="w-4 h-4 animate-spin" />

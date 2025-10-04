@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { SlashCommand } from '../types/commands';
 import { useCommands, useProjectCommands } from '../hooks/useCommands';
 import { SystemCommand } from '../utils/commandHandler';
@@ -17,11 +18,12 @@ interface CommandSelectorProps {
 
 // SystemCommand is now imported from commandHandler
 
-const SYSTEM_COMMANDS: SystemCommand[] = [
+// Helper function to create system commands with translations
+const createSystemCommands = (t: (key: string) => string): SystemCommand[] => [
   {
     id: 'init',
     name: 'init',
-    description: '初始化项目或重置对话上下文',
+    description: t('commandSelector.systemCommands.init.description'),
     content: '/init',
     scope: 'system',
     isSystem: true
@@ -29,7 +31,7 @@ const SYSTEM_COMMANDS: SystemCommand[] = [
   {
     id: 'clear',
     name: 'clear',
-    description: '清空当前对话历史',
+    description: t('commandSelector.systemCommands.clear.description'),
     content: '/clear',
     scope: 'system',
     isSystem: true
@@ -37,7 +39,7 @@ const SYSTEM_COMMANDS: SystemCommand[] = [
   {
     id: 'compact',
     name: 'compact',
-    description: '压缩对话历史，保留关键信息',
+    description: t('commandSelector.systemCommands.compact.description'),
     content: '/compact',
     scope: 'system',
     isSystem: true
@@ -45,7 +47,7 @@ const SYSTEM_COMMANDS: SystemCommand[] = [
   {
     id: 'agents',
     name: 'agents',
-    description: '管理AI代理和子代理',
+    description: t('commandSelector.systemCommands.agents.description'),
     content: '/agents',
     scope: 'system',
     isSystem: true
@@ -53,7 +55,7 @@ const SYSTEM_COMMANDS: SystemCommand[] = [
   {
     id: 'settings',
     name: 'settings',
-    description: '打开设置页面',
+    description: t('commandSelector.systemCommands.settings.description'),
     content: '/settings',
     scope: 'system',
     isSystem: true
@@ -61,7 +63,7 @@ const SYSTEM_COMMANDS: SystemCommand[] = [
   {
     id: 'help',
     name: 'help',
-    description: '显示帮助信息',
+    description: t('commandSelector.systemCommands.help.description'),
     content: '/help',
     scope: 'system',
     isSystem: true
@@ -79,6 +81,7 @@ export const CommandSelector: React.FC<CommandSelectorProps> = ({
   selectedIndex = 0,
   onSelectedIndexChange,
 }) => {
+  const { t } = useTranslation('components');
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Handle click outside to close
@@ -101,8 +104,11 @@ export const CommandSelector: React.FC<CommandSelectorProps> = ({
     search: searchTerm
   });
 
+  // Create system commands with translations
+  const systemCommands = createSystemCommands(t);
+
   // Filter system commands based on search term
-  const filteredSystemCommands = SYSTEM_COMMANDS.filter(cmd =>
+  const filteredSystemCommands = systemCommands.filter(cmd =>
     cmd.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     cmd.description.toLowerCase().includes(searchTerm.toLowerCase())
   );

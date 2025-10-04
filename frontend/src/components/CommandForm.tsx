@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Save, AlertCircle, Code, Edit3 } from 'lucide-react';
-import { 
-  SlashCommand, 
-  SlashCommandCreate, 
+import {
+  SlashCommand,
+  SlashCommandCreate,
   SlashCommandUpdate} from '../types/commands';
 import { useCreateCommand, useUpdateCommand, useCreateProjectCommand, useUpdateProjectCommand } from '../hooks/useCommands';
 import { UnifiedToolSelector } from './UnifiedToolSelector';
+import { useTranslation } from 'react-i18next';
 
 interface CommandFormProps {
   command?: SlashCommand | null;
@@ -20,10 +21,13 @@ export const CommandForm: React.FC<CommandFormProps> = ({
   onClose,
   onSuccess,
 }) => {
+  const { t } = useTranslation('components');
+  const { t: tc } = useTranslation('common');
+
   const [formData, setFormData] = useState<SlashCommandCreate>({
     name: command ? '' : 'optimize',
-    description: command ? '' : '优化代码性能和可读性',
-    content: command ? '' : '分析这段代码的性能问题并提供优化建议：\n\n使用参数：$ARGUMENTS\n使用第一个参数：$1\n使用第二个参数：$2\n\n引用文件：@src/utils/helpers.js\n执行命令：!`git status`',
+    description: command ? '' : t('commandForm.exampleDescription'),
+    content: command ? '' : t('commandForm.exampleContent'),
     scope: projectId ? 'project' : 'user',
     namespace: command ? '' : 'frontend',
     argumentHint: command ? '' : '[filename] [options]',
@@ -183,17 +187,17 @@ export const CommandForm: React.FC<CommandFormProps> = ({
     const newErrors: Record<string, string> = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = '命令名称不能为空';
+      newErrors.name = t('commandForm.errors.nameRequired');
     } else if (!/^[a-zA-Z0-9_-]+$/.test(formData.name)) {
-      newErrors.name = '命令名称只能包含字母、数字、下划线和短划线';
+      newErrors.name = t('commandForm.errors.nameFormat');
     }
 
     if (!formData.content.trim()) {
-      newErrors.content = '命令内容不能为空';
+      newErrors.content = t('commandForm.errors.contentRequired');
     }
 
     if (!formData.scope) {
-      newErrors.scope = '请选择命令作用域';
+      newErrors.scope = t('commandForm.errors.scopeRequired');
     }
 
     setErrors(newErrors);
@@ -229,7 +233,7 @@ export const CommandForm: React.FC<CommandFormProps> = ({
 
       onSuccess();
     } catch (error: any) {
-      setErrors({ submit: error.message || '保存失败' });
+      setErrors({ submit: error.message || t('commandForm.errors.saveFailed') });
     }
   };
 
@@ -241,7 +245,7 @@ export const CommandForm: React.FC<CommandFormProps> = ({
         <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
           <div className="flex items-center space-x-4">
             <h2 className="text-xl font-semibold text-gray-900">
-              {isEditing ? '编辑命令' : '新建命令'}
+              {isEditing ? t('commandForm.editTitle') : t('commandForm.createTitle')}
             </h2>
             {/* Mode Switch */}
             <div className="flex items-center bg-gray-100 rounded-lg p-1">
@@ -249,25 +253,25 @@ export const CommandForm: React.FC<CommandFormProps> = ({
                 type="button"
                 onClick={() => handleModeSwitch(false)}
                 className={`flex items-center space-x-1 px-3 py-1.5 rounded-md text-sm transition-colors ${
-                  !isCodeMode 
-                    ? 'bg-white text-blue-600 shadow-sm' 
+                  !isCodeMode
+                    ? 'bg-white text-blue-600 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
                 <Edit3 className="h-4 w-4" />
-                <span>表单</span>
+                <span>{t('commandForm.formMode')}</span>
               </button>
               <button
                 type="button"
                 onClick={() => handleModeSwitch(true)}
                 className={`flex items-center space-x-1 px-3 py-1.5 rounded-md text-sm transition-colors ${
-                  isCodeMode 
-                    ? 'bg-white text-blue-600 shadow-sm' 
+                  isCodeMode
+                    ? 'bg-white text-blue-600 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
                 <Code className="h-4 w-4" />
-                <span>代码</span>
+                <span>{t('commandForm.codeMode')}</span>
               </button>
             </div>
           </div>
@@ -277,7 +281,7 @@ export const CommandForm: React.FC<CommandFormProps> = ({
               onClick={onClose}
               className="px-4 py-2 text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors"
             >
-              取消
+              {tc('actions.cancel')}
             </button>
             <button
               type="submit"
@@ -288,10 +292,10 @@ export const CommandForm: React.FC<CommandFormProps> = ({
               <Save className="h-4 w-4" />
               <span>
                 {createCommand.isPending || updateCommand.isPending
-                  ? '保存中...'
+                  ? tc('status.saving')
                   : isEditing
-                  ? '保存更改'
-                  : '创建命令'}
+                  ? t('commandForm.saveChanges')
+                  : t('commandForm.createCommand')}
               </span>
             </button>
           </div>
@@ -305,38 +309,23 @@ export const CommandForm: React.FC<CommandFormProps> = ({
               <>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Markdown 源代码
+                    {t('commandForm.markdownSource')}
                   </label>
                   <textarea
                     value={rawContent}
                     onChange={(e) => handleRawContentChange(e.target.value)}
-                    placeholder={`---
-description: 优化代码性能和可读性
-argument-hint: [filename] [options]
-namespace: frontend
-allowed-tools: Read, Write, Edit
-model: claude-3-5-sonnet-20241022
----
-
-分析这段代码的性能问题并提供优化建议：
-
-使用参数：$ARGUMENTS
-使用第一个参数：$1
-使用第二个参数：$2
-
-引用文件：@src/utils/helpers.js
-执行命令：!\`git status\``}
+                    placeholder={t('commandForm.markdownPlaceholder')}
                     rows={25}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
                   />
                   <div className="mt-2 text-sm text-gray-500">
-                    <p><strong>Frontmatter 支持的字段：</strong></p>
+                    <p><strong>{t('commandForm.frontmatterSupported')}</strong></p>
                     <ul className="list-disc list-inside space-y-1 mt-1">
-                      <li><code>description</code> - 命令描述</li>
-                      <li><code>argument-hint</code> - 参数提示</li>
-                      <li><code>namespace</code> - 命名空间</li>
-                      <li><code>allowed-tools</code> - 允许的工具（逗号分隔）</li>
-                      <li><code>model</code> - 指定模型</li>
+                      <li><code>description</code> - {t('commandForm.frontmatterFields.description')}</li>
+                      <li><code>argument-hint</code> - {t('commandForm.frontmatterFields.argumentHint')}</li>
+                      <li><code>namespace</code> - {t('commandForm.frontmatterFields.namespace')}</li>
+                      <li><code>allowed-tools</code> - {t('commandForm.frontmatterFields.allowedTools')}</li>
+                      <li><code>model</code> - {t('commandForm.frontmatterFields.model')}</li>
                     </ul>
                   </div>
                 </div>
@@ -357,7 +346,7 @@ model: claude-3-5-sonnet-20241022
               {/* Command Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  命令名称 *
+                  {t('commandForm.nameLabel')} *
                 </label>
                 <input
                   type="text"
@@ -371,14 +360,14 @@ model: claude-3-5-sonnet-20241022
                   <p className="mt-1 text-sm text-red-600">{errors.name}</p>
                 )}
                 <p className="mt-1 text-sm text-gray-500">
-                  只能包含字母、数字、下划线和短划线
+                  {t('commandForm.nameHint')}
                 </p>
               </div>
 
               {/* Model */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  指定模型
+                  {t('commandForm.modelLabel')}
                 </label>
                 <div className="flex items-center space-x-3">
                   {/* Inherit Option */}
@@ -396,10 +385,10 @@ model: claude-3-5-sonnet-20241022
                       className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                     />
                     <label htmlFor="inherit-model" className="ml-2 text-sm text-gray-700 whitespace-nowrap">
-                      继承对话设置
+                      {t('commandForm.inheritModel')}
                     </label>
                   </div>
-                  
+
                   {/* Custom Model Input */}
                   <div className="flex-1">
                     <input
@@ -413,14 +402,14 @@ model: claude-3-5-sonnet-20241022
                   </div>
                 </div>
                 <p className="mt-1 text-sm text-gray-500">
-                  为此命令指定特定的 AI 模型。
+                  {t('commandForm.modelHint')}
                 </p>
               </div>
 
               {/* Namespace */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  命名空间
+                  {t('commandForm.namespaceLabel')}
                 </label>
                 <input
                   type="text"
@@ -430,14 +419,14 @@ model: claude-3-5-sonnet-20241022
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
                 <p className="mt-1 text-sm text-gray-500">
-                  用于组织命令，可以包含 / 分隔符
+                  {t('commandForm.namespaceHint')}
                 </p>
               </div>
 
               {/* Argument Hint */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  参数提示
+                  {t('commandForm.argumentHintLabel')}
                 </label>
                 <input
                   type="text"
@@ -447,7 +436,7 @@ model: claude-3-5-sonnet-20241022
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
                 <p className="mt-1 text-sm text-gray-500">
-                  在自动完成时显示的参数提示
+                  {t('commandForm.argumentHintHint')}
                 </p>
               </div>
             </div>
@@ -455,24 +444,24 @@ model: claude-3-5-sonnet-20241022
             {/* Description */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                描述
+                {t('commandForm.descriptionLabel')}
               </label>
               <input
                 type="text"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="优化代码性能和可读性"
+                placeholder={t('commandForm.descriptionPlaceholder')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
               <p className="mt-1 text-sm text-gray-500">
-                命令的简短描述，如果不填写将使用内容的第一行
+                {t('commandForm.descriptionHint')}
               </p>
             </div>
 
             {/* Allowed Tools */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                允许的工具
+                {t('commandForm.allowedToolsLabel')}
               </label>
               <div className="flex items-center space-x-2">
                 <button
@@ -480,14 +469,14 @@ model: claude-3-5-sonnet-20241022
                   onClick={() => setShowToolSelector(!showToolSelector)}
                   className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-sm"
                 >
-                  选择工具
+                  {t('commandForm.selectTools')}
                 </button>
-                
+
                 {/* 显示工具数量详情 */}
                 {(selectedRegularTools.length > 0 || selectedMcpTools.length > 0) && (
                   <span className="text-sm text-gray-600">
-                    常规工具 {selectedRegularTools.length} 个
-                    {selectedMcpTools.length > 0 && `, MCP工具 ${selectedMcpTools.length} 个`}
+                    {t('commandForm.regularToolsCount', { count: selectedRegularTools.length })}
+                    {selectedMcpTools.length > 0 && `, ${t('commandForm.mcpToolsCount', { count: selectedMcpTools.length })}`}
                   </span>
                 )}
                 
@@ -520,26 +509,19 @@ model: claude-3-5-sonnet-20241022
                 />
               </div>
               <p className="mt-1 text-sm text-gray-500">
-                留空则继承对话权限
+                {t('commandForm.allowedToolsHint')}
               </p>
             </div>
 
             {/* Command Content */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                命令内容 *
+                {t('commandForm.contentLabel')} *
               </label>
               <textarea
                 value={formData.content}
                 onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                placeholder={`分析这段代码的性能问题并提供优化建议：
-
-使用参数：$ARGUMENTS
-使用第一个参数：$1
-使用第二个参数：$2
-
-引用文件：@src/utils/helpers.js
-执行命令：!\`git status\``}
+                placeholder={t('commandForm.contentPlaceholder')}
                 rows={12}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
               />
@@ -547,12 +529,12 @@ model: claude-3-5-sonnet-20241022
                 <p className="mt-1 text-sm text-red-600">{errors.content}</p>
               )}
               <div className="mt-2 text-sm text-gray-500 space-y-1">
-                <p><strong>支持的功能：</strong></p>
+                <p><strong>{t('commandForm.supportedFeatures')}</strong></p>
                 <ul className="list-disc list-inside space-y-1">
-                  <li><code>$ARGUMENTS</code> - 获取所有参数</li>
-                  <li><code>$1, $2, ...</code> - 获取指定位置的参数</li>
-                  <li><code>@filepath</code> - 引用文件内容</li>
-                  <li><code>!`command`</code> - 执行 bash 命令并包含输出</li>
+                  <li><code>$ARGUMENTS</code> - {t('commandForm.features.arguments')}</li>
+                  <li><code>$1, $2, ...</code> - {t('commandForm.features.positionArgs')}</li>
+                  <li><code>@filepath</code> - {t('commandForm.features.fileRef')}</li>
+                  <li><code>!`command`</code> - {t('commandForm.features.bashCommand')}</li>
                 </ul>
               </div>
             </div>

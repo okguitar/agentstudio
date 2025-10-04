@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { 
+import { useTranslation } from 'react-i18next';
+import {
   Plus,
   Search,
   Edit,
@@ -40,6 +41,7 @@ export const ProjectCommandsModal: React.FC<ProjectCommandsModalProps> = ({
   project,
   onClose
 }) => {
+  const { t } = useTranslation('components');
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingCommand, setEditingCommand] = useState<SlashCommand | null>(null);
@@ -49,7 +51,7 @@ export const ProjectCommandsModal: React.FC<ProjectCommandsModalProps> = ({
     projectId: project.id,
     search: searchTerm.trim() || undefined
   });
-  
+
   const deleteCommand = useDeleteProjectCommand(project.id);
 
   const handleDelete = async (command: SlashCommand) => {
@@ -74,7 +76,7 @@ export const ProjectCommandsModal: React.FC<ProjectCommandsModalProps> = ({
         <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl h-[80vh] flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <div className="text-gray-600">正在加载项目命令...</div>
+            <div className="text-gray-600">{t('projectCommandsModal.loading')}</div>
           </div>
         </div>
       </div>
@@ -87,20 +89,20 @@ export const ProjectCommandsModal: React.FC<ProjectCommandsModalProps> = ({
         <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl h-[80vh] flex items-center justify-center">
           <div className="text-center">
             <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">加载失败</h3>
-            <p className="text-gray-600 mb-4">无法加载项目命令</p>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">{t('projectCommandsModal.error.title')}</h3>
+            <p className="text-gray-600 mb-4">{t('projectCommandsModal.error.message')}</p>
             <div className="flex justify-center space-x-3">
               <button
                 onClick={() => refetch()}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
-                重试
+                {t('projectCommandsModal.error.retry')}
               </button>
               <button
                 onClick={onClose}
                 className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               >
-                关闭
+                {t('projectCommandsModal.error.close')}
               </button>
             </div>
           </div>
@@ -117,7 +119,7 @@ export const ProjectCommandsModal: React.FC<ProjectCommandsModalProps> = ({
           <div className="flex items-center space-x-3">
             <Terminal className="w-6 h-6 text-green-600" />
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">项目命令管理</h2>
+              <h2 className="text-xl font-semibold text-gray-900">{t('projectCommandsModal.title')}</h2>
               <p className="text-sm text-gray-600">{project.name}</p>
             </div>
           </div>
@@ -136,7 +138,7 @@ export const ProjectCommandsModal: React.FC<ProjectCommandsModalProps> = ({
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
                 type="text"
-                placeholder="搜索命令..."
+                placeholder={t('projectCommandsModal.searchPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -150,7 +152,7 @@ export const ProjectCommandsModal: React.FC<ProjectCommandsModalProps> = ({
               className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
             >
               <Plus className="w-4 h-4" />
-              <span>新建命令</span>
+              <span>{t('projectCommandsModal.createButton')}</span>
             </button>
           </div>
         </div>
@@ -161,12 +163,12 @@ export const ProjectCommandsModal: React.FC<ProjectCommandsModalProps> = ({
             <div className="text-center py-16">
               <div className="text-6xl mb-4">⚡</div>
               <h3 className="text-xl font-medium text-gray-900 mb-2">
-                {searchTerm ? '未找到匹配的命令' : '还没有项目命令'}
+                {searchTerm ? t('projectCommandsModal.emptyState.noMatchTitle') : t('projectCommandsModal.emptyState.noCommandsTitle')}
               </h3>
               <p className="text-gray-600 mb-6">
-                {searchTerm 
-                  ? '尝试调整搜索条件'
-                  : '为这个项目创建专用的 Slash Command'
+                {searchTerm
+                  ? t('projectCommandsModal.emptyState.noMatchDescription')
+                  : t('projectCommandsModal.emptyState.noCommandsDescription')
                 }
               </p>
               {!searchTerm && (
@@ -177,7 +179,7 @@ export const ProjectCommandsModal: React.FC<ProjectCommandsModalProps> = ({
                   }}
                   className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
-                  新建命令
+                  {t('projectCommandsModal.createButton')}
                 </button>
               )}
             </div>
@@ -186,19 +188,19 @@ export const ProjectCommandsModal: React.FC<ProjectCommandsModalProps> = ({
               <TableHeader>
                 <TableRow>
                   <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    命令
+                    {t('projectCommandsModal.table.command')}
                   </TableHead>
                   <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    模型
+                    {t('projectCommandsModal.table.model')}
                   </TableHead>
                   <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    工具
+                    {t('projectCommandsModal.table.tools')}
                   </TableHead>
                   <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    创建时间
+                    {t('projectCommandsModal.table.createdAt')}
                   </TableHead>
                   <TableHead className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    操作
+                    {t('projectCommandsModal.table.actions')}
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -235,7 +237,7 @@ export const ProjectCommandsModal: React.FC<ProjectCommandsModalProps> = ({
                           {command.model}
                         </div>
                       ) : (
-                        <span className="text-sm text-gray-500">继承对话设置</span>
+                        <span className="text-sm text-gray-500">{t('projectCommandsModal.table.inheritSettings')}</span>
                       )}
                     </TableCell>
                     <TableCell className="px-6 py-4">
@@ -243,7 +245,7 @@ export const ProjectCommandsModal: React.FC<ProjectCommandsModalProps> = ({
                         <div>
                           <div className="flex items-center space-x-1 text-sm text-gray-500 mb-1">
                             <Tag className="w-3 h-3" />
-                            <span>{command.allowedTools.length} 个工具</span>
+                            <span>{t('projectCommandsModal.table.toolsCount', { count: command.allowedTools.length })}</span>
                           </div>
                           <div className="flex flex-wrap gap-1">
                             {command.allowedTools.map((tool, idx) => (
@@ -254,7 +256,7 @@ export const ProjectCommandsModal: React.FC<ProjectCommandsModalProps> = ({
                           </div>
                         </div>
                       ) : (
-                        <span className="text-sm text-gray-500">继承对话设置</span>
+                        <span className="text-sm text-gray-500">{t('projectCommandsModal.table.inheritSettings')}</span>
                       )}
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -271,15 +273,15 @@ export const ProjectCommandsModal: React.FC<ProjectCommandsModalProps> = ({
                             setShowForm(true);
                           }}
                           className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors"
-                          title="编辑命令"
+                          title={t('projectCommandsModal.actions.editTooltip')}
                         >
                           <Edit className="w-3 h-3 mr-1" />
-                          编辑
+                          {t('projectCommandsModal.actions.edit')}
                         </button>
                         <button
                           onClick={() => setShowDeleteConfirm(command)}
                           className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title="删除命令"
+                          title={t('projectCommandsModal.actions.deleteTooltip')}
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -314,27 +316,27 @@ export const ProjectCommandsModal: React.FC<ProjectCommandsModalProps> = ({
                   <AlertCircle className="h-6 w-6 text-red-600" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-medium text-gray-900">删除命令</h3>
+                  <h3 className="text-lg font-medium text-gray-900">{t('projectCommandsModal.deleteConfirm.title')}</h3>
                 </div>
               </div>
-              
+
               <p className="text-gray-600 mb-6">
-                确定要删除命令 "/{showDeleteConfirm.name}" 吗？此操作无法撤销。
+                {t('projectCommandsModal.deleteConfirm.message', { name: showDeleteConfirm.name })}
               </p>
-              
+
               <div className="flex justify-end space-x-3">
                 <button
                   onClick={() => setShowDeleteConfirm(null)}
                   className="px-4 py-2 text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors"
                 >
-                  取消
+                  {t('projectCommandsModal.deleteConfirm.cancel')}
                 </button>
                 <button
                   onClick={() => handleDelete(showDeleteConfirm)}
                   disabled={deleteCommand.isPending}
                   className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50"
                 >
-                  {deleteCommand.isPending ? '删除中...' : '删除'}
+                  {deleteCommand.isPending ? t('projectCommandsModal.deleteConfirm.deleting') : t('projectCommandsModal.deleteConfirm.confirm')}
                 </button>
               </div>
             </div>

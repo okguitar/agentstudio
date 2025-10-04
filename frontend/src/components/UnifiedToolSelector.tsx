@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { API_BASE } from '../lib/config';
 import { Check, X, RefreshCw, AlertCircle, Wrench, ChevronDown, ChevronRight, Minus, Plug2, Lock } from 'lucide-react';
 import { getAllToolsInfo, getToolDisplayName } from '@agentstudio/shared/utils/toolMapping';
@@ -44,6 +45,7 @@ export const UnifiedToolSelector: React.FC<UnifiedToolSelectorProps> = ({
   presetTools = [],
   readonly = false,
 }) => {
+  const { t } = useTranslation('components');
   const [servers, setServers] = useState<McpServer[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -220,7 +222,7 @@ export const UnifiedToolSelector: React.FC<UnifiedToolSelectorProps> = ({
       <div className="unified-tool-selector-popup w-96 max-h-[500px] bg-white border border-gray-200 rounded-lg shadow-lg flex flex-col" onClick={(e) => e.stopPropagation()}>
       <div className="p-4 flex-shrink-0">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-medium text-gray-900">工具选择</h3>
+          <h3 className="text-lg font-medium text-gray-900">{t('unifiedToolSelector.title')}</h3>
           <button type="button"
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -240,7 +242,7 @@ export const UnifiedToolSelector: React.FC<UnifiedToolSelectorProps> = ({
             }`}
           >
             <Wrench className="w-4 h-4" />
-            <span>常规工具</span>
+            <span>{t('unifiedToolSelector.tabs.regular')}</span>
             {selectedRegularTools.length > 0 && (
               <span className="bg-blue-100 text-blue-600 text-xs rounded-full px-2 py-0.5 min-w-[20px] text-center">
                 {selectedRegularTools.length}
@@ -256,7 +258,7 @@ export const UnifiedToolSelector: React.FC<UnifiedToolSelectorProps> = ({
             }`}
           >
             <Plug2 className="w-4 h-4" />
-            <span>MCP工具</span>
+            <span>{t('unifiedToolSelector.tabs.mcp')}</span>
             {selectedMcpTools.length > 0 && (
               <span className="bg-green-100 text-green-600 text-xs rounded-full px-2 py-0.5 min-w-[20px] text-center">
                 {selectedMcpTools.filter(t => t.startsWith('mcp__') && t.split('__').length === 3).length}
@@ -274,7 +276,7 @@ export const UnifiedToolSelector: React.FC<UnifiedToolSelectorProps> = ({
               {/* 全选控制 */}
               <div className="flex items-center justify-end p-2 hover:bg-gray-50 rounded">
                 <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-700 font-medium">全选</span>
+                  <span className="text-sm text-gray-700 font-medium">{t('unifiedToolSelector.selectAll')}</span>
                   <button type="button"
                     onClick={() => {
                       if (selectedRegularTools.length === AVAILABLE_REGULAR_TOOLS.length) {
@@ -335,7 +337,7 @@ export const UnifiedToolSelector: React.FC<UnifiedToolSelectorProps> = ({
                         isDisabled ? 'text-gray-400' : 'text-gray-700'
                       }`}>
                         {getToolDisplayName(tool.name)} ({tool.name})
-                        {isPreset && <span className="ml-1 text-xs text-orange-600">[预设]</span>}
+                        {isPreset && <span className="ml-1 text-xs text-orange-600">[{t('unifiedToolSelector.preset')}]</span>}
                       </span>
                     </div>
                   </div>
@@ -347,7 +349,7 @@ export const UnifiedToolSelector: React.FC<UnifiedToolSelectorProps> = ({
           <div className="space-y-4">
             <div className="flex items-center justify-end p-2">
               <label className="flex items-center space-x-2">
-                <span className="text-sm font-medium text-gray-700">启用MCP工具</span>
+                <span className="text-sm font-medium text-gray-700">{t('unifiedToolSelector.enableMcpTools')}</span>
                 <input
                   type="checkbox"
                   checked={mcpToolsEnabled}
@@ -360,7 +362,7 @@ export const UnifiedToolSelector: React.FC<UnifiedToolSelectorProps> = ({
             {loading && (
               <div className="flex items-center justify-center py-4">
                 <RefreshCw className="w-4 h-4 text-gray-400 animate-spin mr-2" />
-                <span className="text-sm text-gray-500">加载中...</span>
+                <span className="text-sm text-gray-500">{t('unifiedToolSelector.loading')}</span>
               </div>
             )}
 
@@ -373,7 +375,7 @@ export const UnifiedToolSelector: React.FC<UnifiedToolSelectorProps> = ({
 
             {!loading && !error && servers.length === 0 && (
               <div className="text-center py-4 text-gray-500">
-                <span className="text-sm">没有可用的MCP服务器</span>
+                <span className="text-sm">{t('unifiedToolSelector.noMcpServers')}</span>
               </div>
             )}
 
@@ -409,7 +411,7 @@ export const UnifiedToolSelector: React.FC<UnifiedToolSelectorProps> = ({
                         {server.name}
                       </span>
                       <span className="text-sm text-gray-500">
-                        {server.tools?.length || 0} 个工具
+                        {t('unifiedToolSelector.toolsCount', { count: server.tools?.length || 0 })}
                       </span>
                     </button>
                     
@@ -474,7 +476,7 @@ export const UnifiedToolSelector: React.FC<UnifiedToolSelectorProps> = ({
                                 isDisabled ? 'text-gray-400' : 'text-gray-700'
                               }`}>
                                 {toolName}
-                                {isPreset && <span className="ml-1 text-xs text-orange-600">[预设]</span>}
+                                {isPreset && <span className="ml-1 text-xs text-orange-600">[{t('unifiedToolSelector.preset')}]</span>}
                               </span>
                             </div>
                           </div>
@@ -488,7 +490,7 @@ export const UnifiedToolSelector: React.FC<UnifiedToolSelectorProps> = ({
                       <div className="flex items-center text-red-600">
                         <AlertCircle className="w-4 h-4 mr-2" />
                         <span className="text-sm">
-                          {server.error || '服务器不可用'}
+                          {server.error || t('unifiedToolSelector.serverUnavailable')}
                         </span>
                       </div>
                     </div>

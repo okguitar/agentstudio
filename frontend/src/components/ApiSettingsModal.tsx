@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { 
+import {
   Save,
   Server,
   RotateCcw,
@@ -8,6 +8,7 @@ import {
   AlertCircle,
   X
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { getCurrentHost, setHost } from '../lib/config';
 
 interface ApiSettingsModalProps {
@@ -16,6 +17,7 @@ interface ApiSettingsModalProps {
 }
 
 export const ApiSettingsModal: React.FC<ApiSettingsModalProps> = ({ isOpen, onClose }) => {
+  const { t } = useTranslation('components');
   const [apiHost, setApiHost] = useState('');
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'unknown' | 'success' | 'error'>('unknown');
@@ -25,7 +27,6 @@ export const ApiSettingsModal: React.FC<ApiSettingsModalProps> = ({ isOpen, onCl
   useEffect(() => {
     if (isOpen) {
       const currentHost = getCurrentHost();
-      // 如果没有设置过host，则使用本地开发环境作为默认值
       if (!currentHost || currentHost === '') {
         setApiHost('http://127.0.0.1:4936');
       } else {
@@ -56,14 +57,14 @@ export const ApiSettingsModal: React.FC<ApiSettingsModalProps> = ({ isOpen, onCl
         setConnectionStatus('success');
       } else {
         setConnectionStatus('error');
-        setErrorMessage(`服务器响应错误: ${response.status} ${response.statusText}`);
+        setErrorMessage(t('apiSettingsModal.errors.serverError', { status: response.status, statusText: response.statusText }));
       }
     } catch (error) {
       setConnectionStatus('error');
       if (error instanceof Error) {
-        setErrorMessage(`连接失败: ${error.message}`);
+        setErrorMessage(t('apiSettingsModal.errors.connectionFailed', { message: error.message }));
       } else {
-        setErrorMessage('连接失败: 未知错误');
+        setErrorMessage(t('apiSettingsModal.errors.connectionFailedUnknown'));
       }
     } finally {
       setIsConnecting(false);
@@ -72,22 +73,22 @@ export const ApiSettingsModal: React.FC<ApiSettingsModalProps> = ({ isOpen, onCl
 
   const handleSave = async () => {
     if (!apiHost.trim()) {
-      setErrorMessage('请输入API服务器地址');
+      setErrorMessage(t('apiSettingsModal.errors.enterAddress'));
       return;
     }
 
     // Test connection first
     await testConnection(apiHost.trim());
-    
+
     if (connectionStatus === 'success') {
       setHost(apiHost.trim());
-      alert('设置已保存，页面将刷新以应用新设置');
+      alert(t('apiSettingsModal.saveSuccess'));
       window.location.reload();
     }
   };
 
   const handleReset = () => {
-    const defaultHost = 'http://127.0.0.1:4936'; // 默认使用本地开发服务器
+    const defaultHost = 'http://127.0.0.1:4936';
     setApiHost(defaultHost);
     setConnectionStatus('unknown');
     setErrorMessage('');
@@ -119,11 +120,11 @@ export const ApiSettingsModal: React.FC<ApiSettingsModalProps> = ({ isOpen, onCl
   const getStatusText = () => {
     switch (connectionStatus) {
       case 'success':
-        return '连接成功';
+        return t('apiSettingsModal.status.success');
       case 'error':
-        return '连接失败';
+        return t('apiSettingsModal.status.error');
       default:
-        return '未测试';
+        return t('apiSettingsModal.status.untested');
     }
   };
 
@@ -136,7 +137,7 @@ export const ApiSettingsModal: React.FC<ApiSettingsModalProps> = ({ isOpen, onCl
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center space-x-3">
             <Server className="w-6 h-6 text-blue-500" />
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">API服务器设置</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">{t('apiSettingsModal.title')}</h3>
           </div>
           <button
             onClick={onClose}
@@ -150,7 +151,7 @@ export const ApiSettingsModal: React.FC<ApiSettingsModalProps> = ({ isOpen, onCl
         <div className="p-6 space-y-4">
           <div>
             <label htmlFor="api-host" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              API服务器地址
+              {t('apiSettingsModal.fields.address')}
             </label>
             <div className="flex space-x-2">
               <input
@@ -158,15 +159,15 @@ export const ApiSettingsModal: React.FC<ApiSettingsModalProps> = ({ isOpen, onCl
                 type="url"
                 value={apiHost}
                 onChange={(e) => setApiHost(e.target.value)}
-                placeholder="http://localhost:4936 或 https://your-domain.com"
-                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm 
-                         focus:outline-none focus:ring-blue-500 focus:border-blue-500 
+                placeholder={t('apiSettingsModal.fields.addressPlaceholder')}
+                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm
+                         focus:outline-none focus:ring-blue-500 focus:border-blue-500
                          dark:bg-gray-700 dark:text-white text-sm"
               />
               <button
                 onClick={handleTest}
                 disabled={isConnecting || !apiHost.trim()}
-                className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md 
+                className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md
                          disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1 text-sm"
               >
                 {isConnecting ? (
@@ -174,29 +175,29 @@ export const ApiSettingsModal: React.FC<ApiSettingsModalProps> = ({ isOpen, onCl
                 ) : (
                   <Server className="w-3 h-3" />
                 )}
-                <span>测试</span>
+                <span>{t('apiSettingsModal.actions.test')}</span>
               </button>
             </div>
             
             {/* Quick Select Buttons */}
             <div className="mt-3">
-              <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">快捷选择：</p>
+              <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">{t('apiSettingsModal.quickSelect.title')}</p>
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => handleQuickSelect('http://127.0.0.1:4936')}
-                  className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 
-                           text-gray-700 dark:text-gray-300 rounded border border-gray-300 dark:border-gray-600 
+                  className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600
+                           text-gray-700 dark:text-gray-300 rounded border border-gray-300 dark:border-gray-600
                            transition-colors duration-200"
                 >
-                  本地开发
+                  {t('apiSettingsModal.quickSelect.localDev')}
                 </button>
                 <button
                   onClick={() => handleQuickSelect('https://srv.agentstudio.cc')}
-                  className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 
-                           text-gray-700 dark:text-gray-300 rounded border border-gray-300 dark:border-gray-600 
+                  className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600
+                           text-gray-700 dark:text-gray-300 rounded border border-gray-300 dark:border-gray-600
                            transition-colors duration-200"
                 >
-                  官方服务器
+                  {t('apiSettingsModal.quickSelect.officialServer')}
                 </button>
               </div>
             </div>
@@ -210,7 +211,7 @@ export const ApiSettingsModal: React.FC<ApiSettingsModalProps> = ({ isOpen, onCl
               connectionStatus === 'error' ? 'text-red-600 dark:text-red-400' :
               'text-gray-600 dark:text-gray-400'
             }`}>
-              连接状态: {getStatusText()}
+              {t('apiSettingsModal.status.label')}: {getStatusText()}
             </span>
           </div>
 
@@ -221,12 +222,12 @@ export const ApiSettingsModal: React.FC<ApiSettingsModalProps> = ({ isOpen, onCl
           )}
 
           <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md p-3">
-            <h4 className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-2">使用说明：</h4>
+            <h4 className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-2">{t('apiSettingsModal.instructions.title')}</h4>
             <ul className="text-xs text-blue-700 dark:text-blue-400 space-y-1">
-              <li>• 本地开发时使用 <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">http://localhost:4936</code></li>
-              <li>• 生产环境使用您的服务器域名</li>
-              <li>• 确保服务器支持CORS访问</li>
-              <li>• 修改后页面会自动刷新</li>
+              <li>• {t('apiSettingsModal.instructions.localDev')} <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">http://localhost:4936</code></li>
+              <li>• {t('apiSettingsModal.instructions.production')}</li>
+              <li>• {t('apiSettingsModal.instructions.cors')}</li>
+              <li>• {t('apiSettingsModal.instructions.refresh')}</li>
             </ul>
           </div>
         </div>
@@ -238,7 +239,7 @@ export const ApiSettingsModal: React.FC<ApiSettingsModalProps> = ({ isOpen, onCl
             className="flex items-center space-x-2 px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-md text-sm"
           >
             <RotateCcw className="w-4 h-4" />
-            <span>重置</span>
+            <span>{t('apiSettingsModal.actions.reset')}</span>
           </button>
 
           <div className="flex space-x-2">
@@ -246,16 +247,16 @@ export const ApiSettingsModal: React.FC<ApiSettingsModalProps> = ({ isOpen, onCl
               onClick={onClose}
               className="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-md text-sm"
             >
-              取消
+              {t('apiSettingsModal.actions.cancel')}
             </button>
             <button
               onClick={handleSave}
               disabled={isConnecting || connectionStatus === 'error'}
-              className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md 
+              className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md
                        disabled:opacity-50 disabled:cursor-not-allowed text-sm"
             >
               <Save className="w-4 h-4" />
-              <span>保存</span>
+              <span>{t('apiSettingsModal.actions.save')}</span>
             </button>
           </div>
         </div>

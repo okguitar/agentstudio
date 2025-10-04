@@ -22,6 +22,7 @@ import {
 } from '../utils/commandFormatter';
 import { createCommandHandler, SystemCommand } from '../utils/commandHandler';
 import { eventBus, EVENTS } from '../utils/eventBus';
+import { useTranslation } from 'react-i18next';
 
 interface AgentChatPanelProps {
   agent: AgentConfig;
@@ -30,6 +31,7 @@ interface AgentChatPanelProps {
 }
 
 export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPath, onSessionChange }) => {
+  const { t } = useTranslation('components');
   const [inputMessage, setInputMessage] = useState('');
   const [showSessions, setShowSessions] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -124,7 +126,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
     {
       id: 'init',
       name: 'init',
-      description: '初始化项目或重置对话上下文',
+      description: t('systemCommands.init.description'),
       content: '/init',
       scope: 'system',
       isSystem: true
@@ -132,7 +134,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
     {
       id: 'clear',
       name: 'clear',
-      description: '清空当前对话历史',
+      description: t('systemCommands.clear.description'),
       content: '/clear',
       scope: 'system',
       isSystem: true
@@ -140,7 +142,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
     {
       id: 'compact',
       name: 'compact',
-      description: '压缩对话历史，保留关键信息',
+      description: t('systemCommands.compact.description'),
       content: '/compact',
       scope: 'system',
       isSystem: true
@@ -148,7 +150,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
     {
       id: 'agents',
       name: 'agents',
-      description: '管理AI代理和子代理',
+      description: t('systemCommands.agents.description'),
       content: '/agents',
       scope: 'system',
       isSystem: true
@@ -156,7 +158,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
     {
       id: 'settings',
       name: 'settings',
-      description: '打开设置页面',
+      description: t('systemCommands.settings.description'),
       content: '/settings',
       scope: 'system',
       isSystem: true
@@ -164,7 +166,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
     {
       id: 'help',
       name: 'help',
-      description: '显示帮助信息',
+      description: t('systemCommands.help.description'),
       content: '/help',
       scope: 'system',
       isSystem: true
@@ -501,7 +503,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
     // Commands are already added above
     if (!isCommandTrigger(inputMessage.trim())) {
       addMessage({
-        content: userMessage || '发送了图片',
+        content: userMessage || t('agentChat.sendImage'),
         role: 'user',
         images: imageData
       });
@@ -563,14 +565,14 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
             
             if (eventData.error === 'Claude Code SDK failed' && eventData.message && typeof eventData.message === 'string') {
               if (eventData.message.includes('not valid JSON')) {
-                errorMessage += '解析响应数据时出现错误，可能是由于网络中断或服务器响应格式异常。\n\n**建议操作：**\n- 检查网络连接\n- 重新发送消息\n- 如果问题持续存在，请联系管理员';
+                errorMessage += t('agentChatPanel.errors.jsonParseError');
               } else if (eventData.message.includes('timeout')) {
-                errorMessage += '请求处理超时，服务器响应时间过长。\n\n**建议操作：**\n- 简化请求内容\n- 稍后重试\n- 检查网络连接状态';
+                errorMessage += t('agentChatPanel.errors.timeoutError');
               } else {
-                errorMessage += `${eventData.message}\n\n**建议操作：**\n- 重新发送消息\n- 如果问题持续存在，请刷新页面重试`;
+                errorMessage += `${eventData.message}\n\n**${t('agentChatPanel.errors.suggestedActions')}**\n- ${t('agentChatPanel.errors.resendMessage')}\n- ${t('agentChatPanel.errors.refreshPage')}`;
               }
             } else {
-              errorMessage += `${eventData.error || '未知错误'}\n\n**建议操作：**\n- 重新发送消息\n- 刷新页面重试`;
+              errorMessage += `${eventData.error || t('agentChatPanel.errors.unknownError')}\n\n**${t('agentChatPanel.errors.suggestedActions')}**\n- ${t('agentChatPanel.errors.resendMessage')}\n- ${t('agentChatPanel.errors.refreshPage')}`;
             }
             
             // Add error message
@@ -832,101 +834,112 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
             }
           }
           else if (eventData.type === 'result') {
-            console.log('Received result, stopping AI typing...');
-            // Clear the abort controller and immediately stop typing
-            abortControllerRef.current = null;
-            setAiTyping(false);
-            
-            // Mark as successful response if result is successful
-            if (eventData.subtype === 'success') {
-              setHasSuccessfulResponse(true);
-              console.log('✅ Marked session as having successful response for heartbeat');
-              
-              // 发送AI回复完成事件，通知其他组件刷新
-              eventBus.emit(EVENTS.AI_RESPONSE_COMPLETE, {
-                agentId: agent.id,
-                sessionId: currentSessionId,
-                projectPath
-              });
-              console.log('📡 Emitted AI_RESPONSE_COMPLETE event');
-            }
-            
-            // If no AI message was created yet (e.g., only result event received), create one now
-            if (!aiMessageId && eventData.subtype === 'success') {
-              console.log('📝 Creating AI message from result event - no assistant messages received');
-              const resultContent = (eventData as any).result;
-              if (resultContent && typeof resultContent === 'string') {
-                const message = {
-                  content: '',
-                  role: 'assistant' as const
-                };
-                addMessage(message);
-                // Get the ID of the message we just added
-                const state = useAgentStore.getState();
-                aiMessageId = state.messages[state.messages.length - 1].id;
-                
-                // Add the result content as text
-                addTextPartToMessage(aiMessageId, resultContent);
-                console.log('📝 Added result content to new AI message:', resultContent.substring(0, 100));
-              } else {
-                console.warn('📝 Result event with no content - creating empty success message');
-                const message = {
-                  content: '✅ 任务完成',
-                  role: 'assistant' as const
-                };
-                addMessage(message);
-                const state = useAgentStore.getState();
-                aiMessageId = state.messages[state.messages.length - 1].id;
-              }
-            }
-            
-            // Ensure all executing tools are marked as completed
-            if (aiMessageId) {
-              const state = useAgentStore.getState();
-              const currentMessage = state.messages.find(m => m.id === aiMessageId);
-              if (currentMessage?.messageParts) {
-                currentMessage.messageParts.forEach((part: any) => {
-                  if (part.type === 'tool' && part.toolData?.isExecuting) {
-                    console.log('Force completing tool:', part.toolData.toolName, 'claudeId:', part.toolData.claudeId);
-                    updateToolPartInMessage(aiMessageId!, part.toolData.id, {
-                      isExecuting: false,
-                      toolResult: part.toolData.toolResult || '(执行完成)'
-                    });
-                  }
+            console.log('Received result event:', { subtype: eventData.subtype, isSideChain: (eventData as any).isSideChain });
+
+            // 只有主任务结束才停止 AI 输入状态（检查 isSideChain）
+            const isSideChain = (eventData as any).isSideChain;
+            if (!isSideChain) {
+              console.log('Main task result received, stopping AI typing...');
+              // Clear the abort controller and immediately stop typing
+              abortControllerRef.current = null;
+              setAiTyping(false);
+
+              // Mark as successful response if result is successful
+              if (eventData.subtype === 'success') {
+                setHasSuccessfulResponse(true);
+                console.log('✅ Marked session as having successful response for heartbeat');
+
+                // 发送AI回复完成事件，通知其他组件刷新
+                eventBus.emit(EVENTS.AI_RESPONSE_COMPLETE, {
+                  agentId: agent.id,
+                  sessionId: currentSessionId,
+                  projectPath
                 });
+                console.log('📡 Emitted AI_RESPONSE_COMPLETE event');
               }
-            }
-            
-            // Handle different result types
-            let finalMessage = '';
-            if (eventData.subtype === 'success') {
-              finalMessage = '';
-            } else if (eventData.subtype === 'error_max_turns') {
-              finalMessage = '\n\n⏱️ **达到最大轮次限制**';
-              if (eventData.permission_denials && eventData.permission_denials.length > 0) {
-                finalMessage += '\n\n⚠️ **权限拒绝的操作**:';
-                eventData.permission_denials.forEach((denial: { tool_name: string; tool_input: Record<string, unknown> }, index: number) => {
-                  finalMessage += `\n${index + 1}. ${denial.tool_name}: \`${denial.tool_input.command || denial.tool_input.description || JSON.stringify(denial.tool_input)}\``;
-                });
-                finalMessage += '\n\n💡 某些操作需要用户权限确认才能执行。';
-              }
-            } else if (eventData.subtype === 'error_during_execution') {
-              finalMessage = '\n\n❌ **执行过程中出现错误**\n\n请检查输入或稍后重试。';
-            } else if (eventData.subtype === 'error') {
-              // Generic error case
-              finalMessage = '\n\n❌ **处理过程中出现错误**\n\n请稍后重试或检查输入内容。';
             } else {
-              finalMessage = '\n\n✅ **处理完成**';
+              console.log('Side chain result received, continuing main task...');
             }
             
-            // Update final message content
-            if (aiMessageId && finalMessage) {
-              addTextPartToMessage(aiMessageId, finalMessage);
-            }
-            
-            // Refresh sessions list only if we had a session (don't refresh on new session creation)
-            if (currentSessionId) {
-              queryClient.invalidateQueries({ queryKey: ['agent-sessions', agent.id] });
+            // 只有主任务结束才处理最终消息（非 side chain）
+            if (!isSideChain) {
+              // If no AI message was created yet (e.g., only result event received), create one now
+              if (!aiMessageId && eventData.subtype === 'success') {
+                console.log('📝 Creating AI message from result event - no assistant messages received');
+                const resultContent = (eventData as any).result;
+                if (resultContent && typeof resultContent === 'string') {
+                  const message = {
+                    content: '',
+                    role: 'assistant' as const
+                  };
+                  addMessage(message);
+                  // Get the ID of the message we just added
+                  const state = useAgentStore.getState();
+                  aiMessageId = state.messages[state.messages.length - 1].id;
+
+                  // Add the result content as text
+                  addTextPartToMessage(aiMessageId, resultContent);
+                  console.log('📝 Added result content to new AI message:', resultContent.substring(0, 100));
+                } else {
+                  console.warn('📝 Result event with no content - creating empty success message');
+                  const message = {
+                    content: '✅ 任务完成',
+                    role: 'assistant' as const
+                  };
+                  addMessage(message);
+                  const state = useAgentStore.getState();
+                  aiMessageId = state.messages[state.messages.length - 1].id;
+                }
+              }
+
+              // Ensure all executing tools are marked as completed
+              if (aiMessageId) {
+                const state = useAgentStore.getState();
+                const currentMessage = state.messages.find(m => m.id === aiMessageId);
+                if (currentMessage?.messageParts) {
+                  currentMessage.messageParts.forEach((part: any) => {
+                    if (part.type === 'tool' && part.toolData?.isExecuting) {
+                      console.log('Force completing tool:', part.toolData.toolName, 'claudeId:', part.toolData.claudeId);
+                      updateToolPartInMessage(aiMessageId!, part.toolData.id, {
+                        isExecuting: false,
+                        toolResult: part.toolData.toolResult || '(执行完成)'
+                      });
+                    }
+                  });
+                }
+              }
+
+              // Handle different result types
+              let finalMessage = '';
+              if (eventData.subtype === 'success') {
+                finalMessage = '';
+              } else if (eventData.subtype === 'error_max_turns') {
+                finalMessage = '\n\n⏱️ **达到最大轮次限制**';
+                if (eventData.permission_denials && eventData.permission_denials.length > 0) {
+                  finalMessage += '\n\n⚠️ **权限拒绝的操作**:';
+                  eventData.permission_denials.forEach((denial: { tool_name: string; tool_input: Record<string, unknown> }, index: number) => {
+                    finalMessage += `\n${index + 1}. ${denial.tool_name}: \`${denial.tool_input.command || denial.tool_input.description || JSON.stringify(denial.tool_input)}\``;
+                  });
+                  finalMessage += '\n\n💡 某些操作需要用户权限确认才能执行。';
+                }
+              } else if (eventData.subtype === 'error_during_execution') {
+                finalMessage = '\n\n❌ **执行过程中出现错误**\n\n请检查输入或稍后重试。';
+              } else if (eventData.subtype === 'error') {
+                // Generic error case
+                finalMessage = '\n\n❌ **处理过程中出现错误**\n\n请稍后重试或检查输入内容。';
+              } else {
+                finalMessage = '\n\n✅ **处理完成**';
+              }
+
+              // Update final message content
+              if (aiMessageId && finalMessage) {
+                addTextPartToMessage(aiMessageId, finalMessage);
+              }
+
+              // Refresh sessions list only if we had a session (don't refresh on new session creation)
+              if (currentSessionId) {
+                queryClient.invalidateQueries({ queryKey: ['agent-sessions', agent.id] });
+              }
             }
           }
         },
@@ -946,19 +959,19 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
           
           if (error instanceof Error) {
             if (error.message.includes('network') || error.message.includes('fetch')) {
-              errorMessage = '❌ **网络连接错误**\n\n无法连接到AI服务，请检查网络连接后重试。';
+              errorMessage = t('agentChatPanel.errors.networkError');
             } else if (error.message.includes('timeout')) {
-              errorMessage = '⏰ **请求超时**\n\n请求处理时间过长，请稍后重试。';
+              errorMessage = t('agentChatPanel.errors.requestTimeout');
             } else if (error.message.includes('rate limit') || error.message.includes('429')) {
-              errorMessage = '🚫 **请求频率限制**\n\n请求过于频繁，请稍后再试。';
+              errorMessage = t('agentChatPanel.errors.rateLimit');
             } else if (error.message.includes('unauthorized') || error.message.includes('401')) {
-              errorMessage = '🔐 **认证失败**\n\n请检查API密钥配置。';
+              errorMessage = t('agentChatPanel.errors.unauthorized');
             } else if (error.message.includes('forbidden') || error.message.includes('403')) {
-              errorMessage = '⛔ **权限不足**\n\n没有权限执行此操作。';
+              errorMessage = t('agentChatPanel.errors.forbidden');
             } else if (error.message.includes('500') || error.message.includes('internal server')) {
-              errorMessage = '🔧 **服务器内部错误**\n\n服务器遇到问题，请稍后重试。';
+              errorMessage = t('agentChatPanel.errors.internalServerError');
             } else {
-              errorMessage = `❌ **处理错误**\n\n${error.message || '未知错误，请稍后重试。'}`;
+              errorMessage = `❌ **${t('agentChatPanel.errors.processingError')}**\n\n${error.message || t('agentChatPanel.errors.unknownErrorRetry')}`;
             }
           }
           
@@ -987,15 +1000,15 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
       }
       
       // Determine specific error message for catch block
-      let errorMessage = '❌ **连接失败**\n\n无法连接到AI服务，请检查网络连接后重试。';
-      
+      let errorMessage = t('agentChatPanel.errors.connectionFailed');
+
       if (error instanceof Error) {
         if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-          errorMessage = '🌐 **网络连接失败**\n\n无法连接到服务器，请检查网络连接。';
+          errorMessage = t('agentChatPanel.errors.networkConnectionFailed');
         } else if (error.message.includes('timeout')) {
-          errorMessage = '⏰ **连接超时**\n\n连接服务器超时，请稍后重试。';
+          errorMessage = t('agentChatPanel.errors.connectionTimeout');
         } else {
-          errorMessage = `❌ **连接错误**\n\n${error.message || '无法连接到AI服务，请稍后重试。'}`;
+          errorMessage = `❌ **${t('agentChatPanel.errors.connectionError')}**\n\n${error.message || t('agentChatPanel.errors.cannotConnectRetry')}`;
         }
       }
       
@@ -1380,9 +1393,9 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
             onKeyPress={handleKeyPress}
             onPaste={handlePaste}
             placeholder={
-              selectedImages.length > 0 
-                ? "添加描述文字... (可选)"
-                : "输入你的消息... (Shift+Enter 换行，Enter 发送，/ 触发命令)"
+              selectedImages.length > 0
+                ? t('agentChat.addDescription')
+                : t('agentChat.inputPlaceholder')
             }
             rows={1}
             className="w-full resize-none border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 disabled:bg-gray-50 disabled:text-gray-500"
@@ -1480,17 +1493,17 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
                   disabled={isAiTyping}
                 >
                   <Zap className="w-4 h-4" />
-                  <span className="text-xs">{permissionMode === 'default' ? '默认' : permissionMode === 'acceptEdits' ? '接受编辑' : permissionMode === 'bypassPermissions' ? '绕过权限' : '计划模式'}</span>
+                  <span className="text-xs">{t(`agentChat.permissionMode.${permissionMode}`)}</span>
                   <ChevronDown className="w-3 h-3" />
                 </button>
-                
+
                 {showPermissionDropdown && (
                   <div className="absolute bottom-full left-0 mb-2 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
                     {[
-                      { value: 'default', label: '默认' },
-                      { value: 'acceptEdits', label: '接受编辑' },
-                      { value: 'bypassPermissions', label: '绕过权限' },
-                      // { value: 'plan', label: '计划模式' }
+                      { value: 'default', label: t('agentChat.permissionMode.default') },
+                      { value: 'acceptEdits', label: t('agentChat.permissionMode.acceptEdits') },
+                      { value: 'bypassPermissions', label: t('agentChat.permissionMode.bypassPermissions') },
+                      // { value: 'plan', label: t('agentChat.permissionMode.plan') }
                     ].map(option => (
                       <button
                         key={option.value}
@@ -1521,15 +1534,15 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
                   disabled={isAiTyping}
                 >
                   <Cpu className="w-4 h-4" />
-                  <span className="text-xs">{selectedModel === 'opus' ? 'Opus' : 'Sonnet'}</span>
+                  <span className="text-xs">{t(`agentChat.model.${selectedModel}`)}</span>
                   <ChevronDown className="w-3 h-3" />
                 </button>
-                
+
                 {showModelDropdown && (
                   <div className="absolute bottom-full left-0 mb-2 w-24 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
                     {[
-                      { value: 'sonnet', label: 'Sonnet' },
-                      { value: 'opus', label: 'Opus' }
+                      { value: 'sonnet', label: t('agentChat.model.sonnet') },
+                      { value: 'opus', label: t('agentChat.model.opus') }
                     ].map(option => (
                       <button
                         key={option.value}
@@ -1561,18 +1574,18 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
                         : 'text-gray-600 bg-gray-50 hover:bg-gray-100'
                     }`}
                     disabled={isAiTyping}
-                    title="选择Claude版本"
+                    title={t('agentChat.claudeVersion.title')}
                   >
                     <Terminal className="w-4 h-4" />
                     <span className="text-xs">
                       {selectedClaudeVersion
-                        ? claudeVersionsData.versions.find(v => v.id === selectedClaudeVersion)?.alias || '自定义'
-                        : 'Claude'
+                        ? claudeVersionsData.versions.find(v => v.id === selectedClaudeVersion)?.alias || t('agentChat.claudeVersion.custom')
+                        : t('agentChat.claudeVersion.default')
                       }
                     </span>
                     <ChevronDown className="w-3 h-3" />
                   </button>
-                  
+
                   {showVersionDropdown && (
                     <div className="absolute bottom-full left-0 mb-2 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
                       {/* 默认版本选项 */}
@@ -1585,9 +1598,9 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
                           !selectedClaudeVersion ? 'bg-gray-100 text-gray-700' : 'text-gray-700'
                         }`}
                       >
-                        Claude
+                        {t('agentChat.claudeVersion.default')}
                       </button>
-                      
+
                       {/* 其他版本选项 */}
                       {claudeVersionsData.versions
                         .filter(version => version.id !== claudeVersionsData.defaultVersionId)
@@ -1599,15 +1612,15 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
                               setShowVersionDropdown(false);
                             }}
                             className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 last:rounded-b-lg ${
-                              selectedClaudeVersion === version.id 
-                                ? 'bg-green-50 text-green-600' 
+                              selectedClaudeVersion === version.id
+                                ? 'bg-green-50 text-green-600'
                                 : 'text-gray-700'
                             }`}
                           >
                             <div className="flex items-center space-x-2">
                               <span>{version.name}</span>
                               {version.isSystem && (
-                                <span className="text-xs text-gray-500">(系统)</span>
+                                <span className="text-xs text-gray-500">({t('agentChat.claudeVersion.system')})</span>
                               )}
                             </div>
                           </button>
@@ -1622,10 +1635,10 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
                 <button
                   onClick={handleStopGeneration}
                   className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium shadow-sm"
-                  title="停止生成"
+                  title={t('agentChatPanel.stopGeneration')}
                 >
                   <Square className="w-4 h-4" />
-                  <span>停止</span>
+                  <span>{t('agentChatPanel.stop')}</span>
                 </button>
               ) : (
                 <button
@@ -1634,14 +1647,14 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
                   className="flex items-center space-x-2 px-4 py-2 text-white rounded-lg hover:opacity-90 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 text-sm font-medium shadow-sm"
                   style={{ backgroundColor: !isSendDisabled() ? agent.ui.primaryColor : undefined }}
                   title={
-                    isAiTyping ? 'AI正在输入中' :
-                    !inputMessage.trim() && selectedImages.length === 0 ? '无内容可发送' :
-                    isCommandTrigger(inputMessage) && !isCommandDefined(inputMessage.slice(1).split(' ')[0].toLowerCase()) ? '未知命令' :
-                    '发送消息'
+                    isAiTyping ? t('agentChatPanel.aiTyping') :
+                    !inputMessage.trim() && selectedImages.length === 0 ? t('agentChatPanel.noContentToSend') :
+                    isCommandTrigger(inputMessage) && !isCommandDefined(inputMessage.slice(1).split(' ')[0].toLowerCase()) ? t('agentChatPanel.unknownCommand') :
+                    t('agentChatPanel.sendMessage')
                   }
                 >
                   <Send className="w-4 h-4" />
-                  <span>发送</span>
+                  <span>{t('agentChatPanel.send')}</span>
                 </button>
               )}
             </div>

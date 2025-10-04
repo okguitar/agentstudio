@@ -63,7 +63,7 @@ const ChatMessageRendererComponent: React.FC<ChatMessageRendererProps> = ({ mess
                 {part.content}
               </div>
             );
-          } else if (part.type === 'text' && part.content && part.content.includes('compactSummary')) {
+          } else if (part.type === 'compactSummary' && part.content) {
             return (
               <div key={part.id}>
                 <CompactSummary content={part.content} />
