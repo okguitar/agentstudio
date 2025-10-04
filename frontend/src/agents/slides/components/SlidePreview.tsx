@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { Eye, Code } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import Prism from 'prismjs';
 import 'prismjs/themes/prism-tomorrow.css';
 import 'prismjs/components/prism-markup';
@@ -19,6 +20,7 @@ export interface SlidePreviewRef {
 }
 
 export const SlidePreview = forwardRef<SlidePreviewRef, SlidePreviewProps>(({ slide, totalSlides, projectPath }, ref) => {
+  const { t } = useTranslation('agents');
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -160,7 +162,7 @@ export const SlidePreview = forwardRef<SlidePreviewRef, SlidePreviewProps>(({ sl
               }`}
             >
               <Eye className="w-4 h-4" />
-              <span>预览</span>
+              <span>{t('slidePreview.tabs.preview')}</span>
             </button>
             <button
               onClick={() => setViewMode('code')}
@@ -171,7 +173,7 @@ export const SlidePreview = forwardRef<SlidePreviewRef, SlidePreviewProps>(({ sl
               }`}
             >
               <Code className="w-4 h-4" />
-              <span>代码</span>
+              <span>{t('slidePreview.tabs.code')}</span>
             </button>
           </div>
           
@@ -193,13 +195,13 @@ export const SlidePreview = forwardRef<SlidePreviewRef, SlidePreviewProps>(({ sl
           >
             {isLoading && (
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-sm text-gray-500">加载中...</div>
+                <div className="text-sm text-gray-500">{t('slidePreview.loading')}</div>
               </div>
             )}
             
             {error && (
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-sm text-red-500">加载失败</div>
+                <div className="text-sm text-red-500">{t('slidePreview.loadFailed')}</div>
               </div>
             )}
             
@@ -228,7 +230,7 @@ export const SlidePreview = forwardRef<SlidePreviewRef, SlidePreviewProps>(({ sl
             
             {!slide.exists && !isLoading && (
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-sm text-orange-500">文件不存在</div>
+                <div className="text-sm text-orange-500">{t('slidePreview.fileNotFound')}</div>
               </div>
             )}
           </div>
@@ -246,7 +248,7 @@ export const SlidePreview = forwardRef<SlidePreviewRef, SlidePreviewProps>(({ sl
               </div>
             ) : (
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-gray-500">加载代码中...</div>
+                <div className="text-gray-500">{t('slidePreview.loadingCode')}</div>
               </div>
             )}
           </div>

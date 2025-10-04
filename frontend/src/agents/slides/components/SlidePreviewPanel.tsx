@@ -1,11 +1,13 @@
 import React, { useRef, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { useSlides } from '../hooks/useSlides';
 import { SlidePreview } from './SlidePreview';
 import type { AgentPanelProps } from '../../types.js';
 import { eventBus, EVENTS } from '../../../utils/eventBus';
 
 export const SlidePreviewPanel: React.FC<AgentPanelProps> = ({ projectPath }) => {
+  const { t } = useTranslation('agents');
   const { data: slidesData, isLoading, error } = useSlides(projectPath);
   const queryClient = useQueryClient();
   const slidePreviewRefs = useRef<{ [key: number]: { refreshIframe: () => void } }>({});
@@ -46,7 +48,7 @@ export const SlidePreviewPanel: React.FC<AgentPanelProps> = ({ projectPath }) =>
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="text-gray-500">加载中...</div>
+        <div className="text-gray-500">{t('slidePreview.loading')}</div>
       </div>
     );
   }
@@ -54,7 +56,7 @@ export const SlidePreviewPanel: React.FC<AgentPanelProps> = ({ projectPath }) =>
   if (error) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="text-red-500">加载失败，请刷新页面重试</div>
+        <div className="text-red-500">{t('slidePreview.loadError')}</div>
       </div>
     );
   }
@@ -68,7 +70,7 @@ export const SlidePreviewPanel: React.FC<AgentPanelProps> = ({ projectPath }) =>
         <div className="flex flex-col">
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center space-x-3">
-              <h2 className="text-lg font-semibold text-gray-800">幻灯片预览</h2>
+              <h2 className="text-lg font-semibold text-gray-800">{t('slidePreview.title')}</h2>
               <span className="text-sm text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
                 {slidesData?.title || 'Presentation'}
               </span>
@@ -77,16 +79,16 @@ export const SlidePreviewPanel: React.FC<AgentPanelProps> = ({ projectPath }) =>
               onClick={handleRefresh}
               disabled={isLoading}
               className="flex items-center space-x-1 px-3 py-1.5 text-sm bg-blue-50 hover:bg-blue-100 text-blue-600 hover:text-blue-700 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              title="刷新幻灯片"
+              title={t('slidePreview.refreshTitle')}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
-              <span>刷新</span>
+              <span>{t('slidePreview.refresh')}</span>
             </button>
           </div>
           <div className="text-sm text-gray-600">
-            共 {slides.length} 张幻灯片
+            {t('slidePreview.slideCount', { count: slides.length })}
           </div>
         </div>
       </div>
@@ -95,8 +97,8 @@ export const SlidePreviewPanel: React.FC<AgentPanelProps> = ({ projectPath }) =>
       <div className="flex-1 overflow-y-auto">
         {slides.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-500 p-5">
-            <div className="text-lg mb-2">还没有幻灯片</div>
-            <div className="text-sm">与AI聊天来创建幻灯片</div>
+            <div className="text-lg mb-2">{t('slidePreview.noSlides')}</div>
+            <div className="text-sm">{t('slidePreview.createWithAI')}</div>
           </div>
         ) : (
           <div className="space-y-4 p-5">
