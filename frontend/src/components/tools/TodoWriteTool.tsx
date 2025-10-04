@@ -2,12 +2,14 @@ import React from 'react';
 import { BaseToolComponent } from './BaseToolComponent';
 import type { ToolExecution, TodoWriteToolInput } from './types';
 import { CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface TodoWriteToolProps {
   execution: ToolExecution;
 }
 
 export const TodoWriteTool: React.FC<TodoWriteToolProps> = ({ execution }) => {
+  const { t } = useTranslation('components');
   const input = execution.toolInput as TodoWriteToolInput;
 
   const getStatusIcon = (status: string) => {
@@ -29,12 +31,12 @@ export const TodoWriteTool: React.FC<TodoWriteToolProps> = ({ execution }) => {
   // Generate subtitle based on status
   const getSubtitle = () => {
     if (completedCount === totalCount && totalCount > 0) {
-      return '所有任务已完成';
+      return t('todoWriteTool.allTasksCompleted');
     }
     if (currentTask) {
-      return `${completedCount + 1}/${totalCount} ${currentTask}`;
+      return t('todoWriteTool.currentTaskProgress', { completed: completedCount + 1, total: totalCount, task: currentTask });
     }
-    return `${completedCount}/${totalCount} 待办任务`;
+    return t('todoWriteTool.pendingTasks', { completed: completedCount, total: totalCount });
   };
 
   return (
@@ -58,9 +60,9 @@ export const TodoWriteTool: React.FC<TodoWriteToolProps> = ({ execution }) => {
         
         {/* Compact statistics */}
         <div className="flex gap-3 text-xs text-gray-500 pt-2 border-t border-gray-200 mt-2">
-          <span>已完成: {input.todos.filter(t => t.status === 'completed').length}</span>
-          <span>进行中: {input.todos.filter(t => t.status === 'in_progress').length}</span>
-          <span>待处理: {input.todos.filter(t => t.status === 'pending').length}</span>
+          <span>{t('todoWriteTool.completedCount', { count: input.todos.filter(t => t.status === 'completed').length })}</span>
+          <span>{t('todoWriteTool.inProgressCount', { count: input.todos.filter(t => t.status === 'in_progress').length })}</span>
+          <span>{t('todoWriteTool.pendingCount', { count: input.todos.filter(t => t.status === 'pending').length })}</span>
         </div>
       </div>
     </BaseToolComponent>

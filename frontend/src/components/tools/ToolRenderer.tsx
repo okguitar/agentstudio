@@ -1,5 +1,6 @@
 import React from 'react';
 import type { ToolExecution } from './types';
+import { useTranslation } from 'react-i18next';
 
 // 导入所有工具组件
 import { TaskTool } from './TaskTool';
@@ -31,6 +32,7 @@ interface ToolRendererProps {
  * 根据工具名称渲染对应的工具组件
  */
 export const ToolRenderer: React.FC<ToolRendererProps> = ({ execution }) => {
+  const { t } = useTranslation('components');
   // 首先检查是否是MCP工具
   const mcpToolInfo = parseMcpToolName(execution.toolName);
   if (mcpToolInfo) {
@@ -94,7 +96,7 @@ export const ToolRenderer: React.FC<ToolRendererProps> = ({ execution }) => {
       return (
         <BaseToolComponent execution={execution}>
           <div>
-            <p className="text-sm text-gray-600 mb-2">未知工具类型</p>
+            <p className="text-sm text-gray-600 mb-2">{t('toolRenderer.unknownToolType')}</p>
             <div className="text-xs text-gray-500 bg-gray-100 p-2 rounded font-mono">
               {JSON.stringify(execution.toolInput, null, 2)}
             </div>

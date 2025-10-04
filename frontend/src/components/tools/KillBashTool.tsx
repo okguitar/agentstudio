@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { BaseToolComponent } from './BaseToolComponent';
 import type { ToolExecution, KillBashToolInput } from './types';
 import { Square, Zap, CheckCircle, AlertCircle } from 'lucide-react';
@@ -8,6 +9,7 @@ interface KillBashToolProps {
 }
 
 export const KillBashTool: React.FC<KillBashToolProps> = ({ execution }) => {
+  const { t } = useTranslation('components');
   const input = execution.toolInput as KillBashToolInput;
 
   // 解析执行结果
@@ -28,9 +30,9 @@ export const KillBashTool: React.FC<KillBashToolProps> = ({ execution }) => {
     if (!input.shell_id) return undefined;
     // 从结果中提取进程名
     const processName = result?.message?.match(/\(([^)]+)\)/)?.[1] || '';
-    return processName 
-      ? `终止 Shell ${input.shell_id} (${processName})`
-      : `终止 Shell ${input.shell_id}`;
+    return processName
+      ? t('killBashTool.subtitleWithProcess', { shellId: input.shell_id, processName })
+      : t('killBashTool.subtitle', { shellId: input.shell_id });
   };
 
   // 判断是否成功终止
@@ -68,25 +70,25 @@ export const KillBashTool: React.FC<KillBashToolProps> = ({ execution }) => {
           
           <div>
             <div className={`font-medium ${
-              execution.isExecuting 
-                ? 'text-yellow-800' 
+              execution.isExecuting
+                ? 'text-yellow-800'
                 : isSuccess()
                 ? 'text-green-800'
                 : execution.isError
                 ? 'text-red-800'
                 : 'text-gray-800'
             }`}>
-              {execution.isExecuting 
-                ? '正在终止进程...' 
+              {execution.isExecuting
+                ? t('killBashTool.status.terminating')
                 : isSuccess()
-                ? '进程已成功终止'
+                ? t('killBashTool.status.success')
                 : execution.isError
-                ? '终止进程失败'
-                : '准备终止进程'
+                ? t('killBashTool.status.failed')
+                : t('killBashTool.status.ready')
               }
             </div>
             <div className="text-sm text-gray-600 mt-1">
-              Shell ID: <code className="bg-gray-100 px-2 py-0.5 rounded text-xs">{input.shell_id}</code>
+              {t('killBashTool.shellId')}: <code className="bg-gray-100 px-2 py-0.5 rounded text-xs">{input.shell_id}</code>
             </div>
           </div>
         </div>

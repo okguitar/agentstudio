@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { BaseToolComponent, ToolInput } from './BaseToolComponent';
 import { FileContentViewer } from '../FileContentViewer';
 import type { ToolExecution, WriteToolInput } from './types';
@@ -8,6 +9,7 @@ interface WriteToolProps {
 }
 
 export const WriteTool: React.FC<WriteToolProps> = ({ execution }) => {
+  const { t } = useTranslation('components');
   const input = execution.toolInput as WriteToolInput;
 
   // 提取文件名作为副标题
@@ -20,19 +22,19 @@ export const WriteTool: React.FC<WriteToolProps> = ({ execution }) => {
   return (
     <BaseToolComponent execution={execution} subtitle={getSubtitle()} showResult={false}>
       <div>
-        <ToolInput label="文件路径" value={input.file_path} />
-        
+        <ToolInput label={t('writeTool.filePath')} value={input.file_path} />
+
         <div className="mt-3">
-          <FileContentViewer 
+          <FileContentViewer
             content={input.content}
             filePath={input.file_path}
           />
           <div className="text-xs text-gray-500 mt-2">
-            文件大小: {input.content.length} 字符
+            {t('writeTool.fileSize', { size: input.content.length })}
           </div>
         </div>
       </div>
-      
+
     </BaseToolComponent>
   );
 };

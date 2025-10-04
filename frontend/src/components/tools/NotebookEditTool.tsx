@@ -1,18 +1,20 @@
 import React from 'react';
 import { BaseToolComponent, ToolInput } from './BaseToolComponent';
 import type { ToolExecution, NotebookEditToolInput } from './types';
+import { useTranslation } from 'react-i18next';
 
 interface NotebookEditToolProps {
   execution: ToolExecution;
 }
 
 export const NotebookEditTool: React.FC<NotebookEditToolProps> = ({ execution }) => {
+  const { t } = useTranslation('components');
   const input = execution.toolInput as NotebookEditToolInput;
 
   return (
     <BaseToolComponent execution={execution}>
       <div>
-        <ToolInput label="Notebook 路径" value={input.notebook_path} />
+        <ToolInput label={t('notebookEditTool.notebookPath')} value={input.notebook_path} />
         
         <div className="flex flex-wrap gap-2 mt-2 mb-3">
           {input.edit_mode && (
@@ -21,30 +23,30 @@ export const NotebookEditTool: React.FC<NotebookEditToolProps> = ({ execution })
               input.edit_mode === 'delete' ? 'bg-red-200 text-red-800' :
               'bg-blue-200 text-blue-800'
             }`}>
-              {input.edit_mode === 'insert' ? '插入' : 
-               input.edit_mode === 'delete' ? '删除' : '替换'}
+              {input.edit_mode === 'insert' ? t('notebookEditTool.insert') :
+               input.edit_mode === 'delete' ? t('notebookEditTool.delete') : t('notebookEditTool.replace')}
             </span>
           )}
           
           {input.cell_type && (
             <span className="px-2 py-1 bg-purple-200 text-purple-800 text-xs rounded">
-              {input.cell_type === 'code' ? '代码' : 'Markdown'}
+              {input.cell_type === 'code' ? t('notebookEditTool.code') : t('notebookEditTool.markdown')}
             </span>
           )}
         </div>
         
         {input.cell_id && (
-          <ToolInput label="单元格 ID" value={input.cell_id} />
+          <ToolInput label={t('notebookEditTool.cellId')} value={input.cell_id} />
         )}
-        
+
         {input.edit_mode !== 'delete' && (
-          <ToolInput 
-            label="新内容" 
-            value={input.new_source.length > 300 ? 
-              input.new_source.substring(0, 300) + '\n...(已截断)' : 
+          <ToolInput
+            label={t('notebookEditTool.newContent')}
+            value={input.new_source.length > 300 ?
+              input.new_source.substring(0, 300) + '\n' + t('notebookEditTool.truncated') :
               input.new_source
-            } 
-            isCode={true} 
+            }
+            isCode={true}
           />
         )}
       </div>

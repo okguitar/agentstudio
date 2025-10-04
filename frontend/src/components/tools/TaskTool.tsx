@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { BaseToolComponent, ToolInput } from './BaseToolComponent';
 import type { ToolExecution, TaskToolInput } from './types';
 
@@ -7,6 +8,7 @@ interface TaskToolProps {
 }
 
 export const TaskTool: React.FC<TaskToolProps> = ({ execution }) => {
+  const { t } = useTranslation('components');
   const input = execution.toolInput as TaskToolInput;
 
   // 显示任务描述作为副标题
@@ -18,18 +20,18 @@ export const TaskTool: React.FC<TaskToolProps> = ({ execution }) => {
   return (
     <BaseToolComponent execution={execution} subtitle={getSubtitle()}>
       <div>
-        <ToolInput label="任务描述" value={input.description} />
-        <ToolInput 
-          label="任务提示" 
-          value={input.prompt.length > 300 ? 
-            input.prompt.substring(0, 300) + '\n...(已截断)' : 
+        <ToolInput label={t('taskTool.taskDescriptionLabel')} value={input.description} />
+        <ToolInput
+          label={t('taskTool.taskPromptLabel')}
+          value={input.prompt.length > 300 ?
+            input.prompt.substring(0, 300) + '\n' + t('taskTool.truncated') :
             input.prompt
-          } 
-          isCode={true} 
+          }
+          isCode={true}
         />
         {input.prompt.length > 300 && (
           <div className="text-xs text-gray-500 mt-1">
-            总长度: {input.prompt.length} 字符
+            {t('taskTool.totalLength', { length: input.prompt.length })}
           </div>
         )}
       </div>

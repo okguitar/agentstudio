@@ -1,18 +1,19 @@
 import React, { useState } from 'react';
-import { 
-  Terminal, 
-  FileSearch, 
-  Search, 
-  FolderOpen, 
-  CheckCircle, 
-  FileText, 
-  Edit3, 
-  FileEdit, 
-  FilePlus, 
-  BookOpen, 
-  BookMarked, 
-  Globe, 
-  CheckSquare, 
+import { useTranslation } from 'react-i18next';
+import {
+  Terminal,
+  FileSearch,
+  Search,
+  FolderOpen,
+  CheckCircle,
+  FileText,
+  Edit3,
+  FileEdit,
+  FilePlus,
+  BookOpen,
+  BookMarked,
+  Globe,
+  CheckSquare,
   Workflow,
   Loader2,
   ChevronDown,
@@ -176,18 +177,19 @@ export const ToolInput: React.FC<{
 };
 
 // 输出结果显示组件
-export const ToolOutput: React.FC<{ 
-  result: string; 
+export const ToolOutput: React.FC<{
+  result: string;
   isError?: boolean;
   className?: string;
 }> = ({ result, isError = false, className = '' }) => {
+  const { t } = useTranslation('components');
   if (!result) return null;
 
   return (
     <div className={`mt-3 ${className}`}>
-      <p className="text-xs font-medium text-gray-600 mb-2">执行结果:</p>
+      <p className="text-xs font-medium text-gray-600 mb-2">{t('baseToolComponent.executionResult')}</p>
       <div className={`p-3 rounded-md border text-sm font-mono whitespace-pre-wrap break-words ${
-        isError 
+        isError
           ? 'bg-red-50 border-red-200 text-red-700'
           : 'bg-green-50 border-green-200 text-green-700'
       }`}>

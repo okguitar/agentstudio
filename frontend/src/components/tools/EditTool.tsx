@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { BaseToolComponent, ToolInput } from './BaseToolComponent';
 import { DiffViewer } from '../DiffViewer';
 import type { ToolExecution, EditToolInput, EditToolResult } from './types';
@@ -8,6 +9,7 @@ interface EditToolProps {
 }
 
 export const EditTool: React.FC<EditToolProps> = ({ execution }) => {
+  const { t } = useTranslation('components');
   const input = execution.toolInput as EditToolInput;
   const result = execution.toolUseResult as EditToolResult;
 
@@ -28,7 +30,7 @@ export const EditTool: React.FC<EditToolProps> = ({ execution }) => {
         newStartLine: firstPatch.newStart
       };
     }
-    
+
     return { oldStartLine: 1, newStartLine: 1 };
   };
 
@@ -37,14 +39,14 @@ export const EditTool: React.FC<EditToolProps> = ({ execution }) => {
   return (
     <BaseToolComponent execution={execution} subtitle={getSubtitle()} showResult={false}>
       <div>
-        <ToolInput label="编辑文件" value={input.file_path} />
-        
+        <ToolInput label={t('editTool.editFile')} value={input.file_path} />
+
         {input.replace_all && (
-          <ToolInput label="全部替换" value="是" />
+          <ToolInput label={t('editTool.replaceAll')} value={t('editTool.yes')} />
         )}
-        
+
         <div className="mt-3">
-          <DiffViewer 
+          <DiffViewer
             oldText={input.old_string}
             newText={input.new_string}
             oldStartLine={oldStartLine}

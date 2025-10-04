@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { BaseToolComponent } from './BaseToolComponent';
 import type { ToolExecution, BashToolInput } from './types';
 
@@ -7,6 +8,7 @@ interface BashToolProps {
 }
 
 export const BashTool: React.FC<BashToolProps> = ({ execution }) => {
+  const { t } = useTranslation('components');
   const input = execution.toolInput as BashToolInput;
 
   // 显示命令作为副标题
@@ -18,10 +20,10 @@ export const BashTool: React.FC<BashToolProps> = ({ execution }) => {
   // 解析执行结果
   const getExecutionResult = () => {
     if (execution.isExecuting) {
-      return "执行中...";
+      return t('bashTool.executing');
     }
     if (execution.isError) {
-      return execution.toolResult || "执行出错";
+      return execution.toolResult || t('bashTool.executionError');
     }
     return execution.toolResult || "";
   };
@@ -60,7 +62,7 @@ export const BashTool: React.FC<BashToolProps> = ({ execution }) => {
           {/* 执行中状态 */}
           {execution.isExecuting && (
             <div className="mt-2">
-              <span className="text-yellow-400 animate-pulse">执行中...</span>
+              <span className="text-yellow-400 animate-pulse">{t('bashTool.executing')}</span>
             </div>
           )}
         </div>
@@ -68,7 +70,7 @@ export const BashTool: React.FC<BashToolProps> = ({ execution }) => {
         {/* 额外信息 */}
         {input.timeout && (
           <div className="text-xs text-gray-500">
-            超时时间: {input.timeout}ms
+            {t('bashTool.timeout', { timeout: input.timeout })}
           </div>
         )}
       </div>

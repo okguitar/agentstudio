@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { BaseToolComponent, ToolInput } from './BaseToolComponent';
 import type { ToolExecution } from './types';
 import { parseMcpToolName } from './mcpUtils';
@@ -91,13 +92,14 @@ const McpContentRenderer: React.FC<{ content: McpContent }> = ({ content }) => {
       );
       
     case 'image': {
+      const { t } = useTranslation('components');
       const imageContent = content as McpImageContent;
       return (
         <div className="p-3 rounded-md border bg-blue-50 border-blue-200">
           <div className="text-xs font-medium text-blue-600 mb-2">
-            图片 ({imageContent.mimeType})
+            {t('mcpTool.image', { mimeType: imageContent.mimeType })}
           </div>
-          <img 
+          <img
             src={`data:${imageContent.mimeType};base64,${imageContent.data}`}
             alt="MCP Tool Result"
             className="max-w-full h-auto rounded border shadow-sm"
@@ -108,20 +110,21 @@ const McpContentRenderer: React.FC<{ content: McpContent }> = ({ content }) => {
     }
       
     case 'resource': {
+      const { t } = useTranslation('components');
       const resourceContent = content as McpResourceContent;
       return (
         <div className="p-3 rounded-md border bg-purple-50 border-purple-200">
-          <div className="text-xs font-medium text-purple-600 mb-2">资源</div>
+          <div className="text-xs font-medium text-purple-600 mb-2">{t('mcpTool.resource')}</div>
           <div className="text-sm text-purple-700 space-y-1">
-            <div><span className="font-medium">URI:</span> {resourceContent.resource.uri}</div>
+            <div><span className="font-medium">{t('mcpTool.uri')}:</span> {resourceContent.resource.uri}</div>
             {resourceContent.resource.name && (
-              <div><span className="font-medium">名称:</span> {resourceContent.resource.name}</div>
+              <div><span className="font-medium">{t('mcpTool.name')}:</span> {resourceContent.resource.name}</div>
             )}
             {resourceContent.resource.description && (
-              <div><span className="font-medium">描述:</span> {resourceContent.resource.description}</div>
+              <div><span className="font-medium">{t('mcpTool.description')}:</span> {resourceContent.resource.description}</div>
             )}
             {resourceContent.resource.mimeType && (
-              <div><span className="font-medium">类型:</span> {resourceContent.resource.mimeType}</div>
+              <div><span className="font-medium">{t('mcpTool.type')}:</span> {resourceContent.resource.mimeType}</div>
             )}
           </div>
         </div>
@@ -130,10 +133,11 @@ const McpContentRenderer: React.FC<{ content: McpContent }> = ({ content }) => {
       
     default:
       // 未知类型，显示为JSON
+      const { t } = useTranslation('components');
       return (
         <div className="p-3 rounded-md border bg-gray-50 border-gray-200">
           <div className="text-xs font-medium text-gray-600 mb-2">
-            未知类型 ({content.type})
+            {t('mcpTool.unknownType', { type: content.type })}
           </div>
           <pre className="text-sm font-mono text-gray-700 whitespace-pre-wrap break-words">
             {JSON.stringify(content, null, 2)}
@@ -147,12 +151,14 @@ const McpContentRenderer: React.FC<{ content: McpContent }> = ({ content }) => {
  * MCP结果渲染组件
  */
 const McpResultRenderer: React.FC<{ result: string; isError?: boolean }> = ({ result, isError }) => {
+  const { t } = useTranslation('components');
+
   if (!result) return null;
 
   if (isError) {
     return (
       <div className="mt-3">
-        <p className="text-xs font-medium text-gray-600 mb-2">错误信息:</p>
+        <p className="text-xs font-medium text-gray-600 mb-2">{t('mcpTool.errorMessage')}</p>
         <div className="p-3 rounded-md border bg-red-50 border-red-200 text-red-700 text-sm font-mono whitespace-pre-wrap break-words">
           {result}
         </div>
@@ -165,7 +171,7 @@ const McpResultRenderer: React.FC<{ result: string; isError?: boolean }> = ({ re
     // 降级到原始文本显示
     return (
       <div className="mt-3">
-        <p className="text-xs font-medium text-gray-600 mb-2">执行结果:</p>
+        <p className="text-xs font-medium text-gray-600 mb-2">{t('mcpTool.executionResult')}</p>
         <div className="p-3 rounded-md border bg-green-50 border-green-200 text-green-700 text-sm font-mono whitespace-pre-wrap break-words">
           {result}
         </div>
@@ -174,26 +180,26 @@ const McpResultRenderer: React.FC<{ result: string; isError?: boolean }> = ({ re
   }
 
   const content = Array.isArray(mcpResult.content) ? mcpResult.content : [mcpResult.content];
-  
+
   return (
     <div className="mt-3">
-      <p className="text-xs font-medium text-gray-600 mb-2">执行结果:</p>
-      
+      <p className="text-xs font-medium text-gray-600 mb-2">{t('mcpTool.executionResult')}</p>
+
       {/* 进度信息 */}
       {mcpResult._meta?.progress !== undefined && mcpResult._meta?.progressTotal && (
         <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded text-sm">
           <div className="text-blue-700 mb-1">
-            进度: {mcpResult._meta.progress} / {mcpResult._meta.progressTotal}
+            {t('mcpTool.progress', { current: mcpResult._meta.progress, total: mcpResult._meta.progressTotal })}
           </div>
           <div className="w-full bg-blue-200 rounded-full h-2">
-            <div 
+            <div
               className="bg-blue-600 h-2 rounded-full transition-all duration-300"
               style={{ width: `${(mcpResult._meta.progress / mcpResult._meta.progressTotal) * 100}%` }}
             />
           </div>
         </div>
       )}
-      
+
       {/* 内容渲染 */}
       <div className="space-y-3">
         {content.map((item, index) => (
@@ -208,8 +214,9 @@ const McpResultRenderer: React.FC<{ result: string; isError?: boolean }> = ({ re
  * MCP工具专用显示组件
  */
 export const McpTool: React.FC<McpToolProps> = ({ execution }) => {
+  const { t } = useTranslation('components');
   const toolInfo = parseMcpToolName(execution.toolName);
-  
+
   if (!toolInfo) {
     // 如果解析失败，回退到基础组件
     return <BaseToolComponent execution={execution} />;
@@ -217,7 +224,7 @@ export const McpTool: React.FC<McpToolProps> = ({ execution }) => {
 
   const { serverName, toolName } = toolInfo;
   const formattedToolName = formatMcpToolName(toolName);
-  
+
   // 创建修改后的execution对象，只显示格式化的工具名
   const modifiedExecution = {
     ...execution,
@@ -225,10 +232,10 @@ export const McpTool: React.FC<McpToolProps> = ({ execution }) => {
   };
 
   // 构建副标题显示服务器信息
-  const subtitle = `MCP:  ${toolName} @ ${serverName}`;
+  const subtitle = t('mcpTool.subtitle', { toolName, serverName });
 
   return (
-    <BaseToolComponent 
+    <BaseToolComponent
       execution={modifiedExecution}
       subtitle={subtitle}
       showResult={false} // 我们自定义结果显示
@@ -237,15 +244,15 @@ export const McpTool: React.FC<McpToolProps> = ({ execution }) => {
       <div className="space-y-3">
 
         {/* 工具输入参数 - 直接显示JSON */}
-        <ToolInput 
-          label="参数"
+        <ToolInput
+          label={t('mcpTool.parameters')}
           value={execution.toolInput}
           isCode={true}
         />
-        
+
         {/* 工具执行结果 - 使用MCP专用渲染器 */}
         {execution.toolResult && (
-          <McpResultRenderer 
+          <McpResultRenderer
             result={execution.toolResult}
             isError={execution.isError}
           />
