@@ -25,22 +25,29 @@ const getAgentStorageForRequest = (req: express.Request): AgentStorage => {
   return new AgentStorage(workingDir);
 };
 
-// Process compact context messages - detect and convert the 4-message pattern
+// Process compact context messages - detect and convert the 4-message or 5-message pattern
 function processCompactContextMessages(messages: ClaudeHistoryMessage[]): ClaudeHistoryMessage[] {
   const processedMessages: ClaudeHistoryMessage[] = [];
   let i = 0;
 
   while (i < messages.length) {
     const currentMsg = messages[i];
-    
-    // Case 1: Manual compact - Check for 4-message pattern
-    if (currentMsg.isCompactSummary && currentMsg.parentUuid === null && i + 3 < messages.length) {
-      const metaMsg = messages[i + 1];
-      const commandMsg = messages[i + 2];
-      const outputMsg = messages[i + 3];
-      
-      // Verify this is the manual compact pattern
-      if (metaMsg.isMeta === true &&
+
+    // Case 1a: New format (5-message pattern) - Check for compact_boundary message first
+    if ((currentMsg as any).type === 'system' &&
+        (currentMsg as any).subtype === 'compact_boundary' &&
+        currentMsg.parentUuid === null &&
+        i + 4 < messages.length) {
+
+      const summaryMsg = messages[i + 1];
+      const metaMsg = messages[i + 2];
+      const commandMsg = messages[i + 3];
+      const outputMsg = messages[i + 4];
+
+      // Verify this is the new 5-message compact pattern
+      if (summaryMsg.isCompactSummary &&
+          summaryMsg.parentUuid === currentMsg.uuid &&
+          metaMsg.isMeta === true &&
           commandMsg.type === 'user' &&
           commandMsg.message?.content &&
           typeof commandMsg.message.content === 'string' &&
@@ -51,7 +58,7 @@ function processCompactContextMessages(messages: ClaudeHistoryMessage[]): Claude
           typeof outputMsg.message.content === 'string' &&
           outputMsg.message.content.includes('<local-command-stdout>') &&
           outputMsg.parentUuid === commandMsg.uuid) {
-        
+
         // Create synthetic user command message
         const userCommandMessage: ClaudeHistoryMessage = {
           type: 'user',
@@ -65,7 +72,60 @@ function processCompactContextMessages(messages: ClaudeHistoryMessage[]): Claude
           },
           isCompactCommand: true
         };
-        
+
+        // Create synthetic AI response with compressed content
+        const aiResponseMessage: ClaudeHistoryMessage = {
+          type: 'assistant',
+          uuid: `synthetic_ai_${summaryMsg.uuid}`,
+          timestamp: summaryMsg.timestamp,
+          sessionId: summaryMsg.sessionId,
+          parentUuid: userCommandMessage.uuid,
+          message: {
+            role: 'assistant',
+            content: extractContentFromClaudeMessage(summaryMsg, messages) || '会话上下文已压缩'
+          },
+          isCompactSummary: true
+        };
+
+        processedMessages.push(userCommandMessage, aiResponseMessage);
+        i += 5; // Skip all 5 messages
+        continue;
+      }
+    }
+
+    // Case 1b: Old format (4-message pattern) - Check for isCompactSummary with parentUuid === null
+    if (currentMsg.isCompactSummary && currentMsg.parentUuid === null && i + 3 < messages.length) {
+      const metaMsg = messages[i + 1];
+      const commandMsg = messages[i + 2];
+      const outputMsg = messages[i + 3];
+
+      // Verify this is the old 4-message manual compact pattern
+      if (metaMsg.isMeta === true &&
+          commandMsg.type === 'user' &&
+          commandMsg.message?.content &&
+          typeof commandMsg.message.content === 'string' &&
+          commandMsg.message.content.includes('<command-name>/compact</command-name>') &&
+          commandMsg.parentUuid === metaMsg.uuid &&
+          outputMsg.type === 'user' &&
+          outputMsg.message?.content &&
+          typeof outputMsg.message.content === 'string' &&
+          outputMsg.message.content.includes('<local-command-stdout>') &&
+          outputMsg.parentUuid === commandMsg.uuid) {
+
+        // Create synthetic user command message
+        const userCommandMessage: ClaudeHistoryMessage = {
+          type: 'user',
+          uuid: `synthetic_cmd_${commandMsg.uuid}`,
+          timestamp: commandMsg.timestamp,
+          sessionId: commandMsg.sessionId,
+          parentUuid: currentMsg.parentUuid,
+          message: {
+            role: 'user',
+            content: '/compact'
+          },
+          isCompactCommand: true
+        };
+
         // Create synthetic AI response with compressed content
         const aiResponseMessage: ClaudeHistoryMessage = {
           type: 'assistant',
@@ -79,7 +139,7 @@ function processCompactContextMessages(messages: ClaudeHistoryMessage[]): Claude
           },
           isCompactSummary: true
         };
-        
+
         processedMessages.push(userCommandMessage, aiResponseMessage);
         i += 4; // Skip all 4 messages
         continue;
