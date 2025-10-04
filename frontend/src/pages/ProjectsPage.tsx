@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { API_BASE } from '../lib/config';
-import { 
-  Plus, 
-  Search, 
+import {
+  Plus,
+  Search,
   Calendar,
   User,
   ExternalLink,
@@ -65,12 +66,13 @@ interface CreateProjectModalProps {
   }>;
 }
 
-const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ 
-  isOpen, 
-  onClose, 
-  onConfirm, 
-  agents 
+const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  agents
 }) => {
+  const { t } = useTranslation('pages');
   const [formData, setFormData] = useState({
     name: '',
     agentId: '',
@@ -117,7 +119,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg w-full max-w-md mx-4">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">创建新项目</h2>
+          <h2 className="text-xl font-semibold text-gray-900">{t('projects.form.create')}</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600"
@@ -131,13 +133,13 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
             {/* Project Name */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                项目名称 *
+                {t('projects.form.nameRequired')}
               </label>
               <input
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="输入项目名称"
+                placeholder={t('projects.form.namePlaceholder')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               />
@@ -146,7 +148,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
             {/* Agent Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                选择助手类型 *
+                {t('projects.form.agentType')}
               </label>
               <select
                 value={formData.agentId}
@@ -176,7 +178,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
             {/* Project Directory */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                项目目录
+                {t('projects.form.directory')}
               </label>
               <div className="flex space-x-2">
                 <input
@@ -189,25 +191,25 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
                   type="button"
                   onClick={() => setShowFileBrowser(true)}
                   className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-                  title="选择目录"
+                  title={t('projects.form.directory')}
                 >
                   <Folder className="w-4 h-4" />
                 </button>
               </div>
               <p className="text-xs text-gray-500 mt-1">
-                项目将在此目录下创建一个新文件夹
+                {t('projects.form.directoryNote')}
               </p>
             </div>
 
             {/* Description */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                项目描述
+                {t('projects.form.description')}
               </label>
               <textarea
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="简单描述这个项目的用途..."
+                placeholder={t('projects.form.descriptionPlaceholder')}
                 rows={3}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
@@ -220,14 +222,14 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
               onClick={onClose}
               className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
             >
-              取消
+              {t('projects.form.cancel')}
             </button>
             <button
               type="submit"
               disabled={!formData.name || !formData.agentId}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              创建项目
+              {t('projects.createButton')}
             </button>
           </div>
         </form>
@@ -236,7 +238,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
       {/* FileBrowser Modal */}
       {showFileBrowser && (
         <FileBrowser
-          title="选择项目目录"
+          title={t('projects.form.directory')}
           initialPath={getAbsolutePath(formData.directory)}
           allowFiles={false}
           allowDirectories={true}
@@ -255,6 +257,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
 };
 
 export const ProjectsPage: React.FC = () => {
+  const { t } = useTranslation('pages');
   const { data: agentsData } = useAgents();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -340,11 +343,11 @@ export const ProjectsPage: React.FC = () => {
         window.open(url, '_blank');
       } else {
         const error = await response.json();
-        throw new Error(error.error || '创建项目失败');
+        throw new Error(error.error || t('projects.errors.createFailed'));
       }
     } catch (error) {
       console.error('Failed to create project:', error);
-      alert(`创建项目失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      alert(`${t('projects.errors.createFailed')}: ${error instanceof Error ? error.message : t('errors:common.unknownError')}`);
     }
   };
 
@@ -374,24 +377,24 @@ export const ProjectsPage: React.FC = () => {
 
   const handleDeleteProject = async (project: Project) => {
     const confirmed = window.confirm(
-      `确定要删除项目 "${project.name}" 吗？\n\n注意：这只会从列表中移除项目，不会删除实际的文件目录。`
+      `${t('projects.deleteConfirm')}\n\n${t('projects.deleteNote')}`
     );
-    
+
     if (confirmed) {
       try {
         const response = await fetch(`${API_BASE}/projects/by-id/${project.id}`, {
           method: 'DELETE'
         });
-        
+
         if (response.ok) {
           setProjects(prev => prev.filter(p => p.id !== project.id));
         } else {
           const error = await response.json();
-          throw new Error(error.error || '删除项目失败');
+          throw new Error(error.error || t('projects.errors.deleteFailed'));
         }
       } catch (error) {
         console.error('Failed to delete project:', error);
-        alert(`删除项目失败: ${error instanceof Error ? error.message : '未知错误'}`);
+        alert(`${t('projects.errors.deleteFailed')}: ${error instanceof Error ? error.message : t('errors:common.unknownError')}`);
       }
     }
   };
@@ -438,11 +441,11 @@ export const ProjectsPage: React.FC = () => {
         window.open(url, '_blank');
       } else {
         const error = await response.json();
-        alert(`设置Agent失败: ${error.error || '未知错误'}`);
+        alert(`${t('errors:agent.setFailed')}: ${error.error || t('errors:common.unknownError')}`);
       }
     } catch (error) {
       console.error('Failed to select agent:', error);
-      alert(`设置Agent失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      alert(`${t('errors:agent.setFailed')}: ${error instanceof Error ? error.message : t('errors:common.unknownError')}`);
     }
   };
 
@@ -453,7 +456,7 @@ export const ProjectsPage: React.FC = () => {
       <div className="p-8 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <div className="text-gray-600">正在加载项目...</div>
+          <div className="text-gray-600">{t('projects.loading')}</div>
         </div>
       </div>
     );
@@ -465,8 +468,8 @@ export const ProjectsPage: React.FC = () => {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">项目管理</h1>
-            <p className="text-gray-600 mt-2">管理你的所有工作项目</p>
+            <h1 className="text-3xl font-bold text-gray-900">{t('projects.title')}</h1>
+            <p className="text-gray-600 mt-2">{t('projects.subtitle')}</p>
           </div>
         </div>
 
@@ -478,20 +481,20 @@ export const ProjectsPage: React.FC = () => {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
                   type="text"
-                  placeholder="搜索项目..."
+                  placeholder={t('projects.searchPlaceholder')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
               <div className="flex items-center space-x-2">
-                <span className="text-sm font-medium text-gray-700">助手类型:</span>
+                <span className="text-sm font-medium text-gray-700">{t('projects.table.agent')}:</span>
                 <select
                   value={filterAgent}
                   onChange={(e) => setFilterAgent(e.target.value)}
                   className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  <option value="all">全部</option>
+                  <option value="all">{t('projects.filter.all')}</option>
                   {enabledAgents.map(agent => (
                     <option key={agent.id} value={agent.id}>
                       {agent.ui.icon} {agent.name}
@@ -506,7 +509,7 @@ export const ProjectsPage: React.FC = () => {
             className="flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
           >
             <Plus className="w-5 h-5" />
-            <span>新建项目</span>
+            <span>{t('projects.createButton')}</span>
           </button>
         </div>
       </div>
@@ -516,17 +519,17 @@ export const ProjectsPage: React.FC = () => {
         <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
           <div className="text-6xl mb-4">📁</div>
           <h3 className="text-xl font-medium text-gray-900 mb-2">
-            {searchQuery || filterAgent !== 'all' ? '未找到匹配的项目' : '还没有项目'}
+            {t('projects.noProjects')}
           </h3>
           <p className="text-gray-600 mb-6">
-            {searchQuery || filterAgent !== 'all' ? '尝试调整搜索条件或筛选器' : '创建你的第一个项目开始工作'}
+            {t('projects.selectType')}
           </p>
           {!searchQuery && filterAgent === 'all' && (
             <button
               onClick={() => setShowCreateModal(true)}
               className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
-              新建项目
+              {t('projects.createButton')}
             </button>
           )}
         </div>
@@ -536,22 +539,22 @@ export const ProjectsPage: React.FC = () => {
             <TableHeader>
               <TableRow>
                 <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  项目
+                  {t('projects.table.project')}
                 </TableHead>
                 <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  助手类型
+                  {t('projects.table.agent')}
                 </TableHead>
                 <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  路径
+                  {t('common:path')}
                 </TableHead>
                 <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  创建时间
+                  {t('common:createdAt')}
                 </TableHead>
                 <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  最后访问
+                  {t('projects.table.lastActive')}
                 </TableHead>
                 <TableHead className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  操作
+                  {t('projects.table.actions')}
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -575,7 +578,7 @@ export const ProjectsPage: React.FC = () => {
                           <button
                             onClick={() => handleOpenProject(project)}
                             className="text-gray-500 hover:text-gray-700 transition-colors"
-                            title="打开项目"
+                            title={t('projects.actions.open')}
                           >
                             <ExternalLink className="w-3 h-3" />
                           </button>
@@ -600,7 +603,7 @@ export const ProjectsPage: React.FC = () => {
                         {project.defaultAgentName}
                       </span>
                     ) : (
-                      <span className="text-xs text-gray-400 italic">未设置</span>
+                      <span className="text-xs text-gray-400 italic">{t('projects.status.never')}</span>
                     )}
                   </TableCell>
                   <TableCell className="px-6 py-4 whitespace-nowrap">
@@ -628,28 +631,28 @@ export const ProjectsPage: React.FC = () => {
                       <button
                         onClick={() => handleMemoryManagement(project)}
                         className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
-                        title="记忆管理"
+                        title={t('components:projectMemory.title')}
                       >
                         <Brain className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => handleCommandManagement(project)}
                         className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
-                        title="命令管理"
+                        title={t('components:projectCommands.title')}
                       >
                         <Command className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => handleSubAgentManagement(project)}
                         className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
-                        title="子Agent管理"
+                        title={t('components:projectSubAgents.title')}
                       >
                         <Bot className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => handleDeleteProject(project)}
                         className="p-1.5 text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                        title="删除项目"
+                        title={t('projects.actions.delete')}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -699,7 +702,7 @@ export const ProjectsPage: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg w-full max-w-md mx-4">
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">选择助手类型</h2>
+              <h2 className="text-xl font-semibold text-gray-900">{t('projects.selectType')}</h2>
               <button
                 onClick={() => setAgentSelectProject(null)}
                 className="text-gray-400 hover:text-gray-600"
@@ -711,7 +714,7 @@ export const ProjectsPage: React.FC = () => {
             <div className="p-6">
               <div className="mb-4">
                 <p className="text-sm text-gray-600 mb-4">
-                  项目 "<strong>{agentSelectProject.name}</strong>" 还没有关联助手类型，请选择一个：
+                  {t('projects.selectType')}
                 </p>
               </div>
 
@@ -738,7 +741,7 @@ export const ProjectsPage: React.FC = () => {
                   onClick={() => setAgentSelectProject(null)}
                   className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
                 >
-                  取消
+                  {t('projects.form.cancel')}
                 </button>
               </div>
             </div>

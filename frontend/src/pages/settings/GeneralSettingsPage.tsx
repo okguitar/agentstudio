@@ -1,23 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { 
+import { useTranslation } from 'react-i18next';
+import {
   Save,
   Moon,
   Sun,
   Monitor,
+  Globe,
   // Terminal
 } from 'lucide-react';
 
 export const GeneralSettingsPage: React.FC = () => {
+  const { t, i18n } = useTranslation('pages');
   const [theme, setTheme] = useState('auto');
-  const [language, setLanguage] = useState('zh');
+  const [language, setLanguage] = useState(i18n.language);
 
   // Load saved settings
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') || 'auto';
-    const savedLanguage = localStorage.getItem('language') || 'zh';
     setTheme(savedTheme);
-    setLanguage(savedLanguage);
-  }, []);
+    // Language is managed by i18next
+    setLanguage(i18n.language);
+  }, [i18n.language]);
 
   // Apply theme changes
   useEffect(() => {
@@ -41,30 +44,34 @@ export const GeneralSettingsPage: React.FC = () => {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
+  const handleLanguageChange = (newLanguage: string) => {
+    setLanguage(newLanguage);
+    i18n.changeLanguage(newLanguage);
+  };
+
   const saveSettings = () => {
-    localStorage.setItem('language', language);
-    alert('设置已保存');
+    alert(t('settings.general.settingsSaved'));
   };
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">通用设置</h2>
-        <p className="text-gray-600">配置界面主题和基本设置</p>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('settings.general.title')}</h2>
+        <p className="text-gray-600">{t('settings.general.description')}</p>
       </div>
 
       <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">界面设置</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('settings.general.interfaceSettings')}</h3>
         <div className="space-y-6">
           {/* Theme Selection */}
           <div>
-            <label className="block font-medium text-gray-900 mb-3">主题</label>
-            <p className="text-sm text-gray-500 mb-4">选择界面主题模式</p>
+            <label className="block font-medium text-gray-900 mb-3">{t('settings.general.theme.label')}</label>
+            <p className="text-sm text-gray-500 mb-4">{t('settings.general.theme.description')}</p>
             <div className="grid grid-cols-3 gap-3">
               {[
-                { value: 'auto', label: '跟随系统', icon: Monitor },
-                { value: 'light', label: '浅色模式', icon: Sun },
-                { value: 'dark', label: '深色模式', icon: Moon }
+                { value: 'auto', label: t('settings.general.theme.auto'), icon: Monitor },
+                { value: 'light', label: t('settings.general.theme.light'), icon: Sun },
+                { value: 'dark', label: t('settings.general.theme.dark'), icon: Moon }
               ].map((option) => (
                 <button
                   key={option.value}
@@ -84,45 +91,59 @@ export const GeneralSettingsPage: React.FC = () => {
 
           {/* Language Selection */}
           <div>
-            <label className="block font-medium text-gray-900 mb-2">语言</label>
-            <p className="text-sm text-gray-500 mb-3">选择界面语言</p>
-            <select 
-              value={language}
-              onChange={(e) => setLanguage(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="zh">中文</option>
-              <option value="en">English</option>
-            </select>
+            <label className="block font-medium text-gray-900 mb-3 flex items-center space-x-2">
+              <Globe className="w-5 h-5" />
+              <span>{t('settings.general.language.label')}</span>
+            </label>
+            <p className="text-sm text-gray-500 mb-4">{t('settings.general.language.description')}</p>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { value: 'zh-CN', label: '中文简体', flag: '🇨🇳' },
+                { value: 'en-US', label: 'English', flag: '🇺🇸' }
+              ].map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => handleLanguageChange(option.value)}
+                  className={`p-4 border-2 rounded-lg flex items-center space-x-3 transition-all ${
+                    language === option.value
+                      ? 'border-blue-500 bg-blue-50 text-blue-700'
+                      : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                  }`}
+                >
+                  <span className="text-2xl">{option.flag}</span>
+                  <span className="text-sm font-medium">{option.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Version Info */}
           <div className="pt-4 border-t border-gray-200">
-            <h4 className="font-medium text-gray-900 mb-3">应用信息</h4>
+            <h4 className="font-medium text-gray-900 mb-3">{t('settings.general.appInfo.title')}</h4>
             <div className="space-y-2 text-sm text-gray-600">
               <div className="flex justify-between">
-                <span>AI PPT Editor</span>
+                <span>{t('settings.general.appInfo.name')}</span>
                 <span>v1.0.0</span>
               </div>
               <div className="flex justify-between">
-                <span>构建日期</span>
+                <span>{t('settings.general.appInfo.buildDate')}</span>
                 <span>{new Date().toLocaleDateString()}</span>
               </div>
             </div>
             <p className="text-xs text-gray-500 mt-3">
-              查看详细版本信息和更新请转至"版本管理"页面
+              {t('settings.general.appInfo.versionNote')}
             </p>
           </div>
         </div>
 
         {/* Save Button */}
         <div className="mt-8 pt-6 border-t border-gray-200 flex justify-end">
-          <button 
+          <button
             onClick={saveSettings}
             className="flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             <Save className="w-4 h-4" />
-            <span>保存设置</span>
+            <span>{t('common:actions.save')}</span>
           </button>
         </div>
       </div>

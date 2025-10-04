@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { API_BASE } from '../lib/config';
-import { 
-  Plus, 
-  Trash2, 
+import {
+  Plus,
+  Trash2,
   Search,
   CheckCircle,
   XCircle,
@@ -41,6 +42,7 @@ interface McpServerConfig {
 
 
 export const McpPage: React.FC = () => {
+  const { t } = useTranslation('pages');
   const [servers, setServers] = useState<McpServerConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -127,7 +129,7 @@ export const McpPage: React.FC = () => {
             ? { 
                 ...s, 
                 status: 'error' as const, 
-                error: error.error || '验证失败',
+                error: error.error || t('mcp.errors.validationFailed'),
                 tools: undefined
               }
             : s
@@ -141,7 +143,7 @@ export const McpPage: React.FC = () => {
           ? { 
               ...s, 
               status: 'error' as const, 
-              error: '网络错误或服务不可用',
+              error: t('mcp.errors.networkError'),
               tools: undefined
             }
           : s
@@ -185,21 +187,21 @@ export const McpPage: React.FC = () => {
   };
 
   const handleDeleteServer = async (serverName: string) => {
-    if (window.confirm(`确定要删除 "${serverName}" 配置吗？`)) {
+    if (window.confirm(t('mcp.confirmDelete', { name: serverName }))) {
       try {
         const response = await fetch(`${API_BASE}/mcp/${serverName}`, {
           method: 'DELETE'
         });
-        
+
         if (response.ok) {
           setServers(prev => prev.filter(s => s.name !== serverName));
         } else {
           const error = await response.json();
-          throw new Error(error.error || '删除配置失败');
+          throw new Error(error.error || t('mcp.errors.deleteFailed'));
         }
       } catch (error) {
-        console.error('删除配置失败:', error);
-        alert(`删除配置失败: ${error instanceof Error ? error.message : '未知错误'}`);
+        console.error('Delete config failed:', error);
+        alert(`${t('mcp.errors.deleteFailed')}: ${error instanceof Error ? error.message : t('errors:common.unknownError')}`);
       }
     }
   };
@@ -223,7 +225,7 @@ export const McpPage: React.FC = () => {
         const claudeCodeServers = result.servers || [];
 
         if (claudeCodeServers.length === 0) {
-          alert('没有找到Claude Code的MCP配置');
+          alert(t('mcp.import.noConfigFound'));
           return;
         }
 
@@ -270,17 +272,17 @@ export const McpPage: React.FC = () => {
         }
 
         if (importedCount > 0) {
-          alert(`成功导入 ${importedCount} 个MCP服务器配置${skippedCount > 0 ? `，跳过 ${skippedCount} 个已存在的配置` : ''}`);
+          alert(t('mcp.import.success', { imported: importedCount, skipped: skippedCount }));
         } else {
-          alert('所有配置都已存在，没有导入新的配置');
+          alert(t('mcp.import.allExist'));
         }
       } else {
         const error = await response.json();
-        throw new Error(error.error || '导入失败');
+        throw new Error(error.error || t('mcp.errors.importFailed'));
       }
     } catch (error) {
       console.error('Failed to import from Claude Code:', error);
-      alert(`从Claude Code导入失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      alert(`${t('mcp.errors.importFailed')}: ${error instanceof Error ? error.message : t('errors:common.unknownError')}`);
     } finally {
       setLoading(false);
     }
@@ -322,15 +324,18 @@ export const McpPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.name.trim()) {
-      alert('请输入服务名称');
+      alert(t('mcp.form.nameRequired'));
       return;
     }
 
     if (!validateConfig(formData.config, formData.type)) {
-      const requiredFields = formData.type === 'stdio' ? 'type, command 和 args' : 'type 和 url';
-      alert(`配置格式不正确，请确保包含必需的 ${requiredFields} 字段，并且格式正确`);
+      alert(t('mcp.form.configInvalid', {
+        fields: formData.type === 'stdio'
+          ? t('mcp.form.requiredFieldsStdio')
+          : t('mcp.form.requiredFieldsHttp')
+      }));
       return;
     }
 
@@ -388,12 +393,12 @@ export const McpPage: React.FC = () => {
         await validateMcpServer(serverName);
       } else {
         const error = await response.json();
-        throw new Error(error.error || '保存配置失败');
+        throw new Error(error.error || t('mcp.errors.saveFailed'));
       }
-      
+
     } catch (error) {
       console.error('Failed to save MCP config:', error);
-      alert(`保存配置失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      alert(`${t('mcp.errors.saveFailed')}: ${error instanceof Error ? error.message : t('errors:common.unknownError')}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -409,7 +414,7 @@ export const McpPage: React.FC = () => {
       <div className="p-8 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <div className="text-gray-600">正在加载MCP配置...</div>
+          <div className="text-gray-600">{t('mcp.loading')}</div>
         </div>
       </div>
     );
@@ -421,8 +426,8 @@ export const McpPage: React.FC = () => {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">MCP服务</h1>
-            <p className="text-gray-600 mt-2">管理和监控Model Context Protocol服务器</p>
+            <h1 className="text-3xl font-bold text-gray-900">{t('mcp.title')}</h1>
+            <p className="text-gray-600 mt-2">{t('mcp.subtitle')}</p>
           </div>
         </div>
 
@@ -433,7 +438,7 @@ export const McpPage: React.FC = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
                 type="text"
-                placeholder="搜索配置名称、命令或参数..."
+                placeholder={t('mcp.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -444,14 +449,14 @@ export const McpPage: React.FC = () => {
             onClick={handleImportFromClaudeCode}
             className="flex items-center space-x-2 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors whitespace-nowrap"
           >
-            <span>从Claude Code导入</span>
+            <span>{t('mcp.import.button')}</span>
           </button>
           <button
             onClick={() => setShowAddModal(true)}
             className="flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
           >
             <Plus className="w-5 h-5" />
-            <span>添加服务</span>
+            <span>{t('mcp.addServer')}</span>
           </button>
         </div>
       </div>
@@ -461,17 +466,17 @@ export const McpPage: React.FC = () => {
         <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
           <div className="text-6xl mb-4">🖥️</div>
           <h3 className="text-xl font-medium text-gray-900 mb-2">
-            {debouncedSearchQuery ? '未找到匹配的配置' : '还没有MCP服务配置'}
+            {debouncedSearchQuery ? t('mcp.noResults') : t('mcp.noServers')}
           </h3>
           <p className="text-gray-600 mb-6">
-            {debouncedSearchQuery ? '尝试调整搜索条件' : '添加你的第一个MCP服务配置'}
+            {debouncedSearchQuery ? t('mcp.adjustSearch') : t('mcp.addFirstServer')}
           </p>
           {!debouncedSearchQuery && (
             <button
               onClick={() => setShowAddModal(true)}
               className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
-              添加服务
+              {t('mcp.addServer')}
             </button>
           )}
         </div>
@@ -481,19 +486,19 @@ export const McpPage: React.FC = () => {
             <TableHeader>
               <TableRow>
                 <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  服务
+                  {t('mcp.table.server')}
                 </TableHead>
                 <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  类型
+                  {t('mcp.table.type')}
                 </TableHead>
                 <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  状态
+                  {t('mcp.table.status')}
                 </TableHead>
                 <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  可用工具
+                  {t('mcp.table.tools')}
                 </TableHead>
                 <TableHead className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  操作
+                  {t('mcp.table.actions')}
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -537,25 +542,25 @@ export const McpPage: React.FC = () => {
                     {server.status === 'active' && (
                       <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
                         <CheckCircle className="w-3 h-3 mr-1" />
-                        可用
+                        {t('mcp.status.active')}
                       </span>
                     )}
                     {server.status === 'error' && (
                       <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
                         <XCircle className="w-3 h-3 mr-1" />
-                        错误
+                        {t('mcp.status.error')}
                       </span>
                     )}
                     {server.status === 'validating' && (
                       <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
                         <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                        验证中
+                        {t('mcp.status.validating')}
                       </span>
                     )}
                     {!server.status && (
                       <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
                         <AlertTriangle className="w-3 h-3 mr-1" />
-                        未验证
+                        {t('mcp.status.unvalidated')}
                       </span>
                     )}
                   </TableCell>
@@ -564,7 +569,7 @@ export const McpPage: React.FC = () => {
                       <div>
                         <div className="flex items-center space-x-1 text-sm text-gray-500 mb-1">
                           <Tag className="w-3 h-3" />
-                          <span>{server.tools.length} 个工具</span>
+                          <span>{t('mcp.table.toolsCount', { count: server.tools.length })}</span>
                         </div>
                         <div className="flex flex-wrap gap-1">
                           {server.tools.map((tool, idx) => (
@@ -576,7 +581,7 @@ export const McpPage: React.FC = () => {
                       </div>
                     ) : (
                       <span className="text-sm text-gray-400">
-                        {server.status === 'active' ? '无工具' : '-'}
+                        {server.status === 'active' ? t('mcp.table.noTools') : '-'}
                       </span>
                     )}
                   </TableCell>
@@ -586,7 +591,7 @@ export const McpPage: React.FC = () => {
                         onClick={() => validateMcpServer(server.name)}
                         disabled={server.status === 'validating'}
                         className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-600 bg-green-50 rounded-md hover:bg-green-100 transition-colors disabled:opacity-50"
-                        title="重新验证"
+                        title={t('mcp.actions.validate')}
                       >
                         {server.status === 'validating' ? (
                           <Loader2 className="w-3 h-3 animate-spin" />
@@ -597,15 +602,15 @@ export const McpPage: React.FC = () => {
                       <button
                         onClick={() => handleEditServer(server)}
                         className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors"
-                        title="编辑配置"
+                        title={t('mcp.actions.edit')}
                       >
                         <Edit className="w-3 h-3 mr-1" />
-                        编辑
+                        {t('mcp.actions.edit')}
                       </button>
                       <button
                         onClick={() => handleDeleteServer(server.name)}
                         className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title="删除配置"
+                        title={t('mcp.actions.delete')}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -625,7 +630,7 @@ export const McpPage: React.FC = () => {
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold text-gray-900">
-                  {editingServer ? '编辑MCP服务配置' : '添加MCP服务配置'}
+                  {editingServer ? t('mcp.modal.editTitle') : t('mcp.modal.addTitle')}
                 </h2>
                 <div className="flex space-x-3">
                   <button
@@ -634,7 +639,7 @@ export const McpPage: React.FC = () => {
                     disabled={isSubmitting}
                     className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
                   >
-                    取消
+                    {t('common:actions.cancel')}
                   </button>
                   <button
                     type="submit"
@@ -642,7 +647,7 @@ export const McpPage: React.FC = () => {
                     disabled={isSubmitting || !formData.name.trim() || !validateConfig(formData.config, formData.type)}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isSubmitting ? '保存中...' : editingServer ? '保存配置' : '添加配置'}
+                    {isSubmitting ? t('mcp.modal.saving') : editingServer ? t('mcp.modal.saveConfig') : t('mcp.modal.addConfig')}
                   </button>
                 </div>
               </div>
@@ -652,26 +657,26 @@ export const McpPage: React.FC = () => {
                   {/* Service Name */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      服务名称 *
+                      {t('mcp.form.serverName')}
                     </label>
                     <input
                       type="text"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      placeholder="例如：playwright"
+                      placeholder={t('mcp.form.serverNamePlaceholder')}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       required
                       disabled={!!editingServer}
                     />
                     {editingServer && (
-                      <p className="text-xs text-gray-500 mt-1">服务名称不可修改</p>
+                      <p className="text-xs text-gray-500 mt-1">{t('mcp.form.nameNotEditable')}</p>
                     )}
                   </div>
 
                   {/* MCP Type */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      MCP 类型 *
+                      {t('mcp.form.mcpType')}
                     </label>
                     <select
                       value={formData.type}
@@ -707,18 +712,18 @@ export const McpPage: React.FC = () => {
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       required
                     >
-                      <option value="stdio">Stdio (本地进程)</option>
-                      <option value="http">HTTP (远程服务)</option>
+                      <option value="stdio">{t('mcp.form.stdioOption')}</option>
+                      <option value="http">{t('mcp.form.httpOption')}</option>
                     </select>
                     <p className="text-xs text-gray-500 mt-1">
-                      选择 MCP 服务器的连接类型
+                      {t('mcp.form.selectConnectionType')}
                     </p>
                   </div>
 
                   {/* Configuration JSON */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      配置 * (JSON格式)
+                      {t('mcp.form.configuration')}
                     </label>
                     <textarea
                       value={formData.config}
@@ -751,26 +756,30 @@ export const McpPage: React.FC = () => {
                     />
                     {formData.config && !validateConfig(formData.config, formData.type) && (
                       <p className="text-xs text-red-600 mt-1">
-                        ⚠️ 配置格式不正确，请确保包含必需的 {formData.type === 'stdio' ? 'type, command 和 args' : 'type 和 url'} 字段
+                        {t('mcp.form.configFormatError', {
+                          fields: formData.type === 'stdio'
+                            ? t('mcp.form.requiredFieldsStdio')
+                            : t('mcp.form.requiredFieldsHttp')
+                        })}
                       </p>
                     )}
                     <div className="mt-2 text-xs text-gray-500">
-                      <p><strong>必需字段：</strong></p>
+                      <p><strong>{t('mcp.form.requiredFields')}</strong></p>
                       <ul className="list-disc ml-4 mt-1">
-                        <li><code>type</code>: 字符串，MCP 类型（"stdio" 或 "http"）</li>
+                        <li><code>type</code>: {t('mcp.form.typeField')}</li>
                         {formData.type === 'stdio' ? (
                           <>
-                            <li><code>command</code>: 字符串，执行命令（如 "npx", "uvx"）</li>
-                            <li><code>args</code>: 数组，命令参数</li>
+                            <li><code>command</code>: {t('mcp.form.commandField')}</li>
+                            <li><code>args</code>: {t('mcp.form.argsField')}</li>
                           </>
                         ) : (
-                          <li><code>url</code>: 字符串，HTTP MCP 服务器的 URL</li>
+                          <li><code>url</code>: {t('mcp.form.urlField')}</li>
                         )}
                       </ul>
-                      <p className="mt-2"><strong>可选字段：</strong></p>
+                      <p className="mt-2"><strong>{t('mcp.form.optionalFields')}</strong></p>
                       <ul className="list-disc ml-4 mt-1">
-                        <li><code>timeout</code>: 数字，超时时间（毫秒）</li>
-                        <li><code>autoApprove</code>: 数组，自动批准的操作</li>
+                        <li><code>timeout</code>: {t('mcp.form.timeoutField')}</li>
+                        <li><code>autoApprove</code>: {t('mcp.form.autoApproveField')}</li>
                       </ul>
                     </div>
                   </div>

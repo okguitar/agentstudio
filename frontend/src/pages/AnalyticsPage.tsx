@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { 
-  BarChart3, 
-  TrendingUp, 
-  Users, 
-  Activity, 
-  Clock, 
+import { useTranslation } from 'react-i18next';
+import {
+  BarChart3,
+  TrendingUp,
+  Users,
+  Activity,
+  Clock,
   Zap,
   Calendar,
   Download
@@ -13,11 +14,12 @@ import {
 type TimeRange = '7d' | '30d' | '90d';
 
 export const AnalyticsPage: React.FC = () => {
+  const { t } = useTranslation('pages');
   const [timeRange, setTimeRange] = useState<TimeRange>('7d');
 
   const stats = [
     {
-      name: '总调用次数',
+      name: t('analytics.stats.totalCalls'),
       value: '12,847',
       change: '+12.3%',
       trend: 'up',
@@ -25,7 +27,7 @@ export const AnalyticsPage: React.FC = () => {
       color: 'bg-blue-500'
     },
     {
-      name: '活跃用户',
+      name: t('analytics.stats.activeUsers'),
       value: '89',
       change: '+5.2%',
       trend: 'up',
@@ -33,7 +35,7 @@ export const AnalyticsPage: React.FC = () => {
       color: 'bg-green-500'
     },
     {
-      name: '平均响应时间',
+      name: t('analytics.stats.avgResponseTime'),
       value: '2.1s',
       change: '-0.3s',
       trend: 'up',
@@ -41,7 +43,7 @@ export const AnalyticsPage: React.FC = () => {
       color: 'bg-orange-500'
     },
     {
-      name: 'Token使用量',
+      name: t('analytics.stats.tokenUsage'),
       value: '234.5K',
       change: '+18.7%',
       trend: 'up',
@@ -51,10 +53,10 @@ export const AnalyticsPage: React.FC = () => {
   ];
 
   const topAgents = [
-    { name: 'PPT编辑助手', usage: 3247, percentage: 35.2 },
-    { name: '代码助手', usage: 2891, percentage: 31.4 },
-    { name: '文档写作助手', usage: 2156, percentage: 23.4 },
-    { name: '自定义助手', usage: 953, percentage: 10.0 }
+    { name: t('analytics.topAgents.pptEditor'), usage: 3247, percentage: 35.2 },
+    { name: t('analytics.topAgents.codeAssistant'), usage: 2891, percentage: 31.4 },
+    { name: t('analytics.topAgents.docWriter'), usage: 2156, percentage: 23.4 },
+    { name: t('analytics.topAgents.custom'), usage: 953, percentage: 10.0 }
   ];
 
   const dailyUsage = [
@@ -72,16 +74,16 @@ export const AnalyticsPage: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">使用统计</h1>
-          <p className="text-gray-600 mt-2">分析系统使用情况和性能指标</p>
+          <h1 className="text-3xl font-bold text-gray-900">{t('analytics.title')}</h1>
+          <p className="text-gray-600 mt-2">{t('analytics.subtitle')}</p>
         </div>
         <div className="flex items-center space-x-4">
           {/* Time Range Selector */}
           <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
             {[
-              { key: '7d', label: '7天' },
-              { key: '30d', label: '30天' },
-              { key: '90d', label: '90天' }
+              { key: '7d', label: t('analytics.timeRange.7days') },
+              { key: '30d', label: t('analytics.timeRange.30days') },
+              { key: '90d', label: t('analytics.timeRange.90days') }
             ].map((range) => (
               <button
                 key={range.key}
@@ -98,7 +100,7 @@ export const AnalyticsPage: React.FC = () => {
           </div>
           <button className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
             <Download className="w-4 h-4" />
-            <span>导出报告</span>
+            <span>{t('analytics.exportReport')}</span>
           </button>
         </div>
       </div>
@@ -131,17 +133,17 @@ export const AnalyticsPage: React.FC = () => {
         {/* Usage Trend Chart */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-gray-900">使用趋势</h2>
+            <h2 className="text-xl font-semibold text-gray-900">{t('analytics.charts.usageTrend')}</h2>
             <Calendar className="w-5 h-5 text-gray-400" />
           </div>
-          
+
           {/* Simple chart visualization */}
           <div className="space-y-4">
             <div className="flex items-center justify-between text-sm text-gray-600 pb-2 border-b">
-              <span>日期</span>
-              <span>请求数</span>
-              <span>用户数</span>
-              <span>Token数</span>
+              <span>{t('analytics.charts.date')}</span>
+              <span>{t('analytics.charts.requests')}</span>
+              <span>{t('analytics.charts.users')}</span>
+              <span>{t('analytics.charts.tokens')}</span>
             </div>
             {dailyUsage.map((day) => (
               <div key={day.date} className="flex items-center justify-between text-sm">
@@ -163,7 +165,7 @@ export const AnalyticsPage: React.FC = () => {
                     <div 
                       className="w-8 bg-blue-500 rounded-t-sm"
                       style={{ height: `${height}%` }}
-                      title={`${day.date}: ${day.requests} 请求`}
+                      title={`${day.date}: ${day.requests} ${t('analytics.charts.requestsUnit')}`}
                     />
                     <span className="text-xs text-gray-500 mt-1">{day.date}</span>
                   </div>
@@ -176,10 +178,10 @@ export const AnalyticsPage: React.FC = () => {
         {/* Top Agents */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-gray-900">热门助手</h2>
+            <h2 className="text-xl font-semibold text-gray-900">{t('analytics.charts.topAgents')}</h2>
             <BarChart3 className="w-5 h-5 text-gray-400" />
           </div>
-          
+
           <div className="space-y-4">
             {topAgents.map((agent, index) => (
               <div key={agent.name} className="flex items-center justify-between">
@@ -194,7 +196,7 @@ export const AnalyticsPage: React.FC = () => {
                   </div>
                   <div>
                     <h3 className="font-medium text-gray-900">{agent.name}</h3>
-                    <p className="text-sm text-gray-500">{agent.usage} 次使用</p>
+                    <p className="text-sm text-gray-500">{agent.usage} {t('analytics.charts.usageCount')}</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-3">
@@ -218,29 +220,29 @@ export const AnalyticsPage: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Performance Metrics */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">性能指标</h2>
-          
+          <h2 className="text-xl font-semibold text-gray-900 mb-6">{t('analytics.performance.title')}</h2>
+
           <div className="space-y-4">
             <div className="flex justify-between items-center">
-              <span className="text-gray-600">平均响应时间</span>
+              <span className="text-gray-600">{t('analytics.performance.avgResponseTime')}</span>
               <span className="font-semibold text-gray-900">2.1s</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-gray-600">成功率</span>
+              <span className="text-gray-600">{t('analytics.performance.successRate')}</span>
               <span className="font-semibold text-green-600">99.2%</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-gray-600">错误率</span>
+              <span className="text-gray-600">{t('analytics.performance.errorRate')}</span>
               <span className="font-semibold text-red-600">0.8%</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-gray-600">超时率</span>
+              <span className="text-gray-600">{t('analytics.performance.timeoutRate')}</span>
               <span className="font-semibold text-yellow-600">2.1%</span>
             </div>
           </div>
-          
+
           <div className="mt-6 pt-6 border-t">
-            <h3 className="font-medium text-gray-900 mb-3">响应时间分布</h3>
+            <h3 className="font-medium text-gray-900 mb-3">{t('analytics.performance.responseDistribution')}</h3>
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">&lt; 1s</span>

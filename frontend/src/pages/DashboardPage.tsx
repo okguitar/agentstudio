@@ -1,26 +1,28 @@
 import React from 'react';
-import { 
-  Bot, 
-  Server, 
-  Activity, 
-  TrendingUp, 
+import {
+  Bot,
+  Server,
+  Activity,
+  TrendingUp,
   Zap,
   ArrowRight,
   Plus,
   FolderOpen
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAgents } from '../hooks/useAgents';
 import { SessionsDashboard } from '../components/SessionsDashboard';
 
 export const DashboardPage: React.FC = () => {
+  const { t } = useTranslation('pages');
   const { data: agentsData } = useAgents();
   const agents = agentsData?.agents || [];
   const enabledAgents = agents.filter(agent => agent.enabled);
 
   const stats = [
     {
-      name: 'Agent管理',
+      name: t('dashboard.stats.agentManagement'),
       value: enabledAgents.length,
       total: agents.length,
       icon: Bot,
@@ -28,7 +30,7 @@ export const DashboardPage: React.FC = () => {
       href: '/agents'
     },
     {
-      name: '工作项目',
+      name: t('dashboard.stats.workProjects'),
       value: 4,
       change: '+2',
       icon: FolderOpen,
@@ -36,7 +38,7 @@ export const DashboardPage: React.FC = () => {
       href: '/projects'
     },
     {
-      name: '今日调用',
+      name: t('dashboard.stats.todayCalls'),
       value: 1247,
       change: '+12%',
       icon: Activity,
@@ -44,7 +46,7 @@ export const DashboardPage: React.FC = () => {
       href: '/analytics'
     },
     {
-      name: 'MCP服务',
+      name: t('dashboard.stats.mcpServices'),
       value: 3,
       total: 5,
       icon: Server,
@@ -59,8 +61,8 @@ export const DashboardPage: React.FC = () => {
     <div className="p-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">仪表板</h1>
-        <p className="text-gray-600 mt-2">欢迎回到Claude Code工作台</p>
+        <h1 className="text-3xl font-bold text-gray-900">{t('dashboard.title')}</h1>
+        <p className="text-gray-600 mt-2">{t('dashboard.welcome')}</p>
       </div>
 
       {/* Stats Grid */}
@@ -109,12 +111,12 @@ export const DashboardPage: React.FC = () => {
         {/* Recent Agents */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-gray-900">常用助手</h2>
+            <h2 className="text-xl font-semibold text-gray-900">{t('dashboard.recentAgents.title')}</h2>
             <Link
               to="/agents"
               className="text-blue-600 hover:text-blue-700 flex items-center space-x-1 text-sm font-medium"
             >
-              <span>查看全部</span>
+              <span>{t('dashboard.recentAgents.viewAll')}</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
@@ -134,9 +136,9 @@ export const DashboardPage: React.FC = () => {
                     agent.ui.componentType === 'documents' ? 'bg-purple-100 text-purple-700' :
                     'bg-gray-100 text-gray-700'
                   }`}>
-                    {agent.ui.componentType === 'slides' ? '演示文稿' :
-                     agent.ui.componentType === 'code' ? '代码开发' :
-                     agent.ui.componentType === 'documents' ? '文档写作' :
+                    {agent.ui.componentType === 'slides' ? t('dashboard.recentAgents.types.slides') :
+                     agent.ui.componentType === 'code' ? t('dashboard.recentAgents.types.code') :
+                     agent.ui.componentType === 'documents' ? t('dashboard.recentAgents.types.documents') :
                      agent.ui.componentType}
                   </span>
                   <Link
@@ -152,12 +154,12 @@ export const DashboardPage: React.FC = () => {
             {recentAgents.length === 0 && (
               <div className="text-center py-8 text-gray-500">
                 <Bot className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p>暂无可用助手</p>
+                <p>{t('dashboard.recentAgents.noAgents')}</p>
                 <Link
                   to="/agents"
                   className="mt-2 text-blue-600 hover:text-blue-700 text-sm"
                 >
-                  去启用助手
+                  {t('dashboard.recentAgents.goEnable')}
                 </Link>
               </div>
             )}
@@ -165,8 +167,8 @@ export const DashboardPage: React.FC = () => {
           
           {/* Quick Actions */}
           <div className="mt-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6">快速操作</h2>
-          
+            <h2 className="text-xl font-semibold text-gray-900 mb-6">{t('dashboard.quickActions.title')}</h2>
+
           <div className="space-y-4">
             <Link
               to="/projects"
@@ -176,12 +178,12 @@ export const DashboardPage: React.FC = () => {
                 <Plus className="w-5 h-5 text-green-600" />
               </div>
               <div>
-                <h3 className="font-medium text-gray-900">创建新项目</h3>
-                <p className="text-sm text-gray-500">选择助手类型创建工作项目</p>
+                <h3 className="font-medium text-gray-900">{t('dashboard.quickActions.createProject.title')}</h3>
+                <p className="text-sm text-gray-500">{t('dashboard.quickActions.createProject.description')}</p>
               </div>
               <ArrowRight className="w-5 h-5 text-gray-400 ml-auto" />
             </Link>
-            
+
             <Link
               to="/agents"
               className="flex items-center space-x-4 p-4 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-colors"
@@ -190,12 +192,12 @@ export const DashboardPage: React.FC = () => {
                 <Plus className="w-5 h-5 text-blue-600" />
               </div>
               <div>
-                <h3 className="font-medium text-gray-900">创建新助手</h3>
-                <p className="text-sm text-gray-500">配置自定义AI助手</p>
+                <h3 className="font-medium text-gray-900">{t('dashboard.quickActions.createAgent.title')}</h3>
+                <p className="text-sm text-gray-500">{t('dashboard.quickActions.createAgent.description')}</p>
               </div>
               <ArrowRight className="w-5 h-5 text-gray-400 ml-auto" />
             </Link>
-            
+
             <Link
               to="/mcp"
               className="flex items-center space-x-4 p-4 rounded-lg border border-gray-200 hover:border-green-300 hover:bg-green-50 transition-colors"
@@ -204,12 +206,12 @@ export const DashboardPage: React.FC = () => {
                 <Server className="w-5 h-5 text-green-600" />
               </div>
               <div>
-                <h3 className="font-medium text-gray-900">添加MCP服务</h3>
-                <p className="text-sm text-gray-500">连接新的MCP服务器</p>
+                <h3 className="font-medium text-gray-900">{t('dashboard.quickActions.addMcp.title')}</h3>
+                <p className="text-sm text-gray-500">{t('dashboard.quickActions.addMcp.description')}</p>
               </div>
               <ArrowRight className="w-5 h-5 text-gray-400 ml-auto" />
             </Link>
-            
+
             <Link
               to="/analytics"
               className="flex items-center space-x-4 p-4 rounded-lg border border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition-colors"
@@ -218,8 +220,8 @@ export const DashboardPage: React.FC = () => {
                 <Activity className="w-5 h-5 text-purple-600" />
               </div>
               <div>
-                <h3 className="font-medium text-gray-900">查看统计</h3>
-                <p className="text-sm text-gray-500">分析使用情况和性能</p>
+                <h3 className="font-medium text-gray-900">{t('dashboard.quickActions.viewAnalytics.title')}</h3>
+                <p className="text-sm text-gray-500">{t('dashboard.quickActions.viewAnalytics.description')}</p>
               </div>
               <ArrowRight className="w-5 h-5 text-gray-400 ml-auto" />
             </Link>

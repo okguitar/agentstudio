@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { AgentChatPanel } from '../components/AgentChatPanel';
 import { SplitLayout } from '../components/SplitLayout';
 import { RightPanelWrapper } from '../components/RightPanelWrapper';
@@ -9,6 +10,7 @@ import { useAgent } from '../hooks/useAgents';
 import { ProjectSelector } from '../components/ProjectSelector';
 
 export const ChatPage: React.FC = () => {
+  const { t } = useTranslation('pages');
   const { agentId } = useParams<{ agentId: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -99,7 +101,7 @@ export const ChatPage: React.FC = () => {
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <div className="text-gray-600">正在加载智能助手...</div>
+          <div className="text-gray-600">{t('chat.loading')}</div>
         </div>
       </div>
     );
@@ -110,15 +112,15 @@ export const ChatPage: React.FC = () => {
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center max-w-md">
           <div className="text-6xl mb-6">❌</div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">助手未找到</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">{t('chat.agentNotFound')}</h1>
           <p className="text-gray-600 mb-6">
-            无法找到指定的智能助手，可能已被删除或禁用。
+            {t('chat.agentNotFoundDesc')}
           </p>
           <button
             onClick={() => window.close()}
             className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
-            关闭页面
+            {t('chat.closePage')}
           </button>
         </div>
       </div>
@@ -130,16 +132,16 @@ export const ChatPage: React.FC = () => {
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center max-w-md">
           <div className="text-6xl mb-6 opacity-50">{agent.ui.icon}</div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">助手已禁用</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">{t('chat.agentDisabled')}</h1>
           <p className="text-gray-600 mb-6">
-            智能助手 "{agent.name}" 目前已被禁用，无法使用。
+            {t('chat.agentDisabledDesc', { name: agent.name })}
           </p>
           <div className="flex space-x-4 justify-center">
             <button
               onClick={() => window.close()}
               className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
             >
-              关闭页面
+              {t('chat.closePage')}
             </button>
 
           </div>

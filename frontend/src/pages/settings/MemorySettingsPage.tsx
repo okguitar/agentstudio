@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { API_BASE } from '../../lib/config';
-import { 
+import {
   Save,
   Brain,
   Edit,
@@ -8,6 +9,7 @@ import {
 } from 'lucide-react';
 
 export const MemorySettingsPage: React.FC = () => {
+  const { t } = useTranslation('pages');
   const [globalMemory, setGlobalMemory] = useState('');
   const [isEditingMemory, setIsEditingMemory] = useState(false);
   const [isLoadingMemory, setIsLoadingMemory] = useState(false);
@@ -44,39 +46,39 @@ export const MemorySettingsPage: React.FC = () => {
       
       if (response.ok) {
         setIsEditingMemory(false);
-        alert('全局记忆已保存');
+        alert(t('settings.memorySettings.saveSuccess'));
       } else {
         throw new Error('Failed to save');
       }
     } catch (error) {
       console.error('Failed to save global memory:', error);
-      alert('保存失败，请重试');
+      alert(t('settings.memorySettings.saveFailed'));
     }
   };
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">全局记忆设置</h2>
-        <p className="text-gray-600">全局记忆是所有AI助手共享的背景信息，包含您的工作偏好、项目信息等</p>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('settings.memorySettings.title')}</h2>
+        <p className="text-gray-600">{t('settings.memorySettings.description')}</p>
       </div>
 
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <div className="space-y-6">
           <p className="text-sm text-gray-600">
-            内容来自用户目录下的 <code className="bg-gray-100 px-1 rounded">~/.claude/CLAUDE.md</code> 文件。
+            {t('settings.memorySettings.fileSourceInfo')}
           </p>
           
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <label className="block font-medium text-gray-900">记忆内容</label>
+              <label className="block font-medium text-gray-900">{t('settings.memorySettings.memoryContent')}</label>
               <div className="flex space-x-2">
                 <button
                   onClick={() => setIsEditingMemory(!isEditingMemory)}
                   className="flex items-center space-x-1 px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
                 >
                   <Edit className="w-4 h-4" />
-                  <span>{isEditingMemory ? '取消编辑' : '编辑'}</span>
+                  <span>{isEditingMemory ? t('settings.memorySettings.cancelEdit') : t('settings.memorySettings.edit')}</span>
                 </button>
                 <button
                   onClick={loadGlobalMemory}
@@ -84,7 +86,7 @@ export const MemorySettingsPage: React.FC = () => {
                   className="flex items-center space-x-1 px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
                 >
                   <FileText className="w-4 h-4" />
-                  <span>{isLoadingMemory ? '刷新中...' : '刷新'}</span>
+                  <span>{isLoadingMemory ? t('settings.memorySettings.refreshing') : t('settings.memorySettings.refresh')}</span>
                 </button>
               </div>
             </div>
@@ -96,21 +98,21 @@ export const MemorySettingsPage: React.FC = () => {
                   onChange={(e) => setGlobalMemory(e.target.value)}
                   rows={20}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
-                  placeholder="在这里编写您的全局记忆内容..."
+                  placeholder={t('settings.memorySettings.placeholder')}
                 />
                 <div className="flex justify-end space-x-2">
                   <button
                     onClick={() => setIsEditingMemory(false)}
                     className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
                   >
-                    取消
+                    {t('settings.memorySettings.cancel')}
                   </button>
                   <button
                     onClick={saveGlobalMemory}
                     className="flex items-center space-x-1 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                   >
                     <Save className="w-4 h-4" />
-                    <span>保存记忆</span>
+                    <span>{t('settings.memorySettings.saveMemory')}</span>
                   </button>
                 </div>
               </div>
@@ -118,7 +120,7 @@ export const MemorySettingsPage: React.FC = () => {
               <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 min-h-[300px]">
                 {isLoadingMemory ? (
                   <div className="flex items-center justify-center h-64">
-                    <div className="text-gray-500">正在加载全局记忆...</div>
+                    <div className="text-gray-500">{t('settings.memorySettings.loading')}</div>
                   </div>
                 ) : globalMemory ? (
                   <pre className="text-sm text-gray-700 whitespace-pre-wrap font-mono">
@@ -128,8 +130,8 @@ export const MemorySettingsPage: React.FC = () => {
                   <div className="flex items-center justify-center h-64 text-gray-500">
                     <div className="text-center">
                       <Brain className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                      <p>暂无全局记忆内容</p>
-                      <p className="text-xs mt-1">点击"编辑"按钮开始添加</p>
+                      <p>{t('settings.memorySettings.noMemory')}</p>
+                      <p className="text-xs mt-1">{t('settings.memorySettings.clickEditToStart')}</p>
                     </div>
                   </div>
                 )}
@@ -137,9 +139,9 @@ export const MemorySettingsPage: React.FC = () => {
             )}
             
             <div className="text-xs text-gray-500 space-y-1">
-              <p>• 全局记忆将在每次对话时自动加载，为AI提供背景信息</p>
-              <p>• 建议包含：工作偏好、项目背景、个人信息等</p>
-              <p>• 文件位置：<code className="bg-gray-100 px-1 rounded">~/.claude/CLAUDE.md</code></p>
+              <p>• {t('settings.memorySettings.infoAutoLoad')}</p>
+              <p>• {t('settings.memorySettings.infoSuggestions')}</p>
+              <p>• {t('settings.memorySettings.infoFileLocation')}</p>
             </div>
           </div>
         </div>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { 
+import { useTranslation } from 'react-i18next';
+import {
   Plus,
   Search,
   Edit,
@@ -26,6 +27,7 @@ import { formatRelativeTime } from '../utils';
 import { getToolDisplayName } from '@agentstudio/shared/utils/toolMapping';
 
 export const CommandsPage: React.FC = () => {
+  const { t } = useTranslation('pages');
   const [filter] = useState<SlashCommandFilter>({ scope: 'user' });
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
@@ -36,7 +38,7 @@ export const CommandsPage: React.FC = () => {
     ...filter,
     search: searchTerm.trim() || undefined
   });
-  
+
   const deleteCommand = useDeleteCommand();
 
   const handleDelete = async (command: SlashCommand) => {
@@ -65,7 +67,7 @@ export const CommandsPage: React.FC = () => {
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600">加载命令中...</p>
+          <p className="mt-4 text-gray-600">{t('commands.loading')}</p>
         </div>
       </div>
     );
@@ -76,13 +78,13 @@ export const CommandsPage: React.FC = () => {
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center">
           <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
-          <p className="text-red-600 text-lg mb-2">加载失败</p>
-          <p className="text-gray-600 mb-4">无法加载自定义命令</p>
+          <p className="text-red-600 text-lg mb-2">{t('commands.error.loadFailed')}</p>
+          <p className="text-gray-600 mb-4">{t('commands.error.cannotLoadCommands')}</p>
           <button
             onClick={() => refetch()}
             className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors"
           >
-            重试
+            {t('commands.error.retry')}
           </button>
         </div>
       </div>
@@ -95,8 +97,8 @@ export const CommandsPage: React.FC = () => {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">自定义命令</h1>
-            <p className="text-gray-600 mt-2">管理 Slash Commands</p>
+            <h1 className="text-3xl font-bold text-gray-900">{t('commands.title')}</h1>
+            <p className="text-gray-600 mt-2">{t('commands.subtitle')}</p>
           </div>
         </div>
 
@@ -108,7 +110,7 @@ export const CommandsPage: React.FC = () => {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
                   type="text"
-                  placeholder="搜索命令..."
+                  placeholder={t('commands.searchPlaceholder')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -125,7 +127,7 @@ export const CommandsPage: React.FC = () => {
             className="flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
           >
             <Plus className="w-5 h-5" />
-            <span>新建命令</span>
+            <span>{t('commands.createButton')}</span>
           </button>
         </div>
       </div>
@@ -135,12 +137,12 @@ export const CommandsPage: React.FC = () => {
         <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
           <div className="text-6xl mb-4">⚡</div>
           <h3 className="text-xl font-medium text-gray-900 mb-2">
-            {searchTerm ? '未找到匹配的命令' : '还没有自定义命令'}
+            {searchTerm ? t('commands.empty.noMatchingCommands') : t('commands.empty.noCommands')}
           </h3>
           <p className="text-gray-600 mb-6">
-            {searchTerm 
-              ? '尝试调整搜索条件或筛选器'
-              : '创建你的第一个自定义 Slash Command'
+            {searchTerm
+              ? t('commands.empty.adjustSearch')
+              : t('commands.empty.createFirst')
             }
           </p>
           {!searchTerm && (
@@ -151,7 +153,7 @@ export const CommandsPage: React.FC = () => {
               }}
               className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
-              新建命令
+              {t('commands.createButton')}
             </button>
           )}
         </div>
@@ -161,19 +163,19 @@ export const CommandsPage: React.FC = () => {
             <TableHeader>
               <TableRow>
                 <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  命令
+                  {t('commands.table.command')}
                 </TableHead>
                 <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  模型
+                  {t('commands.table.model')}
                 </TableHead>
                 <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  工具
+                  {t('commands.table.tools')}
                 </TableHead>
                 <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  创建时间
+                  {t('commands.table.createdAt')}
                 </TableHead>
                 <TableHead className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  操作
+                  {t('commands.table.actions')}
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -212,7 +214,7 @@ export const CommandsPage: React.FC = () => {
                           {command.model}
                         </div>
                       ) : (
-                        <span className="text-sm text-gray-500">继承对话设置</span>
+                        <span className="text-sm text-gray-500">{t('commands.table.inheritSettings')}</span>
                       )}
                     </TableCell>
                     <TableCell className="px-6 py-4">
@@ -220,7 +222,7 @@ export const CommandsPage: React.FC = () => {
                         <div>
                           <div className="flex items-center space-x-1 text-sm text-gray-500 mb-1">
                             <Tag className="w-3 h-3" />
-                            <span>{command.allowedTools.length} 个工具</span>
+                            <span>{t('commands.table.toolsCount', { count: command.allowedTools.length })}</span>
                           </div>
                           <div className="flex flex-wrap gap-1">
                             {command.allowedTools.map((tool, idx) => (
@@ -231,7 +233,7 @@ export const CommandsPage: React.FC = () => {
                           </div>
                         </div>
                       ) : (
-                        <span className="text-sm text-gray-500">继承对话设置</span>
+                        <span className="text-sm text-gray-500">{t('commands.table.inheritSettings')}</span>
                       )}
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -248,15 +250,15 @@ export const CommandsPage: React.FC = () => {
                             setShowForm(true);
                           }}
                           className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors"
-                          title="编辑命令"
+                          title={t('commands.actions.editCommand')}
                         >
                           <Edit className="w-3 h-3 mr-1" />
-                          编辑
+                          {t('commands.actions.edit')}
                         </button>
                         <button
                           onClick={() => setShowDeleteConfirm(command)}
                           className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title="删除命令"
+                          title={t('commands.actions.deleteCommand')}
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -294,27 +296,27 @@ export const CommandsPage: React.FC = () => {
                 <AlertCircle className="h-6 w-6 text-red-600" />
               </div>
               <div className="flex-1">
-                <h3 className="text-lg font-medium text-gray-900">删除命令</h3>
+                <h3 className="text-lg font-medium text-gray-900">{t('commands.delete.title')}</h3>
               </div>
             </div>
-            
+
             <p className="text-gray-600 mb-6">
-              确定要删除命令 "/{showDeleteConfirm.name}" 吗？此操作无法撤销。
+              {t('commands.delete.confirmMessage', { name: showDeleteConfirm.name })}
             </p>
-            
+
             <div className="flex justify-end space-x-3">
               <button
                 onClick={() => setShowDeleteConfirm(null)}
                 className="px-4 py-2 text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors"
               >
-                取消
+                {t('commands.delete.cancel')}
               </button>
               <button
                 onClick={() => handleDelete(showDeleteConfirm)}
                 disabled={deleteCommand.isPending}
                 className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50"
               >
-                {deleteCommand.isPending ? '删除中...' : '删除'}
+                {deleteCommand.isPending ? t('commands.delete.deleting') : t('commands.delete.delete')}
               </button>
             </div>
           </div>

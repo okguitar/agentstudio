@@ -13,9 +13,11 @@ import { useQueryClient } from '@tanstack/react-query';
 import { ProjectSelector } from '../components/ProjectSelector';
 import { UnifiedToolSelector } from '../components/UnifiedToolSelector';
 import type { AgentConfig, AgentTool } from '../types/index.js';
+import { useTranslation } from 'react-i18next';
 
 
 export const AgentsPage: React.FC = () => {
+  const { t } = useTranslation('pages');
   const { data: agentsData, isLoading } = useAgents();
   const updateAgent = useUpdateAgent();
   const deleteAgent = useDeleteAgent();
@@ -64,7 +66,7 @@ export const AgentsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['agents'] });
     } catch (error) {
       console.error('Failed to toggle agent:', error);
-      alert('操作失败，请重试。');
+      alert(t('agents.errors.toggleFailed'));
     }
   };
 
@@ -73,7 +75,7 @@ export const AgentsPage: React.FC = () => {
     setEditForm(agent);
     setIsCreating(false);
     
-    // 初始化工具选择状态 - 正确分离常规工具和MCP工具
+    // 初始化工具选择{t('agents.table.status')} - 正确分离常规工具和MCP工具
     const allEnabledTools = agent.allowedTools?.filter(tool => tool.enabled).map(tool => tool.name) || [];
     const regularTools = allEnabledTools.filter(tool => !tool.startsWith('mcp__'));
     const mcpTools = allEnabledTools.filter(tool => tool.startsWith('mcp__'));
@@ -112,7 +114,7 @@ export const AgentsPage: React.FC = () => {
     setEditForm(defaultAgent);
     setIsCreating(true);
     
-    // 初始化工具选择状态
+    // 初始化工具选择{t('agents.table.status')}
     const regularTools = defaultAgent.allowedTools?.filter(tool => tool.enabled).map(tool => tool.name) || [];
     setSelectedRegularTools(regularTools);
     setSelectedMcpTools([]);
@@ -136,13 +138,13 @@ export const AgentsPage: React.FC = () => {
 
   const handleSave = async () => {
     if (!editForm || !editForm.name?.trim()) {
-      setSaveError('请填写助手名称');
+      setSaveError(t('agents.form.nameRequired'));
       return;
     }
-    
+
     // 验证最大轮次
     if (editForm.maxTurns !== undefined && (editForm.maxTurns < 1 || editForm.maxTurns > 100)) {
-      setSaveError('最大轮次必须在1-100之间');
+      setSaveError(t('agents.form.maxTurnsError'));
       return;
     }
     
@@ -193,11 +195,11 @@ export const AgentsPage: React.FC = () => {
       console.error('Failed to save agent:', error);
       
       // 解析后端错误信息
-      let errorMessage = isCreating ? '创建失败，请重试。' : '保存失败，请重试。';
+      let errorMessage = isCreating ? t('agents.errors.createFailed') : t('agents.errors.saveFailed');
       if (error?.response?.data?.details?.issues?.length > 0) {
         const issue = error.response.data.details.issues[0];
         if (issue.path.includes('maxTurns') && issue.code === 'too_big') {
-          errorMessage = `最大轮次不能超过${issue.maximum}`;
+          errorMessage = t('agents.form.maxTurnsExceeded', { maximum: issue.maximum });
         } else {
           errorMessage = issue.message || errorMessage;
         }
@@ -206,26 +208,26 @@ export const AgentsPage: React.FC = () => {
       } else if (error?.message) {
         errorMessage = error.message;
       }
-      
+
       setSaveError(errorMessage);
     }
   };
 
   const handleDelete = async (agent: AgentConfig) => {
     if (agent.id === 'ppt-editor' || agent.id === 'code-assistant' || agent.id === 'document-writer') {
-      alert('内置助手无法删除，但可以禁用。');
+      alert(t('agents.errors.builtinCannotDelete'));
       return;
     }
-    
-    const confirmed = window.confirm(`确定要删除助手"${agent.name}"吗？\n\n此操作无法撤销，相关的所有会话也会被删除。`);
+
+    const confirmed = window.confirm(t('agents.confirmDelete', { name: agent.name }));
     if (!confirmed) return;
-    
+
     try {
       await deleteAgent.mutateAsync(agent.id);
       queryClient.invalidateQueries({ queryKey: ['agents'] });
     } catch (error) {
       console.error('Failed to delete agent:', error);
-      alert('删除失败，请重试。');
+      alert(t('agents.errors.deleteFailed'));
     }
   };
 
@@ -234,7 +236,7 @@ export const AgentsPage: React.FC = () => {
       <div className="p-8 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <div className="text-gray-600">正在加载智能助手...</div>
+          <div className="text-gray-600">{t('agents.loading')}</div>
         </div>
       </div>
     );
@@ -246,8 +248,8 @@ export const AgentsPage: React.FC = () => {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Agent管理</h1>
-            <p className="text-gray-600 mt-2">管理专门的 AI 代理</p>
+            <h1 className="text-3xl font-bold text-gray-900">{t('agents.title')}</h1>
+            <p className="text-gray-600 mt-2">{t('agents.subtitle')}</p>
           </div>
         </div>
 
@@ -259,7 +261,7 @@ export const AgentsPage: React.FC = () => {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
                   type="text"
-                  placeholder="搜索助手..."
+                  placeholder={t('agents.searchPlaceholder')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -268,9 +270,9 @@ export const AgentsPage: React.FC = () => {
               {/* Filter Tabs */}
               <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
                 {[
-                  { key: 'all', label: '全部', count: agents.length },
-                  { key: 'enabled', label: '已启用', count: agents.filter(a => a.enabled).length },
-                  { key: 'disabled', label: '已禁用', count: agents.filter(a => !a.enabled).length }
+                  { key: 'all', label: t('agents.filter.all'), count: agents.length },
+                  { key: 'enabled', label: t('agents.filter.enabled'), count: agents.filter(a => a.enabled).length },
+                  { key: 'disabled', label: t('agents.filter.disabled'), count: agents.filter(a => !a.enabled).length }
                 ].map((tab) => (
                   <button
                     key={tab.key}
@@ -292,7 +294,7 @@ export const AgentsPage: React.FC = () => {
             className="flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
           >
             <Plus className="w-5 h-5" />
-            <span>创建助手</span>
+            <span>{t('agents.createButton')}</span>
           </button>
         </div>
       </div>
@@ -302,17 +304,17 @@ export const AgentsPage: React.FC = () => {
         <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
           <div className="text-6xl mb-4">🤖</div>
           <h3 className="text-xl font-medium text-gray-900 mb-2">
-            {searchQuery ? '未找到匹配的助手' : '暂无助手'}
+            {searchQuery ? t('agents.noAgentsSearch') : t('agents.noAgents')}
           </h3>
           <p className="text-gray-600 mb-6">
-            {searchQuery ? '尝试调整搜索条件' : '创建你的第一个智能助手'}
+            {searchQuery ? t('agents.adjustSearch') : t('agents.createFirst')}
           </p>
           {!searchQuery && (
             <button
               onClick={handleCreate}
               className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
-              创建助手
+              {t('agents.createButton')}
             </button>
           )}
         </div>
@@ -322,22 +324,22 @@ export const AgentsPage: React.FC = () => {
             <TableHeader>
               <TableRow>
                 <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  智能助手
+                  {t('agents.table.agent')}
                 </TableHead>
                 <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  类型
+                  {t('agents.table.type')}
                 </TableHead>
                 <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  配置
+                  {t('agents.table.config')}
                 </TableHead>
                 <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
                   工具
                 </TableHead>
                 <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  状态
+                  {t('agents.table.status')}
                 </TableHead>
                 <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  操作
+                  {t('agents.table.actions')}
                 </TableHead>
               </TableRow>
             </TableHeader>

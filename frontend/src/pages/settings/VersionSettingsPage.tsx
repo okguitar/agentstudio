@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { API_BASE } from '../../lib/config';
-import { 
+import {
   Download,
   RefreshCw,
   CheckCircle,
@@ -21,6 +22,7 @@ import { ClaudeVersion, ClaudeVersionCreate, ClaudeVersionUpdate } from '@agents
 import { FileBrowser } from '../../components/FileBrowser';
 
 export const VersionSettingsPage: React.FC = () => {
+  const { t } = useTranslation('pages');
   // 系统版本检查相关状态
   const [versions, setVersions] = useState<any>(null);
   const [isLoadingVersions, setIsLoadingVersions] = useState(false);
@@ -189,7 +191,7 @@ export const VersionSettingsPage: React.FC = () => {
   const handleSave = async () => {
     try {
       if (!formData.name || !formData.alias || !formData.executablePath) {
-        alert('请填写所有必填字段');
+        alert(t('settings.version.errors.requiredFields'));
         return;
       }
 
@@ -199,33 +201,33 @@ export const VersionSettingsPage: React.FC = () => {
           id: editingVersion.id,
           data: formData as ClaudeVersionUpdate
         });
-        alert('版本更新成功');
+        alert(t('settings.version.success.updateVersion'));
       } else {
         // 创建新版本
         await createClaudeVersion.mutateAsync(formData as ClaudeVersionCreate);
-        alert('版本创建成功');
+        alert(t('settings.version.success.createVersion'));
       }
-      
+
       handleCancel();
     } catch (error) {
       console.error('Error saving version:', error);
-      alert(error instanceof Error ? error.message : '保存失败');
+      alert(error instanceof Error ? error.message : t('settings.version.errors.saveFailed'));
     }
   };
 
   const handleDelete = async (version: ClaudeVersion) => {
     if (version.isSystem) {
-      alert('不能删除系统版本');
+      alert(t('settings.version.errors.cannotDeleteSystem'));
       return;
     }
 
-    if (confirm(`确定要删除版本 "${version.alias}" 吗？`)) {
+    if (confirm(t('settings.version.confirmDelete', { alias: version.alias }))) {
       try {
         await deleteClaudeVersion.mutateAsync(version.id);
-        alert('版本删除成功');
+        alert(t('settings.version.success.deleteVersion'));
       } catch (error) {
         console.error('Error deleting version:', error);
-        alert(error instanceof Error ? error.message : '删除失败');
+        alert(error instanceof Error ? error.message : t('settings.version.errors.deleteFailed'));
       }
     }
   };
@@ -233,10 +235,10 @@ export const VersionSettingsPage: React.FC = () => {
   const handleSetDefault = async (version: ClaudeVersion) => {
     try {
       await setDefaultClaudeVersion.mutateAsync(version.id);
-      alert(`已将 "${version.alias}" 设置为默认版本`);
+      alert(t('settings.version.success.setDefault', { alias: version.alias }));
     } catch (error) {
       console.error('Error setting default version:', error);
-      alert(error instanceof Error ? error.message : '设置默认版本失败');
+      alert(error instanceof Error ? error.message : t('settings.version.errors.setDefaultFailed'));
     }
   };
 
@@ -244,15 +246,15 @@ export const VersionSettingsPage: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">版本管理</h2>
-          <p className="text-gray-600">管理多个 Claude Code 版本，指定可执行路径、别名和环境变量</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('settings.version.title')}</h2>
+          <p className="text-gray-600">{t('settings.version.subtitle')}</p>
         </div>
         <button
           onClick={handleCreate}
           className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
           <Plus className="w-4 h-4" />
-          <span>添加版本</span>
+          <span>{t('settings.version.addVersion')}</span>
         </button>
       </div>
 
@@ -262,7 +264,7 @@ export const VersionSettingsPage: React.FC = () => {
         <div className="space-y-6">
           {/* Header with refresh button */}
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900">当前版本</h3>
+            <h3 className="text-lg font-semibold text-gray-900">{t('settings.version.currentVersion.title')}</h3>
             <div className="flex space-x-2">
               <button
                 onClick={loadVersions}
@@ -270,7 +272,7 @@ export const VersionSettingsPage: React.FC = () => {
                 className="flex items-center space-x-1 px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
               >
                 <RefreshCw className={`w-4 h-4 ${isLoadingVersions ? 'animate-spin' : ''}`} />
-                <span>{isLoadingVersions ? '检查中...' : '检查版本'}</span>
+                <span>{isLoadingVersions ? t('settings.version.currentVersion.checking') : t('settings.version.currentVersion.checkVersion')}</span>
               </button>
             </div>
           </div>
@@ -284,7 +286,7 @@ export const VersionSettingsPage: React.FC = () => {
                   <Terminal className="w-8 h-8 text-blue-600" />
                   <div>
                     <h5 className="font-medium text-gray-900">Claude Code</h5>
-                    <p className="text-sm text-gray-500">AI编程助手</p>
+                    <p className="text-sm text-gray-500">{t('settings.version.currentVersion.claudeDesc')}</p>
                   </div>
                 </div>
                 <div className="text-right">
@@ -304,11 +306,11 @@ export const VersionSettingsPage: React.FC = () => {
                         className="flex items-center space-x-1 px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
                       >
                         <Download className={`w-3 h-3 ${isUpdatingClaude ? 'animate-spin' : ''}`} />
-                        <span>{isUpdatingClaude ? '更新中...' : '更新'}</span>
+                        <span>{isUpdatingClaude ? t('settings.version.currentVersion.updating') : t('settings.version.currentVersion.update')}</span>
                       </button>
                       {versions.preferredManager && (
                         <div className="text-xs text-gray-500">
-                          将使用 <span className="font-mono">{versions.preferredManager}</span> 更新
+                          {t('settings.version.currentVersion.willUse')} <span className="font-mono">{versions.preferredManager}</span> {t('settings.version.currentVersion.toUpdate')}
                         </div>
                       )}
                     </div>
@@ -324,7 +326,7 @@ export const VersionSettingsPage: React.FC = () => {
                   </div>
                   <div>
                     <h5 className="font-medium text-gray-900">Node.js</h5>
-                    <p className="text-sm text-gray-500">JavaScript运行环境</p>
+                    <p className="text-sm text-gray-500">{t('settings.version.currentVersion.nodejsDesc')}</p>
                   </div>
                 </div>
                 <div className="text-right">
@@ -370,11 +372,11 @@ export const VersionSettingsPage: React.FC = () => {
                           <h5 className="font-medium text-gray-900">{manager}</h5>
                           {isPreferred && (
                             <span className="px-2 py-0.5 text-xs bg-green-100 text-green-800 rounded-full">
-                              推荐
+                              {t('settings.version.currentVersion.preferred')}
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-gray-500">包管理器</p>
+                        <p className="text-sm text-gray-500">{t('settings.version.currentVersion.packageManager')}</p>
                       </div>
                     </div>
                     <div className="text-right">
@@ -393,14 +395,14 @@ export const VersionSettingsPage: React.FC = () => {
 
               {/* Last checked */}
               <div className="text-xs text-gray-500 text-center">
-                最后检查时间: {new Date(versions.lastChecked).toLocaleString()}
+                {t('settings.version.currentVersion.lastChecked')}: {new Date(versions.lastChecked).toLocaleString()}
               </div>
             </div>
           ) : (
             <div className="flex items-center justify-center h-32 text-gray-500">
               <div className="text-center">
                 <Terminal className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                <p>点击"检查版本"获取版本信息</p>
+                <p>{t('settings.version.currentVersion.clickToCheck')}</p>
               </div>
             </div>
           )}
@@ -416,7 +418,7 @@ export const VersionSettingsPage: React.FC = () => {
                 )}
                 <div className="flex-1">
                   <h6 className={`font-medium ${updateResult.success ? 'text-green-800' : 'text-red-800'}`}>
-                    {updateResult.success ? '更新成功' : '更新失败'}
+                    {updateResult.success ? t('settings.version.currentVersion.updateSuccess') : t('settings.version.currentVersion.updateFailed')}
                   </h6>
                   <p className={`text-sm mt-1 ${updateResult.success ? 'text-green-700' : 'text-red-700'}`}>
                     {updateResult.message}
@@ -432,11 +434,11 @@ export const VersionSettingsPage: React.FC = () => {
           )}
 
           <div className="text-xs text-gray-500 space-y-1">
-            <p>• Claude Code 是 AI 编程助手，支持代码生成、编辑和项目管理</p>
-            <p>• Node.js 是系统运行的基础环境</p>
-            <p>• 支持多种包管理器：npm、pnpm、yarn（优先级：pnpm &gt; yarn &gt; npm）</p>
-            <p>• 系统会自动选择推荐的包管理器进行更新操作</p>
-            <p>• 建议保持 Claude Code 为最新版本以获得最佳体验</p>
+            <p>• {t('settings.version.currentVersion.info1')}</p>
+            <p>• {t('settings.version.currentVersion.info2')}</p>
+            <p>• {t('settings.version.currentVersion.info3')}</p>
+            <p>• {t('settings.version.currentVersion.info4')}</p>
+            <p>• {t('settings.version.currentVersion.info5')}</p>
           </div>
         </div>
       </div>
@@ -469,12 +471,12 @@ export const VersionSettingsPage: React.FC = () => {
                           <span>{version.name}</span>
                           <span className="text-sm font-normal text-gray-500">({version.alias})</span>
                           {version.isSystem && (
-                            <span className="px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded">系统</span>
+                            <span className="px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded">{t('settings.version.systemLabel')}</span>
                           )}
                           {version.id === claudeVersionsData.defaultVersionId && (
                             <span className="px-2 py-1 text-xs bg-blue-200 text-blue-700 rounded flex items-center space-x-1">
                               <Star className="w-3 h-3" />
-                              <span>默认</span>
+                              <span>{t('settings.version.defaultLabel')}</span>
                             </span>
                           )}
                         </h4>
@@ -483,11 +485,11 @@ export const VersionSettingsPage: React.FC = () => {
                         <p className="text-sm text-gray-600 mt-1">{version.description}</p>
                       )}
                       <p className="text-sm text-gray-500 mt-1">
-                        <span className="font-medium">路径:</span> {version.executablePath}
+                        <span className="font-medium">{t('settings.version.pathLabel')}:</span> {version.executablePath}
                       </p>
                       {version.environmentVariables && Object.keys(version.environmentVariables).length > 0 && (
                         <div className="mt-2">
-                          <span className="text-sm font-medium text-gray-700">环境变量:</span>
+                          <span className="text-sm font-medium text-gray-700">{t('settings.version.envVarsLabel')}:</span>
                           <div className="flex flex-wrap gap-2 mt-1">
                             {Object.entries(version.environmentVariables).map(([key, value]) => (
                               <span
@@ -506,7 +508,7 @@ export const VersionSettingsPage: React.FC = () => {
                         <button
                           onClick={() => handleSetDefault(version)}
                           className="p-2 text-gray-500 hover:text-yellow-600 rounded-lg hover:bg-yellow-50 transition-colors"
-                          title="设为默认"
+                          title={t('settings.version.setAsDefault')}
                         >
                           <StarOff className="w-4 h-4" />
                         </button>
@@ -516,14 +518,14 @@ export const VersionSettingsPage: React.FC = () => {
                           <button
                             onClick={() => handleEdit(version)}
                             className="p-2 text-gray-500 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
-                            title="编辑"
+                            title={t('settings.version.edit')}
                           >
                             <Edit className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDelete(version)}
                             className="p-2 text-gray-500 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
-                            title="删除"
+                            title={t('settings.version.delete')}
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -537,8 +539,8 @@ export const VersionSettingsPage: React.FC = () => {
           ) : (
             <div className="text-center py-8 text-gray-500">
               <Settings className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-              <p>还没有配置 Claude 版本</p>
-              <p className="text-sm">点击"添加版本"来配置第一个 Claude 版本</p>
+              <p>{t('settings.version.noVersions')}</p>
+              <p className="text-sm">{t('settings.version.clickToAddFirst')}</p>
             </div>
           )}
 
@@ -552,7 +554,7 @@ export const VersionSettingsPage: React.FC = () => {
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900">
-                {editingVersion ? '编辑版本' : '添加新版本'}
+                {editingVersion ? t('settings.version.form.editTitle') : t('settings.version.form.createTitle')}
               </h3>
               <button
                 onClick={handleCancel}
@@ -568,44 +570,44 @@ export const VersionSettingsPage: React.FC = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      版本名称 <span className="text-red-500">*</span>
+                      {t('settings.version.form.versionName')} <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
                       value={formData.name || ''}
                       onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="例如: Claude Code v1.2.3"
+                      placeholder={t('settings.version.form.versionNamePlaceholder')}
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      别名 <span className="text-red-500">*</span>
+                      {t('settings.version.form.alias')} <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
                       value={formData.alias || ''}
                       onChange={(e) => setFormData(prev => ({ ...prev, alias: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="例如: claude-1.2.3"
+                      placeholder={t('settings.version.form.aliasPlaceholder')}
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">描述</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('settings.version.form.description')}</label>
                   <textarea
                     value={formData.description || ''}
                     onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                     rows={2}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="版本描述（可选）"
+                    placeholder={t('settings.version.form.descriptionPlaceholder')}
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    可执行文件路径 <span className="text-red-500">*</span>
+                    {t('settings.version.form.executablePath')} <span className="text-red-500">*</span>
                   </label>
                   <div className="flex space-x-2">
                     <input
@@ -613,12 +615,12 @@ export const VersionSettingsPage: React.FC = () => {
                       value={formData.executablePath || ''}
                       onChange={(e) => setFormData(prev => ({ ...prev, executablePath: e.target.value }))}
                       className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="例如: /usr/local/bin/claude"
+                      placeholder={t('settings.version.form.executablePathPlaceholder')}
                     />
                     <button
                       onClick={selectExecutablePath}
                       className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                      title="浏览文件"
+                      title={t('settings.version.form.browseFile')}
                     >
                       <FolderOpen className="w-4 h-4" />
                     </button>
@@ -627,7 +629,7 @@ export const VersionSettingsPage: React.FC = () => {
 
                 {/* 环境变量 */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">环境变量</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('settings.version.form.envVars')}</label>
                   <div className="space-y-3">
                     {/* 现有环境变量 */}
                     {formData.environmentVariables && Object.keys(formData.environmentVariables).length > 0 && (
@@ -655,14 +657,14 @@ export const VersionSettingsPage: React.FC = () => {
                         value={envVarInput.key}
                         onChange={(e) => setEnvVarInput(prev => ({ ...prev, key: e.target.value }))}
                         className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="变量名"
+                        placeholder={t('settings.version.form.varName')}
                       />
                       <input
                         type="text"
                         value={envVarInput.value}
                         onChange={(e) => setEnvVarInput(prev => ({ ...prev, value: e.target.value }))}
                         className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="变量值"
+                        placeholder={t('settings.version.form.varValue')}
                       />
                       <button
                         onClick={addEnvironmentVariable}
@@ -684,7 +686,7 @@ export const VersionSettingsPage: React.FC = () => {
                 onClick={handleCancel}
                 className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
               >
-                取消
+                {t('settings.version.form.cancel')}
               </button>
               <button
                 onClick={handleSave}
@@ -694,10 +696,10 @@ export const VersionSettingsPage: React.FC = () => {
                 <Save className="w-4 h-4" />
                 <span>
                   {createClaudeVersion.isPending || updateClaudeVersion.isPending
-                    ? '保存中...'
+                    ? t('settings.version.form.saving')
                     : editingVersion
-                    ? '更新'
-                    : '创建'
+                    ? t('settings.version.form.update')
+                    : t('settings.version.form.create')
                   }
                 </span>
               </button>
@@ -709,7 +711,7 @@ export const VersionSettingsPage: React.FC = () => {
       {/* FileBrowser 组件 */}
       {showFileBrowser && (
         <FileBrowser
-          title="选择Claude可执行文件"
+          title={t('settings.version.form.selectExecutable')}
           allowFiles={true}
           allowDirectories={false}
           onSelect={handleFileSelect}
