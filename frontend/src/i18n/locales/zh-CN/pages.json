@@ -1,0 +1,612 @@
+{
+  "nav": {
+    "dashboard": "仪表板",
+    "projects": "项目管理",
+    "agents": "Agent管理",
+    "mcp": "MCP服务",
+    "settings": "系统设置",
+    "settingsSubmenu": {
+      "general": "通用设置",
+      "versions": "版本管理",
+      "memory": "全局记忆",
+      "commands": "自定义命令",
+      "subagents": "Subagent管理"
+    }
+  },
+  "footer": {
+    "version": "版本 {{version}}",
+    "apiServerStatus": {
+      "connected": "API服务器设置 - 连接正常",
+      "disconnected": "API服务器设置 - 连接失败",
+      "checking": "API服务器设置 - 检查中..."
+    },
+    "serviceStatus": {
+      "normal": "服务正常",
+      "unavailable": "服务不可用",
+      "checking": "检查中..."
+    }
+  },
+  "home": {
+    "title": "AgentStudio",
+    "subtitle": "选择一个智能助手开始工作",
+    "loading": "正在加载...",
+    "availableAgents": "可用的智能助手",
+    "disabledAgents": "已禁用的助手",
+    "agentCount": "共 {{count}} 个助手",
+    "createCustomAgent": "创建自定义助手",
+    "customAgentComingSoon": "自定义助手功能即将推出！",
+    "noAgentsTitle": "还没有可用的智能助手",
+    "noAgentsDescription": "启用一些内置助手或创建自己的自定义助手开始使用",
+    "manageAgents": "管理智能助手",
+    "startUsing": "开始使用",
+    "editAgent": "编辑助手",
+    "disableAgent": "禁用助手",
+    "enableAgent": "启用助手",
+    "disabledStatus": "已禁用",
+    "enableAgentButton": "启用助手",
+    "componentTypes": {
+      "slides": "幻灯片",
+      "code": "代码",
+      "documents": "文档",
+      "chat": "对话"
+    },
+    "errors": {
+      "toggleFailed": "操作失败，请重试"
+    }
+  },
+  "landing": {
+    "pageTitle": "AgentStudio - 智能体工作平台 | Claude Code 驱动的 AI 助手",
+    "metaDescription": "基于 Claude Code SDK 的现代化个人智能体工作平台。通过直观的 Web 界面，轻松访问强大的 AI 能力，支持多种大语言模型，提升工作效率。",
+    "nav": {
+      "enterWorkspace": "进入工作台"
+    },
+    "hero": {
+      "title": "智能体工作平台",
+      "subtitle": "让AI成为你的得力助手",
+      "description": "基于 Claude Code SDK 构建的现代化个人智能体工作平台。通过直观的 Web 界面，轻松访问强大的 AI 能力，提升工作效率。",
+      "startNow": "立即开始",
+      "viewSource": "查看源码"
+    },
+    "features": {
+      "title": "核心特性",
+      "subtitle": "为现代化AI工作流程设计的全面功能集",
+      "modernWeb": {
+        "title": "现代化Web界面",
+        "description": "专业直观的 Web UI，实时流式响应，分屏布局设计，适合开发者和普通用户使用"
+      },
+      "multiModel": {
+        "title": "多模型支持",
+        "description": "支持 Claude、OpenAI、GLM、DeepSeek 等多种大语言模型，灵活切换，满足不同需求"
+      },
+      "agentSystem": {
+        "title": "智能体系统",
+        "description": "内置多种专业智能体，支持自定义智能体创建，消息级工具定制，扩展开发框架"
+      },
+      "fileManagement": {
+        "title": "文件管理",
+        "description": "内置文件浏览器，项目感知操作，版本控制集成，支持图片上传和内容预览"
+      },
+      "professionalTools": {
+        "title": "专业工具",
+        "description": "幻灯片智能体、代码探索器、文档大纲、工具渲染器等专业工具，提升工作效率"
+      },
+      "secureReliable": {
+        "title": "安全可靠",
+        "description": "环境变量保护API密钥，CORS配置，输入验证，沙盒文件系统访问，确保安全性"
+      }
+    },
+    "quickStart": {
+      "title": "快速开始",
+      "subtitle": "选择适合你的安装方式，几分钟内即可开始使用",
+      "endUserTitle": "普通用户 - 一键安装",
+      "endUserDescription": "无需配置，自动安装所有依赖，适合快速体验和日常使用",
+      "developerTitle": "开发者 - 源码部署",
+      "developerDescription": "完整开发环境，支持热重载，适合定制开发和功能扩展"
+    },
+    "cta": {
+      "title": "准备好开始你的AI工作流程了吗？",
+      "subtitle": "加入使用AgentStudio的开发者和团队，体验AI驱动的高效工作方式",
+      "start": "开始使用"
+    },
+    "footer": {
+      "description": "基于 Claude Code SDK 的个人智能体工作平台，让AI成为你的得力助手。",
+      "copyright": "© 2024 AgentStudio. MIT License.",
+      "product": "产品",
+      "workspace": "工作台",
+      "sourceCode": "源码",
+      "releases": "发布版本",
+      "support": "支持",
+      "documentation": "文档",
+      "issues": "问题反馈",
+      "discussions": "社区讨论"
+    }
+  },
+  "agents": {
+    "title": "Agent管理",
+    "subtitle": "管理专门的 AI 代理",
+    "createButton": "创建助手",
+    "editButton": "编辑助手",
+    "deleteButton": "删除助手",
+    "enableButton": "启用助手",
+    "disableButton": "禁用助手",
+    "useButton": "使用",
+    "startUsingButton": "开始使用助手",
+    "noAgents": "暂无助手",
+    "noAgentsSearch": "未找到匹配的助手",
+    "searchPlaceholder": "搜索助手...",
+    "createFirst": "创建你的第一个智能助手",
+    "adjustSearch": "尝试调整搜索条件",
+    "loading": "正在加载智能助手...",
+    "filter": {
+      "all": "全部",
+      "enabled": "已启用",
+      "disabled": "已禁用"
+    },
+    "table": {
+      "agent": "智能助手",
+      "type": "类型",
+      "config": "配置",
+      "tools": "工具",
+      "status": "状态",
+      "actions": "操作",
+      "maxTurns": "最大轮次",
+      "unlimited": "不限制",
+      "permission": "权限",
+      "toolsCount": "{{count}} 个工具"
+    },
+    "form": {
+      "create": "创建助手",
+      "edit": "编辑助手",
+      "name": "名称",
+      "description": "描述",
+      "maxTurns": "最大轮次",
+      "maxTurnsPlaceholder": "不限制",
+      "maxTurnsError": "最大轮次必须在1-100之间",
+      "maxTurnsExceeded": "最大轮次不能超过{{maximum}}",
+      "permissionMode": "权限模式",
+      "icon": "图标",
+      "primaryColor": "主题颜色",
+      "enabledTools": "启用的工具",
+      "selectTools": "选择工具",
+      "toolsRegular": "常规工具 {{count}} 个",
+      "toolsMcp": "MCP工具 {{count}} 个",
+      "systemPrompt": "系统提示词",
+      "systemPromptPlaceholder": "输入助手的系统提示词...",
+      "nameRequired": "请填写助手名称",
+      "save": "保存",
+      "cancel": "取消"
+    },
+    "permissions": {
+      "default": "默认",
+      "acceptEdits": "自动接受编辑",
+      "bypassPermissions": "绕过权限检查",
+      "plan": "规划模式"
+    },
+    "status": {
+      "enabled": "已启用",
+      "disabled": "已禁用"
+    },
+    "errors": {
+      "createFailed": "创建失败，请重试。",
+      "saveFailed": "保存失败，请重试。",
+      "deleteFailed": "删除失败，请重试。",
+      "toggleFailed": "操作失败，请重试。",
+      "builtinCannotDelete": "内置助手无法删除，但可以禁用。"
+    },
+    "confirmDelete": "确定要删除助手\"{{name}}\"吗？\n\n此操作无法撤销，相关的所有会话也会被删除。"
+  },
+  "projects": {
+    "title": "项目管理",
+    "subtitle": "管理你的所有工作项目",
+    "createButton": "创建新项目",
+    "selectType": "选择助手类型创建工作项目",
+    "noProjects": "暂无项目",
+    "searchPlaceholder": "搜索项目...",
+    "loading": "正在加载项目...",
+    "filter": {
+      "all": "全部",
+      "active": "活跃",
+      "inactive": "未活跃"
+    },
+    "table": {
+      "project": "项目",
+      "agent": "助手",
+      "lastActive": "最后活跃",
+      "sessions": "会话",
+      "actions": "操作",
+      "sessionsCount": "{{count}} 个会话"
+    },
+    "form": {
+      "create": "创建项目",
+      "edit": "编辑项目",
+      "name": "项目名称",
+      "namePlaceholder": "输入项目名称",
+      "nameRequired": "项目名称 *",
+      "agentType": "选择助手类型 *",
+      "agentTypePlaceholder": "选择一个助手类型",
+      "directory": "项目目录",
+      "directoryNote": "项目将在此目录下创建一个新文件夹",
+      "description": "项目描述",
+      "descriptionPlaceholder": "简单描述这个项目的用途...",
+      "save": "保存",
+      "cancel": "取消"
+    },
+    "actions": {
+      "open": "打开",
+      "openInNewTab": "在新标签页打开",
+      "edit": "编辑",
+      "delete": "删除"
+    },
+    "status": {
+      "active": "活跃",
+      "inactive": "未活跃",
+      "never": "从未"
+    },
+    "errors": {
+      "createFailed": "创建项目失败",
+      "updateFailed": "更新项目失败",
+      "deleteFailed": "删除项目失败",
+      "loadFailed": "加载项目失败"
+    },
+    "deleteConfirm": "确定要删除项目吗？",
+    "deleteNote": "注意：这只会从列表中移除项目，不会删除实际的文件目录。",
+    "deleteSuccess": "项目已删除"
+  },
+  "chat": {
+    "title": "对话",
+    "inputPlaceholder": "输入消息...",
+    "aiTyping": "AI正在输入中",
+    "newSession": "新对话",
+    "sessionHistory": "历史会话",
+    "loading": "正在加载智能助手...",
+    "agentNotFound": "助手未找到",
+    "agentNotFoundDesc": "无法找到指定的智能助手，可能已被删除或禁用。",
+    "agentDisabled": "助手已禁用",
+    "agentDisabledDesc": "智能助手 \"{{name}}\" 目前已被禁用，无法使用。",
+    "closePage": "关闭页面"
+  },
+  "dashboard": {
+    "title": "仪表板",
+    "welcome": "欢迎回到Claude Code工作台",
+    "stats": {
+      "agentManagement": "Agent管理",
+      "workProjects": "工作项目",
+      "todayCalls": "今日调用",
+      "mcpServices": "MCP服务"
+    },
+    "recentAgents": {
+      "title": "常用助手",
+      "viewAll": "查看全部",
+      "types": {
+        "slides": "演示文稿",
+        "code": "代码开发",
+        "documents": "文档写作"
+      },
+      "noAgents": "暂无可用助手",
+      "goEnable": "去启用助手"
+    },
+    "quickActions": {
+      "title": "快速操作",
+      "createProject": {
+        "title": "创建新项目",
+        "description": "选择助手类型创建工作项目"
+      },
+      "createAgent": {
+        "title": "创建新助手",
+        "description": "配置自定义AI助手"
+      },
+      "addMcp": {
+        "title": "添加MCP服务",
+        "description": "连接新的MCP服务器"
+      },
+      "viewAnalytics": {
+        "title": "查看统计",
+        "description": "分析使用情况和性能"
+      }
+    },
+    "overview": "概览",
+    "statistics": "统计信息",
+    "recentActivity": "最近活动"
+  },
+  "settings": {
+    "title": "设置",
+    "general": {
+      "title": "通用设置",
+      "description": "配置界面主题和基本设置",
+      "interfaceSettings": "界面设置",
+      "theme": {
+        "label": "主题",
+        "description": "选择界面主题模式",
+        "auto": "跟随系统",
+        "light": "浅色模式",
+        "dark": "深色模式"
+      },
+      "language": {
+        "label": "语言",
+        "description": "选择界面语言"
+      },
+      "appInfo": {
+        "title": "应用信息",
+        "name": "AgentStudio",
+        "buildDate": "构建日期",
+        "versionNote": "查看详细版本信息和更新请转至【版本管理】页面"
+      },
+      "settingsSaved": "设置已保存"
+    },
+    "api": "API服务器设置",
+    "memory": "全局记忆",
+    "memorySettings": {
+      "title": "全局记忆设置",
+      "description": "全局记忆是所有AI助手共享的背景信息，包含您的工作偏好、项目信息等",
+      "fileSourceInfo": "内容来自用户目录下的 ~/.claude/CLAUDE.md 文件。",
+      "memoryContent": "记忆内容",
+      "edit": "编辑",
+      "cancelEdit": "取消编辑",
+      "refresh": "刷新",
+      "refreshing": "刷新中...",
+      "placeholder": "在这里编写您的全局记忆内容...",
+      "cancel": "取消",
+      "saveMemory": "保存记忆",
+      "loading": "正在加载全局记忆...",
+      "noMemory": "暂无全局记忆内容",
+      "clickEditToStart": "点击\"编辑\"按钮开始添加",
+      "infoAutoLoad": "全局记忆将在每次对话时自动加载，为AI提供背景信息",
+      "infoSuggestions": "建议包含：工作偏好、项目背景、个人信息等",
+      "infoFileLocation": "文件位置：~/.claude/CLAUDE.md",
+      "saveSuccess": "全局记忆已保存",
+      "saveFailed": "保存失败，请重试"
+    },
+    "version": {
+      "title": "版本管理",
+      "subtitle": "管理多个 Claude Code 版本，指定可执行路径、别名和环境变量",
+      "addVersion": "添加版本",
+      "noVersions": "还没有配置 Claude 版本",
+      "clickToAddFirst": "点击\"添加版本\"来配置第一个 Claude 版本",
+      "systemLabel": "系统",
+      "defaultLabel": "默认",
+      "pathLabel": "路径",
+      "envVarsLabel": "环境变量",
+      "setAsDefault": "设为默认",
+      "edit": "编辑",
+      "delete": "删除",
+      "confirmDelete": "确定要删除版本 \"{{alias}}\" 吗？",
+      "currentVersion": {
+        "title": "当前版本",
+        "checking": "检查中...",
+        "checkVersion": "检查版本",
+        "claudeDesc": "AI编程助手",
+        "updating": "更新中...",
+        "update": "更新",
+        "willUse": "将使用",
+        "toUpdate": "更新",
+        "nodejsDesc": "JavaScript运行环境",
+        "preferred": "推荐",
+        "packageManager": "包管理器",
+        "lastChecked": "最后检查时间",
+        "clickToCheck": "点击\"检查版本\"获取版本信息",
+        "updateSuccess": "更新成功",
+        "updateFailed": "更新失败",
+        "info1": "Claude Code 是 AI 编程助手，支持代码生成、编辑和项目管理",
+        "info2": "Node.js 是系统运行的基础环境",
+        "info3": "支持多种包管理器：npm、pnpm、yarn（优先级：pnpm > yarn > npm）",
+        "info4": "系统会自动选择推荐的包管理器进行更新操作",
+        "info5": "建议保持 Claude Code 为最新版本以获得最佳体验"
+      },
+      "form": {
+        "createTitle": "添加新版本",
+        "editTitle": "编辑版本",
+        "versionName": "版本名称",
+        "versionNamePlaceholder": "例如: Claude Code v1.2.3",
+        "alias": "别名",
+        "aliasPlaceholder": "例如: claude-1.2.3",
+        "description": "描述",
+        "descriptionPlaceholder": "版本描述（可选）",
+        "executablePath": "可执行文件路径",
+        "executablePathPlaceholder": "例如: /usr/local/bin/claude",
+        "browseFile": "浏览文件",
+        "envVars": "环境变量",
+        "varName": "变量名",
+        "varValue": "变量值",
+        "cancel": "取消",
+        "saving": "保存中...",
+        "update": "更新",
+        "create": "创建",
+        "selectExecutable": "选择Claude可执行文件"
+      },
+      "errors": {
+        "requiredFields": "请填写所有必填字段",
+        "saveFailed": "保存失败",
+        "cannotDeleteSystem": "不能删除系统版本",
+        "deleteFailed": "删除失败",
+        "setDefaultFailed": "设置默认版本失败"
+      },
+      "success": {
+        "createVersion": "版本创建成功",
+        "updateVersion": "版本更新成功",
+        "deleteVersion": "版本删除成功",
+        "setDefault": "已将 \"{{alias}}\" 设置为默认版本"
+      }
+    },
+    "language": "语言设置",
+    "subagents": {
+      "title": "Subagent 管理",
+      "subtitle": "管理专门的 AI 子代理",
+      "loading": "正在加载 Subagents...",
+      "loadFailed": "加载失败",
+      "loadFailedMessage": "无法加载 Subagents 列表",
+      "retry": "重试",
+      "searchPlaceholder": "搜索 Subagents...",
+      "createButton": "新建 Subagent",
+      "noSubagents": "还没有 Subagents",
+      "noSubagentsSearch": "未找到匹配的 Subagents",
+      "adjustSearch": "尝试调整搜索条件",
+      "createFirst": "创建你的第一个专门的 AI 子代理来处理特定任务",
+      "table": {
+        "subagent": "Subagent",
+        "tools": "工具",
+        "createdAt": "创建时间",
+        "actions": "操作",
+        "toolsCount": "{{count}} 个工具",
+        "inheritSettings": "继承对话设置"
+      },
+      "actions": {
+        "edit": "编辑",
+        "editTitle": "编辑 Subagent",
+        "deleteTitle": "删除 Subagent"
+      },
+      "deleteConfirm": {
+        "title": "确认删除",
+        "message": "确定要删除 Subagent \"{{name}}\" 吗？",
+        "warning": "此操作无法撤销。",
+        "cancel": "取消",
+        "delete": "删除"
+      }
+    },
+    "apiSettings": {
+      "title": "API服务器设置",
+      "hostLabel": "API服务器地址",
+      "hostPlaceholder": "http://localhost:4936 或 https://your-domain.com",
+      "testConnection": "测试连接",
+      "quickSelect": "快捷选择：",
+      "connectionStatus": "连接状态",
+      "status": {
+        "success": "连接成功",
+        "error": "连接失败",
+        "untested": "未测试"
+      },
+      "serverError": "服务器响应错误: {{status}} {{statusText}}",
+      "connectionFailed": "连接失败: {{message}}",
+      "connectionUnknownError": "连接失败: 未知错误",
+      "enterApiHost": "请输入API服务器地址",
+      "settingsSavedRefresh": "设置已保存，页面将刷新以应用新设置",
+      "usage": {
+        "title": "使用说明：",
+        "localDev": "在本地开发时，使用",
+        "production": "在生产环境中，使用您的服务器域名，如",
+        "cors": "确保服务器支持CORS访问，允许前端域名访问",
+        "refresh": "修改后需要刷新页面才能生效"
+      },
+      "resetToDefault": "重置为默认",
+      "saveSettings": "保存设置"
+    }
+  },
+  "analytics": {
+    "title": "数据分析",
+    "usage": "使用统计",
+    "performance": "性能指标"
+  },
+  "mcp": {
+    "title": "MCP服务",
+    "subtitle": "管理和监控Model Context Protocol服务器",
+    "loading": "正在加载MCP配置...",
+    "searchPlaceholder": "搜索配置名称、命令或参数...",
+    "addServer": "添加服务",
+    "noServers": "还没有MCP服务配置",
+    "noResults": "未找到匹配的配置",
+    "adjustSearch": "尝试调整搜索条件",
+    "addFirstServer": "添加你的第一个MCP服务配置",
+    "confirmDelete": "确定要删除 \"{{name}}\" 配置吗？",
+    "import": {
+      "button": "从Claude Code导入",
+      "noConfigFound": "没有找到Claude Code的MCP配置",
+      "success": "成功导入 {{imported}} 个MCP服务器配置{{skipped, select, 0{} other{，跳过 {{skipped}} 个已存在的配置}}",
+      "allExist": "所有配置都已存在，没有导入新的配置"
+    },
+    "table": {
+      "server": "服务",
+      "type": "类型",
+      "status": "状态",
+      "tools": "可用工具",
+      "actions": "操作",
+      "toolsCount": "{{count}} 个工具",
+      "noTools": "无工具"
+    },
+    "status": {
+      "active": "可用",
+      "error": "错误",
+      "validating": "验证中",
+      "unvalidated": "未验证"
+    },
+    "actions": {
+      "validate": "重新验证",
+      "edit": "编辑",
+      "delete": "删除配置"
+    },
+    "modal": {
+      "addTitle": "添加MCP服务配置",
+      "editTitle": "编辑MCP服务配置",
+      "saving": "保存中...",
+      "saveConfig": "保存配置",
+      "addConfig": "添加配置"
+    },
+    "form": {
+      "serverName": "服务名称 *",
+      "serverNamePlaceholder": "例如：playwright",
+      "nameNotEditable": "服务名称不可修改",
+      "nameRequired": "请输入服务名称",
+      "mcpType": "MCP 类型 *",
+      "stdioOption": "Stdio (本地进程)",
+      "httpOption": "HTTP (远程服务)",
+      "selectConnectionType": "选择 MCP 服务器的连接类型",
+      "configuration": "配置 * (JSON格式)",
+      "configInvalid": "配置格式不正确，请确保包含必需的 {{fields}} 字段，并且格式正确",
+      "configFormatError": "⚠️ 配置格式不正确，请确保包含必需的 {{fields}} 字段",
+      "requiredFields": "必需字段：",
+      "requiredFieldsStdio": "type, command 和 args",
+      "requiredFieldsHttp": "type 和 url",
+      "optionalFields": "可选字段：",
+      "typeField": "字符串，MCP 类型（\"stdio\" 或 \"http\"）",
+      "commandField": "字符串，执行命令（如 \"npx\", \"uvx\"）",
+      "argsField": "数组，命令参数",
+      "urlField": "字符串，HTTP MCP 服务器的 URL",
+      "timeoutField": "数字，超时时间（毫秒）",
+      "autoApproveField": "数组，自动批准的操作"
+    },
+    "errors": {
+      "validationFailed": "验证失败",
+      "networkError": "网络错误或服务不可用",
+      "deleteFailed": "删除配置失败",
+      "importFailed": "导入失败",
+      "saveFailed": "保存配置失败"
+    }
+  },
+  "commands": {
+    "title": "自定义命令",
+    "subtitle": "管理 Slash Commands",
+    "loading": "加载命令中...",
+    "searchPlaceholder": "搜索命令...",
+    "createButton": "新建命令",
+    "error": {
+      "loadFailed": "加载失败",
+      "cannotLoadCommands": "无法加载自定义命令",
+      "retry": "重试"
+    },
+    "empty": {
+      "noCommands": "还没有自定义命令",
+      "noMatchingCommands": "未找到匹配的命令",
+      "adjustSearch": "尝试调整搜索条件或筛选器",
+      "createFirst": "创建你的第一个自定义 Slash Command"
+    },
+    "table": {
+      "command": "命令",
+      "model": "模型",
+      "tools": "工具",
+      "createdAt": "创建时间",
+      "actions": "操作",
+      "inheritSettings": "继承对话设置",
+      "toolsCount": "{{count}} 个工具"
+    },
+    "actions": {
+      "edit": "编辑",
+      "editCommand": "编辑命令",
+      "deleteCommand": "删除命令"
+    },
+    "delete": {
+      "title": "删除命令",
+      "confirmMessage": "确定要删除命令 \"/{{name}}\" 吗？此操作无法撤销。",
+      "cancel": "取消",
+      "delete": "删除",
+      "deleting": "删除中..."
+    }
+  }
+}

@@ -1,0 +1,714 @@
+{
+  "projectForm": {
+    "name": "项目名称",
+    "nameRequired": "项目名称 *",
+    "namePlaceholder": "输入项目名称",
+    "description": "项目描述",
+    "descriptionPlaceholder": "简单描述这个项目的用途...",
+    "directory": "项目目录",
+    "directoryNote": "项目将在此目录下创建一个新文件夹",
+    "agentType": "选择助手类型 *",
+    "agentTypePlaceholder": "选择一个助手类型"
+  },
+  "agentForm": {
+    "name": "助手名称",
+    "namePlaceholder": "输入助手名称",
+    "description": "助手描述",
+    "descriptionPlaceholder": "描述这个助手的功能...",
+    "systemPrompt": "系统提示",
+    "systemPromptPlaceholder": "输入系统提示词...",
+    "tools": "可用工具",
+    "selectTools": "选择工具"
+  },
+  "commandForm": {
+    "editTitle": "编辑命令",
+    "createTitle": "新建命令",
+    "formMode": "表单",
+    "codeMode": "代码",
+    "saveChanges": "保存更改",
+    "createCommand": "创建命令",
+    "nameLabel": "命令名称",
+    "nameHint": "只能包含字母、数字、下划线和短划线",
+    "modelLabel": "指定模型",
+    "inheritModel": "继承对话设置",
+    "modelHint": "为此命令指定特定的 AI 模型。",
+    "namespaceLabel": "命名空间",
+    "namespaceHint": "用于组织命令，可以包含 / 分隔符",
+    "argumentHintLabel": "参数提示",
+    "argumentHintHint": "在自动完成时显示的参数提示",
+    "descriptionLabel": "描述",
+    "descriptionPlaceholder": "优化代码性能和可读性",
+    "descriptionHint": "命令的简短描述，如果不填写将使用内容的第一行",
+    "allowedToolsLabel": "允许的工具",
+    "selectTools": "选择工具",
+    "regularToolsCount": "常规工具 {{count}} 个",
+    "mcpToolsCount": "MCP工具 {{count}} 个",
+    "allowedToolsHint": "留空则继承对话权限",
+    "contentLabel": "命令内容",
+    "contentPlaceholder": "分析这段代码的性能问题并提供优化建议：\n\n使用参数：$ARGUMENTS\n使用第一个参数：$1\n使用第二个参数：$2\n\n引用文件：@src/utils/helpers.js\n执行命令：!`git status`",
+    "supportedFeatures": "支持的功能：",
+    "features": {
+      "arguments": "获取所有参数",
+      "positionArgs": "获取指定位置的参数",
+      "fileRef": "引用文件内容",
+      "bashCommand": "执行 bash 命令并包含输出"
+    },
+    "markdownSource": "Markdown 源代码",
+    "markdownPlaceholder": "---\ndescription: 优化代码性能和可读性\nargument-hint: [filename] [options]\nnamespace: frontend\nallowed-tools: Read, Write, Edit\nmodel: claude-3-5-sonnet-20241022\n---\n\n分析这段代码的性能问题并提供优化建议：\n\n使用参数：$ARGUMENTS\n使用第一个参数：$1\n使用第二个参数：$2\n\n引用文件：@src/utils/helpers.js\n执行命令：!`git status`",
+    "frontmatterSupported": "Frontmatter 支持的字段：",
+    "frontmatterFields": {
+      "description": "命令描述",
+      "argumentHint": "参数提示",
+      "namespace": "命名空间",
+      "allowedTools": "允许的工具（逗号分隔）",
+      "model": "指定模型"
+    },
+    "exampleDescription": "优化代码性能和可读性",
+    "exampleContent": "分析这段代码的性能问题并提供优化建议：\n\n使用参数：$ARGUMENTS\n使用第一个参数：$1\n使用第二个参数：$2\n\n引用文件：@src/utils/helpers.js\n执行命令：!`git status`",
+    "errors": {
+      "nameRequired": "命令名称不能为空",
+      "nameFormat": "命令名称只能包含字母、数字、下划线和短划线",
+      "contentRequired": "命令内容不能为空",
+      "scopeRequired": "请选择命令作用域",
+      "saveFailed": "保存失败"
+    }
+  },
+  "fileExplorer": {
+    "title": "文件浏览器",
+    "searchPlaceholder": "搜索文件...",
+    "uploadButton": "上传文件",
+    "createFolder": "新建文件夹",
+    "rename": "重命名",
+    "deleteFile": "删除文件",
+    "downloadFile": "下载文件",
+    "noFiles": "暂无文件",
+    "loading": "加载文件中...",
+    "loadFailed": "加载项目文件失败",
+    "retry": "重新加载",
+    "projectPath": "项目路径",
+    "emptyDirectory": "项目目录为空",
+    "selectFile": "选择一个文件进行预览",
+    "previewNotSupported": "不支持预览此文件类型",
+    "fileLabel": "文件",
+    "imageLoadFailed": "图片加载失败",
+    "cannotReadFile": "无法获取文件内容",
+    "noOpenFiles": "暂无打开的文件",
+    "moreTabsCount": "还有 {{count}} 个标签",
+    "pinnedTab": "固定",
+    "temporaryTab": "临时",
+    "closeTab": "关闭标签"
+  },
+  "sessionDropdown": {
+    "title": "会话管理",
+    "searchPlaceholder": "搜索会话...",
+    "noSessions": "暂无会话",
+    "newSession": "新建会话",
+    "deleteSession": "删除会话",
+    "renameSession": "重命名会话"
+  },
+  "toolSelector": {
+    "title": "工具选择器",
+    "searchPlaceholder": "搜索工具...",
+    "noTools": "暂无可用工具",
+    "selectedTools": "已选工具",
+    "selectButton": "选择工具",
+    "toolsCount": "常规工具 {{count}} 个",
+    "mcpToolsCount": "MCP工具 {{count}} 个"
+  },
+  "languageSwitcher": {
+    "title": "语言",
+    "chinese": "中文",
+    "english": "English"
+  },
+  "agentChat": {
+    "newSession": "新建会话",
+    "sessionHistory": "会话历史",
+    "currentSession": "当前会话",
+    "imagePreview": "预览",
+    "deleteImage": "删除图片",
+    "dropImageHere": "拖放图片到这里",
+    "sendImage": "发送了图片",
+    "addDescription": "添加描述文字... (可选)",
+    "inputPlaceholder": "输入你的消息... (Shift+Enter 换行，Enter 发送，/ 触发命令)",
+    "toolSelection": "工具选择",
+    "imageSelection": "选择图片",
+    "selectedCount": "已选择{{count}}张",
+    "stop": "停止",
+    "send": "发送",
+    "aiTyping": "AI正在输入中",
+    "noContent": "无内容可发送",
+    "unknownCommand": "未知命令",
+    "sendMessage": "发送消息",
+    "permissionMode": {
+      "default": "默认",
+      "acceptEdits": "接受编辑",
+      "bypassPermissions": "绕过权限",
+      "plan": "计划模式"
+    },
+    "model": {
+      "sonnet": "Sonnet",
+      "opus": "Opus"
+    },
+    "claudeVersion": {
+      "title": "选择Claude版本",
+      "default": "Claude",
+      "custom": "自定义",
+      "system": "系统"
+    },
+    "commandWarning": "未知命令: {{command}}。可用命令: {{commands}}",
+    "navigateTo": "导航到: {{path}}",
+    "errorMessages": {
+      "claudeCodeSDKError": "❌ **Claude Code SDK 错误**",
+      "parseError": "解析响应数据时出现错误，可能是由于网络中断或服务器响应格式异常。",
+      "timeout": "请求处理超时，服务器响应时间过长。",
+      "unknownError": "未知错误，请稍后重试。",
+      "networkError": "❌ **网络连接错误**\n\n无法连接到AI服务，请检查网络连接后重试。",
+      "requestTimeout": "⏰ **请求超时**\n\n请求处理时间过长，请稍后重试。",
+      "rateLimit": "🚫 **请求频率限制**\n\n请求过于频繁，请稍后再试。",
+      "unauthorized": "🔐 **认证失败**\n\n请检查API密钥配置。",
+      "forbidden": "⛔ **权限不足**\n\n没有权限执行此操作。",
+      "internalServerError": "🔧 **服务器内部错误**\n\n服务器遇到问题，请稍后重试。",
+      "connectionFailed": "❌ **连接失败**\n\n无法连接到AI服务，请检查网络连接后重试。",
+      "connectionTimeout": "⏰ **连接超时**\n\n连接服务器超时，请稍后重试。",
+      "suggestions": "**建议操作：**",
+      "checkNetwork": "检查网络连接",
+      "retryMessage": "重新发送消息",
+      "simplifyRequest": "简化请求内容",
+      "refreshPage": "刷新页面重试",
+      "contactAdmin": "如果问题持续存在，请联系管理员"
+    },
+    "sessionResumed": "🔄 **会话已恢复**",
+    "sessionIdUpdated": "*会话ID已自动更新，历史记录已重新加载*",
+    "maxTurnsReached": "⏱️ **达到最大轮次限制**",
+    "permissionDenials": "⚠️ **权限拒绝的操作**:",
+    "permissionNote": "💡 某些操作需要用户权限确认才能执行。",
+    "executionError": "❌ **执行过程中出现错误**\n\n请检查输入或稍后重试。",
+    "processingError": "❌ **处理过程中出现错误**\n\n请稍后重试或检查输入内容。",
+    "processingComplete": "✅ **处理完成**"
+  },
+  "systemCommands": {
+    "init": {
+      "name": "init",
+      "description": "初始化项目或重置对话上下文"
+    },
+    "clear": {
+      "name": "clear",
+      "description": "清空当前对话历史"
+    },
+    "compact": {
+      "name": "compact",
+      "description": "压缩对话历史，保留关键信息"
+    },
+    "agents": {
+      "name": "agents",
+      "description": "管理AI代理和子代理"
+    },
+    "settings": {
+      "name": "settings",
+      "description": "打开设置页面"
+    },
+    "help": {
+      "name": "help",
+      "description": "显示帮助信息"
+    }
+  },
+  "projectMemory": {
+    "title": "记忆管理"
+  },
+  "projectCommands": {
+    "title": "命令管理"
+  },
+  "projectSubAgents": {
+    "title": "子Agent管理"
+  },
+  "sessionsDashboard": {
+    "title": "活跃会话",
+    "activeCount": "当前活跃: {{count}} 个会话",
+    "loadingMessage": "加载会话信息...",
+    "status": {
+      "pending": "等待中",
+      "active": "活跃",
+      "idle": "空闲"
+    },
+    "labels": {
+      "session": "会话",
+      "agent": "Agent",
+      "project": "项目",
+      "activity": "活动"
+    },
+    "time": {
+      "hoursMinutes": "{{hours}}小时{{minutes}}分钟",
+      "minutesSeconds": "{{minutes}}分钟{{seconds}}秒",
+      "seconds": "{{seconds}}秒"
+    },
+    "heartbeat": {
+      "none": "无心跳",
+      "timeout": "心跳超时"
+    },
+    "actions": {
+      "openChat": "打开聊天窗口",
+      "cleanup": "清理会话"
+    },
+    "errors": {
+      "loadFailed": "加载会话信息失败",
+      "cleanupFailed": "清理会话失败，请重试",
+      "navigationFailed": "导航失败，已降级处理"
+    },
+    "empty": {
+      "noSessions": "暂无活跃会话",
+      "startChatHint": "开始与助手对话即可创建会话"
+    }
+  },
+  "fileBrowser": {
+    "title": "选择文件或目录",
+    "emptyDirectory": "此目录为空",
+    "toolbar": {
+      "homeDirectory": "主目录",
+      "parentDirectory": "上级目录",
+      "loadingPath": "加载中...",
+      "newDirectory": "新建目录",
+      "showHidden": "显示隐藏文件",
+      "hideHidden": "隐藏隐藏文件"
+    },
+    "table": {
+      "name": "名称",
+      "size": "大小",
+      "modified": "修改时间",
+      "actions": "操作"
+    },
+    "actions": {
+      "select": "选择",
+      "cancel": "取消",
+      "createFolder": "创建目录",
+      "creating": "创建中..."
+    },
+    "dialog": {
+      "newFolder": "新建目录",
+      "createAt": "在以下位置创建新目录：",
+      "folderName": "目录名称",
+      "folderNamePlaceholder": "输入目录名称"
+    },
+    "footer": {
+      "itemsCount": "{{count}} 个项目"
+    },
+    "errors": {
+      "error": "错误",
+      "loadFailed": "加载目录失败",
+      "browseFailed": "浏览目录失败",
+      "createFailed": "创建目录失败"
+    }
+  },
+  "unifiedToolSelector": {
+    "title": "工具选择",
+    "tabs": {
+      "regular": "常规工具",
+      "mcp": "MCP工具"
+    },
+    "selectAll": "全选",
+    "preset": "预设",
+    "enableMcpTools": "启用MCP工具",
+    "loading": "加载中...",
+    "noMcpServers": "没有可用的MCP服务器",
+    "toolsCount": "{{count}} 个工具",
+    "serverUnavailable": "服务器不可用"
+  },
+  "subagentForm": {
+    "title": {
+      "create": "创建 Subagent",
+      "edit": "编辑 Subagent"
+    },
+    "mode": {
+      "form": "表单",
+      "code": "代码"
+    },
+    "actions": {
+      "cancel": "取消",
+      "create": "创建 Subagent",
+      "saving": "保存中...",
+      "saveChanges": "保存更改"
+    },
+    "codeMode": {
+      "title": "代码模式",
+      "description": "在此模式下，你可以直接编辑 Markdown 格式的 subagent 文件，包括 YAML frontmatter 和系统提示词内容。",
+      "label": "Subagent 文件内容",
+      "placeholder": "---\nname: my-subagent\ndescription: 专门处理特定任务的subagent\ntools: read_file, write, search_replace\n---\n\n你是一个专门处理...的AI助手。\n\n你的任务是..."
+    },
+    "fields": {
+      "name": {
+        "label": "名称 *",
+        "placeholder": "my-subagent"
+      },
+      "scope": {
+        "label": "作用域",
+        "projectScope": "项目 Subagent"
+      },
+      "description": {
+        "label": "描述 *",
+        "placeholder": "描述这个subagent的用途和应该在什么时候被调用"
+      },
+      "tools": {
+        "label": "允许的工具",
+        "selectTools": "选择工具",
+        "regularToolsCount": "常规工具 {{count}} 个",
+        "mcpToolsCount": "MCP工具 {{count}} 个",
+        "hint": "留空则继承所有可用工具"
+      },
+      "content": {
+        "label": "系统提示词 *",
+        "placeholder": "你是一个专门处理...的AI助手。\n\n你的任务是...\n\n请确保...\n\n当遇到...时，你应该..."
+      }
+    },
+    "validation": {
+      "nameRequired": "名称不能为空",
+      "nameFormat": "名称只能包含小写字母、数字和连字符",
+      "descriptionRequired": "描述不能为空",
+      "contentRequired": "系统提示词不能为空"
+    },
+    "errors": {
+      "saveFailed": "保存失败"
+    }
+  },
+  "commandSelector": {
+    "systemCommands": {
+      "init": {
+        "description": "初始化项目或重置对话上下文"
+      },
+      "clear": {
+        "description": "清空当前对话历史"
+      },
+      "compact": {
+        "description": "压缩对话历史，保留关键信息"
+      },
+      "agents": {
+        "description": "管理AI代理和子代理"
+      },
+      "settings": {
+        "description": "打开设置页面"
+      },
+      "help": {
+        "description": "显示帮助信息"
+      }
+    }
+  },
+  "apiSettingsModal": {
+    "title": "API服务器设置",
+    "fields": {
+      "address": "API服务器地址",
+      "addressPlaceholder": "http://localhost:4936 或 https://your-domain.com"
+    },
+    "actions": {
+      "test": "测试",
+      "reset": "重置",
+      "cancel": "取消",
+      "save": "保存"
+    },
+    "quickSelect": {
+      "title": "快捷选择：",
+      "localDev": "本地开发",
+      "officialServer": "官方服务器"
+    },
+    "status": {
+      "label": "连接状态",
+      "success": "连接成功",
+      "error": "连接失败",
+      "untested": "未测试"
+    },
+    "instructions": {
+      "title": "使用说明：",
+      "localDev": "本地开发时使用",
+      "production": "生产环境使用您的服务器域名",
+      "cors": "确保服务器支持CORS访问",
+      "refresh": "修改后页面会自动刷新"
+    },
+    "errors": {
+      "serverError": "服务器响应错误: {{status}} {{statusText}}",
+      "connectionFailed": "连接失败: {{message}}",
+      "connectionFailedUnknown": "连接失败: 未知错误",
+      "enterAddress": "请输入API服务器地址"
+    },
+    "saveSuccess": "设置已保存，页面将刷新以应用新设置"
+  },
+  "projectCommandsModal": {
+    "title": "项目命令管理",
+    "loading": "正在加载项目命令...",
+    "searchPlaceholder": "搜索命令...",
+    "createButton": "新建命令",
+    "error": {
+      "title": "加载失败",
+      "message": "无法加载项目命令",
+      "retry": "重试",
+      "close": "关闭"
+    },
+    "emptyState": {
+      "noCommandsTitle": "还没有项目命令",
+      "noCommandsDescription": "为这个项目创建专用的 Slash Command",
+      "noMatchTitle": "未找到匹配的命令",
+      "noMatchDescription": "尝试调整搜索条件"
+    },
+    "table": {
+      "command": "命令",
+      "model": "模型",
+      "tools": "工具",
+      "createdAt": "创建时间",
+      "actions": "操作",
+      "inheritSettings": "继承对话设置",
+      "toolsCount": "{{count}} 个工具"
+    },
+    "actions": {
+      "edit": "编辑",
+      "editTooltip": "编辑命令",
+      "deleteTooltip": "删除命令"
+    },
+    "deleteConfirm": {
+      "title": "删除命令",
+      "message": "确定要删除命令 \"/{{name}}\" 吗？此操作无法撤销。",
+      "cancel": "取消",
+      "confirm": "删除",
+      "deleting": "删除中..."
+    }
+  },
+  "projectSubAgentsModal": {
+    "title": "项目 Subagent 管理",
+    "loading": "正在加载项目 Subagents...",
+    "searchPlaceholder": "搜索 Subagents...",
+    "error": {
+      "loadFailed": "加载失败",
+      "loadFailedMessage": "无法加载项目 Subagents"
+    },
+    "actions": {
+      "retry": "重试",
+      "close": "关闭",
+      "create": "新建 Subagent",
+      "edit": "编辑",
+      "editTooltip": "编辑 Subagent",
+      "delete": "删除",
+      "deleteTooltip": "删除 Subagent",
+      "cancel": "取消"
+    },
+    "emptyState": {
+      "noSubagents": "还没有项目 Subagents",
+      "noResults": "未找到匹配的 Subagents",
+      "tryAdjust": "尝试调整搜索条件",
+      "description": "为这个项目创建专门的 AI 子代理来处理特定任务"
+    },
+    "table": {
+      "subagent": "Subagent",
+      "tools": "工具",
+      "createdAt": "创建时间",
+      "actions": "操作",
+      "toolsCount": "{{count}} 个工具",
+      "inheritSettings": "继承对话设置"
+    },
+    "deleteConfirm": {
+      "title": "确认删除",
+      "message": "确定要删除 Subagent \"<strong>{{name}}</strong>\" 吗？",
+      "warning": "此操作无法撤销。"
+    }
+  },
+  "projectSelector": {
+    "selectProjectDirectory": "选择项目目录",
+    "projectActions": "项目操作",
+    "quickCreateProject": "快速新建项目",
+    "creatingProject": "正在创建项目...",
+    "quickCreateDescription": "在 ~/claude-code-projects 中自动创建",
+    "customLocationCreate": "自定义位置新建",
+    "customLocationDescription": "选择目录和项目名称",
+    "browseProject": "浏览选择项目",
+    "browseDescription": "通过文件浏览器选择项目目录",
+    "recentProjects": "最近使用的项目",
+    "loadingProjects": "正在加载项目...",
+    "lastAccessed": "最后访问: {{date}}",
+    "noRecentProjects": "暂无最近使用的项目",
+    "createProjectToStart": "创建新项目开始使用",
+    "cancel": "取消",
+    "selectParentDirectory": "选择新项目的父目录",
+    "createProjectFailed": "创建项目失败: {{error}}",
+    "unknownError": "未知错误",
+    "importConfirmation": "该目录尚未作为 {{agentName}} 的项目。\n\n是否要将此目录导入作为新项目？\n\n路径: {{path}}",
+    "dialog": {
+      "createNewProject": "创建新项目",
+      "projectWillBeCreatedAt": "项目将在以下目录中创建：",
+      "projectName": "项目名称",
+      "projectNamePlaceholder": "输入项目名称",
+      "cancel": "取消",
+      "createProject": "创建项目"
+    }
+  },
+  "mcpTool": {
+    "image": "图片 ({{mimeType}})",
+    "resource": "资源",
+    "uri": "URI",
+    "name": "名称",
+    "description": "描述",
+    "type": "类型",
+    "unknownType": "未知类型 ({{type}})",
+    "errorMessage": "错误信息:",
+    "executionResult": "执行结果:",
+    "progress": "进度: {{current}} / {{total}}",
+    "subtitle": "MCP:  {{toolName}} @ {{serverName}}",
+    "parameters": "参数"
+  },
+  "bashTool": {
+    "executing": "执行中...",
+    "executionError": "执行出错",
+    "timeout": "超时时间: {{timeout}}ms"
+  },
+  "readTool": {
+    "readFile": "读取文件",
+    "startLine": "起始行",
+    "readLines": "读取行数"
+  },
+  "writeTool": {
+    "filePath": "文件路径",
+    "fileSize": "文件大小: {{size}} 字符"
+  },
+  "editTool": {
+    "editFile": "编辑文件",
+    "replaceAll": "全部替换",
+    "yes": "是"
+  },
+  "globTool": {
+    "noFilesFound": "没有找到匹配的文件",
+    "patternLabel": "匹配模式",
+    "pathLabel": "搜索路径",
+    "matchingResults": "匹配结果:"
+  },
+  "grepTool": {
+    "noMatchesFound": "没有找到匹配项",
+    "matchStatistics": "匹配统计",
+    "patternLabel": "搜索模式",
+    "pathLabel": "搜索路径",
+    "globLabel": "文件过滤",
+    "typeLabel": "文件类型",
+    "outputModeLabel": "输出模式",
+    "ignoreCase": "忽略大小写",
+    "showLineNumbers": "显示行号",
+    "afterLines": "后 {{count}} 行",
+    "beforeLines": "前 {{count}} 行",
+    "contextLines": "上下 {{count}} 行",
+    "multilineMode": "多行模式",
+    "searchResults": "搜索结果:"
+  },
+  "webFetchTool": {
+    "urlLabel": "URL:",
+    "analysisPromptLabel": "分析提示",
+    "truncated": "...(已截断)",
+    "webAnalysisResult": "网页分析结果:"
+  },
+  "webSearchTool": {
+    "searchQueryLabel": "搜索查询",
+    "allowedDomains": "允许域名:",
+    "blockedDomains": "屏蔽域名:",
+    "searchResults": "搜索结果:"
+  },
+  "taskTool": {
+    "taskDescriptionLabel": "任务描述",
+    "taskPromptLabel": "任务提示",
+    "truncated": "...(已截断)",
+    "totalLength": "总长度: {{length}} 字符"
+  },
+  "todoWriteTool": {
+    "allTasksCompleted": "所有任务已完成",
+    "currentTaskProgress": "{{completed}}/{{total}} {{task}}",
+    "pendingTasks": "{{completed}}/{{total}} 待办任务",
+    "completedCount": "已完成: {{count}}",
+    "inProgressCount": "进行中: {{count}}",
+    "pendingCount": "待处理: {{count}}"
+  },
+  "exitPlanModeTool": {
+    "implementationPlan": "实施计划:",
+    "planModeExited": "计划模式已退出，准备开始实施"
+  },
+  "notebookEditTool": {
+    "notebookPath": "Notebook 路径",
+    "insert": "插入",
+    "delete": "删除",
+    "replace": "替换",
+    "code": "代码",
+    "markdown": "Markdown",
+    "cellId": "单元格 ID",
+    "newContent": "新内容",
+    "truncated": "...(已截断)"
+  },
+  "toolRenderer": {
+    "unknownToolType": "未知工具类型"
+  },
+  "baseToolComponent": {
+    "executionResult": "执行结果:"
+  },
+  "bashOutputTool": {
+    "shellPrefix": "Shell",
+    "exitCode": "退出码",
+    "stdout": "标准输出",
+    "stderr": "错误输出",
+    "fetchingOutput": "正在获取 Shell {{shellId}} 的输出...",
+    "filterCondition": "过滤条件",
+    "status": {
+      "running": "运行中",
+      "completed": "已完成",
+      "killed": "已终止",
+      "failed": "执行失败"
+    }
+  },
+  "killBashTool": {
+    "subtitle": "终止 Shell {{shellId}}",
+    "subtitleWithProcess": "终止 Shell {{shellId}} ({{processName}})",
+    "shellId": "Shell ID",
+    "status": {
+      "terminating": "正在终止进程...",
+      "success": "进程已成功终止",
+      "failed": "终止进程失败",
+      "ready": "准备终止进程"
+    }
+  },
+  "lsTool": {
+    "directoryPath": "目录路径",
+    "ignorePatterns": "忽略模式",
+    "directoryStructure": "目录结构:"
+  },
+  "multiEditTool": {
+    "filePath": "文件路径",
+    "batchEdit": "批量编辑 ({{count}} 个操作):",
+    "operation": "操作 #{{number}}",
+    "replaceAll": "全部替换"
+  },
+  "notebookReadTool": {
+    "notebookPath": "Notebook 路径",
+    "cellId": "单元格 ID"
+  },
+  "agentChatPanel": {
+    "send": "发送",
+    "stop": "停止",
+    "sendMessage": "发送消息",
+    "stopGeneration": "停止生成",
+    "aiTyping": "AI正在输入中",
+    "noContentToSend": "无内容可发送",
+    "unknownCommand": "未知命令",
+    "errors": {
+      "jsonParseError": "解析响应数据时出现错误，可能是由于网络中断或服务器响应格式异常。\n\n**建议操作：**\n- 检查网络连接\n- 重新发送消息\n- 如果问题持续存在，请联系管理员",
+      "timeoutError": "请求处理超时，服务器响应时间过长。\n\n**建议操作：**\n- 简化请求内容\n- 稍后重试\n- 检查网络连接状态",
+      "suggestedActions": "建议操作",
+      "resendMessage": "重新发送消息",
+      "refreshPage": "刷新页面重试",
+      "unknownError": "未知错误",
+      "networkError": "❌ **网络连接错误**\n\n无法连接到AI服务，请检查网络连接后重试。",
+      "requestTimeout": "⏰ **请求超时**\n\n请求处理时间过长，请稍后重试。",
+      "rateLimit": "🚫 **请求频率限制**\n\n请求过于频繁，请稍后再试。",
+      "unauthorized": "🔐 **认证失败**\n\n请检查API密钥配置。",
+      "forbidden": "⛔ **权限不足**\n\n没有权限执行此操作。",
+      "internalServerError": "🔧 **服务器内部错误**\n\n服务器遇到问题，请稍后重试。",
+      "processingError": "处理错误",
+      "unknownErrorRetry": "未知错误，请稍后重试。",
+      "connectionFailed": "❌ **连接失败**\n\n无法连接到AI服务，请检查网络连接后重试。",
+      "networkConnectionFailed": "🌐 **网络连接失败**\n\n无法连接到服务器，请检查网络连接。",
+      "connectionTimeout": "⏰ **连接超时**\n\n连接服务器超时，请稍后重试。",
+      "connectionError": "连接错误",
+      "cannotConnectRetry": "无法连接到AI服务，请稍后重试。"
+    }
+  },
+  "compactSummary": {
+    "title": "已压缩上下文",
+    "expand": "展开查看",
+    "collapse": "收起"
+  }
+}
