@@ -561,7 +561,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
             setAiTyping(false);
             abortControllerRef.current = null;
             
-            let errorMessage = '❌ **Claude Code SDK 错误**\n\n';
+            let errorMessage = `${t('agentChat.errorMessages.claudeCodeSDKError')}\n\n`;
             
             if (eventData.error === 'Claude Code SDK failed' && eventData.message && typeof eventData.message === 'string') {
               if (eventData.message.includes('not valid JSON')) {
@@ -628,7 +628,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
             
             // Show session resume notification
             addMessage({
-              content: `🔄 **会话已恢复**\n\n${resumeData.message}\n\n*会话ID已自动更新，历史记录已重新加载*`,
+              content: `${t('agentChat.sessionResumed')}\n\n${resumeData.message}\n\n${t('agentChat.sessionIdUpdated')}`,
               role: 'assistant'
             });
             
@@ -883,7 +883,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
                 } else {
                   console.warn('📝 Result event with no content - creating empty success message');
                   const message = {
-                    content: '✅ 任务完成',
+                    content: t('agentChat.taskComplete'),
                     role: 'assistant' as const
                   };
                   addMessage(message);
@@ -902,7 +902,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
                       console.log('Force completing tool:', part.toolData.toolName, 'claudeId:', part.toolData.claudeId);
                       updateToolPartInMessage(aiMessageId!, part.toolData.id, {
                         isExecuting: false,
-                        toolResult: part.toolData.toolResult || '(执行完成)'
+                        toolResult: part.toolData.toolResult || t('agentChat.executionCompleted')
                       });
                     }
                   });
@@ -914,21 +914,21 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
               if (eventData.subtype === 'success') {
                 finalMessage = '';
               } else if (eventData.subtype === 'error_max_turns') {
-                finalMessage = '\n\n⏱️ **达到最大轮次限制**';
+                finalMessage = `\n\n${t('agentChat.maxTurnsReached')}`;
                 if (eventData.permission_denials && eventData.permission_denials.length > 0) {
-                  finalMessage += '\n\n⚠️ **权限拒绝的操作**:';
+                  finalMessage += `\n\n${t('agentChat.permissionDenials')}`;
                   eventData.permission_denials.forEach((denial: { tool_name: string; tool_input: Record<string, unknown> }, index: number) => {
                     finalMessage += `\n${index + 1}. ${denial.tool_name}: \`${denial.tool_input.command || denial.tool_input.description || JSON.stringify(denial.tool_input)}\``;
                   });
-                  finalMessage += '\n\n💡 某些操作需要用户权限确认才能执行。';
+                  finalMessage += `\n\n${t('agentChat.permissionNote')}`;
                 }
               } else if (eventData.subtype === 'error_during_execution') {
-                finalMessage = '\n\n❌ **执行过程中出现错误**\n\n请检查输入或稍后重试。';
+                finalMessage = `\n\n${t('agentChat.executionError')}`;
               } else if (eventData.subtype === 'error') {
                 // Generic error case
-                finalMessage = '\n\n❌ **处理过程中出现错误**\n\n请稍后重试或检查输入内容。';
+                finalMessage = `\n\n${t('agentChat.processingError')}`;
               } else {
-                finalMessage = '\n\n✅ **处理完成**';
+                finalMessage = `\n\n${t('agentChat.processingComplete')}`;
               }
 
               // Update final message content
@@ -955,7 +955,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
           }
           
           // Determine specific error message
-          let errorMessage = '抱歉，处理您的请求时出现了错误。';
+          let errorMessage = t('agentChat.genericError');
           
           if (error instanceof Error) {
             if (error.message.includes('network') || error.message.includes('fetch')) {
