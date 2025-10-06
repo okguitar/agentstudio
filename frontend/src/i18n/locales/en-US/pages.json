@@ -271,8 +271,8 @@
     "stats": {
       "agentManagement": "Agent Management",
       "workProjects": "Work Projects",
-      "todayCalls": "Today's Calls",
-      "mcpServices": "MCP Services"
+      "slashCommands": "Slash Commands",
+      "activeSessions": "Active Sessions"
     },
     "recentAgents": {
       "title": "Frequently Used Assistants",

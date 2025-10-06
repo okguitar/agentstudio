@@ -271,8 +271,8 @@
     "stats": {
       "agentManagement": "Agent管理",
       "workProjects": "工作项目",
-      "todayCalls": "今日调用",
-      "mcpServices": "MCP服务"
+      "slashCommands": "Slash命令",
+      "activeSessions": "活跃会话"
     },
     "recentAgents": {
       "title": "常用助手",
