@@ -100,8 +100,13 @@
   },
   "sessionDropdown": {
     "title": "会话管理",
+    "sessionHistory": "会话历史",
     "searchPlaceholder": "搜索会话...",
     "noSessions": "暂无会话",
+    "noSessionHistory": "暂无会话历史",
+    "noMatchingSessions": "未找到匹配的会话",
+    "sessionWillAppear": "开始聊天后会显示会话",
+    "messageCount": "{{count}} 条消息",
     "newSession": "新建会话",
     "deleteSession": "删除会话",
     "renameSession": "重命名会话"
@@ -182,6 +187,9 @@
     "taskComplete": "✅ 任务完成",
     "executionCompleted": "(执行完成)",
     "genericError": "抱歉，处理您的请求时出现了错误。",
+    "unknownCommandWarning": "未知命令: /{{command}}。可用命令: {{commands}}",
+    "navigateToAlert": "导航到: {{path}}",
+    "generationStopped": "⏹️ 生成已停止",
     "maxTurnsReached": "⏱️ **达到最大轮次限制**",
     "permissionDenials": "⚠️ **权限拒绝的操作**:",
     "permissionNote": "💡 某些操作需要用户权限确认才能执行。",

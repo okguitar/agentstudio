@@ -100,8 +100,13 @@
   },
   "sessionDropdown": {
     "title": "Session Management",
+    "sessionHistory": "Session History",
     "searchPlaceholder": "Search sessions...",
     "noSessions": "No sessions",
+    "noSessionHistory": "No session history",
+    "noMatchingSessions": "No matching sessions found",
+    "sessionWillAppear": "Sessions will appear after you start chatting",
+    "messageCount": "{{count}} messages",
     "newSession": "New Session",
     "deleteSession": "Delete Session",
     "renameSession": "Rename Session"
@@ -182,6 +187,9 @@
     "taskComplete": "✅ Task Complete",
     "executionCompleted": "(Execution Completed)",
     "genericError": "Sorry, an error occurred while processing your request.",
+    "unknownCommandWarning": "Unknown command: /{{command}}. Available commands: {{commands}}",
+    "navigateToAlert": "Navigate to: {{path}}",
+    "generationStopped": "⏹️ Generation stopped",
     "maxTurnsReached": "⏱️ **Maximum turns reached**",
     "permissionDenials": "⚠️ **Permission Denied Operations:**",
     "permissionNote": "💡 Some operations require user permission confirmation to execute.",

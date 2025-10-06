@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { Clock, Search } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface Session {
   id: string;
@@ -29,6 +30,7 @@ export const SessionsDropdown: React.FC<SessionsDropdownProps> = ({
   searchTerm,
   onSearchChange
 }) => {
+  const { t } = useTranslation('components');
   // Remove local searchTerm state since it's now passed as props
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -71,7 +73,7 @@ export const SessionsDropdown: React.FC<SessionsDropdownProps> = ({
       <div className="flex items-center justify-between p-3 border-b border-gray-100">
         <div className="flex items-center space-x-2">
           <Clock className="w-4 h-4 text-gray-600" />
-          <span className="text-sm font-medium text-gray-900">会话历史</span>
+          <span className="text-sm font-medium text-gray-900">{t('sessionDropdown.sessionHistory')}</span>
         </div>
       </div>
 
@@ -84,7 +86,7 @@ export const SessionsDropdown: React.FC<SessionsDropdownProps> = ({
             type="text"
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="搜索会话..."
+            placeholder={t('sessionDropdown.searchPlaceholder')}
             className="w-full pl-9 pr-3 py-2 text-sm text-gray-900 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-500"
           />
         </div>
@@ -110,7 +112,7 @@ export const SessionsDropdown: React.FC<SessionsDropdownProps> = ({
                   {session.title}
                 </div>
                 <div className="text-xs text-gray-500 mt-0.5">
-                  {session.messageCount} 条消息 • {new Date(session.lastUpdated).toLocaleString('zh-CN', {
+                  {t('sessionDropdown.messageCount', { count: session.messageCount })} • {new Date(session.lastUpdated).toLocaleString('zh-CN', {
                     month: 'short',
                     day: 'numeric',
                     hour: '2-digit',
@@ -125,13 +127,13 @@ export const SessionsDropdown: React.FC<SessionsDropdownProps> = ({
             {searchTerm ? (
               <div>
                 <Search className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                <p className="text-sm text-gray-500">未找到匹配的会话</p>
+                <p className="text-sm text-gray-500">{t('sessionDropdown.noMatchingSessions')}</p>
               </div>
             ) : (
               <div>
                 <Clock className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                <p className="text-sm text-gray-500">暂无会话历史</p>
-                <p className="text-xs text-gray-400 mt-1">开始聊天后会显示会话</p>
+                <p className="text-sm text-gray-500">{t('sessionDropdown.noSessionHistory')}</p>
+                <p className="text-xs text-gray-400 mt-1">{t('sessionDropdown.sessionWillAppear')}</p>
               </div>
             )}
           </div>

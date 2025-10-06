@@ -415,7 +415,10 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
       
       // Check if command is defined
       if (!isCommandDefined(commandName)) {
-        setCommandWarning(`未知命令: /${commandName}。可用命令: ${SYSTEM_COMMANDS.map(cmd => cmd.content).join(', ')}`);
+        setCommandWarning(t('agentChat.unknownCommandWarning', {
+          command: commandName,
+          commands: SYSTEM_COMMANDS.map(cmd => cmd.content).join(', ')
+        }));
         return;
       }
       
@@ -427,7 +430,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
         agentStore: useAgentStore.getState(),
         onNewSession: handleNewSession,
         onNavigate: (path: string) => {
-          alert(`导航到: ${path}`);
+          alert(t('agentChat.navigateToAlert', { path }));
         },
         onConfirm: (message: string, onConfirm: () => void) => {
           setConfirmMessage(message);
@@ -1058,7 +1061,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
       
       // Add a message indicating the generation was stopped
       addMessage({
-        content: '⏹️ 生成已停止',
+        content: t('agentChat.generationStopped'),
         role: 'assistant'
       });
     }
@@ -1086,7 +1089,10 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
       if (isCommandTrigger(inputMessage)) {
         const commandName = inputMessage.slice(1).split(' ')[0].toLowerCase();
         if (!isCommandDefined(commandName)) {
-          setCommandWarning(`未知命令: /${commandName}。可用命令: ${SYSTEM_COMMANDS.map(cmd => cmd.content).join(', ')}`);
+          setCommandWarning(t('agentChat.unknownCommandWarning', {
+            command: commandName,
+            commands: SYSTEM_COMMANDS.map(cmd => cmd.content).join(', ')
+          }));
           return;
         }
       }
