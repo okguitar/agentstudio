@@ -159,57 +159,57 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg w-full max-w-4xl max-h-[80vh] mx-4 flex flex-col">
+      <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-4xl max-h-[80vh] mx-4 flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">{title || t('fileBrowser.title')}</h3>
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{title || t('fileBrowser.title')}</h3>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Toolbar */}
-        <div className="flex items-center space-x-2 p-4 border-b border-gray-100">
+        <div className="flex items-center space-x-2 p-4 border-b border-gray-100 dark:border-gray-700">
           <button
             onClick={goToHome}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
             title={t('fileBrowser.toolbar.homeDirectory')}
           >
-            <Home className="w-4 h-4" />
+            <Home className="w-4 h-4 text-gray-600 dark:text-gray-400" />
           </button>
 
           <button
             onClick={goToParent}
             disabled={!data?.parentPath}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             title={t('fileBrowser.toolbar.parentDirectory')}
           >
-            <ArrowUp className="w-4 h-4" />
+            <ArrowUp className="w-4 h-4 text-gray-600 dark:text-gray-400" />
           </button>
 
-          <div className="flex-1 px-3 py-2 bg-gray-50 rounded text-sm text-gray-600 font-mono">
+          <div className="flex-1 px-3 py-2 bg-gray-50 dark:bg-gray-900 rounded text-sm text-gray-600 dark:text-gray-400 font-mono">
             {data?.currentPath || t('fileBrowser.toolbar.loadingPath')}
           </div>
 
           {allowNewDirectory && (
             <button
               onClick={() => setShowNewFolderDialog(true)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
               title={t('fileBrowser.toolbar.newDirectory')}
             >
-              <FolderPlus className="w-4 h-4" />
+              <FolderPlus className="w-4 h-4 text-gray-600 dark:text-gray-400" />
             </button>
           )}
 
           <button
             onClick={() => setShowHidden(!showHidden)}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
             title={showHidden ? t('fileBrowser.toolbar.hideHidden') : t('fileBrowser.toolbar.showHidden')}
           >
-            {showHidden ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            {showHidden ? <EyeOff className="w-4 h-4 text-gray-600 dark:text-gray-400" /> : <Eye className="w-4 h-4 text-gray-600 dark:text-gray-400" />}
           </button>
         </div>
 
@@ -224,7 +224,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
               <p>{t('fileBrowser.errors.error')}: {error}</p>
             </div>
           ) : (
-            <div 
+            <div
               className="flex-1 overflow-y-auto"
               onWheel={(e) => {
                 // 防止滚动事件穿透到底层页面
@@ -232,20 +232,20 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
               }}
             >
               <table className="w-full">
-                <thead className="bg-gray-50 sticky top-0">
+                <thead className="bg-gray-50 dark:bg-gray-900 sticky top-0">
                   <tr>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('fileBrowser.table.name')}</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('fileBrowser.table.size')}</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('fileBrowser.table.modified')}</th>
-                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t('fileBrowser.table.actions')}</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('fileBrowser.table.name')}</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('fileBrowser.table.size')}</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('fileBrowser.table.modified')}</th>
+                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('fileBrowser.table.actions')}</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                   {filteredItems.map((item, index) => (
-                    <tr 
+                    <tr
                       key={index}
-                      className={`hover:bg-gray-50 transition-colors ${
-                        selectedPath === item.path ? 'bg-blue-50' : ''
+                      className={`hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
+                        selectedPath === item.path ? 'bg-blue-50 dark:bg-blue-900/30' : ''
                       }`}
                     >
                       <td className="px-4 py-3 flex items-center space-x-2">
@@ -253,25 +253,25 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
                           {item.isDirectory ? (
                             <Folder className="w-4 h-4 text-blue-600 flex-shrink-0" />
                           ) : (
-                            <File className="w-4 h-4 text-gray-600 flex-shrink-0" />
+                            <File className="w-4 h-4 text-gray-600 dark:text-gray-400 flex-shrink-0" />
                           )}
                           <button
                             onClick={() => handleItemClick(item)}
-                            className={`text-left truncate hover:text-blue-600 ${
-                              item.isHidden ? 'text-gray-400' : 'text-gray-900'
+                            className={`text-left truncate hover:text-blue-600 dark:hover:text-blue-400 ${
+                              item.isHidden ? 'text-gray-400' : 'text-gray-900 dark:text-white'
                             }`}
                           >
                             {item.name}
                           </button>
                           {item.isDirectory && (
-                            <ChevronRight className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                            <ChevronRight className="w-3 h-3 text-gray-400 dark:text-gray-500 flex-shrink-0" />
                           )}
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-500">
+                      <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
                         {formatSize(item.size)}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-500">
+                      <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
                         {new Date(item.modified).toLocaleDateString('zh-CN')}
                       </td>
                       <td className="px-4 py-3 text-right">
@@ -292,8 +292,8 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
               </table>
 
               {filteredItems.length === 0 && (
-                <div className="text-center py-12 text-gray-500">
-                  <Folder className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+                  <Folder className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
                   <p>{t('fileBrowser.emptyDirectory')}</p>
                 </div>
               )}
@@ -302,15 +302,15 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-gray-200 flex justify-between items-center">
-          <div className="text-sm text-gray-500">
+        <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
+          <div className="text-sm text-gray-500 dark:text-gray-400">
             {filteredItems.length > 0 && (
               <span>{t('fileBrowser.footer.itemsCount', { count: filteredItems.length })}</span>
             )}
           </div>
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+            className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
           >
             {t('fileBrowser.actions.cancel')}
           </button>
@@ -320,31 +320,31 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
       {/* New Folder Dialog */}
       {showNewFolderDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">{t('fileBrowser.dialog.newFolder')}</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('fileBrowser.dialog.newFolder')}</h3>
               <button
                 onClick={() => {
                   setShowNewFolderDialog(false);
                   setNewFolderName('');
                 }}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="mb-4">
-              <p className="text-sm text-gray-600 mb-2">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                 {t('fileBrowser.dialog.createAt')}
               </p>
-              <div className="p-2 bg-gray-100 rounded text-sm font-mono text-gray-800 break-all">
+              <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded text-sm font-mono text-gray-800 dark:text-gray-200 break-all">
                 {data?.currentPath}
               </div>
             </div>
 
             <div className="mb-6">
-              <label htmlFor="folderName" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="folderName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {t('fileBrowser.dialog.folderName')}
               </label>
               <input
@@ -353,7 +353,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
                 value={newFolderName}
                 onChange={(e) => setNewFolderName(e.target.value)}
                 placeholder={t('fileBrowser.dialog.folderNamePlaceholder')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                 autoFocus
                 onKeyPress={(e) => {
                   if (e.key === 'Enter' && newFolderName.trim() && !creatingFolder) {
@@ -370,7 +370,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
                   setNewFolderName('');
                 }}
                 disabled={creatingFolder}
-                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors disabled:opacity-50"
+                className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors disabled:opacity-50"
               >
                 {t('fileBrowser.actions.cancel')}
               </button>

@@ -87,19 +87,19 @@ export const ProjectMemoryModal: React.FC<ProjectMemoryModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl h-[80vh] flex flex-col">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl h-[80vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center space-x-3">
             <FileText className="w-6 h-6 text-blue-600" />
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">项目记忆管理</h2>
-              <p className="text-sm text-gray-600">{project.name}</p>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">项目记忆管理</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{project.name}</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -111,24 +111,24 @@ export const ProjectMemoryModal: React.FC<ProjectMemoryModalProps> = ({
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                <div className="text-gray-600">正在加载 CLAUDE.md...</div>
+                <div className="text-gray-600 dark:text-gray-400">正在加载 CLAUDE.md...</div>
               </div>
             </div>
           ) : error ? (
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center">
                 <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">加载失败</h3>
-                <p className="text-gray-600">{error}</p>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">加载失败</h3>
+                <p className="text-gray-600 dark:text-gray-400">{error}</p>
               </div>
             </div>
           ) : (
             <div className="flex-1 flex flex-col space-y-4">
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-gray-600 dark:text-gray-400">
                 编辑项目的记忆文件 (CLAUDE.md)，用于存储项目相关的上下文信息和指导。
               </div>
-              
-              <div className="flex-1 border border-gray-300 rounded-lg overflow-hidden">
+
+              <div className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
                 <textarea
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
@@ -144,7 +144,7 @@ export const ProjectMemoryModal: React.FC<ProjectMemoryModalProps> = ({
 
 ## 重要注意事项
 记录需要特别注意的地方..."
-                  className="w-full h-full p-4 border-0 resize-none focus:outline-none font-mono text-sm"
+                  className="w-full h-full p-4 border-0 resize-none focus:outline-none font-mono text-sm dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                   style={{ minHeight: '400px' }}
                 />
               </div>
@@ -154,10 +154,10 @@ export const ProjectMemoryModal: React.FC<ProjectMemoryModalProps> = ({
 
         {/* Footer */}
         {!loading && !error && (
-          <div className="flex justify-end space-x-3 p-6 border-t border-gray-200 bg-gray-50">
+          <div className="flex justify-end space-x-3 p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              className="px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
               取消
             </button>

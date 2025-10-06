@@ -240,22 +240,22 @@ export const CommandForm: React.FC<CommandFormProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
           <div className="flex items-center space-x-4">
-            <h2 className="text-xl font-semibold text-gray-900">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
               {isEditing ? t('commandForm.editTitle') : t('commandForm.createTitle')}
             </h2>
             {/* Mode Switch */}
-            <div className="flex items-center bg-gray-100 rounded-lg p-1">
+            <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
               <button
                 type="button"
                 onClick={() => handleModeSwitch(false)}
                 className={`flex items-center space-x-1 px-3 py-1.5 rounded-md text-sm transition-colors ${
                   !isCodeMode
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-white dark:bg-gray-800 text-blue-600 shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                 }`}
               >
                 <Edit3 className="h-4 w-4" />
@@ -266,8 +266,8 @@ export const CommandForm: React.FC<CommandFormProps> = ({
                 onClick={() => handleModeSwitch(true)}
                 className={`flex items-center space-x-1 px-3 py-1.5 rounded-md text-sm transition-colors ${
                   isCodeMode
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-white dark:bg-gray-800 text-blue-600 shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                 }`}
               >
                 <Code className="h-4 w-4" />
@@ -279,7 +279,7 @@ export const CommandForm: React.FC<CommandFormProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors"
+              className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 rounded-lg transition-colors"
             >
               {tc('actions.cancel')}
             </button>
@@ -308,7 +308,7 @@ export const CommandForm: React.FC<CommandFormProps> = ({
               /* Code Mode */
               <>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     {t('commandForm.markdownSource')}
                   </label>
                   <textarea
@@ -316,16 +316,16 @@ export const CommandForm: React.FC<CommandFormProps> = ({
                     onChange={(e) => handleRawContentChange(e.target.value)}
                     placeholder={t('commandForm.markdownPlaceholder')}
                     rows={25}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                   />
-                  <div className="mt-2 text-sm text-gray-500">
+                  <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                     <p><strong>{t('commandForm.frontmatterSupported')}</strong></p>
                     <ul className="list-disc list-inside space-y-1 mt-1">
-                      <li><code>description</code> - {t('commandForm.frontmatterFields.description')}</li>
-                      <li><code>argument-hint</code> - {t('commandForm.frontmatterFields.argumentHint')}</li>
-                      <li><code>namespace</code> - {t('commandForm.frontmatterFields.namespace')}</li>
-                      <li><code>allowed-tools</code> - {t('commandForm.frontmatterFields.allowedTools')}</li>
-                      <li><code>model</code> - {t('commandForm.frontmatterFields.model')}</li>
+                      <li><code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">description</code> - {t('commandForm.frontmatterFields.description')}</li>
+                      <li><code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">argument-hint</code> - {t('commandForm.frontmatterFields.argumentHint')}</li>
+                      <li><code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">namespace</code> - {t('commandForm.frontmatterFields.namespace')}</li>
+                      <li><code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">allowed-tools</code> - {t('commandForm.frontmatterFields.allowedTools')}</li>
+                      <li><code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">model</code> - {t('commandForm.frontmatterFields.model')}</li>
                     </ul>
                   </div>
                 </div>
@@ -335,9 +335,9 @@ export const CommandForm: React.FC<CommandFormProps> = ({
               <>
             {/* Error Message */}
             {errors.submit && (
-              <div className="flex items-center space-x-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <AlertCircle className="h-5 w-5 text-red-500" />
-                <span className="text-red-700">{errors.submit}</span>
+              <div className="flex items-center space-x-2 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg">
+                <AlertCircle className="h-5 w-5 text-red-500 dark:text-red-400" />
+                <span className="text-red-700 dark:text-red-400">{errors.submit}</span>
               </div>
             )}
 
@@ -345,7 +345,7 @@ export const CommandForm: React.FC<CommandFormProps> = ({
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Command Name */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   {t('commandForm.nameLabel')} *
                 </label>
                 <input
@@ -354,19 +354,19 @@ export const CommandForm: React.FC<CommandFormProps> = ({
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   disabled={isEditing}
                   placeholder="optimize"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                 />
                 {errors.name && (
-                  <p className="mt-1 text-sm text-red-600">{errors.name}</p>
+                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.name}</p>
                 )}
-                <p className="mt-1 text-sm text-gray-500">
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                   {t('commandForm.nameHint')}
                 </p>
               </div>
 
               {/* Model */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   {t('commandForm.modelLabel')}
                 </label>
                 <div className="flex items-center space-x-3">
@@ -382,9 +382,9 @@ export const CommandForm: React.FC<CommandFormProps> = ({
                           setFormData({ ...formData, model: '' });
                         }
                       }}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded"
                     />
-                    <label htmlFor="inherit-model" className="ml-2 text-sm text-gray-700 whitespace-nowrap">
+                    <label htmlFor="inherit-model" className="ml-2 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
                       {t('commandForm.inheritModel')}
                     </label>
                   </div>
@@ -397,18 +397,18 @@ export const CommandForm: React.FC<CommandFormProps> = ({
                       onChange={(e) => setFormData({ ...formData, model: e.target.value })}
                       placeholder="sonnet"
                       disabled={useInheritModel}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:text-gray-500 dark:disabled:text-gray-400 disabled:cursor-not-allowed dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                     />
                   </div>
                 </div>
-                <p className="mt-1 text-sm text-gray-500">
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                   {t('commandForm.modelHint')}
                 </p>
               </div>
 
               {/* Namespace */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   {t('commandForm.namespaceLabel')}
                 </label>
                 <input
@@ -416,16 +416,16 @@ export const CommandForm: React.FC<CommandFormProps> = ({
                   value={formData.namespace}
                   onChange={(e) => setFormData({ ...formData, namespace: e.target.value })}
                   placeholder="frontend"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                 />
-                <p className="mt-1 text-sm text-gray-500">
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                   {t('commandForm.namespaceHint')}
                 </p>
               </div>
 
               {/* Argument Hint */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   {t('commandForm.argumentHintLabel')}
                 </label>
                 <input
@@ -433,9 +433,9 @@ export const CommandForm: React.FC<CommandFormProps> = ({
                   value={formData.argumentHint}
                   onChange={(e) => setFormData({ ...formData, argumentHint: e.target.value })}
                   placeholder="[filename] [options]"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                 />
-                <p className="mt-1 text-sm text-gray-500">
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                   {t('commandForm.argumentHintHint')}
                 </p>
               </div>
@@ -443,7 +443,7 @@ export const CommandForm: React.FC<CommandFormProps> = ({
 
             {/* Description */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {t('commandForm.descriptionLabel')}
               </label>
               <input
@@ -451,30 +451,30 @@ export const CommandForm: React.FC<CommandFormProps> = ({
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder={t('commandForm.descriptionPlaceholder')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
               />
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                 {t('commandForm.descriptionHint')}
               </p>
             </div>
 
             {/* Allowed Tools */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {t('commandForm.allowedToolsLabel')}
               </label>
               <div className="flex items-center space-x-2">
                 <button
                   type="button"
                   onClick={() => setShowToolSelector(!showToolSelector)}
-                  className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-sm"
+                  className="px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors text-sm"
                 >
                   {t('commandForm.selectTools')}
                 </button>
 
                 {/* 显示工具数量详情 */}
                 {(selectedRegularTools.length > 0 || selectedMcpTools.length > 0) && (
-                  <span className="text-sm text-gray-600">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
                     {t('commandForm.regularToolsCount', { count: selectedRegularTools.length })}
                     {selectedMcpTools.length > 0 && `, ${t('commandForm.mcpToolsCount', { count: selectedMcpTools.length })}`}
                   </span>
@@ -508,14 +508,14 @@ export const CommandForm: React.FC<CommandFormProps> = ({
                   }}
                 />
               </div>
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                 {t('commandForm.allowedToolsHint')}
               </p>
             </div>
 
             {/* Command Content */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {t('commandForm.contentLabel')} *
               </label>
               <textarea
@@ -523,18 +523,18 @@ export const CommandForm: React.FC<CommandFormProps> = ({
                 onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                 placeholder={t('commandForm.contentPlaceholder')}
                 rows={12}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
               />
               {errors.content && (
-                <p className="mt-1 text-sm text-red-600">{errors.content}</p>
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.content}</p>
               )}
-              <div className="mt-2 text-sm text-gray-500 space-y-1">
+              <div className="mt-2 text-sm text-gray-500 dark:text-gray-400 space-y-1">
                 <p><strong>{t('commandForm.supportedFeatures')}</strong></p>
                 <ul className="list-disc list-inside space-y-1">
-                  <li><code>$ARGUMENTS</code> - {t('commandForm.features.arguments')}</li>
-                  <li><code>$1, $2, ...</code> - {t('commandForm.features.positionArgs')}</li>
-                  <li><code>@filepath</code> - {t('commandForm.features.fileRef')}</li>
-                  <li><code>!`command`</code> - {t('commandForm.features.bashCommand')}</li>
+                  <li><code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">$ARGUMENTS</code> - {t('commandForm.features.arguments')}</li>
+                  <li><code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">$1, $2, ...</code> - {t('commandForm.features.positionArgs')}</li>
+                  <li><code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">@filepath</code> - {t('commandForm.features.fileRef')}</li>
+                  <li><code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">!`command`</code> - {t('commandForm.features.bashCommand')}</li>
                 </ul>
               </div>
             </div>

@@ -73,10 +73,10 @@ export const ProjectCommandsModal: React.FC<ProjectCommandsModalProps> = ({
   if (isLoading) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl h-[80vh] flex items-center justify-center">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-6xl h-[80vh] flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <div className="text-gray-600">{t('projectCommandsModal.loading')}</div>
+            <div className="text-gray-600 dark:text-gray-400">{t('projectCommandsModal.loading')}</div>
           </div>
         </div>
       </div>
@@ -86,11 +86,11 @@ export const ProjectCommandsModal: React.FC<ProjectCommandsModalProps> = ({
   if (error) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl h-[80vh] flex items-center justify-center">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-6xl h-[80vh] flex items-center justify-center">
           <div className="text-center">
             <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">{t('projectCommandsModal.error.title')}</h3>
-            <p className="text-gray-600 mb-4">{t('projectCommandsModal.error.message')}</p>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">{t('projectCommandsModal.error.title')}</h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">{t('projectCommandsModal.error.message')}</p>
             <div className="flex justify-center space-x-3">
               <button
                 onClick={() => refetch()}
@@ -100,7 +100,7 @@ export const ProjectCommandsModal: React.FC<ProjectCommandsModalProps> = ({
               </button>
               <button
                 onClick={onClose}
-                className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               >
                 {t('projectCommandsModal.error.close')}
               </button>
@@ -113,26 +113,26 @@ export const ProjectCommandsModal: React.FC<ProjectCommandsModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl h-[80vh] flex flex-col">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-6xl h-[80vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center space-x-3">
             <Terminal className="w-6 h-6 text-green-600" />
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">{t('projectCommandsModal.title')}</h2>
-              <p className="text-sm text-gray-600">{project.name}</p>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{t('projectCommandsModal.title')}</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{project.name}</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Search and Add Button */}
-        <div className="p-6 border-b border-gray-200">
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center space-x-4">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -141,7 +141,7 @@ export const ProjectCommandsModal: React.FC<ProjectCommandsModalProps> = ({
                 placeholder={t('projectCommandsModal.searchPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="pl-10 pr-4 py-2 w-full border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
               />
             </div>
             <button
@@ -162,10 +162,10 @@ export const ProjectCommandsModal: React.FC<ProjectCommandsModalProps> = ({
           {commands.length === 0 ? (
             <div className="text-center py-16">
               <div className="text-6xl mb-4">⚡</div>
-              <h3 className="text-xl font-medium text-gray-900 mb-2">
+              <h3 className="text-xl font-medium text-gray-900 dark:text-white mb-2">
                 {searchTerm ? t('projectCommandsModal.emptyState.noMatchTitle') : t('projectCommandsModal.emptyState.noCommandsTitle')}
               </h3>
-              <p className="text-gray-600 mb-6">
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
                 {searchTerm
                   ? t('projectCommandsModal.emptyState.noMatchDescription')
                   : t('projectCommandsModal.emptyState.noCommandsDescription')
@@ -206,24 +206,24 @@ export const ProjectCommandsModal: React.FC<ProjectCommandsModalProps> = ({
               </TableHeader>
               <TableBody>
                 {commands.map((command, index) => (
-                  <TableRow 
+                  <TableRow
                     key={command.id + '-' + index}
-                    className="hover:bg-gray-50 transition-colors"
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                   >
                     <TableCell className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="text-xl mr-3">⚡</div>
                         <div>
-                          <div className="text-sm font-medium text-gray-900">
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">
                             {command.namespace ? `/${command.namespace}:${command.name}` : `/${command.name}`}
                             {command.argumentHint && (
-                              <code className="ml-2 bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded text-xs">
+                              <code className="ml-2 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-1.5 py-0.5 rounded text-xs">
                                 {command.argumentHint}
                               </code>
                             )}
                           </div>
                           {command.description && (
-                            <div className="text-sm text-gray-500 truncate max-w-xs">
+                            <div className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-xs">
                               {command.description}
                             </div>
                           )}
@@ -232,34 +232,34 @@ export const ProjectCommandsModal: React.FC<ProjectCommandsModalProps> = ({
                     </TableCell>
                     <TableCell className="px-6 py-4">
                       {command.model ? (
-                        <div className="text-sm text-gray-900">
+                        <div className="text-sm text-gray-900 dark:text-white">
                           <Code className="w-3 h-3 inline mr-1" />
                           {command.model}
                         </div>
                       ) : (
-                        <span className="text-sm text-gray-500">{t('projectCommandsModal.table.inheritSettings')}</span>
+                        <span className="text-sm text-gray-500 dark:text-gray-400">{t('projectCommandsModal.table.inheritSettings')}</span>
                       )}
                     </TableCell>
                     <TableCell className="px-6 py-4">
                       {command.allowedTools && command.allowedTools.length > 0 ? (
                         <div>
-                          <div className="flex items-center space-x-1 text-sm text-gray-500 mb-1">
+                          <div className="flex items-center space-x-1 text-sm text-gray-500 dark:text-gray-400 mb-1">
                             <Tag className="w-3 h-3" />
                             <span>{t('projectCommandsModal.table.toolsCount', { count: command.allowedTools.length })}</span>
                           </div>
                           <div className="flex flex-wrap gap-1">
                             {command.allowedTools.map((tool, idx) => (
-                              <code key={idx} className="bg-green-50 text-green-700 px-1.5 py-0.5 rounded text-xs">
+                              <code key={idx} className="bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-1.5 py-0.5 rounded text-xs">
                                 {getToolDisplayName(tool)}
                               </code>
                             ))}
                           </div>
                         </div>
                       ) : (
-                        <span className="text-sm text-gray-500">{t('projectCommandsModal.table.inheritSettings')}</span>
+                        <span className="text-sm text-gray-500 dark:text-gray-400">{t('projectCommandsModal.table.inheritSettings')}</span>
                       )}
                     </TableCell>
-                    <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       <div className="flex items-center space-x-1">
                         <Clock className="w-4 h-4" />
                         <span>{formatRelativeTime(command.createdAt || command.updatedAt)}</span>
@@ -310,24 +310,24 @@ export const ProjectCommandsModal: React.FC<ProjectCommandsModalProps> = ({
         {/* Delete Confirmation Modal */}
         {showDeleteConfirm && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
-            <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
               <div className="flex items-center space-x-3 mb-4">
                 <div className="flex-shrink-0">
                   <AlertCircle className="h-6 w-6 text-red-600" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-medium text-gray-900">{t('projectCommandsModal.deleteConfirm.title')}</h3>
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">{t('projectCommandsModal.deleteConfirm.title')}</h3>
                 </div>
               </div>
 
-              <p className="text-gray-600 mb-6">
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
                 {t('projectCommandsModal.deleteConfirm.message', { name: showDeleteConfirm.name })}
               </p>
 
               <div className="flex justify-end space-x-3">
                 <button
                   onClick={() => setShowDeleteConfirm(null)}
-                  className="px-4 py-2 text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors"
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg transition-colors"
                 >
                   {t('projectCommandsModal.deleteConfirm.cancel')}
                 </button>

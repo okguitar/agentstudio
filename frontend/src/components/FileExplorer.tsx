@@ -183,11 +183,11 @@ const Node: React.FC<{
   }, [node, onDirectoryToggle, onFileSelect]);
 
   return (
-    <div 
-      style={style} 
-      ref={dragHandle} 
-      className={`flex items-center cursor-pointer px-2 py-1 hover:bg-gray-100 ${
-        node.isSelected ? 'bg-blue-100 text-blue-900' : 'text-gray-700'
+    <div
+      style={style}
+      ref={dragHandle}
+      className={`flex items-center cursor-pointer px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700 ${
+        node.isSelected ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'
       }`}
       onClick={handleClick}
     >
@@ -211,10 +211,10 @@ const Node: React.FC<{
       
       {/* 文件/文件夹名称 */}
       <span className="text-sm truncate flex-1">{node.data.name}</span>
-      
+
       {/* 文件大小信息 - 只对文件显示 */}
       {!node.data.isDirectory && node.data.size && (
-        <span className="text-xs text-gray-400 ml-2">
+        <span className="text-xs text-gray-400 dark:text-gray-500 ml-2">
           {(node.data.size / 1024).toFixed(1)}KB
         </span>
       )}
@@ -691,9 +691,9 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
   const renderFilePreview = () => {
     if (!activeTab) {
       return (
-        <div className="flex items-center justify-center h-full text-gray-500">
+        <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
           <div className="text-center">
-            <FaFile className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+            <FaFile className="w-12 h-12 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
             <p>{t('fileExplorer.selectFile')}</p>
           </div>
         </div>
@@ -703,7 +703,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
     if (isContentLoading) {
       return (
         <div className="flex items-center justify-center h-full">
-          <div className="flex items-center space-x-2 text-gray-500">
+          <div className="flex items-center space-x-2 text-gray-500 dark:text-gray-400">
             <Loader2 className="w-5 h-5 animate-spin" />
             <span>{t('fileExplorer.loading')}</span>
           </div>
@@ -713,13 +713,13 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
 
     if (contentError) {
       return (
-        <div className="flex items-center justify-center h-full text-red-500">
+        <div className="flex items-center justify-center h-full text-red-500 dark:text-red-400">
           <div className="text-center">
             <p className="font-medium">{t('fileExplorer.loadFailed')}</p>
-            <p className="text-sm mt-2 bg-red-50 px-3 py-2 rounded border border-red-200">
+            <p className="text-sm mt-2 bg-red-50 dark:bg-red-900/30 px-3 py-2 rounded border border-red-200 dark:border-red-800">
               {(contentError as Error).message}
             </p>
-            <p className="text-xs mt-2 text-gray-500">
+            <p className="text-xs mt-2 text-gray-500 dark:text-gray-400">
               {activeTab.path}
             </p>
           </div>
@@ -746,7 +746,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
       case 'text':
         if (!fileContentData) {
           return (
-            <div className="flex items-center justify-center h-full text-gray-500">
+            <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
               <p>{t('fileExplorer.cannotReadFile')}</p>
             </div>
           );
@@ -769,9 +769,9 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
 
       default:
         return (
-          <div className="flex items-center justify-center h-full text-gray-500">
+          <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
             <div className="text-center">
-              <VscCode className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+              <VscCode className="w-12 h-12 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
               <p>{t('fileExplorer.previewNotSupported')}</p>
               <p className="text-sm mt-2">{t('fileExplorer.fileLabel')}: {activeTab.name}</p>
             </div>
@@ -782,13 +782,13 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
 
   if (treeError) {
     return (
-      <div className={`flex items-center justify-center h-full text-red-500 ${className}`} style={{ height }}>
+      <div className={`flex items-center justify-center h-full text-red-500 dark:text-red-400 ${className}`} style={{ height }}>
         <div className="text-center">
           <p className="font-medium">{t('fileExplorer.loadFailed')}</p>
-          <p className="text-sm mt-2 bg-red-50 px-3 py-2 rounded border border-red-200">
+          <p className="text-sm mt-2 bg-red-50 dark:bg-red-900/30 px-3 py-2 rounded border border-red-200 dark:border-red-800">
             {(treeError as Error).message}
           </p>
-          <p className="text-xs mt-2 text-gray-500">{t('fileExplorer.projectPath')}: {projectPath}</p>
+          <p className="text-xs mt-2 text-gray-500 dark:text-gray-400">{t('fileExplorer.projectPath')}: {projectPath}</p>
           <button
             onClick={() => refetchTree()}
             className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
@@ -801,16 +801,16 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
   }
 
   return (
-    <div className={`flex h-full bg-white border border-gray-200 rounded-lg overflow-hidden ${className}`}>
+    <div className={`flex h-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden ${className}`}>
         {/* 文件树侧边栏 */}
-      <div className="w-80 border-r border-gray-200 flex flex-col h-full">
+      <div className="w-80 border-r border-gray-200 dark:border-gray-700 flex flex-col h-full">
         {/* 工具栏 - 统一高度 */}
-        <div className="h-12 px-3 border-b border-gray-200 bg-gray-50 flex items-center flex-shrink-0">
+        <div className="h-12 px-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex items-center flex-shrink-0">
           <div className="flex items-center justify-between w-full">
-            <h3 className="text-sm font-medium text-gray-700">{t('fileExplorer.title')}</h3>
+            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('fileExplorer.title')}</h3>
             <button
               onClick={refreshFileTree}
-              className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded transition-colors"
+              className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
               title={t('common:actions.refresh')}
               disabled={isTreeLoading}
             >
@@ -823,13 +823,13 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
         <div ref={treeContainerRef} className="flex-1 min-h-0">
           {isTreeLoading ? (
             <div className="flex items-center justify-center h-32">
-              <div className="flex items-center space-x-2 text-gray-500">
+              <div className="flex items-center space-x-2 text-gray-500 dark:text-gray-400">
                 <Loader2 className="w-4 h-4 animate-spin" />
                 <span className="text-sm">{t('fileExplorer.loading')}</span>
               </div>
             </div>
           ) : treeData.length === 0 ? (
-            <div className="flex items-center justify-center h-32 text-gray-500">
+            <div className="flex items-center justify-center h-32 text-gray-500 dark:text-gray-400">
               <p className="text-sm">{t('fileExplorer.emptyDirectory')}</p>
             </div>
           ) : (
@@ -858,7 +858,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
       {/* 文件预览区域 */}
       <div className="flex-1 flex flex-col h-full">
         {/* 标签栏 - 统一高度 */}
-        <div className="h-12 border-b border-gray-200 bg-gray-50 flex items-center flex-shrink-0">
+        <div className="h-12 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex items-center flex-shrink-0">
           {tabs.length > 0 ? (
             <div className="flex items-center h-full w-full">
               {/* 显示可见的标签 */}
@@ -866,10 +866,10 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                 {tabs.slice(0, Math.min(MAX_VISIBLE_TABS, tabs.length)).map((tab) => (
                   <div
                     key={tab.id}
-                    className={`group relative flex items-center h-full px-3 border-r border-gray-200 cursor-pointer transition-colors ${
+                    className={`group relative flex items-center h-full px-3 border-r border-gray-200 dark:border-gray-700 cursor-pointer transition-colors ${
                       tab.isActive
-                        ? 'bg-white text-gray-900'
-                        : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                        ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white'
+                        : 'bg-gray-50 dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
                     } ${!tab.isPinned ? 'italic' : ''}`}
                     onClick={() => activateTab(tab.id)}
                     title={`${tab.path} ${tab.isPinned ? '(固定)' : '(临时)'}`}
@@ -878,10 +878,10 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                     <FileIcon node={{ data: { name: tab.name, isDirectory: false } as FileTreeItem, isOpen: false } as NodeApi<FileTreeItem>} />
                     <span className="ml-2 text-sm truncate flex-1">{tab.name}</span>
                     {!tab.isPinned && (
-                      <span className="ml-1 text-xs text-gray-400 flex-shrink-0">•</span>
+                      <span className="ml-1 text-xs text-gray-400 dark:text-gray-500 flex-shrink-0">•</span>
                     )}
                     <button
-                      className="ml-2 p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-gray-200 transition-opacity flex-shrink-0"
+                      className="ml-2 p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-gray-200 dark:hover:bg-gray-600 transition-opacity flex-shrink-0"
                       onClick={(e) => {
                         e.stopPropagation();
                         closeTab(tab.id);
@@ -898,7 +898,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
               {tabs.length > MAX_VISIBLE_TABS && (
                 <div className="relative" ref={tabDropdownRef}>
                   <button
-                    className="flex items-center h-full px-3 text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors border-l border-gray-200"
+                    className="flex items-center h-full px-3 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-colors border-l border-gray-200 dark:border-gray-700"
                     onClick={() => setShowTabDropdown(!showTabDropdown)}
                     title={`${tabs.length - MAX_VISIBLE_TABS} more tabs`}
                   >
@@ -908,12 +908,12 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
 
                   {/* 下拉菜单 */}
                   {showTabDropdown && (
-                    <div className="absolute top-full right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-48 max-h-64 overflow-y-auto">
+                    <div className="absolute top-full right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 min-w-48 max-h-64 overflow-y-auto">
                       {tabs.slice(MAX_VISIBLE_TABS).map((tab) => (
                         <div
                           key={tab.id}
-                          className={`flex items-center px-3 py-2 text-sm cursor-pointer hover:bg-gray-50 ${
-                            tab.isActive ? 'bg-blue-50 text-blue-900' : 'text-gray-700'
+                          className={`flex items-center px-3 py-2 text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 ${
+                            tab.isActive ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-900 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'
                           } ${!tab.isPinned ? 'italic' : ''}`}
                           onClick={() => {
                             activateTab(tab.id);
@@ -924,10 +924,10 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                           <FileIcon node={{ data: { name: tab.name, isDirectory: false } as FileTreeItem, isOpen: false } as NodeApi<FileTreeItem>} />
                           <span className="ml-2 truncate flex-1">{tab.name}</span>
                           {!tab.isPinned && (
-                            <span className="ml-1 text-xs text-gray-400 flex-shrink-0">•</span>
+                            <span className="ml-1 text-xs text-gray-400 dark:text-gray-500 flex-shrink-0">•</span>
                           )}
                           <button
-                            className="ml-2 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-gray-200 transition-opacity flex-shrink-0"
+                            className="ml-2 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-gray-200 dark:hover:bg-gray-600 transition-opacity flex-shrink-0"
                             onClick={(e) => {
                               e.stopPropagation();
                               closeTab(tab.id);
@@ -944,14 +944,14 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
               )}
             </div>
           ) : (
-            <div className="flex items-center justify-center w-full h-full text-gray-500">
+            <div className="flex items-center justify-center w-full h-full text-gray-500 dark:text-gray-400">
               <span className="text-sm">{t('fileExplorer.noFiles')}</span>
             </div>
           )}
         </div>
 
         {/* 预览内容 */}
-        <div className="flex-1 bg-white min-h-0">
+        <div className="flex-1 bg-white dark:bg-gray-800 min-h-0">
           {renderFilePreview()}
         </div>
       </div>

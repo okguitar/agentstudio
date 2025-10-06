@@ -212,22 +212,22 @@ export const SubagentForm: React.FC<SubagentFormProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
           <div className="flex items-center space-x-4">
-            <h2 className="text-xl font-semibold text-gray-900">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
               {isEditing ? t('subagentForm.title.edit') : t('subagentForm.title.create')}
             </h2>
             {/* Mode Switch */}
-            <div className="flex items-center bg-gray-100 rounded-lg p-1">
+            <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
               <button
                 type="button"
                 onClick={() => !isCodeMode || handleModeToggle()}
                 className={`flex items-center space-x-1 px-3 py-1.5 rounded-md text-sm transition-colors ${
                   !isCodeMode
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-white dark:bg-gray-800 text-blue-600 shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                 }`}
               >
                 <Edit3 className="h-4 w-4" />
@@ -238,8 +238,8 @@ export const SubagentForm: React.FC<SubagentFormProps> = ({
                 onClick={() => isCodeMode || handleModeToggle()}
                 className={`flex items-center space-x-1 px-3 py-1.5 rounded-md text-sm transition-colors ${
                   isCodeMode
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-white dark:bg-gray-800 text-blue-600 shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                 }`}
               >
                 <Code className="h-4 w-4" />
@@ -251,7 +251,7 @@ export const SubagentForm: React.FC<SubagentFormProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors"
+              className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
             >
               {t('subagentForm.actions.cancel')}
             </button>
@@ -279,22 +279,22 @@ export const SubagentForm: React.FC<SubagentFormProps> = ({
             {isCodeMode ? (
               /* Code Mode */
               <div className="space-y-4">
-                <div className="flex items-start space-x-2 p-3 bg-blue-50 rounded-lg">
-                  <Info className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                  <div className="text-sm text-blue-800">
+                <div className="flex items-start space-x-2 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+                  <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm text-blue-800 dark:text-blue-300">
                     <p className="font-medium">{t('subagentForm.codeMode.title')}</p>
                     <p>{t('subagentForm.codeMode.description')}</p>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     {t('subagentForm.codeMode.label')}
                   </label>
                   <textarea
                     value={rawContent}
                     onChange={(e) => setRawContent(e.target.value)}
-                    className="w-full h-96 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                    className="w-full h-96 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
                     placeholder={t('subagentForm.codeMode.placeholder')}
                   />
                 </div>
@@ -305,7 +305,7 @@ export const SubagentForm: React.FC<SubagentFormProps> = ({
                 {/* Basic Information */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       {t('subagentForm.fields.name.label')}
                       <HelpCircle className="inline h-4 w-4 ml-1 text-gray-400" />
                     </label>
@@ -313,8 +313,8 @@ export const SubagentForm: React.FC<SubagentFormProps> = ({
                       type="text"
                       value={formData.name}
                       onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        errors.name ? 'border-red-500' : 'border-gray-300'
+                      className={`w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        errors.name ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                       }`}
                       placeholder={t('subagentForm.fields.name.placeholder')}
                       disabled={isEditing}
@@ -328,13 +328,13 @@ export const SubagentForm: React.FC<SubagentFormProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       {t('subagentForm.fields.scope.label')}
                     </label>
                     <select
                       value={formData.scope}
                       onChange={(e) => setFormData(prev => ({ ...prev, scope: e.target.value as 'user' | 'project' } as SubagentCreate))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-100"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-100"
                       disabled
                     >
                       {projectId ? (
@@ -352,15 +352,15 @@ export const SubagentForm: React.FC<SubagentFormProps> = ({
 
                 {/* Description */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     {t('subagentForm.fields.description.label')}
                   </label>
                   <input
                     type="text"
                     value={formData.description}
                     onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors.description ? 'border-red-500' : 'border-gray-300'
+                    className={`w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      errors.description ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                     }`}
                     placeholder={t('subagentForm.fields.description.placeholder')}
                   />
@@ -374,21 +374,21 @@ export const SubagentForm: React.FC<SubagentFormProps> = ({
 
                 {/* Tools */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     {t('subagentForm.fields.tools.label')}
                   </label>
                   <div className="flex items-center space-x-2">
                     <button
                       type="button"
                       onClick={() => setShowToolSelector(!showToolSelector)}
-                      className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-sm"
+                      className="px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors text-sm"
                     >
                       {t('subagentForm.fields.tools.selectTools')}
                     </button>
 
                     {/* 显示工具数量详情 */}
                     {(selectedRegularTools.length > 0 || selectedMcpTools.length > 0) && (
-                      <span className="text-sm text-gray-600">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
                         {t('subagentForm.fields.tools.regularToolsCount', { count: selectedRegularTools.length })}
                         {selectedMcpTools.length > 0 && `, ${t('subagentForm.fields.tools.mcpToolsCount', { count: selectedMcpTools.length })}`}
                       </span>
@@ -422,21 +422,21 @@ export const SubagentForm: React.FC<SubagentFormProps> = ({
                       }}
                     />
                   </div>
-                  <p className="mt-1 text-sm text-gray-500">
+                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                     {t('subagentForm.fields.tools.hint')}
                   </p>
                 </div>
 
                 {/* System Prompt */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     {t('subagentForm.fields.content.label')}
                   </label>
                   <textarea
                     value={formData.content}
                     onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
-                    className={`w-full h-48 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y ${
-                      errors.content ? 'border-red-500' : 'border-gray-300'
+                    className={`w-full h-48 px-3 py-2 border rounded-lg dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y ${
+                      errors.content ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                     }`}
                     placeholder={t('subagentForm.fields.content.placeholder')}
                   />
@@ -452,8 +452,8 @@ export const SubagentForm: React.FC<SubagentFormProps> = ({
 
             {/* Submit error */}
             {errors.submit && (
-              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-600 flex items-center">
+              <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg">
+                <p className="text-sm text-red-600 dark:text-red-400 flex items-center">
                   <AlertCircle className="h-4 w-4 mr-2" />
                   {errors.submit}
                 </p>
