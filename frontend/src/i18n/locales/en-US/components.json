@@ -675,5 +675,18 @@
   "notebookReadTool": {
     "notebookPath": "Notebook path",
     "cellId": "Cell ID"
+  },
+  "recentActivity": {
+    "title": "Recent Activity",
+    "empty": "No recent activity",
+    "time": {
+      "justNow": "Just now",
+      "minutesAgo": "{{count}} minutes ago",
+      "minutesAgo_one": "{{count}} minute ago",
+      "hoursAgo": "{{count}} hours ago",
+      "hoursAgo_one": "{{count}} hour ago",
+      "daysAgo": "{{count}} days ago",
+      "daysAgo_one": "{{count}} day ago"
+    }
   }
 }

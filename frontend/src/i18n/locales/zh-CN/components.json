@@ -710,5 +710,15 @@
     "title": "已压缩上下文",
     "expand": "展开查看",
     "collapse": "收起"
+  },
+  "recentActivity": {
+    "title": "最近活动",
+    "empty": "暂无最近活动",
+    "time": {
+      "justNow": "刚刚",
+      "minutesAgo": "{{count}} 分钟前",
+      "hoursAgo": "{{count}} 小时前",
+      "daysAgo": "{{count}} 天前"
+    }
   }
 }
