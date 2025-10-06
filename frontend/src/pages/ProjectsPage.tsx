@@ -117,12 +117,12 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg w-full max-w-md mx-4">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">{t('projects.form.create')}</h2>
+      <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md mx-4">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{t('projects.form.create')}</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
           >
             <X className="w-5 h-5" />
           </button>
@@ -132,7 +132,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
           <div className="space-y-4">
             {/* Project Name */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {t('projects.form.nameRequired')}
               </label>
               <input
@@ -140,20 +140,20 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder={t('projects.form.namePlaceholder')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                 required
               />
             </div>
 
             {/* Agent Selection */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {t('projects.form.agentType')}
               </label>
               <select
                 value={formData.agentId}
                 onChange={(e) => setFormData({ ...formData, agentId: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                 required
               >
                 {agents.filter(agent => agent.enabled).map((agent) => (
@@ -163,12 +163,12 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
                 ))}
               </select>
               {selectedAgent && (
-                <div className="mt-2 p-3 bg-gray-50 rounded-lg">
+                <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                   <div className="flex items-center space-x-3">
                     <div className="text-2xl">{selectedAgent.ui.icon}</div>
                     <div>
-                      <div className="font-medium text-gray-900">{selectedAgent.name}</div>
-                      <div className="text-sm text-gray-600">{selectedAgent.description}</div>
+                      <div className="font-medium text-gray-900 dark:text-white">{selectedAgent.name}</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">{selectedAgent.description}</div>
                     </div>
                   </div>
                 </div>
@@ -177,7 +177,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
 
             {/* Project Directory */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {t('projects.form.directory')}
               </label>
               <div className="flex space-x-2">
@@ -185,25 +185,25 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
                   type="text"
                   value={formData.directory}
                   onChange={(e) => setFormData({ ...formData, directory: e.target.value })}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                 />
                 <button
                   type="button"
                   onClick={() => setShowFileBrowser(true)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
                   title={t('projects.form.directory')}
                 >
-                  <Folder className="w-4 h-4" />
+                  <Folder className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                 </button>
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 {t('projects.form.directoryNote')}
               </p>
             </div>
 
             {/* Description */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {t('projects.form.description')}
               </label>
               <textarea
@@ -211,7 +211,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder={t('projects.form.descriptionPlaceholder')}
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
               />
             </div>
           </div>
@@ -220,7 +220,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+              className="px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
             >
               {t('projects.form.cancel')}
             </button>
@@ -456,7 +456,7 @@ export const ProjectsPage: React.FC = () => {
       <div className="p-8 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <div className="text-gray-600">{t('projects.loading')}</div>
+          <div className="text-gray-600 dark:text-gray-400">{t('projects.loading')}</div>
         </div>
       </div>
     );
@@ -468,14 +468,14 @@ export const ProjectsPage: React.FC = () => {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">{t('projects.title')}</h1>
-            <p className="text-gray-600 mt-2">{t('projects.subtitle')}</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('projects.title')}</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-2">{t('projects.subtitle')}</p>
           </div>
         </div>
 
         {/* Search and Add Button */}
         <div className="flex items-center space-x-4">
-          <div className="flex-1 bg-white rounded-lg border border-gray-200 p-4">
+          <div className="flex-1 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
             <div className="flex items-center space-x-4">
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -484,15 +484,15 @@ export const ProjectsPage: React.FC = () => {
                   placeholder={t('projects.searchPlaceholder')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="pl-10 pr-4 py-2 w-full border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                 />
               </div>
               <div className="flex items-center space-x-2">
-                <span className="text-sm font-medium text-gray-700">{t('projects.table.agent')}:</span>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('projects.table.agent')}:</span>
                 <select
                   value={filterAgent}
                   onChange={(e) => setFilterAgent(e.target.value)}
-                  className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                 >
                   <option value="all">{t('projects.filter.all')}</option>
                   {enabledAgents.map(agent => (
@@ -516,12 +516,12 @@ export const ProjectsPage: React.FC = () => {
 
       {/* Projects Table */}
       {filteredProjects.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
+        <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
           <div className="text-6xl mb-4">📁</div>
-          <h3 className="text-xl font-medium text-gray-900 mb-2">
+          <h3 className="text-xl font-medium text-gray-900 dark:text-white mb-2">
             {t('projects.noProjects')}
           </h3>
-          <p className="text-gray-600 mb-6">
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
             {t('projects.selectType')}
           </p>
           {!searchQuery && filterAgent === 'all' && (
@@ -534,7 +534,7 @@ export const ProjectsPage: React.FC = () => {
           )}
         </div>
       ) : (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
@@ -560,9 +560,9 @@ export const ProjectsPage: React.FC = () => {
             </TableHeader>
             <TableBody>
               {filteredProjects.map((project, index) => (
-                <TableRow 
+                <TableRow
                   key={project.id + '-' + index}
-                  className="hover:bg-gray-50 transition-colors"
+                  className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                 >
                   <TableCell className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
@@ -571,20 +571,20 @@ export const ProjectsPage: React.FC = () => {
                         <div className="flex items-center space-x-2">
                           <button
                             onClick={() => handleOpenProject(project)}
-                            className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline cursor-pointer text-left"
+                            className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline cursor-pointer text-left"
                           >
                             {project.name}
                           </button>
                           <button
                             onClick={() => handleOpenProject(project)}
-                            className="text-gray-500 hover:text-gray-700 transition-colors"
+                            className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
                             title={t('projects.actions.open')}
                           >
                             <ExternalLink className="w-3 h-3" />
                           </button>
                         </div>
                         {project.description && (
-                          <div className="text-sm text-gray-500 truncate max-w-xs">
+                          <div className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-xs">
                             {project.description}
                           </div>
                         )}
@@ -607,20 +607,20 @@ export const ProjectsPage: React.FC = () => {
                     )}
                   </TableCell>
                   <TableCell className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center space-x-2 text-sm text-gray-500">
+                    <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
                       <Folder className="w-4 h-4" />
                       <span className="truncate max-w-sm" title={project.path}>
                         {project.path}
                       </span>
                     </div>
                   </TableCell>
-                  <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                     <div className="flex items-center space-x-1">
                       <Calendar className="w-4 h-4" />
                       <span>{formatRelativeTime(project.createdAt)}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                     <div className="flex items-center space-x-1">
                       <User className="w-4 h-4" />
                       <span>{formatRelativeTime(project.lastAccessed)}</span>
@@ -630,28 +630,28 @@ export const ProjectsPage: React.FC = () => {
                     <div className="flex items-center justify-end space-x-1">
                       <button
                         onClick={() => handleMemoryManagement(project)}
-                        className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
+                        className="p-1.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
                         title={t('components:projectMemory.title')}
                       >
                         <Brain className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => handleCommandManagement(project)}
-                        className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
+                        className="p-1.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
                         title={t('components:projectCommands.title')}
                       >
                         <Command className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => handleSubAgentManagement(project)}
-                        className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
+                        className="p-1.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
                         title={t('components:projectSubAgents.title')}
                       >
                         <Bot className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => handleDeleteProject(project)}
-                        className="p-1.5 text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                        className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/50 rounded-md transition-colors"
                         title={t('projects.actions.delete')}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -700,12 +700,12 @@ export const ProjectsPage: React.FC = () => {
       {/* Agent Selection Modal */}
       {agentSelectProject && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg w-full max-w-md mx-4">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">{t('projects.selectType')}</h2>
+          <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md mx-4">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{t('projects.selectType')}</h2>
               <button
                 onClick={() => setAgentSelectProject(null)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -713,7 +713,7 @@ export const ProjectsPage: React.FC = () => {
 
             <div className="p-6">
               <div className="mb-4">
-                <p className="text-sm text-gray-600 mb-4">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                   {t('projects.selectType')}
                 </p>
               </div>
@@ -723,13 +723,13 @@ export const ProjectsPage: React.FC = () => {
                   <button
                     key={agent.id}
                     onClick={() => handleAgentSelection(agent.id)}
-                    className="w-full p-4 text-left border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors"
+                    className="w-full p-4 text-left border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-300 dark:hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/50 transition-colors"
                   >
                     <div className="flex items-center space-x-3">
                       <div className="text-2xl">{agent.ui.icon}</div>
                       <div>
-                        <div className="font-medium text-gray-900">{agent.name}</div>
-                        <div className="text-sm text-gray-600">{agent.description}</div>
+                        <div className="font-medium text-gray-900 dark:text-white">{agent.name}</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-400">{agent.description}</div>
                       </div>
                     </div>
                   </button>
@@ -739,7 +739,7 @@ export const ProjectsPage: React.FC = () => {
               <div className="flex justify-end mt-6">
                 <button
                   onClick={() => setAgentSelectProject(null)}
-                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
                 >
                   {t('projects.form.cancel')}
                 </button>

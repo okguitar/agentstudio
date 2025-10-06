@@ -246,8 +246,8 @@ export const VersionSettingsPage: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('settings.version.title')}</h2>
-          <p className="text-gray-600">{t('settings.version.subtitle')}</p>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{t('settings.version.title')}</h2>
+          <p className="text-gray-600 dark:text-gray-400">{t('settings.version.subtitle')}</p>
         </div>
         <button
           onClick={handleCreate}
@@ -260,16 +260,16 @@ export const VersionSettingsPage: React.FC = () => {
 
       {/* 隐藏原有的当前版本功能 */}
       {false && (
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
         <div className="space-y-6">
           {/* Header with refresh button */}
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900">{t('settings.version.currentVersion.title')}</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('settings.version.currentVersion.title')}</h3>
             <div className="flex space-x-2">
               <button
                 onClick={loadVersions}
                 disabled={isLoadingVersions}
-                className="flex items-center space-x-1 px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                className="flex items-center space-x-1 px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 disabled:opacity-50"
               >
                 <RefreshCw className={`w-4 h-4 ${isLoadingVersions ? 'animate-spin' : ''}`} />
                 <span>{isLoadingVersions ? t('settings.version.currentVersion.checking') : t('settings.version.currentVersion.checkVersion')}</span>
@@ -281,12 +281,12 @@ export const VersionSettingsPage: React.FC = () => {
           {versions ? (
             <div className="space-y-4">
               {/* Claude Code */}
-              <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+              <div className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
                 <div className="flex items-center space-x-3">
                   <Terminal className="w-8 h-8 text-blue-600" />
                   <div>
-                    <h5 className="font-medium text-gray-900">Claude Code</h5>
-                    <p className="text-sm text-gray-500">{t('settings.version.currentVersion.claudeDesc')}</p>
+                    <h5 className="font-medium text-gray-900 dark:text-white">Claude Code</h5>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('settings.version.currentVersion.claudeDesc')}</p>
                   </div>
                 </div>
                 <div className="text-right">
@@ -319,14 +319,14 @@ export const VersionSettingsPage: React.FC = () => {
               </div>
 
               {/* Node.js */}
-              <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+              <div className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
                 <div className="flex items-center space-x-3">
                   <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
                     <span className="text-green-600 font-bold text-xs">JS</span>
                   </div>
                   <div>
-                    <h5 className="font-medium text-gray-900">Node.js</h5>
-                    <p className="text-sm text-gray-500">{t('settings.version.currentVersion.nodejsDesc')}</p>
+                    <h5 className="font-medium text-gray-900 dark:text-white">Node.js</h5>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('settings.version.currentVersion.nodejsDesc')}</p>
                   </div>
                 </div>
                 <div className="text-right">
@@ -360,23 +360,23 @@ export const VersionSettingsPage: React.FC = () => {
                 };
 
                 const icon = getManagerIcon(manager);
-                
+
                 return (
-                  <div key={manager} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                  <div key={manager} className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
                     <div className="flex items-center space-x-3">
                       <div className={`w-8 h-8 ${icon.bg} rounded-lg flex items-center justify-center`}>
                         <span className={`${icon.text} font-bold text-xs`}>{icon.label}</span>
                       </div>
                       <div>
                         <div className="flex items-center space-x-2">
-                          <h5 className="font-medium text-gray-900">{manager}</h5>
+                          <h5 className="font-medium text-gray-900 dark:text-white">{manager}</h5>
                           {isPreferred && (
                             <span className="px-2 py-0.5 text-xs bg-green-100 text-green-800 rounded-full">
                               {t('settings.version.currentVersion.preferred')}
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-gray-500">{t('settings.version.currentVersion.packageManager')}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{t('settings.version.currentVersion.packageManager')}</p>
                       </div>
                     </div>
                     <div className="text-right">
@@ -394,14 +394,14 @@ export const VersionSettingsPage: React.FC = () => {
               })}
 
               {/* Last checked */}
-              <div className="text-xs text-gray-500 text-center">
+              <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
                 {t('settings.version.currentVersion.lastChecked')}: {new Date(versions.lastChecked).toLocaleString()}
               </div>
             </div>
           ) : (
-            <div className="flex items-center justify-center h-32 text-gray-500">
+            <div className="flex items-center justify-center h-32 text-gray-500 dark:text-gray-400">
               <div className="text-center">
-                <Terminal className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                <Terminal className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
                 <p>{t('settings.version.currentVersion.clickToCheck')}</p>
               </div>
             </div>
@@ -424,7 +424,7 @@ export const VersionSettingsPage: React.FC = () => {
                     {updateResult.message}
                   </p>
                   {updateResult.output && (
-                    <pre className="text-xs mt-2 p-2 bg-gray-100 rounded overflow-auto max-h-32">
+                    <pre className="text-xs mt-2 p-2 bg-gray-100 dark:bg-gray-700 rounded overflow-auto max-h-32">
                       {updateResult.output}
                     </pre>
                   )}
@@ -433,7 +433,7 @@ export const VersionSettingsPage: React.FC = () => {
             </div>
           )}
 
-          <div className="text-xs text-gray-500 space-y-1">
+          <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
             <p>• {t('settings.version.currentVersion.info1')}</p>
             <p>• {t('settings.version.currentVersion.info2')}</p>
             <p>• {t('settings.version.currentVersion.info3')}</p>
@@ -445,7 +445,7 @@ export const VersionSettingsPage: React.FC = () => {
       )}
 
       {/* Claude版本管理 */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
         <div className="space-y-6">
 
           {/* 版本列表 */}
@@ -460,21 +460,21 @@ export const VersionSettingsPage: React.FC = () => {
                   key={version.id}
                   className={`p-4 border rounded-lg ${
                     version.id === claudeVersionsData.defaultVersionId
-                      ? 'border-blue-200 bg-blue-50'
-                      : 'border-gray-200 bg-gray-50'
+                      ? 'border-blue-200 bg-blue-50 dark:border-blue-700 dark:bg-blue-900/20'
+                      : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50'
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3">
-                        <h4 className="font-medium text-gray-900 flex items-center space-x-2">
+                        <h4 className="font-medium text-gray-900 dark:text-white flex items-center space-x-2">
                           <span>{version.name}</span>
-                          <span className="text-sm font-normal text-gray-500">({version.alias})</span>
+                          <span className="text-sm font-normal text-gray-500 dark:text-gray-400">({version.alias})</span>
                           {version.isSystem && (
-                            <span className="px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded">{t('settings.version.systemLabel')}</span>
+                            <span className="px-2 py-1 text-xs bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded">{t('settings.version.systemLabel')}</span>
                           )}
                           {version.id === claudeVersionsData.defaultVersionId && (
-                            <span className="px-2 py-1 text-xs bg-blue-200 text-blue-700 rounded flex items-center space-x-1">
+                            <span className="px-2 py-1 text-xs bg-blue-200 dark:bg-blue-700 text-blue-700 dark:text-blue-200 rounded flex items-center space-x-1">
                               <Star className="w-3 h-3" />
                               <span>{t('settings.version.defaultLabel')}</span>
                             </span>
@@ -482,19 +482,19 @@ export const VersionSettingsPage: React.FC = () => {
                         </h4>
                       </div>
                       {version.description && (
-                        <p className="text-sm text-gray-600 mt-1">{version.description}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{version.description}</p>
                       )}
-                      <p className="text-sm text-gray-500 mt-1">
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                         <span className="font-medium">{t('settings.version.pathLabel')}:</span> {version.executablePath}
                       </p>
                       {version.environmentVariables && Object.keys(version.environmentVariables).length > 0 && (
                         <div className="mt-2">
-                          <span className="text-sm font-medium text-gray-700">{t('settings.version.envVarsLabel')}:</span>
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('settings.version.envVarsLabel')}:</span>
                           <div className="flex flex-wrap gap-2 mt-1">
                             {Object.entries(version.environmentVariables).map(([key, value]) => (
                               <span
                                 key={key}
-                                className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded"
+                                className="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded"
                               >
                                 {key}={value}
                               </span>
@@ -507,7 +507,7 @@ export const VersionSettingsPage: React.FC = () => {
                       {version.id !== claudeVersionsData.defaultVersionId && (
                         <button
                           onClick={() => handleSetDefault(version)}
-                          className="p-2 text-gray-500 hover:text-yellow-600 rounded-lg hover:bg-yellow-50 transition-colors"
+                          className="p-2 text-gray-500 dark:text-gray-400 hover:text-yellow-600 rounded-lg hover:bg-yellow-50 dark:hover:bg-yellow-900/20 transition-colors"
                           title={t('settings.version.setAsDefault')}
                         >
                           <StarOff className="w-4 h-4" />
@@ -517,14 +517,14 @@ export const VersionSettingsPage: React.FC = () => {
                         <>
                           <button
                             onClick={() => handleEdit(version)}
-                            className="p-2 text-gray-500 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
+                            className="p-2 text-gray-500 dark:text-gray-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
                             title={t('settings.version.edit')}
                           >
                             <Edit className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDelete(version)}
-                            className="p-2 text-gray-500 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                            className="p-2 text-gray-500 dark:text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                             title={t('settings.version.delete')}
                           >
                             <Trash2 className="w-4 h-4" />
@@ -537,8 +537,8 @@ export const VersionSettingsPage: React.FC = () => {
               ))}
             </div>
           ) : (
-            <div className="text-center py-8 text-gray-500">
-              <Settings className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+              <Settings className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
               <p>{t('settings.version.noVersions')}</p>
               <p className="text-sm">{t('settings.version.clickToAddFirst')}</p>
             </div>
@@ -550,15 +550,15 @@ export const VersionSettingsPage: React.FC = () => {
       {/* 创建/编辑版本模态窗口 */}
       {(isCreating || editingVersion) && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] mx-4 flex flex-col">
+          <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-2xl max-h-[90vh] mx-4 flex flex-col">
             {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                 {editingVersion ? t('settings.version.form.editTitle') : t('settings.version.form.createTitle')}
               </h3>
               <button
                 onClick={handleCancel}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -569,44 +569,44 @@ export const VersionSettingsPage: React.FC = () => {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       {t('settings.version.form.versionName')} <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
                       value={formData.name || ''}
                       onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder={t('settings.version.form.versionNamePlaceholder')}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       {t('settings.version.form.alias')} <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
                       value={formData.alias || ''}
                       onChange={(e) => setFormData(prev => ({ ...prev, alias: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder={t('settings.version.form.aliasPlaceholder')}
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('settings.version.form.description')}</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('settings.version.form.description')}</label>
                   <textarea
                     value={formData.description || ''}
                     onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                     rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder={t('settings.version.form.descriptionPlaceholder')}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     {t('settings.version.form.executablePath')} <span className="text-red-500">*</span>
                   </label>
                   <div className="flex space-x-2">
@@ -614,29 +614,29 @@ export const VersionSettingsPage: React.FC = () => {
                       type="text"
                       value={formData.executablePath || ''}
                       onChange={(e) => setFormData(prev => ({ ...prev, executablePath: e.target.value }))}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder={t('settings.version.form.executablePathPlaceholder')}
                     />
                     <button
                       onClick={selectExecutablePath}
-                      className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                      className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                       title={t('settings.version.form.browseFile')}
                     >
-                      <FolderOpen className="w-4 h-4" />
+                      <FolderOpen className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                     </button>
                   </div>
                 </div>
 
                 {/* 环境变量 */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('settings.version.form.envVars')}</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('settings.version.form.envVars')}</label>
                   <div className="space-y-3">
                     {/* 现有环境变量 */}
                     {formData.environmentVariables && Object.keys(formData.environmentVariables).length > 0 && (
                       <div className="space-y-2">
                         {Object.entries(formData.environmentVariables).map(([key, value]) => (
-                          <div key={key} className="flex items-center space-x-2 p-2 bg-gray-50 rounded">
-                            <span className="flex-1 text-sm">
+                          <div key={key} className="flex items-center space-x-2 p-2 bg-gray-50 dark:bg-gray-700 rounded">
+                            <span className="flex-1 text-sm text-gray-900 dark:text-white">
                               <span className="font-medium">{key}</span> = {value}
                             </span>
                             <button
@@ -649,21 +649,21 @@ export const VersionSettingsPage: React.FC = () => {
                         ))}
                       </div>
                     )}
-                    
+
                     {/* 添加新环境变量 */}
                     <div className="flex space-x-2">
                       <input
                         type="text"
                         value={envVarInput.key}
                         onChange={(e) => setEnvVarInput(prev => ({ ...prev, key: e.target.value }))}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder={t('settings.version.form.varName')}
                       />
                       <input
                         type="text"
                         value={envVarInput.value}
                         onChange={(e) => setEnvVarInput(prev => ({ ...prev, value: e.target.value }))}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder={t('settings.version.form.varValue')}
                       />
                       <button
@@ -681,10 +681,10 @@ export const VersionSettingsPage: React.FC = () => {
             </div>
 
             {/* Footer */}
-            <div className="flex justify-end space-x-3 p-6 border-t border-gray-200">
+            <div className="flex justify-end space-x-3 p-6 border-t border-gray-200 dark:border-gray-700">
               <button
                 onClick={handleCancel}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
               >
                 {t('settings.version.form.cancel')}
               </button>

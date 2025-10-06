@@ -236,7 +236,7 @@ export const AgentsPage: React.FC = () => {
       <div className="p-8 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <div className="text-gray-600">{t('agents.loading')}</div>
+          <div className="text-gray-600 dark:text-gray-400">{t('agents.loading')}</div>
         </div>
       </div>
     );
@@ -248,14 +248,14 @@ export const AgentsPage: React.FC = () => {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">{t('agents.title')}</h1>
-            <p className="text-gray-600 mt-2">{t('agents.subtitle')}</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('agents.title')}</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-2">{t('agents.subtitle')}</p>
           </div>
         </div>
 
         {/* Search and Add Button */}
         <div className="flex items-center space-x-4">
-          <div className="flex-1 bg-white rounded-lg border border-gray-200 p-4">
+          <div className="flex-1 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
             <div className="flex items-center space-x-4">
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -264,11 +264,11 @@ export const AgentsPage: React.FC = () => {
                   placeholder={t('agents.searchPlaceholder')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="pl-10 pr-4 py-2 w-full border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                 />
               </div>
               {/* Filter Tabs */}
-              <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
+              <div className="flex space-x-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
                 {[
                   { key: 'all', label: t('agents.filter.all'), count: agents.length },
                   { key: 'enabled', label: t('agents.filter.enabled'), count: agents.filter(a => a.enabled).length },
@@ -279,8 +279,8 @@ export const AgentsPage: React.FC = () => {
                     onClick={() => setFilter(tab.key as any)}
                     className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
                       filter === tab.key
-                        ? 'bg-white text-blue-700 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
+                        ? 'bg-white dark:bg-gray-600 text-blue-700 dark:text-blue-400 shadow-sm'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                     }`}
                   >
                     {tab.label} ({tab.count})
@@ -301,12 +301,12 @@ export const AgentsPage: React.FC = () => {
 
       {/* Agents Table */}
       {filteredAgents.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
+        <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
           <div className="text-6xl mb-4">🤖</div>
-          <h3 className="text-xl font-medium text-gray-900 mb-2">
+          <h3 className="text-xl font-medium text-gray-900 dark:text-white mb-2">
             {searchQuery ? t('agents.noAgentsSearch') : t('agents.noAgents')}
           </h3>
-          <p className="text-gray-600 mb-6">
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
             {searchQuery ? t('agents.adjustSearch') : t('agents.createFirst')}
           </p>
           {!searchQuery && (
@@ -319,7 +319,7 @@ export const AgentsPage: React.FC = () => {
           )}
         </div>
       ) : (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
@@ -345,7 +345,7 @@ export const AgentsPage: React.FC = () => {
             </TableHeader>
             <TableBody>
               {filteredAgents.map((agent) => (
-                <TableRow key={agent.id} className="hover:bg-gray-50 transition-colors">
+                <TableRow key={agent.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                   {/* Agent */}
                   <TableCell className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
@@ -354,12 +354,12 @@ export const AgentsPage: React.FC = () => {
                       </div>
                       <div>
                         <div className={`text-sm font-medium ${
-                          agent.enabled ? 'text-gray-900' : 'text-gray-600'
+                          agent.enabled ? 'text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'
                         }`}>
                           {agent.name}
                         </div>
                         <div className={`text-sm ${
-                          agent.enabled ? 'text-gray-500' : 'text-gray-400'
+                          agent.enabled ? 'text-gray-500 dark:text-gray-400' : 'text-gray-400 dark:text-gray-500'
                         }`}>
                           {agent.description}
                         </div>
@@ -380,7 +380,7 @@ export const AgentsPage: React.FC = () => {
                   </TableCell>
 
                   {/* Configuration */}
-                  <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                     <div className="space-y-1">
                       <div className="flex items-center">
                         <Settings className="w-3 h-3 mr-1 text-gray-400" />
@@ -399,7 +399,7 @@ export const AgentsPage: React.FC = () => {
                   </TableCell>
 
                   {/* Tools */}
-                  <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                     <div className="flex items-center">
                       <Tag className="w-3 h-3 mr-1 text-gray-400" />
                       <span>{agent.allowedTools?.length || 0} 个工具</span>
@@ -440,8 +440,8 @@ export const AgentsPage: React.FC = () => {
                         onClick={() => handleToggleEnabled(agent)}
                         className={`p-1 rounded transition-colors ${
                           agent.enabled
-                            ? 'text-green-600 hover:bg-green-50'
-                            : 'text-gray-400 hover:bg-gray-100'
+                            ? 'text-green-600 hover:bg-green-50 dark:hover:bg-green-900/50'
+                            : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
                         }`}
                         title={agent.enabled ? '禁用助手' : '启用助手'}
                       >
@@ -449,14 +449,14 @@ export const AgentsPage: React.FC = () => {
                       </button>
                       <button
                         onClick={() => handleEdit(agent)}
-                        className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                        className="p-1 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/50 rounded transition-colors"
                         title="编辑助手"
                       >
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDelete(agent)}
-                        className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                        className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/50 rounded transition-colors"
                         title="删除助手"
                         disabled={agent.id === 'ppt-editor' || agent.id === 'code-assistant' || agent.id === 'document-writer'}
                       >
@@ -474,10 +474,10 @@ export const AgentsPage: React.FC = () => {
       {/* Agent Edit/Create Modal */}
       {(editingAgent || isCreating) && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
             {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h1 className="text-xl font-semibold text-gray-900">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+              <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
                 {isCreating ? '创建助手' : `编辑助手：${editingAgent?.name}`}
               </h1>
               <div className="flex items-center space-x-2">
@@ -496,7 +496,7 @@ export const AgentsPage: React.FC = () => {
                     setIsCreating(false);
                     setSaveError(null);
                   }}
-                  className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                  className="flex items-center space-x-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
                 >
                   <X className="w-4 h-4" />
                   <span>取消</span>
@@ -506,7 +506,7 @@ export const AgentsPage: React.FC = () => {
 
             {/* Error Message */}
             {saveError && (
-              <div className="p-4 bg-red-50 border-b border-red-200">
+              <div className="p-4 bg-red-50 dark:bg-red-900/50 border-b border-red-200 dark:border-red-800">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
                     <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
@@ -514,7 +514,7 @@ export const AgentsPage: React.FC = () => {
                     </svg>
                   </div>
                   <div className="ml-3">
-                    <p className="text-sm text-red-800">{saveError}</p>
+                    <p className="text-sm text-red-800 dark:text-red-200">{saveError}</p>
                   </div>
                 </div>
               </div>
@@ -527,22 +527,22 @@ export const AgentsPage: React.FC = () => {
                   {/* Basic Info */}
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">名称</label>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">名称</label>
                       <input
                         type="text"
                         value={editForm.name || ''}
                         onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                       />
                     </div>
-                    
+
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">描述</label>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">描述</label>
                       <textarea
                         value={editForm.description || ''}
                         onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
                         rows={6}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                       />
                     </div>
                   </div>
@@ -550,7 +550,7 @@ export const AgentsPage: React.FC = () => {
                   {/* Advanced Settings */}
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">最大轮次</label>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">最大轮次</label>
                       <input
                         type="number"
                         min="1"
@@ -568,23 +568,23 @@ export const AgentsPage: React.FC = () => {
                             }
                           }
                         }}
-                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
+                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 dark:bg-gray-700 dark:text-white ${
                           editForm.maxTurns !== undefined && (editForm.maxTurns < 1 || editForm.maxTurns > 100)
                             ? 'border-red-500 focus:ring-red-500'
-                            : 'border-gray-300 focus:ring-blue-500'
+                            : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'
                         }`}
                       />
                       {editForm.maxTurns !== undefined && (editForm.maxTurns < 1 || editForm.maxTurns > 100) && (
-                        <p className="text-red-500 text-sm mt-1">最大轮次必须在1-100之间</p>
+                        <p className="text-red-500 dark:text-red-400 text-sm mt-1">最大轮次必须在1-100之间</p>
                       )}
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">权限模式</label>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">权限模式</label>
                       <select
                         value={editForm.permissionMode || 'default'}
                         onChange={(e) => setEditForm({ ...editForm, permissionMode: e.target.value as any })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                       >
                         <option value="default">默认</option>
                         <option value="acceptEdits">自动接受编辑</option>
@@ -596,29 +596,29 @@ export const AgentsPage: React.FC = () => {
                     {/* Icon and Color */}
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">图标</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">图标</label>
                         <input
                           type="text"
                           value={editForm.ui?.icon || ''}
-                          onChange={(e) => setEditForm({ 
-                            ...editForm, 
+                          onChange={(e) => setEditForm({
+                            ...editForm,
                             ui: { ...editForm.ui, icon: e.target.value } as any
                           })}
                           placeholder="🤖"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                         />
                       </div>
-                      
+
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">主题颜色</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">主题颜色</label>
                         <input
                           type="color"
                           value={editForm.ui?.primaryColor || '#3B82F6'}
-                          onChange={(e) => setEditForm({ 
-                            ...editForm, 
+                          onChange={(e) => setEditForm({
+                            ...editForm,
                             ui: { ...editForm.ui, primaryColor: e.target.value } as any
                           })}
-                          className="w-full h-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full h-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
                         />
                       </div>
                     </div>
@@ -627,24 +627,24 @@ export const AgentsPage: React.FC = () => {
 
                 {/* 工具选择 */}
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">启用的工具</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">启用的工具</label>
                   <div className="flex items-center space-x-2">
                     <button
                       type="button"
                       onClick={() => setShowToolSelector(!showToolSelector)}
-                      className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-sm"
+                      className="px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors text-sm"
                     >
                       选择工具
                     </button>
-                    
+
                     {/* 显示工具数量详情 */}
                     {(selectedRegularTools.length > 0 || selectedMcpTools.length > 0) && (
-                      <span className="text-sm text-gray-600">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
                         常规工具 {selectedRegularTools.length} 个
                         {selectedMcpTools.length > 0 && `, MCP工具 ${selectedMcpTools.length} 个`}
                       </span>
                     )}
-                    
+
                     {/* 工具选择器弹窗 */}
                     <UnifiedToolSelector
                       isOpen={showToolSelector}
@@ -661,12 +661,12 @@ export const AgentsPage: React.FC = () => {
 
                 {/* System Prompt */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">系统提示词</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">系统提示词</label>
                   <textarea
                     value={editForm.systemPrompt || ''}
                     onChange={(e) => setEditForm({ ...editForm, systemPrompt: e.target.value })}
                     rows={8}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm dark:bg-gray-700 dark:text-white"
                     placeholder="输入助手的系统提示词..."
                   />
                 </div>

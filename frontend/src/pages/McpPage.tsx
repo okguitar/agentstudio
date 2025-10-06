@@ -414,7 +414,7 @@ export const McpPage: React.FC = () => {
       <div className="p-8 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <div className="text-gray-600">{t('mcp.loading')}</div>
+          <div className="text-gray-600 dark:text-gray-400">{t('mcp.loading')}</div>
         </div>
       </div>
     );
@@ -426,14 +426,14 @@ export const McpPage: React.FC = () => {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">{t('mcp.title')}</h1>
-            <p className="text-gray-600 mt-2">{t('mcp.subtitle')}</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('mcp.title')}</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-2">{t('mcp.subtitle')}</p>
           </div>
         </div>
 
         {/* Search and Add Button */}
         <div className="flex items-center space-x-4">
-          <div className="flex-1 bg-white rounded-lg border border-gray-200 p-4">
+          <div className="flex-1 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
@@ -441,7 +441,7 @@ export const McpPage: React.FC = () => {
                 placeholder={t('mcp.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="pl-10 pr-4 py-2 w-full border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
               />
             </div>
           </div>
@@ -463,12 +463,12 @@ export const McpPage: React.FC = () => {
 
       {/* Servers Table */}
       {filteredServers.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
+        <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
           <div className="text-6xl mb-4">🖥️</div>
-          <h3 className="text-xl font-medium text-gray-900 mb-2">
+          <h3 className="text-xl font-medium text-gray-900 dark:text-white mb-2">
             {debouncedSearchQuery ? t('mcp.noResults') : t('mcp.noServers')}
           </h3>
-          <p className="text-gray-600 mb-6">
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
             {debouncedSearchQuery ? t('mcp.adjustSearch') : t('mcp.addFirstServer')}
           </p>
           {!debouncedSearchQuery && (
@@ -481,7 +481,7 @@ export const McpPage: React.FC = () => {
           )}
         </div>
       ) : (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
@@ -504,25 +504,25 @@ export const McpPage: React.FC = () => {
             </TableHeader>
             <TableBody>
               {filteredServers.map((server, index) => (
-                <TableRow 
+                <TableRow
                   key={server.name + '-' + index}
-                  className="hover:bg-gray-50 transition-colors"
+                  className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                 >
                   <TableCell className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="text-xl mr-3">{server.type === 'http' ? '🌐' : '🖥️'}</div>
                       <div>
-                        <div className="text-sm font-medium text-gray-900">
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">
                           {server.name}
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
                           {server.type === 'stdio'
                             ? `${server.command} ${server.args?.join(' ') || ''}`.trim()
                             : server.url
                           }
                         </div>
                         {server.status === 'error' && server.error && (
-                          <div className="text-sm text-red-600 truncate max-w-xs">
+                          <div className="text-sm text-red-600 dark:text-red-400 truncate max-w-xs">
                             {server.error}
                           </div>
                         )}
@@ -567,13 +567,13 @@ export const McpPage: React.FC = () => {
                   <TableCell className="px-6 py-4">
                     {server.status === 'active' && server.tools && server.tools.length > 0 ? (
                       <div>
-                        <div className="flex items-center space-x-1 text-sm text-gray-500 mb-1">
+                        <div className="flex items-center space-x-1 text-sm text-gray-500 dark:text-gray-400 mb-1">
                           <Tag className="w-3 h-3" />
                           <span>{t('mcp.table.toolsCount', { count: server.tools.length })}</span>
                         </div>
                         <div className="flex flex-wrap gap-1">
                           {server.tools.map((tool, idx) => (
-                            <code key={idx} className="bg-green-50 text-green-700 px-1.5 py-0.5 rounded text-xs">
+                            <code key={idx} className="bg-green-50 dark:bg-green-900/50 text-green-700 dark:text-green-400 px-1.5 py-0.5 rounded text-xs">
                               {tool}
                             </code>
                           ))}
@@ -590,7 +590,7 @@ export const McpPage: React.FC = () => {
                       <button
                         onClick={() => validateMcpServer(server.name)}
                         disabled={server.status === 'validating'}
-                        className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-600 bg-green-50 rounded-md hover:bg-green-100 transition-colors disabled:opacity-50"
+                        className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-600 bg-green-50 dark:bg-green-900/50 rounded-md hover:bg-green-100 dark:hover:bg-green-900/70 transition-colors disabled:opacity-50"
                         title={t('mcp.actions.validate')}
                       >
                         {server.status === 'validating' ? (
@@ -601,7 +601,7 @@ export const McpPage: React.FC = () => {
                       </button>
                       <button
                         onClick={() => handleEditServer(server)}
-                        className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors"
+                        className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 dark:bg-blue-900/50 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/70 transition-colors"
                         title={t('mcp.actions.edit')}
                       >
                         <Edit className="w-3 h-3 mr-1" />
@@ -609,7 +609,7 @@ export const McpPage: React.FC = () => {
                       </button>
                       <button
                         onClick={() => handleDeleteServer(server.name)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/50 rounded-lg transition-colors"
                         title={t('mcp.actions.delete')}
                       >
                         <Trash2 className="w-4 h-4" />
@@ -626,10 +626,10 @@ export const McpPage: React.FC = () => {
       {/* Add Server Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-gray-900">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                   {editingServer ? t('mcp.modal.editTitle') : t('mcp.modal.addTitle')}
                 </h2>
                 <div className="flex space-x-3">
@@ -637,7 +637,7 @@ export const McpPage: React.FC = () => {
                     type="button"
                     onClick={closeModal}
                     disabled={isSubmitting}
-                    className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                    className="px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
                   >
                     {t('common:actions.cancel')}
                   </button>
@@ -656,7 +656,7 @@ export const McpPage: React.FC = () => {
                 <div className="space-y-6">
                   {/* Service Name */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       {t('mcp.form.serverName')}
                     </label>
                     <input
@@ -664,18 +664,18 @@ export const McpPage: React.FC = () => {
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       placeholder={t('mcp.form.serverNamePlaceholder')}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                       required
                       disabled={!!editingServer}
                     />
                     {editingServer && (
-                      <p className="text-xs text-gray-500 mt-1">{t('mcp.form.nameNotEditable')}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('mcp.form.nameNotEditable')}</p>
                     )}
                   </div>
 
                   {/* MCP Type */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       {t('mcp.form.mcpType')}
                     </label>
                     <select
@@ -709,20 +709,20 @@ export const McpPage: React.FC = () => {
 }`
                         });
                       }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                       required
                     >
                       <option value="stdio">{t('mcp.form.stdioOption')}</option>
                       <option value="http">{t('mcp.form.httpOption')}</option>
                     </select>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                       {t('mcp.form.selectConnectionType')}
                     </p>
                   </div>
 
                   {/* Configuration JSON */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       {t('mcp.form.configuration')}
                     </label>
                     <textarea
@@ -751,11 +751,11 @@ export const McpPage: React.FC = () => {
   ]
 }`}
                       rows={15}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm dark:bg-gray-700 dark:text-white"
                       required
                     />
                     {formData.config && !validateConfig(formData.config, formData.type) && (
-                      <p className="text-xs text-red-600 mt-1">
+                      <p className="text-xs text-red-600 dark:text-red-400 mt-1">
                         {t('mcp.form.configFormatError', {
                           fields: formData.type === 'stdio'
                             ? t('mcp.form.requiredFieldsStdio')
@@ -763,7 +763,7 @@ export const McpPage: React.FC = () => {
                         })}
                       </p>
                     )}
-                    <div className="mt-2 text-xs text-gray-500">
+                    <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
                       <p><strong>{t('mcp.form.requiredFields')}</strong></p>
                       <ul className="list-disc ml-4 mt-1">
                         <li><code>type</code>: {t('mcp.form.typeField')}</li>

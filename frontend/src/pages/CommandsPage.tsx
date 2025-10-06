@@ -67,7 +67,7 @@ export const CommandsPage: React.FC = () => {
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600">{t('commands.loading')}</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">{t('commands.loading')}</p>
         </div>
       </div>
     );
@@ -79,7 +79,7 @@ export const CommandsPage: React.FC = () => {
         <div className="text-center">
           <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
           <p className="text-red-600 text-lg mb-2">{t('commands.error.loadFailed')}</p>
-          <p className="text-gray-600 mb-4">{t('commands.error.cannotLoadCommands')}</p>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">{t('commands.error.cannotLoadCommands')}</p>
           <button
             onClick={() => refetch()}
             className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors"
@@ -97,14 +97,14 @@ export const CommandsPage: React.FC = () => {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">{t('commands.title')}</h1>
-            <p className="text-gray-600 mt-2">{t('commands.subtitle')}</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('commands.title')}</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-2">{t('commands.subtitle')}</p>
           </div>
         </div>
 
         {/* Search and Add Button */}
         <div className="flex items-center space-x-4">
-          <div className="flex-1 bg-white rounded-lg border border-gray-200 p-4">
+          <div className="flex-1 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
             <div className="flex items-center space-x-4">
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -113,10 +113,10 @@ export const CommandsPage: React.FC = () => {
                   placeholder={t('commands.searchPlaceholder')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="pl-10 pr-4 py-2 w-full border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                 />
               </div>
-              
+
             </div>
           </div>
           <button
@@ -134,12 +134,12 @@ export const CommandsPage: React.FC = () => {
 
       {/* Commands Table */}
       {filteredCommands.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
+        <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
           <div className="text-6xl mb-4">⚡</div>
-          <h3 className="text-xl font-medium text-gray-900 mb-2">
+          <h3 className="text-xl font-medium text-gray-900 dark:text-white mb-2">
             {searchTerm ? t('commands.empty.noMatchingCommands') : t('commands.empty.noCommands')}
           </h3>
-          <p className="text-gray-600 mb-6">
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
             {searchTerm
               ? t('commands.empty.adjustSearch')
               : t('commands.empty.createFirst')
@@ -158,7 +158,7 @@ export const CommandsPage: React.FC = () => {
           )}
         </div>
       ) : (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
@@ -183,24 +183,24 @@ export const CommandsPage: React.FC = () => {
               {filteredCommands.map((command, index) => {
                 // const ScopeIcon = getScopeIcon(command.scope);
                 return (
-                  <TableRow 
+                  <TableRow
                     key={command.id + '-' + index}
-                    className="hover:bg-gray-50 transition-colors"
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                   >
                     <TableCell className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="text-xl mr-3">⚡</div>
                         <div>
-                          <div className="text-sm font-medium text-gray-900">
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">
                             {command.namespace ? `/${command.namespace}:${command.name}` : `/${command.name}`}
                             {command.argumentHint && (
-                              <code className="ml-2 bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded text-xs">
+                              <code className="ml-2 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 px-1.5 py-0.5 rounded text-xs">
                                 {command.argumentHint}
                               </code>
                             )}
                           </div>
                           {command.description && (
-                            <div className="text-sm text-gray-500 truncate max-w-xs">
+                            <div className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-xs">
                               {command.description}
                             </div>
                           )}
@@ -209,34 +209,34 @@ export const CommandsPage: React.FC = () => {
                     </TableCell>
                     <TableCell className="px-6 py-4">
                       {command.model ? (
-                        <div className="text-sm text-gray-900">
+                        <div className="text-sm text-gray-900 dark:text-white">
                           <Code className="w-3 h-3 inline mr-1" />
                           {command.model}
                         </div>
                       ) : (
-                        <span className="text-sm text-gray-500">{t('commands.table.inheritSettings')}</span>
+                        <span className="text-sm text-gray-500 dark:text-gray-400">{t('commands.table.inheritSettings')}</span>
                       )}
                     </TableCell>
                     <TableCell className="px-6 py-4">
                       {command.allowedTools && command.allowedTools.length > 0 ? (
                         <div>
-                          <div className="flex items-center space-x-1 text-sm text-gray-500 mb-1">
+                          <div className="flex items-center space-x-1 text-sm text-gray-500 dark:text-gray-400 mb-1">
                             <Tag className="w-3 h-3" />
                             <span>{t('commands.table.toolsCount', { count: command.allowedTools.length })}</span>
                           </div>
                           <div className="flex flex-wrap gap-1">
                             {command.allowedTools.map((tool, idx) => (
-                              <code key={idx} className="bg-green-50 text-green-700 px-1.5 py-0.5 rounded text-xs">
+                              <code key={idx} className="bg-green-50 dark:bg-green-900/50 text-green-700 dark:text-green-400 px-1.5 py-0.5 rounded text-xs">
                                 {getToolDisplayName(tool)}
                               </code>
                             ))}
                           </div>
                         </div>
                       ) : (
-                        <span className="text-sm text-gray-500">{t('commands.table.inheritSettings')}</span>
+                        <span className="text-sm text-gray-500 dark:text-gray-400">{t('commands.table.inheritSettings')}</span>
                       )}
                     </TableCell>
-                    <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       <div className="flex items-center space-x-1">
                         <Clock className="w-4 h-4" />
                         <span>{formatRelativeTime(command.createdAt || command.updatedAt)}</span>
@@ -249,7 +249,7 @@ export const CommandsPage: React.FC = () => {
                             setEditingCommand(command);
                             setShowForm(true);
                           }}
-                          className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors"
+                          className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 dark:bg-blue-900/50 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/70 transition-colors"
                           title={t('commands.actions.editCommand')}
                         >
                           <Edit className="w-3 h-3 mr-1" />
@@ -257,7 +257,7 @@ export const CommandsPage: React.FC = () => {
                         </button>
                         <button
                           onClick={() => setShowDeleteConfirm(command)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/50 rounded-lg transition-colors"
                           title={t('commands.actions.deleteCommand')}
                         >
                           <Trash2 className="w-4 h-4" />
@@ -290,24 +290,24 @@ export const CommandsPage: React.FC = () => {
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
             <div className="flex items-center space-x-3 mb-4">
               <div className="flex-shrink-0">
                 <AlertCircle className="h-6 w-6 text-red-600" />
               </div>
               <div className="flex-1">
-                <h3 className="text-lg font-medium text-gray-900">{t('commands.delete.title')}</h3>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">{t('commands.delete.title')}</h3>
               </div>
             </div>
 
-            <p className="text-gray-600 mb-6">
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
               {t('commands.delete.confirmMessage', { name: showDeleteConfirm.name })}
             </p>
 
             <div className="flex justify-end space-x-3">
               <button
                 onClick={() => setShowDeleteConfirm(null)}
-                className="px-4 py-2 text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors"
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg transition-colors"
               >
                 {t('commands.delete.cancel')}
               </button>

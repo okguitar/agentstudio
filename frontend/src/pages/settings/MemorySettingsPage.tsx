@@ -59,23 +59,23 @@ export const MemorySettingsPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('settings.memorySettings.title')}</h2>
-        <p className="text-gray-600">{t('settings.memorySettings.description')}</p>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{t('settings.memorySettings.title')}</h2>
+        <p className="text-gray-600 dark:text-gray-400">{t('settings.memorySettings.description')}</p>
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
         <div className="space-y-6">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
             {t('settings.memorySettings.fileSourceInfo')}
           </p>
-          
+
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <label className="block font-medium text-gray-900">{t('settings.memorySettings.memoryContent')}</label>
+              <label className="block font-medium text-gray-900 dark:text-white">{t('settings.memorySettings.memoryContent')}</label>
               <div className="flex space-x-2">
                 <button
                   onClick={() => setIsEditingMemory(!isEditingMemory)}
-                  className="flex items-center space-x-1 px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
+                  className="flex items-center space-x-1 px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50"
                 >
                   <Edit className="w-4 h-4" />
                   <span>{isEditingMemory ? t('settings.memorySettings.cancelEdit') : t('settings.memorySettings.edit')}</span>
@@ -83,27 +83,27 @@ export const MemorySettingsPage: React.FC = () => {
                 <button
                   onClick={loadGlobalMemory}
                   disabled={isLoadingMemory}
-                  className="flex items-center space-x-1 px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                  className="flex items-center space-x-1 px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 disabled:opacity-50"
                 >
                   <FileText className="w-4 h-4" />
                   <span>{isLoadingMemory ? t('settings.memorySettings.refreshing') : t('settings.memorySettings.refresh')}</span>
                 </button>
               </div>
             </div>
-            
+
             {isEditingMemory ? (
               <div className="space-y-3">
                 <textarea
                   value={globalMemory}
                   onChange={(e) => setGlobalMemory(e.target.value)}
                   rows={20}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
                   placeholder={t('settings.memorySettings.placeholder')}
                 />
                 <div className="flex justify-end space-x-2">
                   <button
                     onClick={() => setIsEditingMemory(false)}
-                    className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
+                    className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300"
                   >
                     {t('settings.memorySettings.cancel')}
                   </button>
@@ -117,19 +117,19 @@ export const MemorySettingsPage: React.FC = () => {
                 </div>
               </div>
             ) : (
-              <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 min-h-[300px]">
+              <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-700/50 min-h-[300px]">
                 {isLoadingMemory ? (
                   <div className="flex items-center justify-center h-64">
-                    <div className="text-gray-500">{t('settings.memorySettings.loading')}</div>
+                    <div className="text-gray-500 dark:text-gray-400">{t('settings.memorySettings.loading')}</div>
                   </div>
                 ) : globalMemory ? (
-                  <pre className="text-sm text-gray-700 whitespace-pre-wrap font-mono">
+                  <pre className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-mono">
                     {globalMemory}
                   </pre>
                 ) : (
-                  <div className="flex items-center justify-center h-64 text-gray-500">
+                  <div className="flex items-center justify-center h-64 text-gray-500 dark:text-gray-400">
                     <div className="text-center">
-                      <Brain className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                      <Brain className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
                       <p>{t('settings.memorySettings.noMemory')}</p>
                       <p className="text-xs mt-1">{t('settings.memorySettings.clickEditToStart')}</p>
                     </div>
@@ -137,8 +137,8 @@ export const MemorySettingsPage: React.FC = () => {
                 )}
               </div>
             )}
-            
-            <div className="text-xs text-gray-500 space-y-1">
+
+            <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
               <p>• {t('settings.memorySettings.infoAutoLoad')}</p>
               <p>• {t('settings.memorySettings.infoSuggestions')}</p>
               <p>• {t('settings.memorySettings.infoFileLocation')}</p>
