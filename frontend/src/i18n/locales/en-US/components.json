@@ -687,6 +687,36 @@
     "notebookPath": "Notebook path",
     "cellId": "Cell ID"
   },
+  "agentChatPanel": {
+    "send": "Send",
+    "stop": "Stop",
+    "sendMessage": "Send message",
+    "stopGeneration": "Stop generation",
+    "aiTyping": "AI is typing",
+    "noContentToSend": "No content to send",
+    "unknownCommand": "Unknown command",
+    "errors": {
+      "jsonParseError": "An error occurred while parsing response data. This may be caused by network interruption or abnormal server response format.\n\n**Suggested Actions:**\n- Check network connection\n- Resend message\n- Contact administrator if the issue persists",
+      "timeoutError": "Request processing timeout. Server response time is too long.\n\n**Suggested Actions:**\n- Simplify request content\n- Try again later\n- Check network connection status",
+      "suggestedActions": "Suggested Actions",
+      "resendMessage": "Resend message",
+      "refreshPage": "Refresh page and retry",
+      "unknownError": "Unknown error",
+      "networkError": "❌ **Network Connection Error**\n\nUnable to connect to AI service. Please check your network connection and try again.",
+      "requestTimeout": "⏰ **Request Timeout**\n\nRequest processing time is too long. Please try again later.",
+      "rateLimit": "🚫 **Rate Limit**\n\nToo many requests. Please try again later.",
+      "unauthorized": "🔐 **Authentication Failed**\n\nPlease check your API key configuration.",
+      "forbidden": "⛔ **Permission Denied**\n\nNo permission to perform this operation.",
+      "internalServerError": "🔧 **Internal Server Error**\n\nThe server encountered a problem. Please try again later.",
+      "processingError": "Processing Error",
+      "unknownErrorRetry": "Unknown error. Please try again later.",
+      "connectionFailed": "❌ **Connection Failed**\n\nUnable to connect to AI service. Please check your network connection and try again.",
+      "networkConnectionFailed": "🌐 **Network Connection Failed**\n\nUnable to connect to server. Please check your network connection.",
+      "connectionTimeout": "⏰ **Connection Timeout**\n\nConnection to server timed out. Please try again later.",
+      "connectionError": "Connection Error",
+      "cannotConnectRetry": "Unable to connect to AI service. Please try again later."
+    }
+  },
   "recentActivity": {
     "title": "Recent Activity",
     "empty": "No recent activity",

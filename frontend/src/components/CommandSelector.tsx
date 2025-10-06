@@ -151,7 +151,7 @@ export const CommandSelector: React.FC<CommandSelectorProps> = ({
   return (
     <div
       ref={containerRef}
-      className="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-lg min-w-72 max-w-96 overflow-hidden"
+      className="fixed z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg min-w-72 max-w-96 overflow-hidden"
       style={{
         bottom: window.innerHeight - position.top + fixedGap, // Fixed distance from input
         left: position.left,
@@ -162,7 +162,7 @@ export const CommandSelector: React.FC<CommandSelectorProps> = ({
         {allCommands.map((command, index) => {
           const isSystem = 'isSystem' in command;
           const isSelected = index === selectedIndex;
-          
+
           // Format display name for custom commands with namespace
           const getDisplayName = () => {
             if (isSystem) {
@@ -174,28 +174,28 @@ export const CommandSelector: React.FC<CommandSelectorProps> = ({
             }
             return command.name;
           };
-          
+
           return (
             <div
               key={command.id}
               data-index={index}
-              className={`px-4 py-3 cursor-pointer flex items-center border-b border-gray-100 last:border-b-0 ${
-                isSelected 
-                  ? 'bg-blue-50 border-blue-200' 
-                  : 'hover:bg-gray-50'
+              className={`px-4 py-3 cursor-pointer flex items-center border-b border-gray-100 dark:border-gray-700 last:border-b-0 ${
+                isSelected
+                  ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700'
+                  : 'hover:bg-gray-50 dark:hover:bg-gray-700'
               }`}
               onClick={() => onSelect(command)}
               onMouseEnter={() => onSelectedIndexChange?.(index)}
             >
               <div className="flex-1 min-w-0">
                 <div className={`text-sm font-medium truncate ${
-                  isSelected ? 'text-blue-900' : 'text-gray-900'
+                  isSelected ? 'text-blue-900 dark:text-blue-300' : 'text-gray-900 dark:text-gray-100'
                 }`}>
                   {getDisplayName()}
                 </div>
                 {command.description && (
                   <div className={`text-xs truncate ${
-                    isSelected ? 'text-blue-700' : 'text-gray-500'
+                    isSelected ? 'text-blue-700 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'
                   }`}>
                     {command.description}
                   </div>
