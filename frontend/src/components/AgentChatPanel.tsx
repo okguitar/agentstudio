@@ -1262,8 +1262,8 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
               )}
             </h1>
             <p className="text-sm opacity-90 truncate">
-              {currentSessionId ? 
-                (sessionsData?.sessions?.find((s: any) => s.id === currentSessionId)?.title || '当前会话') : 
+              {currentSessionId ?
+                (sessionsData?.sessions?.find((s: any) => s.id === currentSessionId)?.title || t('agentChat.currentSession')) :
                 agent.ui.headerDescription
               }
             </p>
@@ -1272,7 +1272,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
             <button
               onClick={handleNewSession}
               className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-              title="新建会话"
+              title={t('agentChat.newSession')}
             >
               <Plus className="w-5 h-5" />
             </button>
@@ -1280,7 +1280,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
               <button
                 onClick={() => setShowSessions(!showSessions)}
                 className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-                title="会话历史"
+                title={t('agentChat.sessionHistory')}
               >
                 <Clock className="w-5 h-5" />
               </button>
@@ -1340,14 +1340,14 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
                 <div key={img.id} className="relative group">
                   <img
                     src={img.preview}
-                    alt="预览"
+                    alt={t('agentChat.imagePreview')}
                     className="w-16 h-16 object-cover rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer hover:opacity-80 transition-opacity"
                     onClick={() => handleImagePreview(img.preview)}
                   />
                   <button
                     onClick={() => handleImageRemove(img.id)}
                     className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs hover:bg-red-600"
-                    title="删除图片"
+                    title={t('agentChat.deleteImage')}
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -1362,7 +1362,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
           <div className="absolute inset-0 bg-blue-100 dark:bg-blue-900/50 bg-opacity-75 flex items-center justify-center z-10 pointer-events-none">
             <div className="text-blue-600 dark:text-blue-300 text-lg font-medium flex items-center space-x-2">
               <Image className="w-6 h-6" />
-              <span>拖放图片到这里</span>
+              <span>{t('agentChat.dropImageHere')}</span>
             </div>
           </div>
         )}
@@ -1431,7 +1431,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
                       ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50'
                       : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                   }`}
-                  title="工具选择"
+                  title={t('agentChat.toolSelection')}
                   disabled={isAiTyping}
                 >
                   <Wrench className="w-4 h-4" />
@@ -1467,7 +1467,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
                       ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50'
                       : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                   }`}
-                  title={`选择图片${selectedImages.length > 0 ? ` (已选择${selectedImages.length}张)` : ''}`}
+                  title={selectedImages.length > 0 ? t('agentChat.imageSelection') + ` (${t('agentChat.selectedCount', { count: selectedImages.length })})` : t('agentChat.imageSelection')}
                   disabled={isAiTyping}
                 >
                   <Image className="w-4 h-4" />
