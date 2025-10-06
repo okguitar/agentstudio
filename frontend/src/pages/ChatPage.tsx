@@ -98,10 +98,10 @@ export const ChatPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <div className="text-gray-600">{t('chat.loading')}</div>
+          <div className="text-gray-600 dark:text-gray-400">{t('chat.loading')}</div>
         </div>
       </div>
     );
@@ -109,11 +109,11 @@ export const ChatPage: React.FC = () => {
 
   if (error || !agent) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center max-w-md">
           <div className="text-6xl mb-6">❌</div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">{t('chat.agentNotFound')}</h1>
-          <p className="text-gray-600 mb-6">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">{t('chat.agentNotFound')}</h1>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
             {t('chat.agentNotFoundDesc')}
           </p>
           <button
@@ -129,11 +129,11 @@ export const ChatPage: React.FC = () => {
 
   if (!agent.enabled) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center max-w-md">
           <div className="text-6xl mb-6 opacity-50">{agent.ui.icon}</div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">{t('chat.agentDisabled')}</h1>
-          <p className="text-gray-600 mb-6">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">{t('chat.agentDisabled')}</h1>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
             {t('chat.agentDisabledDesc', { name: agent.name })}
           </p>
           <div className="flex space-x-4 justify-center">
@@ -180,9 +180,9 @@ export const ChatPage: React.FC = () => {
   };
 
   return (
-    <div className="h-screen bg-gray-100">
+    <div className="h-screen bg-gray-100 dark:bg-gray-900">
       {renderLayout()}
-      
+
       {/* Project Selection Modal - Only show when no project is selected */}
       {showProjectSelector && agent && (
         <ProjectSelector

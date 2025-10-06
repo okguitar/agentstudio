@@ -1244,10 +1244,10 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
   }, []);
 
   return (
-    <div className="flex flex-col h-full bg-white">
+    <div className="flex flex-col h-full bg-white dark:bg-gray-900">
       {/* Header */}
-      <div 
-        className="px-5 py-4 border-b border-gray-200 text-white"
+      <div
+        className="px-5 py-4 border-b border-gray-200 dark:border-gray-700 text-white"
         style={{ background: `linear-gradient(135deg, ${agent.ui.primaryColor}, ${agent.ui.primaryColor}dd)` }}
       >
         <div className="flex items-center justify-between min-h-[60px]">
@@ -1305,43 +1305,43 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
       <div className="flex-1 px-5 py-5 overflow-y-auto space-y-4">
         {/* Welcome message */}
         <div className="px-4">
-          <div className="text-sm leading-relaxed break-words overflow-hidden text-gray-600">
+          <div className="text-sm leading-relaxed break-words overflow-hidden text-gray-600 dark:text-gray-400">
             {agent.ui.welcomeMessage || agent.description}
           </div>
         </div>
-        
+
         {renderedMessages}
-        
+
         {isAiTyping && (
           <div className="flex justify-center py-2">
             <div className="flex space-x-1">
-              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+              <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce"></div>
+              <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+              <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
             </div>
           </div>
         )}
-        
+
         <div ref={messagesEndRef} />
       </div>
 
       {/* Input Area */}
-        <div 
-          className={`border-t border-gray-200 ${isDragOver ? 'bg-blue-50 border-blue-300' : ''}`}
+        <div
+          className={`border-t border-gray-200 dark:border-gray-700 ${isDragOver ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700' : ''}`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
         >
         {/* Selected Images Preview */}
         {selectedImages.length > 0 && (
-          <div className="p-4 pb-2 border-b border-gray-100">
+          <div className="p-4 pb-2 border-b border-gray-100 dark:border-gray-700">
             <div className="flex flex-wrap gap-2">
               {selectedImages.map((img) => (
                 <div key={img.id} className="relative group">
                   <img
                     src={img.preview}
                     alt="预览"
-                    className="w-16 h-16 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity"
+                    className="w-16 h-16 object-cover rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer hover:opacity-80 transition-opacity"
                     onClick={() => handleImagePreview(img.preview)}
                   />
                   <button
@@ -1359,8 +1359,8 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
 
         {/* Drag Over Indicator */}
         {isDragOver && (
-          <div className="absolute inset-0 bg-blue-100 bg-opacity-75 flex items-center justify-center z-10 pointer-events-none">
-            <div className="text-blue-600 text-lg font-medium flex items-center space-x-2">
+          <div className="absolute inset-0 bg-blue-100 dark:bg-blue-900/50 bg-opacity-75 flex items-center justify-center z-10 pointer-events-none">
+            <div className="text-blue-600 dark:text-blue-300 text-lg font-medium flex items-center space-x-2">
               <Image className="w-6 h-6" />
               <span>拖放图片到这里</span>
             </div>
@@ -1370,14 +1370,14 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
         {/* Command Warning */}
         {commandWarning && (
           <div className="px-4 pt-3 pb-2">
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start space-x-2">
+            <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-3 flex items-start space-x-2">
               <div className="flex-shrink-0">
-                <svg className="w-5 h-5 text-red-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                 </svg>
               </div>
               <div className="flex-1">
-                <p className="text-sm text-red-800">{commandWarning}</p>
+                <p className="text-sm text-red-800 dark:text-red-300">{commandWarning}</p>
               </div>
             </div>
           </div>
@@ -1398,8 +1398,8 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
                 : t('agentChat.inputPlaceholder')
             }
             rows={1}
-            className="w-full resize-none border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 disabled:bg-gray-50 disabled:text-gray-500"
-            style={{ 
+            className="w-full resize-none border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 disabled:bg-gray-50 dark:disabled:bg-gray-700 disabled:text-gray-500 dark:disabled:text-gray-400"
+            style={{
               '--focus-ring-color': agent.ui.primaryColor,
               minHeight: '44px',
               maxHeight: '120px'
@@ -1407,9 +1407,9 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
             disabled={isAiTyping}
           />
         </div>
-        
+
         {/* Toolbar */}
-        <div className="px-4 pb-4 pt-2 border-t border-gray-100">
+        <div className="px-4 pb-4 pt-2 border-t border-gray-100 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-1">
               {/* Hidden file input */}
@@ -1428,18 +1428,18 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
                   onClick={() => setShowToolSelector(!showToolSelector)}
                   className={`p-2 transition-colors rounded-lg ${
                     showToolSelector || (selectedRegularTools.length > 0 || selectedMcpTools.length > 0)
-                      ? 'text-blue-600 bg-blue-50 hover:bg-blue-100'
-                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                      ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50'
+                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                   }`}
                   title="工具选择"
                   disabled={isAiTyping}
                 >
                   <Wrench className="w-4 h-4" />
                 </button>
-                
+
                 {/* 显示工具数量标识 */}
                 {(selectedRegularTools.length > 0 || (mcpToolsEnabled && selectedMcpTools.length > 0)) && (
-                  <span className="absolute -top-1 -right-1 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center bg-blue-600">
+                  <span className="absolute -top-1 -right-1 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center bg-blue-600 dark:bg-blue-500">
                     {selectedRegularTools.length + (mcpToolsEnabled ? selectedMcpTools.filter(t => t.startsWith('mcp__') && t.split('__').length === 3).length : 0)}
                   </span>
                 )}
@@ -1464,8 +1464,8 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
                   onClick={() => fileInputRef.current?.click()}
                   className={`p-2 transition-colors rounded-lg ${
                     selectedImages.length > 0
-                      ? 'text-blue-600 bg-blue-50 hover:bg-blue-100'
-                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                      ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50'
+                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                   }`}
                   title={`选择图片${selectedImages.length > 0 ? ` (已选择${selectedImages.length}张)` : ''}`}
                   disabled={isAiTyping}
@@ -1473,7 +1473,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
                   <Image className="w-4 h-4" />
                 </button>
                 {selectedImages.length > 0 && (
-                  <span className="absolute -top-1 -right-1 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center bg-blue-600">
+                  <span className="absolute -top-1 -right-1 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center bg-blue-600 dark:bg-blue-500">
                     {selectedImages.length}
                   </span>
                 )}
@@ -1487,8 +1487,8 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
                   onClick={() => setShowPermissionDropdown(!showPermissionDropdown)}
                   className={`flex items-center space-x-1 px-3 py-2 text-sm rounded-lg transition-colors ${
                     permissionMode !== 'default'
-                      ? 'text-blue-600 bg-blue-50 hover:bg-blue-100'
-                      : 'text-gray-600 bg-gray-50 hover:bg-gray-100'
+                      ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50'
+                      : 'text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600'
                   }`}
                   disabled={isAiTyping}
                 >
@@ -1498,7 +1498,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
                 </button>
 
                 {showPermissionDropdown && (
-                  <div className="absolute bottom-full left-0 mb-2 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                  <div className="absolute bottom-full left-0 mb-2 w-32 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
                     {[
                       { value: 'default', label: t('agentChat.permissionMode.default') },
                       { value: 'acceptEdits', label: t('agentChat.permissionMode.acceptEdits') },
@@ -1511,8 +1511,8 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
                           setPermissionMode(option.value as any);
                           setShowPermissionDropdown(false);
                         }}
-                        className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg ${
-                          permissionMode === option.value ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                        className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 first:rounded-t-lg last:rounded-b-lg ${
+                          permissionMode === option.value ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'
                         }`}
                       >
                         {option.label}
@@ -1528,8 +1528,8 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
                   onClick={() => setShowModelDropdown(!showModelDropdown)}
                   className={`flex items-center space-x-1 px-3 py-2 text-sm rounded-lg transition-colors ${
                     selectedModel === 'opus'
-                      ? 'text-purple-600 bg-purple-50 hover:bg-purple-100'
-                      : 'text-gray-600 bg-gray-50 hover:bg-gray-100'
+                      ? 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 dark:hover:bg-purple-900/50'
+                      : 'text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600'
                   }`}
                   disabled={isAiTyping}
                 >
@@ -1539,7 +1539,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
                 </button>
 
                 {showModelDropdown && (
-                  <div className="absolute bottom-full left-0 mb-2 w-24 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                  <div className="absolute bottom-full left-0 mb-2 w-24 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
                     {[
                       { value: 'sonnet', label: t('agentChat.model.sonnet') },
                       { value: 'opus', label: t('agentChat.model.opus') }
@@ -1550,10 +1550,10 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
                           setSelectedModel(option.value as any);
                           setShowModelDropdown(false);
                         }}
-                        className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg ${
-                          selectedModel === option.value 
-                            ? (option.value === 'opus' ? 'bg-purple-50 text-purple-600' : 'bg-gray-100 text-gray-700')
-                            : 'text-gray-700'
+                        className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 first:rounded-t-lg last:rounded-b-lg ${
+                          selectedModel === option.value
+                            ? (option.value === 'opus' ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300')
+                            : 'text-gray-700 dark:text-gray-300'
                         }`}
                       >
                         {option.label}
@@ -1570,8 +1570,8 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
                     onClick={() => setShowVersionDropdown(!showVersionDropdown)}
                     className={`flex items-center space-x-1 px-3 py-2 text-sm rounded-lg transition-colors ${
                       selectedClaudeVersion
-                        ? 'text-green-600 bg-green-50 hover:bg-green-100'
-                        : 'text-gray-600 bg-gray-50 hover:bg-gray-100'
+                        ? 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-900/50'
+                        : 'text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600'
                     }`}
                     disabled={isAiTyping}
                     title={t('agentChat.claudeVersion.title')}
@@ -1587,15 +1587,15 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
                   </button>
 
                   {showVersionDropdown && (
-                    <div className="absolute bottom-full left-0 mb-2 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                    <div className="absolute bottom-full left-0 mb-2 w-32 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
                       {/* 默认版本选项 */}
                       <button
                         onClick={() => {
                           setSelectedClaudeVersion(undefined);
                           setShowVersionDropdown(false);
                         }}
-                        className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 first:rounded-t-lg ${
-                          !selectedClaudeVersion ? 'bg-gray-100 text-gray-700' : 'text-gray-700'
+                        className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 first:rounded-t-lg ${
+                          !selectedClaudeVersion ? 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300' : 'text-gray-700 dark:text-gray-300'
                         }`}
                       >
                         {t('agentChat.claudeVersion.default')}
@@ -1611,16 +1611,16 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
                               setSelectedClaudeVersion(version.id);
                               setShowVersionDropdown(false);
                             }}
-                            className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 last:rounded-b-lg ${
+                            className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 last:rounded-b-lg ${
                               selectedClaudeVersion === version.id
-                                ? 'bg-green-50 text-green-600'
-                                : 'text-gray-700'
+                                ? 'bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400'
+                                : 'text-gray-700 dark:text-gray-300'
                             }`}
                           >
                             <div className="flex items-center space-x-2">
                               <span>{version.name}</span>
                               {version.isSystem && (
-                                <span className="text-xs text-gray-500">({t('agentChat.claudeVersion.system')})</span>
+                                <span className="text-xs text-gray-500 dark:text-gray-400">({t('agentChat.claudeVersion.system')})</span>
                               )}
                             </div>
                           </button>
