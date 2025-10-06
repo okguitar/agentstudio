@@ -64,21 +64,21 @@ export const SlidePreviewPanel: React.FC<AgentPanelProps> = ({ projectPath }) =>
   const slides = slidesData?.slides || [];
 
   return (
-    <div className="flex flex-col h-full bg-gray-50">
+    <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-900">
       {/* Header - matching height with left panel */}
-      <div className="px-5 py-4 bg-white border-b border-gray-200">
+      <div className="px-5 py-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <div className="flex flex-col">
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center space-x-3">
-              <h2 className="text-lg font-semibold text-gray-800">{t('slidePreview.title')}</h2>
-              <span className="text-sm text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-white">{t('slidePreview.title')}</h2>
+              <span className="text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded">
                 {slidesData?.title || 'Presentation'}
               </span>
             </div>
             <button
               onClick={handleRefresh}
               disabled={isLoading}
-              className="flex items-center space-x-1 px-3 py-1.5 text-sm bg-blue-50 hover:bg-blue-100 text-blue-600 hover:text-blue-700 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center space-x-1 px-3 py-1.5 text-sm bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               title={t('slidePreview.refreshTitle')}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -87,7 +87,7 @@ export const SlidePreviewPanel: React.FC<AgentPanelProps> = ({ projectPath }) =>
               <span>{t('slidePreview.refresh')}</span>
             </button>
           </div>
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-gray-600 dark:text-gray-400">
             {t('slidePreview.slideCount', { count: slides.length })}
           </div>
         </div>
@@ -96,7 +96,7 @@ export const SlidePreviewPanel: React.FC<AgentPanelProps> = ({ projectPath }) =>
       {/* Slides List */}
       <div className="flex-1 overflow-y-auto">
         {slides.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-gray-500 p-5">
+          <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400 p-5">
             <div className="text-lg mb-2">{t('slidePreview.noSlides')}</div>
             <div className="text-sm">{t('slidePreview.createWithAI')}</div>
           </div>

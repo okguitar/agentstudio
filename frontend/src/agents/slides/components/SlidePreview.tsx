@@ -147,9 +147,9 @@ export const SlidePreview = forwardRef<SlidePreviewRef, SlidePreviewProps>(({ sl
   }, [viewMode]);
   
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
       {/* Header with tabs and page indicator */}
-      <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+      <div className="px-4 py-3 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
         <div className="flex items-center justify-between">
           {/* Tab buttons */}
           <div className="flex space-x-1">
@@ -157,8 +157,8 @@ export const SlidePreview = forwardRef<SlidePreviewRef, SlidePreviewProps>(({ sl
               onClick={() => setViewMode('preview')}
               className={`flex items-center space-x-2 px-3 py-1.5 text-sm rounded-md transition-colors ${
                 viewMode === 'preview'
-                  ? 'bg-blue-100 text-blue-700 border border-blue-200'
-                  : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                  ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700'
+                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-600'
               }`}
             >
               <Eye className="w-4 h-4" />
@@ -168,17 +168,17 @@ export const SlidePreview = forwardRef<SlidePreviewRef, SlidePreviewProps>(({ sl
               onClick={() => setViewMode('code')}
               className={`flex items-center space-x-2 px-3 py-1.5 text-sm rounded-md transition-colors ${
                 viewMode === 'code'
-                  ? 'bg-blue-100 text-blue-700 border border-blue-200'
-                  : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                  ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700'
+                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-600'
               }`}
             >
               <Code className="w-4 h-4" />
               <span>{t('slidePreview.tabs.code')}</span>
             </button>
           </div>
-          
+
           {/* Page indicator */}
-          <div className="text-sm text-gray-500 font-medium">
+          <div className="text-sm text-gray-500 dark:text-gray-400 font-medium">
             {slide.index + 1}/{totalSlides}
           </div>
         </div>
@@ -188,25 +188,25 @@ export const SlidePreview = forwardRef<SlidePreviewRef, SlidePreviewProps>(({ sl
       <div className="p-4">
         {viewMode === 'preview' ? (
           // Preview mode - iframe with 1280:720 aspect ratio and proper scaling
-          <div 
+          <div
             ref={containerRef}
-            className="relative w-full bg-gray-100 rounded-lg overflow-hidden" 
+            className="relative w-full bg-gray-100 dark:bg-gray-900 rounded-lg overflow-hidden"
             style={{ aspectRatio: `${aspectRatio}` }}
           >
             {isLoading && (
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-sm text-gray-500">{t('slidePreview.loading')}</div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">{t('slidePreview.loading')}</div>
               </div>
             )}
-            
+
             {error && (
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-sm text-red-500">{t('slidePreview.loadFailed')}</div>
+                <div className="text-sm text-red-500 dark:text-red-400">{t('slidePreview.loadFailed')}</div>
               </div>
             )}
-            
+
             {slide.exists && projectId && (
-              <div 
+              <div
                 className="absolute top-0 left-0"
                 style={{
                   width: `${SLIDE_WIDTH}px`,
@@ -218,7 +218,7 @@ export const SlidePreview = forwardRef<SlidePreviewRef, SlidePreviewProps>(({ sl
                 <iframe
                   ref={iframeRef}
                   className="w-full h-full border-none"
-                  style={{ 
+                  style={{
                     display: isLoading || error ? 'none' : 'block',
                     width: `${SLIDE_WIDTH}px`,
                     height: `${SLIDE_HEIGHT}px`,
@@ -227,16 +227,16 @@ export const SlidePreview = forwardRef<SlidePreviewRef, SlidePreviewProps>(({ sl
                 />
               </div>
             )}
-            
+
             {!slide.exists && !isLoading && (
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-sm text-orange-500">{t('slidePreview.fileNotFound')}</div>
+                <div className="text-sm text-orange-500 dark:text-orange-400">{t('slidePreview.fileNotFound')}</div>
               </div>
             )}
           </div>
         ) : (
           // Code mode - show HTML source with syntax highlighting
-          <div className="relative bg-gray-100 rounded-lg overflow-hidden" 
+          <div className="relative bg-gray-100 dark:bg-gray-900 rounded-lg overflow-hidden"
                style={{ aspectRatio: `${aspectRatio}` }}>
             {slideContent ? (
               <div className="h-full overflow-y-auto">
@@ -248,7 +248,7 @@ export const SlidePreview = forwardRef<SlidePreviewRef, SlidePreviewProps>(({ sl
               </div>
             ) : (
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-gray-500">{t('slidePreview.loadingCode')}</div>
+                <div className="text-gray-500 dark:text-gray-400">{t('slidePreview.loadingCode')}</div>
               </div>
             )}
           </div>
