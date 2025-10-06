@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Layout } from './components/Layout';
@@ -25,15 +25,52 @@ const queryClient = new QueryClient({
 });
 
 const AppContent: React.FC = () => {
+  // Initialize theme on app startup
+  useEffect(() => {
+    const applyTheme = () => {
+      const savedTheme = localStorage.getItem('theme') || 'auto';
+
+      if (savedTheme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else if (savedTheme === 'light') {
+        document.documentElement.classList.remove('dark');
+      } else {
+        // Auto theme - follow system preference
+        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        if (mediaQuery.matches) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+
+        // Listen for system theme changes
+        const handleChange = (e: MediaQueryListEvent) => {
+          if (localStorage.getItem('theme') === 'auto') {
+            if (e.matches) {
+              document.documentElement.classList.add('dark');
+            } else {
+              document.documentElement.classList.remove('dark');
+            }
+          }
+        };
+
+        mediaQuery.addEventListener('change', handleChange);
+        return () => mediaQuery.removeEventListener('change', handleChange);
+      }
+    };
+
+    applyTheme();
+  }, []);
+
   return (
     <Router>
       <Routes>
         {/* Landing page (new homepage) */}
         <Route path="/" element={<LandingPage />} />
-        
+
         {/* Chat page without layout (full screen) */}
         <Route path="/chat/:agentId" element={<ChatPage />} />
-        
+
         {/* Admin pages with layout */}
         <Route path="/dashboard" element={<Layout><DashboardPage /></Layout>} />
         <Route path="/agents" element={<Layout><AgentsPage /></Layout>} />
@@ -47,7 +84,7 @@ const AppContent: React.FC = () => {
           <Route path="commands" element={<CommandsPage />} />
           <Route path="subagents" element={<SubagentsPage />} />
         </Route>
-        
+
         {/* Catch-all route for unmatched paths (excludes /media/* which should be handled by backend) */}
         <Route path="*" element={<Layout><div className="p-4 text-center">Page not found</div></Layout>} />
       </Routes>
