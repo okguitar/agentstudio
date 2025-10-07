@@ -26,34 +26,6 @@
       "checking": "检查中..."
     }
   },
-  "home": {
-    "title": "AgentStudio",
-    "subtitle": "选择一个智能助手开始工作",
-    "loading": "正在加载...",
-    "availableAgents": "可用的智能助手",
-    "disabledAgents": "已禁用的助手",
-    "agentCount": "共 {{count}} 个助手",
-    "createCustomAgent": "创建自定义助手",
-    "customAgentComingSoon": "自定义助手功能即将推出！",
-    "noAgentsTitle": "还没有可用的智能助手",
-    "noAgentsDescription": "启用一些内置助手或创建自己的自定义助手开始使用",
-    "manageAgents": "管理智能助手",
-    "startUsing": "开始使用",
-    "editAgent": "编辑助手",
-    "disableAgent": "禁用助手",
-    "enableAgent": "启用助手",
-    "disabledStatus": "已禁用",
-    "enableAgentButton": "启用助手",
-    "componentTypes": {
-      "slides": "幻灯片",
-      "code": "代码",
-      "documents": "文档",
-      "chat": "对话"
-    },
-    "errors": {
-      "toggleFailed": "操作失败，请重试"
-    }
-  },
   "landing": {
     "pageTitle": "AgentStudio - 智能体工作平台 | Claude Code 驱动的 AI 助手",
     "metaDescription": "基于 Claude Code SDK 的现代化个人智能体工作平台。通过直观的 Web 界面，轻松访问强大的 AI 能力，支持多种大语言模型，提升工作效率。",
@@ -392,6 +364,24 @@
         "info4": "系统会自动选择推荐的包管理器进行更新操作",
         "info5": "建议保持 Claude Code 为最新版本以获得最佳体验"
       },
+      "templates": {
+        "title": "服务商快速配置模板",
+        "description": "选择预设模板快速配置第三方API服务商，自动填充环境变量配置",
+        "providers": {
+          "glm": {
+            "name": "GLM (智谱AI)",
+            "description": "使用智谱AI的GLM模型服务，兼容Anthropic API"
+          },
+          "deepseek": {
+            "name": "DeepSeek",
+            "description": "使用DeepSeek的高性能模型服务"
+          },
+          "kimi": {
+            "name": "Kimi K2 (月之暗面)",
+            "description": "使用Kimi K2模型服务，支持Anthropic API兼容"
+          }
+        }
+      },
       "form": {
         "createTitle": "添加新版本",
         "editTitle": "编辑版本",
@@ -402,11 +392,13 @@
         "description": "描述",
         "descriptionPlaceholder": "版本描述（可选）",
         "executablePath": "可执行文件路径",
-        "executablePathPlaceholder": "例如: /usr/local/bin/claude",
+        "executablePathPlaceholder": "不指定则使用系统默认路径",
         "browseFile": "浏览文件",
         "envVars": "环境变量",
         "varName": "变量名",
         "varValue": "变量值",
+        "emptyValue": "未设置",
+        "getApiKey": "获取密钥",
         "cancel": "取消",
         "saving": "保存中...",
         "update": "更新",
