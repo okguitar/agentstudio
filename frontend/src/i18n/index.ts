@@ -5,12 +5,14 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 // 导入翻译资源
 import zhCN_common from './locales/zh-CN/common.json';
 import zhCN_pages from './locales/zh-CN/pages.json';
+import zhCN_home from './locales/zh-CN/home.json';
 import zhCN_components from './locales/zh-CN/components.json';
 import zhCN_errors from './locales/zh-CN/errors.json';
 import zhCN_agents from './locales/zh-CN/agents.json';
 
 import enUS_common from './locales/en-US/common.json';
 import enUS_pages from './locales/en-US/pages.json';
+import enUS_home from './locales/en-US/home.json';
 import enUS_components from './locales/en-US/components.json';
 import enUS_errors from './locales/en-US/errors.json';
 import enUS_agents from './locales/en-US/agents.json';
@@ -19,6 +21,7 @@ const resources = {
   'zh-CN': {
     common: zhCN_common,
     pages: zhCN_pages,
+    home: zhCN_home,
     components: zhCN_components,
     errors: zhCN_errors,
     agents: zhCN_agents,
@@ -26,6 +29,7 @@ const resources = {
   'en-US': {
     common: enUS_common,
     pages: enUS_pages,
+    home: enUS_home,
     components: enUS_components,
     errors: enUS_errors,
     agents: enUS_agents,
@@ -39,7 +43,7 @@ i18n
     resources,
     fallbackLng: 'zh-CN',
     defaultNS: 'common',
-    ns: ['common', 'pages', 'components', 'errors', 'agents'],
+    ns: ['common', 'pages', 'home', 'components', 'errors', 'agents'],
 
     interpolation: {
       escapeValue: false, // React已经处理了XSS
