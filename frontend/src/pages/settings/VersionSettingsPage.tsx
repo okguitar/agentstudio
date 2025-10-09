@@ -15,11 +15,16 @@ import {
   Settings,
   Save,
   X,
-  FolderOpen
+  FolderOpen,
+  Sparkles,
+  ExternalLink,
+  Copy
 } from 'lucide-react';
 import { useClaudeVersions, useCreateClaudeVersion, useUpdateClaudeVersion, useDeleteClaudeVersion, useSetDefaultClaudeVersion } from '../../hooks/useClaudeVersions';
 import { ClaudeVersion, ClaudeVersionCreate, ClaudeVersionUpdate } from '@agentstudio/shared/types/claude-versions';
 import { FileBrowser } from '../../components/FileBrowser';
+import { VERSION_TEMPLATES, type VersionTemplate } from '../../types/versionTemplates';
+import { generateClaudeCommand, copyToClipboard } from '../../utils/commandGenerator';
 
 export const VersionSettingsPage: React.FC = () => {
   const { t } = useTranslation('pages');
@@ -41,6 +46,7 @@ export const VersionSettingsPage: React.FC = () => {
   });
   const [envVarInput, setEnvVarInput] = useState({ key: '', value: '' });
   const [showFileBrowser, setShowFileBrowser] = useState(false);
+  const [currentTemplateTokenUrl, setCurrentTemplateTokenUrl] = useState<string | null>(null);
   
   // Claude版本数据和操作
   const { data: claudeVersionsData, isLoading: isLoadingClaudeVersions } = useClaudeVersions();
@@ -125,6 +131,42 @@ export const VersionSettingsPage: React.FC = () => {
     resetForm();
   };
 
+  const handleQuickCreateWithTemplate = (template: VersionTemplate) => {
+    // 先打开创建表单
+    setIsCreating(true);
+    setEditingVersion(null);
+    resetForm();
+
+    // 然后应用模板
+    setTimeout(() => {
+      handleApplyTemplate(template);
+    }, 0);
+  };
+
+  const handleApplyTemplate = (template: VersionTemplate) => {
+    // 自动填充所有字段
+    const envVars: Record<string, string> = {};
+    template.envVars.forEach(envVar => {
+      // 所有环境变量都添加，包括空值的必填字段
+      envVars[envVar.key] = envVar.value;
+    });
+
+    // 使用i18n获取翻译后的名称和描述
+    const translatedName = t(`settings.version.templates.providers.${template.id}.name`);
+    const translatedDescription = t(`settings.version.templates.providers.${template.id}.description`);
+
+    setFormData(prev => ({
+      ...prev,
+      name: translatedName,
+      alias: template.alias,
+      description: translatedDescription,
+      environmentVariables: envVars
+    }));
+
+    // 保存模板的 token URL
+    setCurrentTemplateTokenUrl(template.apiTokenUrl || null);
+  };
+
   const handleEdit = (version: ClaudeVersion) => {
     setEditingVersion(version);
     setIsCreating(false);
@@ -157,21 +199,19 @@ export const VersionSettingsPage: React.FC = () => {
   };
 
   const removeEnvironmentVariable = (key: string) => {
-    setFormData(prev => ({
-      ...prev,
-      environmentVariables: {
-        ...prev.environmentVariables
+    setFormData(prev => {
+      if (!prev.environmentVariables) {
+        return prev;
       }
-    }));
-    // Remove the key
-    if (formData.environmentVariables) {
-      const newEnvVars = { ...formData.environmentVariables };
+
+      const newEnvVars = { ...prev.environmentVariables };
       delete newEnvVars[key];
-      setFormData(prev => ({
+
+      return {
         ...prev,
         environmentVariables: newEnvVars
-      }));
-    }
+      };
+    });
   };
 
   const selectExecutablePath = () => {
@@ -190,21 +230,28 @@ export const VersionSettingsPage: React.FC = () => {
 
   const handleSave = async () => {
     try {
-      if (!formData.name || !formData.alias || !formData.executablePath) {
+      if (!formData.name || !formData.alias) {
         alert(t('settings.version.errors.requiredFields'));
         return;
       }
+
+      // 将空字符串转换为 undefined，以便正确删除字段
+      const dataToSave: ClaudeVersionUpdate | ClaudeVersionCreate = {
+        ...formData,
+        executablePath: formData.executablePath?.trim() || undefined,
+        description: formData.description?.trim() || undefined,
+      };
 
       if (editingVersion) {
         // 更新现有版本
         await updateClaudeVersion.mutateAsync({
           id: editingVersion.id,
-          data: formData as ClaudeVersionUpdate
+          data: dataToSave as ClaudeVersionUpdate
         });
         alert(t('settings.version.success.updateVersion'));
       } else {
         // 创建新版本
-        await createClaudeVersion.mutateAsync(formData as ClaudeVersionCreate);
+        await createClaudeVersion.mutateAsync(dataToSave as ClaudeVersionCreate);
         alert(t('settings.version.success.createVersion'));
       }
 
@@ -242,6 +289,23 @@ export const VersionSettingsPage: React.FC = () => {
     }
   };
 
+  const handleCopyCommand = async (version: ClaudeVersion) => {
+    try {
+      const command = generateClaudeCommand(version);
+      const success = await copyToClipboard(command);
+      
+      if (success) {
+        alert(t('settings.version.success.copyCommand'));
+      } else {
+        // 如果复制失败，显示命令让用户手动复制
+        alert(t('settings.version.errors.copyFailed') + '\n\n' + command);
+      }
+    } catch (error) {
+      console.error('Error copying command:', error);
+      alert(t('settings.version.errors.copyFailed'));
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -249,13 +313,42 @@ export const VersionSettingsPage: React.FC = () => {
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{t('settings.version.title')}</h2>
           <p className="text-gray-600 dark:text-gray-400">{t('settings.version.subtitle')}</p>
         </div>
-        <button
-          onClick={handleCreate}
-          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          <span>{t('settings.version.addVersion')}</span>
-        </button>
+        <div className="flex items-center space-x-3">
+          {/* 快捷模板按钮 */}
+          {VERSION_TEMPLATES.map(template => (
+            <button
+              key={template.id}
+              onClick={() => handleQuickCreateWithTemplate(template)}
+              className="flex items-center space-x-2 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600
+                       text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700
+                       hover:border-purple-400 dark:hover:border-purple-500 transition-all duration-200 group"
+              title={t(`settings.version.templates.providers.${template.id}.description`)}
+            >
+              {template.logoUrl && (
+                <img
+                  src={template.logoUrl}
+                  alt={template.name}
+                  className="w-5 h-5 flex-shrink-0"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              )}
+              <span className="text-sm font-medium group-hover:text-purple-600 dark:group-hover:text-purple-400">
+                {t(`settings.version.templates.providers.${template.id}.name`)}
+              </span>
+            </button>
+          ))}
+
+          {/* 添加版本按钮 */}
+          <button
+            onClick={handleCreate}
+            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            <span>{t('settings.version.addVersion')}</span>
+          </button>
+        </div>
       </div>
 
       {/* 隐藏原有的当前版本功能 */}
@@ -504,6 +597,13 @@ export const VersionSettingsPage: React.FC = () => {
                       )}
                     </div>
                     <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => handleCopyCommand(version)}
+                        className="p-2 text-gray-500 dark:text-gray-400 hover:text-green-600 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
+                        title={t('settings.version.copyCommand')}
+                      >
+                        <Copy className="w-4 h-4" />
+                      </button>
                       {version.id !== claudeVersionsData.defaultVersionId && (
                         <button
                           onClick={() => handleSetDefault(version)}
@@ -567,6 +667,52 @@ export const VersionSettingsPage: React.FC = () => {
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-6">
               <div className="space-y-4">
+                {/* 配置模板选择 */}
+                <div className="p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg">
+                  <div className="flex items-center space-x-2 mb-3">
+                    <Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                    <h4 className="text-sm font-medium text-purple-800 dark:text-purple-300">
+                      {t('settings.version.templates.title')}
+                    </h4>
+                  </div>
+                  <p className="text-xs text-purple-700 dark:text-purple-400 mb-3">
+                    {t('settings.version.templates.description')}
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {VERSION_TEMPLATES.map(template => (
+                      <button
+                        key={template.id}
+                        onClick={() => handleApplyTemplate(template)}
+                        className="p-3 bg-white dark:bg-gray-800 border border-purple-200 dark:border-purple-700
+                                 hover:border-purple-400 dark:hover:border-purple-500 rounded-md text-left
+                                 transition-all duration-200 group"
+                      >
+                        <div className="flex flex-col space-y-2">
+                          <div className="flex items-center space-x-2">
+                            {template.logoUrl && (
+                              <img
+                                src={template.logoUrl}
+                                alt={template.name}
+                                className="w-6 h-6 flex-shrink-0"
+                                onError={(e) => {
+                                  // Fallback to Sparkles icon if logo fails to load
+                                  e.currentTarget.style.display = 'none';
+                                }}
+                              />
+                            )}
+                            <h5 className="font-medium text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400">
+                              {t(`settings.version.templates.providers.${template.id}.name`)}
+                            </h5>
+                          </div>
+                          <p className="text-xs text-gray-600 dark:text-gray-400">
+                            {t(`settings.version.templates.providers.${template.id}.description`)}
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -607,7 +753,7 @@ export const VersionSettingsPage: React.FC = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    {t('settings.version.form.executablePath')} <span className="text-red-500">*</span>
+                    {t('settings.version.form.executablePath')}
                   </label>
                   <div className="flex space-x-2">
                     <input
@@ -636,12 +782,41 @@ export const VersionSettingsPage: React.FC = () => {
                       <div className="space-y-2">
                         {Object.entries(formData.environmentVariables).map(([key, value]) => (
                           <div key={key} className="flex items-center space-x-2 p-2 bg-gray-50 dark:bg-gray-700 rounded">
-                            <span className="flex-1 text-sm text-gray-900 dark:text-white">
-                              <span className="font-medium">{key}</span> = {value}
-                            </span>
+                            <div className="flex-1 flex items-center space-x-2">
+                              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                                {key} =
+                              </span>
+                              <input
+                                type="text"
+                                value={value}
+                                onChange={(e) => {
+                                  const newValue = e.target.value;
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    environmentVariables: {
+                                      ...prev.environmentVariables,
+                                      [key]: newValue
+                                    }
+                                  }));
+                                }}
+                                placeholder={t('settings.version.form.emptyValue')}
+                                className="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              />
+                              {key === 'ANTHROPIC_AUTH_TOKEN' && currentTemplateTokenUrl && !value && (
+                                <a
+                                  href={currentTemplateTokenUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center space-x-1 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 whitespace-nowrap"
+                                >
+                                  <ExternalLink className="w-3 h-3" />
+                                  <span>{t('settings.version.form.getApiKey')}</span>
+                                </a>
+                              )}
+                            </div>
                             <button
                               onClick={() => removeEnvironmentVariable(key)}
-                              className="p-1 text-red-500 hover:text-red-700 rounded"
+                              className="p-1 text-red-500 hover:text-red-700 rounded flex-shrink-0"
                             >
                               <X className="w-4 h-4" />
                             </button>
