@@ -82,6 +82,162 @@ detect_os() {
     log "Detected OS: $OS ($DISTRO)"
 }
 
+# Refresh shell environment to pick up newly installed tools
+refresh_shell_env() {
+    log "Refreshing shell environment..."
+    
+    # Source common profile files
+    [ -f "$HOME/.bashrc" ] && source "$HOME/.bashrc" 2>/dev/null || true
+    [ -f "$HOME/.bash_profile" ] && source "$HOME/.bash_profile" 2>/dev/null || true
+    [ -f "$HOME/.zshrc" ] && source "$HOME/.zshrc" 2>/dev/null || true
+    [ -f "$HOME/.profile" ] && source "$HOME/.profile" 2>/dev/null || true
+    
+    # Source NVM if available
+    export NVM_DIR="$HOME/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" 2>/dev/null || true
+    [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion" 2>/dev/null || true
+    
+    # Update PATH to include common Node.js installation paths
+    export PATH="$HOME/.nvm/versions/node/$(nvm current 2>/dev/null || echo 'system')/bin:$PATH" 2>/dev/null || true
+    export PATH="/usr/local/bin:$PATH"
+    export PATH="$HOME/.local/bin:$PATH"
+}
+
+# Install Node.js via NVM
+install_nodejs_via_nvm() {
+    log "Installing Node.js via NVM..."
+    
+    # Check if curl is available
+    if ! command -v curl >/dev/null 2>&1; then
+        error "curl is required but not found. Please install curl first."
+        return 1
+    fi
+    
+    # Download and install NVM
+    log "Downloading NVM..."
+    if ! curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash; then
+        error "Failed to download or install NVM"
+        return 1
+    fi
+    
+    # Source NVM
+    export NVM_DIR="$HOME/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+    
+    # Check if NVM was installed successfully
+    if ! command -v nvm >/dev/null 2>&1; then
+        error "NVM installation failed"
+        return 1
+    fi
+    
+    # Install latest LTS Node.js
+    log "Installing Node.js LTS..."
+    if ! nvm install --lts; then
+        error "Failed to install Node.js via NVM"
+        return 1
+    fi
+    
+    nvm use --lts
+    nvm alias default lts/*
+    
+    success "Node.js installed successfully via NVM"
+}
+
+# Install Node.js on Linux
+install_nodejs_linux() {
+    log "Installing Node.js on Linux..."
+    
+    case "$DISTRO" in
+        "debian")
+            log "Using apt package manager..."
+            # Add NodeSource repository
+            curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+            sudo apt-get install -y nodejs
+            ;;
+        "redhat")
+            log "Using yum/dnf package manager..."
+            # Add NodeSource repository
+            curl -fsSL https://rpm.nodesource.com/setup_lts.x | sudo bash -
+            if command -v dnf >/dev/null 2>&1; then
+                sudo dnf install -y nodejs npm
+            else
+                sudo yum install -y nodejs npm
+            fi
+            ;;
+        "arch")
+            log "Using pacman package manager..."
+            sudo pacman -S --noconfirm nodejs npm
+            ;;
+        *)
+            log "Unknown Linux distribution, trying NVM..."
+            install_nodejs_via_nvm
+            ;;
+    esac
+}
+
+# Install Node.js on macOS
+install_nodejs_macos() {
+    log "Installing Node.js on macOS..."
+    
+    if command -v brew >/dev/null 2>&1; then
+        log "Using Homebrew..."
+        brew install node
+    else
+        log "Homebrew not found, trying NVM..."
+        install_nodejs_via_nvm
+    fi
+}
+
+# Auto-install Node.js based on OS
+auto_install_nodejs() {
+    echo ""
+    echo "Node.js is required but not found on your system."
+    read -p "Would you like to install Node.js automatically? (Y/n): " -n 1 -r
+    echo ""
+    
+    if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+        case "$OS" in
+            "linux")
+                # Try package manager first, fallback to NVM
+                if [ "$DISTRO" != "unknown" ] && [ "$EUID" -ne 0 ] && command -v sudo >/dev/null 2>&1; then
+                    if ! install_nodejs_linux; then
+                        warn "System package manager installation failed, trying NVM..."
+                        install_nodejs_via_nvm
+                    fi
+                else
+                    log "Cannot use system package manager, using NVM..."
+                    install_nodejs_via_nvm
+                fi
+                ;;
+            "macos")
+                if ! install_nodejs_macos; then
+                    warn "Homebrew installation failed, trying NVM..."
+                    install_nodejs_via_nvm
+                fi
+                ;;
+            *)
+                install_nodejs_via_nvm
+                ;;
+        esac
+        
+        # Refresh environment and verify installation
+        refresh_shell_env
+        
+        if command -v node >/dev/null 2>&1; then
+            success "Node.js $(node --version) installed successfully"
+        else
+            error "Node.js installation failed. Please install manually."
+            error "Visit: https://nodejs.org/"
+            exit 1
+        fi
+    else
+        error "Node.js is required to continue. Please install Node.js 18 or later first."
+        error "Visit: https://nodejs.org/"
+        exit 1
+    fi
+}
+
 # Check Node.js installation
 check_nodejs() {
     log "Checking Node.js installation..."
@@ -92,12 +248,25 @@ check_nodejs() {
             success "Node.js $(node --version) is available"
             return
         else
-            warn "Node.js version is too old: $(node --version). Please install Node.js 18 or later."
+            warn "Node.js version is too old: $(node --version). Need version 18 or later."
+            auto_install_nodejs
         fi
     else
-        error "Node.js is not installed. Please install Node.js 18 or later first."
-        error "Visit: https://nodejs.org/"
-        exit 1
+        log "Node.js is not installed."
+        auto_install_nodejs
+    fi
+}
+
+# Install pnpm
+install_pnpm() {
+    log "Installing pnpm..."
+    
+    if command -v npm >/dev/null 2>&1; then
+        npm install -g pnpm
+        success "pnpm installed successfully"
+    else
+        error "npm is not available, cannot install pnpm"
+        return 1
     fi
 }
 
@@ -108,7 +277,19 @@ check_pnpm() {
         return
     fi
     
-    log "pnpm not found, will use npm instead"
+    echo ""
+    read -p "pnpm not found. Would you like to install it for faster package management? (Y/n): " -n 1 -r
+    echo ""
+    
+    if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+        install_pnpm
+        refresh_shell_env
+        if ! command -v pnpm >/dev/null 2>&1; then
+            warn "pnpm installation failed, will use npm instead"
+        fi
+    else
+        log "Will use npm instead of pnpm"
+    fi
 }
 
 # Check git installation
@@ -340,6 +521,7 @@ main() {
     echo "║                                          ║"
     echo "║  This will install:                      ║"
     echo "║  • Agent Studio Backend (user-local)    ║"
+    echo "║  • Node.js (if not available)           ║"
     echo "║  • Dependencies (npm/pnpm)              ║"
     echo "║  • Start/Stop scripts                   ║"
     echo "║  • Configuration files                  ║"
@@ -388,4 +570,5 @@ main() {
 trap cleanup INT TERM
 
 # Run main function
+main "$@"
 main "$@"
