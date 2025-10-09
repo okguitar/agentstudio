@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-interface TokenData {
+export interface TokenData {
   token: string;
   serviceId?: string;
   serviceName?: string;
