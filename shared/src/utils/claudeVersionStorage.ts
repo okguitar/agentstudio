@@ -1,7 +1,7 @@
 import { readFile, writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { homedir } from 'os';
-import { ClaudeVersion, ClaudeVersionCreate, ClaudeVersionUpdate } from '../types/claude-versions';
+import { ClaudeVersion, ClaudeVersionCreate, ClaudeVersionUpdate } from '../types/claude-versions.js';
 
 const CLAUDE_AGENT_DIR = join(homedir(), '.claude-agent');
 const VERSIONS_FILE = join(CLAUDE_AGENT_DIR, 'claude-versions.json');

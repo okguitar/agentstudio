@@ -429,8 +429,7 @@ async function buildQueryOptions(agent: any, projectPath: string | undefined, mc
       const selectedVersion = versions.find(v => v.id === claudeVersion);
       if (selectedVersion) {
         if (selectedVersion.executablePath) {
-          executablePath = selectedVersion.executablePath; // 还要 trim 一下
-          executablePath = executablePath.trim();
+          executablePath = selectedVersion.executablePath.trim();
         } else {
           executablePath = await getClaudeExecutablePath();
         }
@@ -447,9 +446,13 @@ async function buildQueryOptions(agent: any, projectPath: string | undefined, mc
         const versions = await getAllVersions();
         const defaultVersion = versions.find(v => v.id === defaultVersionId);
         if (defaultVersion) {
-          executablePath = defaultVersion.executablePath;
+          if (defaultVersion.executablePath) {
+            executablePath = defaultVersion.executablePath;
+          } else {
+            executablePath = await getClaudeExecutablePath();
+          }
           environmentVariables = defaultVersion.environmentVariables || {};
-          console.log(`🎯 Using default Claude version: ${defaultVersion.alias} (${defaultVersion.executablePath})`);
+          console.log(`🎯 Using default Claude version: ${defaultVersion.alias} (${executablePath})`);
         } else {
           executablePath = await getClaudeExecutablePath();
         }
