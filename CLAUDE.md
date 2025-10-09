@@ -65,38 +65,55 @@ The application uses a sophisticated agent system built on Claude Code SDK:
 
 ## Development Commands
 
+### Package Manager
+This project uses **pnpm workspaces** with filter commands for monorepo management. All commands support both `pnpm` and `npm`.
+
 ### Setup and Installation
 ```bash
+pnpm install                 # Install all dependencies (recommended)
+# or
 npm run setup                # Install all dependencies (root, frontend, backend)
 ```
 
 ### Development
 ```bash
-npm run dev                  # Start both frontend (3000) and backend (4936)
-npm run dev:frontend         # Frontend only
-npm run dev:backend          # Backend only
+pnpm run dev                 # Start both frontend (3000) and backend (4936)
+pnpm run dev:frontend        # Frontend only
+pnpm run dev:backend         # Backend only
 ```
 
 ### Building and Production
 ```bash
-npm run build               # Build both frontend and backend
-npm run build:frontend      # Build frontend only
-npm run build:backend       # Build backend only
-npm start                   # Start production backend
+pnpm run build               # Build both frontend and backend
+pnpm run build:frontend      # Build frontend only
+pnpm run build:backend       # Build backend only
+pnpm start                   # Start production backend
+```
+
+### Service Management (Production)
+```bash
+pnpm run install:service     # Install as system service
+pnpm run service:start       # Start service
+pnpm run service:stop        # Stop service
+pnpm run service:restart     # Restart service
+pnpm run service:status      # Check service status
+pnpm run service:logs        # View service logs
 ```
 
 ### Testing
 ```bash
-cd frontend && npm test        # Run tests
-cd frontend && npm run test:ui # Run tests with UI
-cd frontend && npm run test:run # Run tests once
-cd frontend && npm run test:coverage # Run with coverage
+cd frontend && pnpm test           # Run tests in watch mode
+cd frontend && pnpm run test:ui    # Run tests with UI
+cd frontend && pnpm run test:run   # Run tests once
+cd frontend && pnpm run test:coverage # Run with coverage
 ```
 
 ### Code Quality
 ```bash
-cd frontend && npm run lint    # ESLint for frontend
-cd backend && npm run type-check  # TypeScript type checking
+pnpm run lint                  # Run linting for all workspaces
+pnpm run type-check            # TypeScript type checking for all workspaces
+cd frontend && pnpm run lint   # ESLint for frontend only
+cd backend && pnpm run type-check # TypeScript check for backend only
 ```
 
 ## Environment Configuration
@@ -145,6 +162,16 @@ CORS_ORIGINS=https://your-frontend.vercel.app,https://custom-domain.com
 - Slides are HTML files with embedded CSS
 - Each slide maintains 1280x720 dimensions
 - Auto-saving after AI edits via PUT /api/slides/:index
+
+### Internationalization (i18n)
+- **Framework**: react-i18next with JSON translation files
+- **Supported Languages**: English (en-US), Chinese (zh-CN)
+- **Translation Files**: `frontend/src/i18n/locales/{locale}/pages.json`
+- **Usage Pattern**: Use `useTranslation()` hook with namespaced keys (e.g., `t('pages:nav.dashboard')`)
+- **Adding New Languages**:
+  1. Create new locale directory under `frontend/src/i18n/locales/`
+  2. Copy translation structure from existing locales
+  3. Add locale configuration to `frontend/src/i18n/config.ts`
 
 ## Compatibility Notes
 
@@ -229,11 +256,16 @@ ai-editor/
 - Use TailwindCSS for styling
 - Implement tool components in `components/tools/` for custom tool rendering
 - Add TypeScript interfaces in appropriate type files
+- **Internationalization**: Use `useTranslation()` hook for all user-facing text
+  - Import: `import { useTranslation } from 'react-i18next'`
+  - Usage: `const { t } = useTranslation('pages'); t('nav.dashboard')`
+  - Never hardcode user-facing strings in components
 
 ### Testing
 - Write component tests using Vitest + Testing Library
 - Test files should be co-located with components in `__tests__/` directories
 - Use jsdom environment for component testing
+- Run tests with `cd frontend && pnpm test`
 
 ### Agent Development
 - **Built-in Agents**: Extend `BUILTIN_AGENTS` in `shared/types/agents.ts`
