@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { API_BASE } from '../lib/config';
+import { authFetch } from '../lib/authFetch';
 import {
   Plus,
   Search,
@@ -277,7 +278,7 @@ export const ProjectsPage: React.FC = () => {
     const fetchProjects = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`${API_BASE}/projects`);
+        const response = await authFetch(`${API_BASE}/projects`);
         if (response.ok) {
           const data = await response.json();
           setProjects(data.projects || []);
@@ -316,7 +317,7 @@ export const ProjectsPage: React.FC = () => {
     description: string;
   }) => {
     try {
-      const response = await fetch(`${API_BASE}/projects/create`, {
+      const response = await authFetch(`${API_BASE}/projects/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -331,7 +332,7 @@ export const ProjectsPage: React.FC = () => {
 
       if (response.ok) {
         const result = await response.json();
-        
+
         // Add new project to the list
         setProjects(prev => [result.project, ...prev]);
         setShowCreateModal(false);
@@ -382,7 +383,7 @@ export const ProjectsPage: React.FC = () => {
 
     if (confirmed) {
       try {
-        const response = await fetch(`${API_BASE}/projects/by-id/${project.id}`, {
+        const response = await authFetch(`${API_BASE}/projects/by-id/${project.id}`, {
           method: 'DELETE'
         });
 
@@ -416,7 +417,7 @@ export const ProjectsPage: React.FC = () => {
 
     try {
       // Call API to select agent for project
-      const response = await fetch(`${API_BASE}/projects/${agentSelectProject.dirName}/select-agent`, {
+      const response = await authFetch(`${API_BASE}/projects/${agentSelectProject.dirName}/select-agent`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -427,7 +428,7 @@ export const ProjectsPage: React.FC = () => {
       if (response.ok) {
         const data = await response.json();
         // Update projects list with new agent info
-        setProjects(prev => prev.map(p => 
+        setProjects(prev => prev.map(p =>
           p.id === agentSelectProject.id ? data.project : p
         ));
 

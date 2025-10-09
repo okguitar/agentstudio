@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { API_BASE } from '../lib/config';
+import { authFetch } from '../lib/authFetch';
 import {
   Folder,
   File,
@@ -60,15 +61,15 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
   const fetchDirectory = async (path?: string) => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const searchParams = new URLSearchParams();
       if (path) {
         searchParams.set('path', path);
       }
-      
+
       const url = `${API_BASE}/files/browse?${searchParams.toString()}`;
-      const response = await fetch(url);
+      const response = await authFetch(url);
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || t('fileBrowser.errors.browseFailed'));
@@ -114,10 +115,10 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
 
   const handleCreateNewFolder = async () => {
     if (!newFolderName.trim() || !data?.currentPath) return;
-    
+
     setCreatingFolder(true);
     try {
-      const response = await fetch(`${API_BASE}/files/create-directory`, {
+      const response = await authFetch(`${API_BASE}/files/create-directory`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

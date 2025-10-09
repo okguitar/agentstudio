@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Subagent, SubagentCreate, SubagentUpdate, SubagentFilter } from '../types/subagents';
 import { API_BASE, isApiUnavailableError } from '../lib/config';
+import { authFetch } from '../lib/authFetch';
 
 // API functions
 const fetchSubagents = async (filter: SubagentFilter = {}): Promise<Subagent[]> => {
@@ -8,7 +9,7 @@ const fetchSubagents = async (filter: SubagentFilter = {}): Promise<Subagent[]> 
     const params = new URLSearchParams();
     if (filter.search) params.append('search', filter.search);
 
-    const response = await fetch(`${API_BASE}/subagents?${params}`);
+    const response = await authFetch(`${API_BASE}/subagents?${params}`);
     if (!response.ok) {
       throw new Error('Failed to fetch subagents');
     }
@@ -24,7 +25,7 @@ const fetchSubagents = async (filter: SubagentFilter = {}): Promise<Subagent[]> 
 };
 
 const fetchSubagent = async (id: string): Promise<Subagent> => {
-  const response = await fetch(`${API_BASE}/subagents/${id}`);
+  const response = await authFetch(`${API_BASE}/subagents/${id}`);
   if (!response.ok) {
     throw new Error('Failed to fetch subagent');
   }
@@ -32,7 +33,7 @@ const fetchSubagent = async (id: string): Promise<Subagent> => {
 };
 
 const createSubagent = async (subagent: SubagentCreate): Promise<Subagent> => {
-  const response = await fetch(`${API_BASE}/subagents`, {
+  const response = await authFetch(`${API_BASE}/subagents`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -47,7 +48,7 @@ const createSubagent = async (subagent: SubagentCreate): Promise<Subagent> => {
 };
 
 const updateSubagent = async ({ id, ...updates }: { id: string } & SubagentUpdate): Promise<Subagent> => {
-  const response = await fetch(`${API_BASE}/subagents/${id}`, {
+  const response = await authFetch(`${API_BASE}/subagents/${id}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -62,7 +63,7 @@ const updateSubagent = async ({ id, ...updates }: { id: string } & SubagentUpdat
 };
 
 const deleteSubagent = async (id: string): Promise<void> => {
-  const response = await fetch(`${API_BASE}/subagents/${id}`, {
+  const response = await authFetch(`${API_BASE}/subagents/${id}`, {
     method: 'DELETE',
   });
   if (!response.ok) {
@@ -122,7 +123,7 @@ export const useDeleteSubagent = () => {
 // Project-specific subagents
 const fetchProjectSubagents = async (projectId: string, filter: SubagentFilter = {}): Promise<Subagent[]> => {
   // First get the project info to get the path
-  const projectResponse = await fetch(`${API_BASE}/projects`);
+  const projectResponse = await authFetch(`${API_BASE}/projects`);
   if (!projectResponse.ok) {
     throw new Error('Failed to fetch project info');
   }
@@ -137,7 +138,7 @@ const fetchProjectSubagents = async (projectId: string, filter: SubagentFilter =
   params.append('projectPath', project.path);
   if (filter.search) params.append('search', filter.search);
 
-  const response = await fetch(`${API_BASE}/subagents?${params}`);
+  const response = await authFetch(`${API_BASE}/subagents?${params}`);
   if (!response.ok) {
     throw new Error('Failed to fetch project subagents');
   }
@@ -155,7 +156,7 @@ export const useProjectSubagents = (filter: { projectId: string; search?: string
 // Project-specific subagent creation
 const createProjectSubagent = async (projectId: string, subagent: SubagentCreate): Promise<Subagent> => {
   // First get the project info to get the path
-  const projectResponse = await fetch(`${API_BASE}/projects`);
+  const projectResponse = await authFetch(`${API_BASE}/projects`);
   if (!projectResponse.ok) {
     throw new Error('Failed to fetch project info');
   }
@@ -169,7 +170,7 @@ const createProjectSubagent = async (projectId: string, subagent: SubagentCreate
   const params = new URLSearchParams();
   params.append('projectPath', project.path);
 
-  const response = await fetch(`${API_BASE}/subagents?${params}`, {
+  const response = await authFetch(`${API_BASE}/subagents?${params}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -186,7 +187,7 @@ const createProjectSubagent = async (projectId: string, subagent: SubagentCreate
 // Project-specific subagent update
 const updateProjectSubagent = async (projectId: string, data: { id: string } & SubagentUpdate): Promise<Subagent> => {
   // First get the project info to get the path
-  const projectResponse = await fetch(`${API_BASE}/projects`);
+  const projectResponse = await authFetch(`${API_BASE}/projects`);
   if (!projectResponse.ok) {
     throw new Error('Failed to fetch project info');
   }
@@ -201,7 +202,7 @@ const updateProjectSubagent = async (projectId: string, data: { id: string } & S
   const params = new URLSearchParams();
   params.append('projectPath', project.path);
 
-  const response = await fetch(`${API_BASE}/subagents/${id}?${params}`, {
+  const response = await authFetch(`${API_BASE}/subagents/${id}?${params}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -218,7 +219,7 @@ const updateProjectSubagent = async (projectId: string, data: { id: string } & S
 // Project-specific subagent deletion
 const deleteProjectSubagent = async (projectId: string, id: string): Promise<void> => {
   // First get the project info to get the path
-  const projectResponse = await fetch(`${API_BASE}/projects`);
+  const projectResponse = await authFetch(`${API_BASE}/projects`);
   if (!projectResponse.ok) {
     throw new Error('Failed to fetch project info');
   }
@@ -232,7 +233,7 @@ const deleteProjectSubagent = async (projectId: string, id: string): Promise<voi
   const params = new URLSearchParams();
   params.append('projectPath', project.path);
 
-  const response = await fetch(`${API_BASE}/subagents/${id}?${params}`, {
+  const response = await authFetch(`${API_BASE}/subagents/${id}?${params}`, {
     method: 'DELETE',
   });
   if (!response.ok) {

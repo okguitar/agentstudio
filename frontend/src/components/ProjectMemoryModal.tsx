@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, FileText, AlertCircle } from 'lucide-react';
 import { API_BASE } from '../lib/config';
+import { authFetch } from '../lib/authFetch';
 
 interface Project {
   id: string;
@@ -27,8 +28,8 @@ export const ProjectMemoryModal: React.FC<ProjectMemoryModalProps> = ({
       try {
         setLoading(true);
         setError(null);
-        const response = await fetch(`${API_BASE}/projects/${project.id}/claude-md`);
-        
+        const response = await authFetch(`${API_BASE}/projects/${project.id}/claude-md`);
+
         if (response.ok) {
           const data = await response.json();
           setContent(data.content || '');
@@ -53,8 +54,8 @@ export const ProjectMemoryModal: React.FC<ProjectMemoryModalProps> = ({
     try {
       setSaving(true);
       setError(null);
-      
-      const response = await fetch(`${API_BASE}/projects/${project.id}/claude-md`, {
+
+      const response = await authFetch(`${API_BASE}/projects/${project.id}/claude-md`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

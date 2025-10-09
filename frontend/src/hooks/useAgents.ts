@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import type { AgentConfig, ChatContext, ImageData } from '../types/index.js';
 import { API_BASE } from '../lib/config.js';
+import { authFetch } from '../lib/authFetch';
 
 // Agent management hooks
 export const useAgents = (enabled?: boolean, type?: string) => {
@@ -14,7 +15,7 @@ export const useAgents = (enabled?: boolean, type?: string) => {
       if (type) {
         url.searchParams.append('type', type);
       }
-      const response = await fetch(url.toString());
+      const response = await authFetch(url.toString());
       if (!response.ok) {
         throw new Error('Failed to fetch agents');
       }
@@ -27,7 +28,7 @@ export const useAgent = (agentId: string) => {
   return useQuery<{ agent: AgentConfig }>({
     queryKey: ['agent', agentId],
     queryFn: async () => {
-      const response = await fetch(`${API_BASE}/agents/${agentId}`);
+      const response = await authFetch(`${API_BASE}/agents/${agentId}`);
       if (!response.ok) {
         throw new Error('Failed to fetch agent');
       }
@@ -40,7 +41,7 @@ export const useAgent = (agentId: string) => {
 export const useCreateAgent = () => {
   return useMutation({
     mutationFn: async (agentData: Omit<AgentConfig, 'createdAt' | 'updatedAt'>) => {
-      const response = await fetch(`${API_BASE}/agents`, {
+      const response = await authFetch(`${API_BASE}/agents`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -60,7 +61,7 @@ export const useCreateAgent = () => {
 export const useUpdateAgent = () => {
   return useMutation({
     mutationFn: async ({ agentId, data }: { agentId: string; data: Partial<AgentConfig> }) => {
-      const response = await fetch(`${API_BASE}/agents/${agentId}`, {
+      const response = await authFetch(`${API_BASE}/agents/${agentId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -80,7 +81,7 @@ export const useUpdateAgent = () => {
 export const useDeleteAgent = () => {
   return useMutation({
     mutationFn: async (agentId: string) => {
-      const response = await fetch(`${API_BASE}/agents/${agentId}`, {
+      const response = await authFetch(`${API_BASE}/agents/${agentId}`, {
         method: 'DELETE'
       });
 
@@ -105,7 +106,7 @@ export const useAgentSessions = (agentId: string, searchTerm?: string, projectPa
       if (projectPath) {
         url.searchParams.set('projectPath', projectPath);
       }
-      const response = await fetch(url.toString());
+      const response = await authFetch(url.toString());
       if (!response.ok) {
         throw new Error('Failed to fetch agent sessions');
       }
@@ -141,8 +142,8 @@ export const useAgentSessionMessages = (agentId: string, sessionId: string | nul
       
       console.log('🎣 Fetching from URL:', url.toString());
       
-      const response = await fetch(url.toString());
-      
+      const response = await authFetch(url.toString());
+
       if (!response.ok) {
         console.error('🎣 Fetch failed:', response.status, response.statusText);
         throw new Error('Failed to fetch agent session messages');
@@ -203,7 +204,7 @@ export const useAgentChat = () => {
     }) => {
       try {
         console.log('🚀 Starting SSE request to:', `${API_BASE}/agents/chat`);
-        const response = await fetch(`${API_BASE}/agents/chat`, {
+        const response = await authFetch(`${API_BASE}/agents/chat`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -284,7 +285,7 @@ export const useCreateProject = () => {
       projectName: string;
       parentDirectory?: string;
     }) => {
-      const response = await fetch(`${API_BASE}/agents/projects/create`, {
+      const response = await authFetch(`${API_BASE}/agents/projects/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -307,7 +308,7 @@ export const useAgentProjects = (agentId: string) => {
   return useQuery({
     queryKey: ['agent-projects', agentId],
     queryFn: async () => {
-      const response = await fetch(`${API_BASE}/projects/agents/${agentId}`);
+      const response = await authFetch(`${API_BASE}/projects/agents/${agentId}`);
       if (!response.ok) {
         throw new Error('Failed to fetch agent projects');
       }

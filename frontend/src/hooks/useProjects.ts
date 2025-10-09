@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { API_BASE, isApiUnavailableError } from '../lib/config';
+import { authFetch } from '../lib/authFetch';
 
 export interface Project {
   id: string;
@@ -21,7 +22,7 @@ interface ProjectsResponse {
 
 const fetchProjects = async (): Promise<ProjectsResponse> => {
   try {
-    const response = await fetch(`${API_BASE}/projects`);
+    const response = await authFetch(`${API_BASE}/projects`);
     if (!response.ok) {
       throw new Error('Failed to fetch projects');
     }

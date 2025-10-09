@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { tabManager } from '../utils/tabManager';
 import { API_BASE } from '../lib/config';
+import { authFetch } from '../lib/authFetch';
 
 interface UseSessionHeartbeatOptions {
   agentId?: string;
@@ -35,7 +36,7 @@ export const useSessionHeartbeat = ({
 
     try {
       const url = `${API_BASE}/sessions/${agentId}/${sessionId}/check`;
-      const response = await fetch(url);
+      const response = await authFetch(url);
       
       if (response.ok) {
         const data = await response.json();
@@ -56,8 +57,8 @@ export const useSessionHeartbeat = ({
 
     try {
       const url = `${API_BASE}/sessions/${agentId}/${sessionId}/heartbeat`;
-      
-      const response = await fetch(url, {
+
+      const response = await authFetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { API_BASE } from '../../lib/config';
+import { authFetch } from '../../lib/authFetch';
 import {
   Save,
   Brain,
@@ -22,7 +23,7 @@ export const MemorySettingsPage: React.FC = () => {
   const loadGlobalMemory = async () => {
     setIsLoadingMemory(true);
     try {
-      const response = await fetch(`${API_BASE}/settings/global-memory`);
+      const response = await authFetch(`${API_BASE}/settings/global-memory`);
       if (response.ok) {
         const data = await response.text();
         setGlobalMemory(data);
@@ -36,14 +37,14 @@ export const MemorySettingsPage: React.FC = () => {
 
   const saveGlobalMemory = async () => {
     try {
-      const response = await fetch(`${API_BASE}/settings/global-memory`, {
+      const response = await authFetch(`${API_BASE}/settings/global-memory`, {
         method: 'POST',
         headers: {
           'Content-Type': 'text/plain',
         },
         body: globalMemory,
       });
-      
+
       if (response.ok) {
         setIsEditingMemory(false);
         alert(t('settings.memorySettings.saveSuccess'));

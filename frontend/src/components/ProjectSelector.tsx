@@ -6,6 +6,7 @@ import type { AgentConfig } from '../types/index.js';
 import { useCreateProject, useAgentProjects } from '../hooks/useAgents.js';
 import { FileBrowser } from './FileBrowser.js';
 import { API_BASE } from '../lib/config';
+import { authFetch } from '../lib/authFetch';
 
 interface ProjectSelectorProps {
   agent: AgentConfig;
@@ -115,11 +116,11 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
       // If not found in agent.projects, check if the directory has agent sessions
       if (!isExistingProject) {
         try {
-          const response = await fetch(`${API_BASE}/files/browse?path=${encodeURIComponent(path)}/.cc-sessions`);
+          const response = await authFetch(`${API_BASE}/files/browse?path=${encodeURIComponent(path)}/.cc-sessions`);
           if (response.ok) {
             const data = await response.json();
             // Check if agent's session directory exists
-            const hasAgentSessions = data.items?.some((item: any) => 
+            const hasAgentSessions = data.items?.some((item: any) =>
               item.isDirectory && item.name === agent.id
             );
             if (hasAgentSessions) {

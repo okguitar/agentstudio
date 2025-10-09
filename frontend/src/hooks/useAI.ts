@@ -1,13 +1,14 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import type { AIModelsResponse, ChatContext } from '../types/index.js';
 import { API_BASE } from '../lib/config.js';
+import { authFetch } from '../lib/authFetch';
 
 // Get available AI models
 export const useAIModels = () => {
   return useQuery<AIModelsResponse>({
     queryKey: ['ai-models'],
     queryFn: async () => {
-      const response = await fetch(`${API_BASE}/ai/models`);
+      const response = await authFetch(`${API_BASE}/ai/models`);
       if (!response.ok) {
         throw new Error('Failed to fetch AI models');
       }
@@ -35,7 +36,7 @@ export const useAIChat = () => {
       onError?: (error: unknown) => void;
     }) => {
       try {
-        const response = await fetch(`${API_BASE}/ai/chat`, {
+        const response = await authFetch(`${API_BASE}/ai/chat`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -104,7 +105,7 @@ export const useAIEditSlide = () => {
       instruction: string;
       preserveStyle?: boolean;
     }) => {
-      const response = await fetch(`${API_BASE}/ai/edit-slide`, {
+      const response = await authFetch(`${API_BASE}/ai/edit-slide`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -138,7 +139,7 @@ export const useAIGenerateSlide = () => {
       style?: string;
       includeImages?: boolean;
     }) => {
-      const response = await fetch(`${API_BASE}/ai/generate-slide`, {
+      const response = await authFetch(`${API_BASE}/ai/generate-slide`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -168,7 +169,7 @@ export const useSessions = (searchTerm?: string) => {
       if (searchTerm && searchTerm.trim()) {
         url.searchParams.append('search', searchTerm.trim());
       }
-      const response = await fetch(url.toString());
+      const response = await authFetch(url.toString());
       if (!response.ok) {
         throw new Error('Failed to fetch sessions');
       }
@@ -180,7 +181,7 @@ export const useSessions = (searchTerm?: string) => {
 export const useCreateSession = () => {
   return useMutation({
     mutationFn: async (title?: string) => {
-      const response = await fetch(`${API_BASE}/sessions/ppt-editor`, {
+      const response = await authFetch(`${API_BASE}/sessions/ppt-editor`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -200,7 +201,7 @@ export const useCreateSession = () => {
 export const useDeleteSession = () => {
   return useMutation({
     mutationFn: async (sessionId: string) => {
-      const response = await fetch(`${API_BASE}/sessions/ppt-editor/${sessionId}`, {
+      const response = await authFetch(`${API_BASE}/sessions/ppt-editor/${sessionId}`, {
         method: 'DELETE'
       });
 
@@ -222,8 +223,8 @@ export const useSessionMessages = (sessionId: string | null) => {
         return { messages: [] };
       }
 
-      const response = await fetch(`${API_BASE}/sessions/ppt-editor/${sessionId}/messages`);
-      
+      const response = await authFetch(`${API_BASE}/sessions/ppt-editor/${sessionId}/messages`);
+
       if (!response.ok) {
         throw new Error('Failed to fetch session messages');
       }

@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { API_BASE } from '../lib/config.js';
+import { authFetch } from '../lib/authFetch';
 
 export interface FileData {
   path: string;
@@ -17,7 +18,7 @@ export const useReadFile = (path: string) => {
   return useQuery<FileData>({
     queryKey: ['file', path],
     queryFn: async () => {
-      const response = await fetch(`${API_BASE}/files/read?path=${encodeURIComponent(path)}`);
+      const response = await authFetch(`${API_BASE}/files/read?path=${encodeURIComponent(path)}`);
       if (!response.ok) {
         throw new Error('Failed to read file');
       }
@@ -32,7 +33,7 @@ export const useReadFiles = (paths: string[]) => {
   return useQuery<FilesResponse>({
     queryKey: ['files', paths],
     queryFn: async () => {
-      const response = await fetch(`${API_BASE}/files/read-multiple`, {
+      const response = await authFetch(`${API_BASE}/files/read-multiple`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -56,7 +57,7 @@ export const useWriteFile = () => {
   
   return useMutation({
     mutationFn: async ({ path, content }: { path: string; content: string }) => {
-      const response = await fetch(`${API_BASE}/files/write`, {
+      const response = await authFetch(`${API_BASE}/files/write`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

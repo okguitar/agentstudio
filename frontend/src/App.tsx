@@ -14,6 +14,8 @@ import { SubagentsPage } from './pages/settings/SubagentsPage';
 import { CommandsPage } from './pages/CommandsPage';
 import { ChatPage } from './pages/ChatPage';
 import LandingPage from './pages/LandingPage';
+import { LoginPage } from './pages/LoginPage';
+import { ProtectedRoute } from './components/ProtectedRoute';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -65,18 +67,43 @@ const AppContent: React.FC = () => {
   return (
     <Router>
       <Routes>
-        {/* Landing page (new homepage) */}
+        {/* Public routes */}
         <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<LoginPage />} />
 
-        {/* Chat page without layout (full screen) */}
-        <Route path="/chat/:agentId" element={<ChatPage />} />
+        {/* Protected routes */}
+        <Route path="/chat/:agentId" element={
+          <ProtectedRoute>
+            <ChatPage />
+          </ProtectedRoute>
+        } />
 
-        {/* Admin pages with layout */}
-        <Route path="/dashboard" element={<Layout><DashboardPage /></Layout>} />
-        <Route path="/agents" element={<Layout><AgentsPage /></Layout>} />
-        <Route path="/projects" element={<Layout><ProjectsPage /></Layout>} />
-        <Route path="/mcp" element={<Layout><McpPage /></Layout>} />
-        <Route path="/settings" element={<Layout><SettingsLayout /></Layout>}>
+        {/* Admin pages with layout (protected) */}
+        <Route path="/dashboard" element={
+          <ProtectedRoute>
+            <Layout><DashboardPage /></Layout>
+          </ProtectedRoute>
+        } />
+        <Route path="/agents" element={
+          <ProtectedRoute>
+            <Layout><AgentsPage /></Layout>
+          </ProtectedRoute>
+        } />
+        <Route path="/projects" element={
+          <ProtectedRoute>
+            <Layout><ProjectsPage /></Layout>
+          </ProtectedRoute>
+        } />
+        <Route path="/mcp" element={
+          <ProtectedRoute>
+            <Layout><McpPage /></Layout>
+          </ProtectedRoute>
+        } />
+        <Route path="/settings" element={
+          <ProtectedRoute>
+            <Layout><SettingsLayout /></Layout>
+          </ProtectedRoute>
+        }>
           <Route index element={<GeneralSettingsPage />} />
           <Route path="general" element={<GeneralSettingsPage />} />
           <Route path="versions" element={<VersionSettingsPage />} />
@@ -85,8 +112,12 @@ const AppContent: React.FC = () => {
           <Route path="subagents" element={<SubagentsPage />} />
         </Route>
 
-        {/* Catch-all route for unmatched paths (excludes /media/* which should be handled by backend) */}
-        <Route path="*" element={<Layout><div className="p-4 text-center">Page not found</div></Layout>} />
+        {/* Catch-all route for unmatched paths */}
+        <Route path="*" element={
+          <ProtectedRoute>
+            <Layout><div className="p-4 text-center">Page not found</div></Layout>
+          </ProtectedRoute>
+        } />
       </Routes>
     </Router>
   );

@@ -14,6 +14,8 @@ import settingsRouter from './routes/settings.js';
 import commandsRouter from './routes/commands.js';
 import subagentsRouter from './routes/subagents.js';
 import projectsRouter from './routes/projects.js';
+import authRouter from './routes/auth.js';
+import { authMiddleware } from './middleware/auth.js';
 
 dotenv.config();
 
@@ -96,16 +98,19 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 const slidesDir = join(__dirname, '../..', process.env.SLIDES_DIR || 'slides');
 app.use('/slides', express.static(slidesDir));
 
-// Routes
-app.use('/api/files', filesRouter);
-app.use('/api/agents', agentsRouter);
-app.use('/api/mcp', mcpRouter);
-app.use('/api/sessions', sessionsRouter);
-app.use('/api/settings', settingsRouter);
-app.use('/api/commands', commandsRouter);
-app.use('/api/subagents', subagentsRouter);
-app.use('/api/projects', projectsRouter);
-app.use('/media', mediaRouter);
+// Routes - Public routes
+app.use('/api/auth', authRouter);
+
+// Protected routes - Require authentication
+app.use('/api/files', authMiddleware, filesRouter);
+app.use('/api/agents', authMiddleware, agentsRouter);
+app.use('/api/mcp', authMiddleware, mcpRouter);
+app.use('/api/sessions', authMiddleware, sessionsRouter);
+app.use('/api/settings', authMiddleware, settingsRouter);
+app.use('/api/commands', authMiddleware, commandsRouter);
+app.use('/api/subagents', authMiddleware, subagentsRouter);
+app.use('/api/projects', authMiddleware, projectsRouter);
+app.use('/media', authMiddleware, mediaRouter);
 
 // Health check
 app.get('/api/health', (req, res) => {

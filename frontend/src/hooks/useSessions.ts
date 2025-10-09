@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { API_BASE, isApiUnavailableError } from '../lib/config';
+import { authFetch } from '../lib/authFetch';
 
 export interface SessionInfo {
   sessionId: string;
@@ -21,7 +22,7 @@ export interface SessionsResponse {
 
 const fetchSessions = async (): Promise<SessionsResponse> => {
   try {
-    const response = await fetch(`${API_BASE}/agents/sessions`);
+    const response = await authFetch(`${API_BASE}/agents/sessions`);
     if (!response.ok) {
       throw new Error('Failed to fetch sessions');
     }
@@ -58,20 +59,20 @@ export const useSessions = () => {
 };
 
 export const closeSession = async (sessionId: string): Promise<void> => {
-  const response = await fetch(`${API_BASE}/agents/sessions/${sessionId}`, {
+  const response = await authFetch(`${API_BASE}/agents/sessions/${sessionId}`, {
     method: 'DELETE',
   });
-  
+
   if (!response.ok) {
     throw new Error('Failed to close session');
   }
 };
 
 export const cleanupSession = async (agentId: string, sessionId: string): Promise<void> => {
-  const response = await fetch(`${API_BASE}/sessions/${agentId}/${sessionId}/cleanup`, {
+  const response = await authFetch(`${API_BASE}/sessions/${agentId}/${sessionId}/cleanup`, {
     method: 'DELETE',
   });
-  
+
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(errorData.error || 'Failed to cleanup session');

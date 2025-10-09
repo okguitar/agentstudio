@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { API_BASE } from '../../lib/config';
+import { authFetch } from '../../lib/authFetch';
 import {
   Download,
   RefreshCw,
@@ -64,7 +65,7 @@ export const VersionSettingsPage: React.FC = () => {
     setIsLoadingVersions(true);
     setUpdateResult(null);
     try {
-      const response = await fetch(`${API_BASE}/settings/versions`);
+      const response = await authFetch(`${API_BASE}/settings/versions`);
       if (response.ok) {
         const data = await response.json();
         setVersions(data);
@@ -88,13 +89,13 @@ export const VersionSettingsPage: React.FC = () => {
     setIsUpdatingClaude(true);
     setUpdateResult(null);
     try {
-      const response = await fetch(`${API_BASE}/settings/update-claude`, {
+      const response = await authFetch(`${API_BASE}/settings/update-claude`, {
         method: 'POST'
       });
       const result = await response.json();
-      
+
       setUpdateResult(result);
-      
+
       // Reload versions after update
       if (result.success) {
         setTimeout(() => {

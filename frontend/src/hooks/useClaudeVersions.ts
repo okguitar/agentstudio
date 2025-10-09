@@ -1,13 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ClaudeVersion, ClaudeVersionCreate, ClaudeVersionUpdate, ClaudeVersionResponse } from '@agentstudio/shared/types/claude-versions';
 import { API_BASE } from '../lib/config';
+import { authFetch } from '../lib/authFetch';
 
 // 获取所有Claude版本
 export const useClaudeVersions = () => {
   return useQuery<ClaudeVersionResponse>({
     queryKey: ['claude-versions'],
     queryFn: async () => {
-      const response = await fetch(`${API_BASE}/settings/claude-versions`);
+      const response = await authFetch(`${API_BASE}/settings/claude-versions`);
       if (!response.ok) {
         throw new Error('Failed to fetch Claude versions');
       }
@@ -22,7 +23,7 @@ export const useCreateClaudeVersion = () => {
   
   return useMutation({
     mutationFn: async (data: ClaudeVersionCreate): Promise<ClaudeVersion> => {
-      const response = await fetch(`${API_BASE}/settings/claude-versions`, {
+      const response = await authFetch(`${API_BASE}/settings/claude-versions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -49,7 +50,7 @@ export const useUpdateClaudeVersion = () => {
   
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: ClaudeVersionUpdate }): Promise<ClaudeVersion> => {
-      const response = await fetch(`${API_BASE}/settings/claude-versions/${id}`, {
+      const response = await authFetch(`${API_BASE}/settings/claude-versions/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -76,7 +77,7 @@ export const useDeleteClaudeVersion = () => {
   
   return useMutation({
     mutationFn: async (id: string): Promise<void> => {
-      const response = await fetch(`${API_BASE}/settings/claude-versions/${id}`, {
+      const response = await authFetch(`${API_BASE}/settings/claude-versions/${id}`, {
         method: 'DELETE',
       });
       
@@ -97,7 +98,7 @@ export const useSetDefaultClaudeVersion = () => {
   
   return useMutation({
     mutationFn: async (id: string): Promise<void> => {
-      const response = await fetch(`${API_BASE}/settings/claude-versions/${id}/set-default`, {
+      const response = await authFetch(`${API_BASE}/settings/claude-versions/${id}/set-default`, {
         method: 'PUT',
       });
       

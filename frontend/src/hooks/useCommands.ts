@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { SlashCommand, SlashCommandCreate, SlashCommandUpdate, SlashCommandFilter } from '../types/commands';
 import { API_BASE, isApiUnavailableError } from '../lib/config';
+import { authFetch } from '../lib/authFetch';
 
 
 // API functions
@@ -11,7 +12,7 @@ const fetchCommands = async (filter: SlashCommandFilter = {}): Promise<SlashComm
     if (filter.namespace) params.append('namespace', filter.namespace);
     if (filter.search) params.append('search', filter.search);
 
-    const response = await fetch(`${API_BASE}/commands?${params}`);
+    const response = await authFetch(`${API_BASE}/commands?${params}`);
     if (!response.ok) {
       throw new Error('Failed to fetch commands');
     }
@@ -27,7 +28,7 @@ const fetchCommands = async (filter: SlashCommandFilter = {}): Promise<SlashComm
 };
 
 const fetchCommand = async (id: string): Promise<SlashCommand> => {
-  const response = await fetch(`${API_BASE}/commands/${encodeURIComponent(id)}`);
+  const response = await authFetch(`${API_BASE}/commands/${encodeURIComponent(id)}`);
   if (!response.ok) {
     throw new Error('Failed to fetch command');
   }
@@ -35,44 +36,44 @@ const fetchCommand = async (id: string): Promise<SlashCommand> => {
 };
 
 const createCommand = async (command: SlashCommandCreate): Promise<SlashCommand> => {
-  const response = await fetch(`${API_BASE}/commands`, {
+  const response = await authFetch(`${API_BASE}/commands`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(command),
   });
-  
+
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.error || 'Failed to create command');
   }
-  
+
   return response.json();
 };
 
 const updateCommand = async (id: string, updates: SlashCommandUpdate): Promise<SlashCommand> => {
-  const response = await fetch(`${API_BASE}/commands/${encodeURIComponent(id)}`, {
+  const response = await authFetch(`${API_BASE}/commands/${encodeURIComponent(id)}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(updates),
   });
-  
+
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.error || 'Failed to update command');
   }
-  
+
   return response.json();
 };
 
 const deleteCommand = async (id: string): Promise<void> => {
-  const response = await fetch(`${API_BASE}/commands/${encodeURIComponent(id)}`, {
+  const response = await authFetch(`${API_BASE}/commands/${encodeURIComponent(id)}`, {
     method: 'DELETE',
   });
-  
+
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.error || 'Failed to delete command');
@@ -146,7 +147,7 @@ const fetchProjectCommands = async (projectIdentifier: string, filter: Omit<Slas
     projectPath = projectIdentifier;
   } else {
     // It's a project ID, need to resolve to path
-    const projectResponse = await fetch(`${API_BASE}/projects`);
+    const projectResponse = await authFetch(`${API_BASE}/projects`);
     if (!projectResponse.ok) {
       throw new Error('Failed to fetch project info');
     }
@@ -165,7 +166,7 @@ const fetchProjectCommands = async (projectIdentifier: string, filter: Omit<Slas
   if (filter.namespace) params.append('namespace', filter.namespace);
   if (filter.search) params.append('search', filter.search);
 
-  const response = await fetch(`${API_BASE}/commands?${params}`);
+  const response = await authFetch(`${API_BASE}/commands?${params}`);
   if (!response.ok) {
     throw new Error('Failed to fetch project commands');
   }
@@ -183,7 +184,7 @@ export const useProjectCommands = (filter: { projectId: string; search?: string 
 // Project-specific command creation
 const createProjectCommand = async (projectId: string, command: SlashCommandCreate): Promise<SlashCommand> => {
   // First get the project info to get the path
-  const projectResponse = await fetch(`${API_BASE}/agents/projects`);
+  const projectResponse = await authFetch(`${API_BASE}/agents/projects`);
   if (!projectResponse.ok) {
     throw new Error('Failed to fetch project info');
   }
@@ -197,26 +198,26 @@ const createProjectCommand = async (projectId: string, command: SlashCommandCrea
   const params = new URLSearchParams();
   params.append('projectPath', project.path);
 
-  const response = await fetch(`${API_BASE}/commands?${params}`, {
+  const response = await authFetch(`${API_BASE}/commands?${params}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(command),
   });
-  
+
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.error || 'Failed to create command');
   }
-  
+
   return response.json();
 };
 
 // Project-specific command update
 const updateProjectCommand = async (projectId: string, data: { id: string; updates: SlashCommandUpdate }): Promise<SlashCommand> => {
   // First get the project info to get the path
-  const projectResponse = await fetch(`${API_BASE}/agents/projects`);
+  const projectResponse = await authFetch(`${API_BASE}/agents/projects`);
   if (!projectResponse.ok) {
     throw new Error('Failed to fetch project info');
   }
@@ -231,26 +232,26 @@ const updateProjectCommand = async (projectId: string, data: { id: string; updat
   const params = new URLSearchParams();
   params.append('projectPath', project.path);
 
-  const response = await fetch(`${API_BASE}/commands/${encodeURIComponent(id)}?${params}`, {
+  const response = await authFetch(`${API_BASE}/commands/${encodeURIComponent(id)}?${params}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(updates),
   });
-  
+
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.error || 'Failed to update command');
   }
-  
+
   return response.json();
 };
 
 // Project-specific command deletion
 const deleteProjectCommand = async (projectId: string, id: string): Promise<void> => {
   // First get the project info to get the path
-  const projectResponse = await fetch(`${API_BASE}/agents/projects`);
+  const projectResponse = await authFetch(`${API_BASE}/agents/projects`);
   if (!projectResponse.ok) {
     throw new Error('Failed to fetch project info');
   }
@@ -264,10 +265,10 @@ const deleteProjectCommand = async (projectId: string, id: string): Promise<void
   const params = new URLSearchParams();
   params.append('projectPath', project.path);
 
-  const response = await fetch(`${API_BASE}/commands/${encodeURIComponent(id)}?${params}`, {
+  const response = await authFetch(`${API_BASE}/commands/${encodeURIComponent(id)}?${params}`, {
     method: 'DELETE',
   });
-  
+
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.error || 'Failed to delete command');

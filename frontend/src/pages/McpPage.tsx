@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { API_BASE } from '../lib/config';
+import { authFetch } from '../lib/authFetch';
 import {
   Plus,
   Trash2,
@@ -60,7 +61,7 @@ export const McpPage: React.FC = () => {
   const loadMcpConfigs = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE}/mcp`);
+      const response = await authFetch(`${API_BASE}/mcp`);
       if (response.ok) {
         const data = await response.json();
         setServers(data.servers || []);
@@ -102,7 +103,7 @@ export const McpPage: React.FC = () => {
           : s
       ));
 
-      const response = await fetch(`${API_BASE}/mcp/${serverName}/validate`, {
+      const response = await authFetch(`${API_BASE}/mcp/${serverName}/validate`, {
         method: 'POST'
       });
       
@@ -189,7 +190,7 @@ export const McpPage: React.FC = () => {
   const handleDeleteServer = async (serverName: string) => {
     if (window.confirm(t('mcp.confirmDelete', { name: serverName }))) {
       try {
-        const response = await fetch(`${API_BASE}/mcp/${serverName}`, {
+        const response = await authFetch(`${API_BASE}/mcp/${serverName}`, {
           method: 'DELETE'
         });
 
@@ -218,7 +219,7 @@ export const McpPage: React.FC = () => {
   const handleImportFromClaudeCode = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE}/mcp/claude-code`);
+      const response = await authFetch(`${API_BASE}/mcp/claude-code`);
 
       if (response.ok) {
         const result = await response.json();
@@ -256,7 +257,7 @@ export const McpPage: React.FC = () => {
             importData.url = claudeServer.url;
           }
 
-          const importResponse = await fetch(`${API_BASE}/mcp`, {
+          const importResponse = await authFetch(`${API_BASE}/mcp`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
@@ -349,7 +350,7 @@ export const McpPage: React.FC = () => {
       if (editingServer) {
         // Update existing server - only send config data, name comes from URL
         console.log('Updating existing MCP server:', editingServer.name, 'with config:', config);
-        response = await fetch(`${API_BASE}/mcp/${editingServer.name}`, {
+        response = await authFetch(`${API_BASE}/mcp/${editingServer.name}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json'
@@ -362,7 +363,7 @@ export const McpPage: React.FC = () => {
           name: formData.name,
           ...config
         };
-        response = await fetch(`${API_BASE}/mcp`, {
+        response = await authFetch(`${API_BASE}/mcp`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'

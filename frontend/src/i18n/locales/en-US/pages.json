@@ -26,6 +26,15 @@
       "checking": "Checking..."
     }
   },
+  "login": {
+    "title": "Sign In",
+    "subtitle": "Enter your password to continue",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "Enter password",
+    "loginButton": "Sign In",
+    "loggingIn": "Signing in...",
+    "footer": "Please contact your administrator if you forgot your password"
+  },
   "landing": {
     "pageTitle": "AgentStudio - AI Agent Platform | Powered by Claude Code",
     "metaDescription": "A modern personal agent platform built on Claude Code SDK. Access powerful AI capabilities through an intuitive web interface, supporting multiple LLMs to boost productivity.",

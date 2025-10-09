@@ -26,6 +26,15 @@
       "checking": "检查中..."
     }
   },
+  "login": {
+    "title": "登录",
+    "subtitle": "请输入密码以继续",
+    "passwordLabel": "密码",
+    "passwordPlaceholder": "请输入密码",
+    "loginButton": "登录",
+    "loggingIn": "登录中...",
+    "footer": "如果您忘记了密码，请联系管理员"
+  },
   "landing": {
     "pageTitle": "AgentStudio - 智能体工作平台 | Claude Code 驱动的 AI 助手",
     "metaDescription": "基于 Claude Code SDK 的现代化个人智能体工作平台。通过直观的 Web 界面，轻松访问强大的 AI 能力，支持多种大语言模型，提升工作效率。",

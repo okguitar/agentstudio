@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { API_BASE } from '../lib/config';
+import { authFetch } from '../lib/authFetch';
 import { Check, X, RefreshCw, AlertCircle, Wrench, ChevronDown, ChevronRight, Minus, Plug2, Lock } from 'lucide-react';
 import { getAllToolsInfo, getToolDisplayName } from '@agentstudio/shared/utils/toolMapping';
 import type { AgentTool } from '../types/index';
@@ -63,13 +64,13 @@ export const UnifiedToolSelector: React.FC<UnifiedToolSelectorProps> = ({
   const fetchMcpServers = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
-      const response = await fetch(`${API_BASE}/mcp`);
+      const response = await authFetch(`${API_BASE}/mcp`);
       if (!response.ok) {
         throw new Error('Failed to fetch MCP configurations');
       }
-      
+
       const data = await response.json();
       setServers(data.servers || []);
     } catch (err) {
