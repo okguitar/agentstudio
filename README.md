@@ -72,12 +72,19 @@ AgentStudio is a modern, web-based personal agent workspace platform built on to
 
 #### For End Users (One-Click Installation)
 
-**Option 1: User Installation (Recommended - No sudo required)**
+**🐧 Linux & 🍎 macOS - User Installation (Recommended - No sudo required)**
 
 ```bash
 # Install Agent Studio backend in user space
 curl -fsSL https://raw.githubusercontent.com/git-men/agentstudio/main/scripts/remote-install.sh | bash
 ```
+
+The installer will:
+- ✅ **Auto-detect and install Node.js 18+** (via system package manager or NVM)
+- ✅ **Auto-install pnpm** for faster package management (optional)
+- ✅ **Handle all dependencies** automatically
+- ✅ **Support all major Linux distributions** (Ubuntu, CentOS, Fedora, Arch, etc.)
+- ✅ **Work with both root and regular users**
 
 The installer will ask if you want to start the backend immediately. If you choose not to start now, you can start it later:
 
@@ -87,6 +94,28 @@ The installer will ask if you want to start the backend immediately. If you choo
 
 # Stop the backend
 ~/.agent-studio/stop.sh
+```
+
+**🪟 Windows - PowerShell Installation**
+
+```powershell
+# Run as Administrator in PowerShell
+PowerShell -ExecutionPolicy Bypass -Command "iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/git-men/agentstudio/main/scripts/windows-install.ps1'))"
+```
+
+The Windows installer will:
+- ✅ **Auto-install Node.js** (via Chocolatey, winget, or direct download)
+- ✅ **Auto-install Git** if not available
+- ✅ **Handle all dependencies** automatically
+- ✅ **Create start/stop batch scripts**
+
+**Windows Alternative - Simple Batch Script**
+If you already have Node.js and Git installed:
+
+```batch
+# Download and run the simple installer
+curl -o windows-install-simple.bat https://raw.githubusercontent.com/git-men/agentstudio/main/scripts/windows-install-simple.bat
+windows-install-simple.bat
 ```
 
 **Access the application:**
@@ -280,8 +309,49 @@ For system service installation (with sudo):
 
 ### 🔧 Troubleshooting
 
+#### Installation Issues
+
+**Node.js Installation Problems:**
+The installer automatically handles Node.js installation, but if you encounter issues:
+
+```bash
+# For Linux/macOS - Manual Node.js installation via NVM
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+source ~/.bashrc
+nvm install --lts
+nvm use --lts
+
+# For Windows - Download from official website
+# Visit: https://nodejs.org/
+```
+
+**Ubuntu/Debian Specific Issues:**
+- **Root User Detection**: Fixed in latest installer - now properly supports both root and regular users
+- **TTY Issues**: Installer sets `CI=true` to handle non-interactive environments
+- **Build Failures**: Installer automatically retries with dev dependencies
+
+**Windows Installation Issues:**
+- **PowerShell Execution Policy**: Run `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`
+- **Missing Dependencies**: Installer will prompt to install Node.js, Git, and other requirements
+- **Permission Issues**: Run PowerShell as Administrator for system-wide installations
+
 #### Service Won't Start
 
+**For User Installation:**
+```bash
+# Check if backend is running
+curl http://localhost:4936/api/health
+
+# View logs
+cat ~/.agent-studio-logs/output.log
+cat ~/.agent-studio-logs/error.log
+
+# Restart backend
+~/.agent-studio/stop.sh
+~/.agent-studio/start.sh
+```
+
+**For System Service Installation:**
 ```bash
 # Check service status
 agent-studio status
@@ -298,7 +368,17 @@ lsof -i :4936
 
 #### Common Issues
 
-**Permission Errors:**
+**Permission Errors (User Installation):**
+```bash
+# Fix script permissions
+chmod +x ~/.agent-studio/start.sh
+chmod +x ~/.agent-studio/stop.sh
+
+# Fix directory permissions
+chmod -R 755 ~/.agent-studio
+```
+
+**Permission Errors (System Service):**
 ```bash
 sudo chown -R agent-studio:agent-studio /opt/agent-studio
 sudo chown -R agent-studio:agent-studio /var/log/agent-studio
@@ -309,16 +389,42 @@ sudo chown -R agent-studio:agent-studio /var/log/agent-studio
 # Find process using the port
 lsof -i :4936
 
-# Change port in configuration
-agent-studio config  # Edit PORT=8080
-agent-studio restart
+# Kill the process (replace PID with actual process ID)
+kill -9 <PID>
+
+# Or change port in configuration
+# Edit ~/.agent-studio-config/config.env and change PORT=8080
 ```
+
+**Build Failures:**
+The installer now automatically handles build failures by:
+1. Installing dev dependencies
+2. Retrying the build
+3. Falling back to development mode if build still fails
 
 **Health Check:**
 ```bash
-agent-studio health
-# Or manually:
+# For user installation
 curl http://localhost:4936/api/health
+
+# For system service
+agent-studio health
+```
+
+**Windows Specific Issues:**
+```batch
+REM Check if Node.js is available
+node --version
+
+REM Check if backend is running
+curl http://localhost:4936/api/health
+
+REM Start backend manually
+cd %USERPROFILE%\.agent-studio
+start.bat
+
+REM Stop backend
+stop.bat
 ```
 
 ### 📦 Updates

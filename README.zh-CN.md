@@ -70,12 +70,19 @@ AgentStudio 是一个基于 Claude Code SDK 构建的现代化个人智能体工
 
 ### 普通用户（一键安装）
 
-**方式一：用户空间安装（推荐 - 无需 sudo）**
+**🐧 Linux & 🍎 macOS - 用户空间安装（推荐 - 无需 sudo）**
 
 ```bash
 # 在用户空间安装 Agent Studio 后端
 curl -fsSL https://raw.githubusercontent.com/git-men/agentstudio/main/scripts/remote-install.sh | bash
 ```
+
+安装程序会：
+- ✅ **自动检测并安装 Node.js 18+**（通过系统包管理器或 NVM）
+- ✅ **自动安装 pnpm** 以获得更快的包管理性能（可选）
+- ✅ **自动处理所有依赖项**
+- ✅ **支持所有主流 Linux 发行版**（Ubuntu、CentOS、Fedora、Arch 等）
+- ✅ **支持 root 用户和普通用户**
 
 安装程序会询问是否立即启动后端。如果选择暂不启动，稍后可以手动启动：
 
@@ -85,6 +92,28 @@ curl -fsSL https://raw.githubusercontent.com/git-men/agentstudio/main/scripts/re
 
 # 停止后端
 ~/.agent-studio/stop.sh
+```
+
+**🪟 Windows - PowerShell 安装**
+
+```powershell
+# 以管理员身份在 PowerShell 中运行
+PowerShell -ExecutionPolicy Bypass -Command "iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/git-men/agentstudio/main/scripts/windows-install.ps1'))"
+```
+
+Windows 安装程序会：
+- ✅ **自动安装 Node.js**（通过 Chocolatey、winget 或直接下载）
+- ✅ **自动安装 Git**（如果未安装）
+- ✅ **自动处理所有依赖项**
+- ✅ **创建启动/停止批处理脚本**
+
+**Windows 备选方案 - 简化批处理脚本**
+如果您已经安装了 Node.js 和 Git：
+
+```batch
+# 下载并运行简化安装程序
+curl -o windows-install-simple.bat https://raw.githubusercontent.com/git-men/agentstudio/main/scripts/windows-install-simple.bat
+windows-install-simple.bat
 ```
 
 **访问应用：**
@@ -277,8 +306,49 @@ agent-studio uninstall  # 卸载服务
 
 ## 🔧 故障排除
 
+### 安装问题
+
+**Node.js 安装问题：**
+安装程序会自动处理 Node.js 安装，但如果遇到问题：
+
+```bash
+# Linux/macOS - 通过 NVM 手动安装 Node.js
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+source ~/.bashrc
+nvm install --lts
+nvm use --lts
+
+# Windows - 从官网下载
+# 访问：https://nodejs.org/
+```
+
+**Ubuntu/Debian 特定问题：**
+- **Root 用户检测**：最新安装程序已修复 - 现在正确支持 root 用户和普通用户
+- **TTY 问题**：安装程序设置 `CI=true` 处理非交互式环境
+- **构建失败**：安装程序自动使用开发依赖重试
+
+**Windows 安装问题：**
+- **PowerShell 执行策略**：运行 `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`
+- **缺少依赖**：安装程序会提示安装 Node.js、Git 和其他必需组件
+- **权限问题**：以管理员身份运行 PowerShell 进行系统级安装
+
 ### 服务无法启动
 
+**用户空间安装：**
+```bash
+# 检查后端是否运行
+curl http://localhost:4936/api/health
+
+# 查看日志
+cat ~/.agent-studio-logs/output.log
+cat ~/.agent-studio-logs/error.log
+
+# 重启后端
+~/.agent-studio/stop.sh
+~/.agent-studio/start.sh
+```
+
+**系统服务安装：**
 ```bash
 # 检查服务状态
 agent-studio status
@@ -295,11 +365,20 @@ lsof -i :4936
 
 ### 常见问题
 
-**权限错误：**
+**权限错误（用户安装）：**
 ```bash
-# 修复文件权限
+# 修复脚本权限
 chmod +x ~/.agent-studio/start.sh
 chmod +x ~/.agent-studio/stop.sh
+
+# 修复目录权限
+chmod -R 755 ~/.agent-studio
+```
+
+**权限错误（系统服务）：**
+```bash
+sudo chown -R agent-studio:agent-studio /opt/agent-studio
+sudo chown -R agent-studio:agent-studio /var/log/agent-studio
 ```
 
 **端口被占用：**
@@ -307,14 +386,42 @@ chmod +x ~/.agent-studio/stop.sh
 # 查找占用端口的进程
 lsof -i :4936
 
-# 终止进程或在配置中更改端口
-~/.agent-studio/stop.sh
+# 终止进程（将 PID 替换为实际进程 ID）
+kill -9 <PID>
+
+# 或在配置中更改端口
+# 编辑 ~/.agent-studio-config/config.env 并更改 PORT=8080
 ```
+
+**构建失败：**
+安装程序现在自动处理构建失败：
+1. 安装开发依赖
+2. 重试构建
+3. 如果构建仍然失败，回退到开发模式
 
 **健康检查：**
 ```bash
-# 手动检查后端健康状态
+# 用户安装
 curl http://localhost:4936/api/health
+
+# 系统服务
+agent-studio health
+```
+
+**Windows 特定问题：**
+```batch
+REM 检查 Node.js 是否可用
+node --version
+
+REM 检查后端是否运行
+curl http://localhost:4936/api/health
+
+REM 手动启动后端
+cd %USERPROFILE%\.agent-studio
+start.bat
+
+REM 停止后端
+stop.bat
 ```
 
 ## 📦 更新

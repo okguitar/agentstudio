@@ -376,48 +376,33 @@ run_installation() {
     
     if command -v pnpm >/dev/null 2>&1; then
         log "Using pnpm for installation..."
-        pnpm install --prod
         
-        # Try to build
+        # Install all dependencies (including dev dependencies)
+        pnpm install
+        
+        # Try to build backend - if it fails, continue with development mode
         log "Attempting to build backend..."
         if pnpm run build:backend 2>/dev/null; then
             BUILD_SUCCESS=true
-            success "Build successful"
+            success "Build successful - will run in production mode"
         else
-            warn "Build failed, installing dev dependencies..."
-            # Install all dependencies including dev dependencies
-            pnpm install
-            
-            # Try building again
-            log "Retrying build with dev dependencies..."
-            if pnpm run build:backend 2>/dev/null; then
-                BUILD_SUCCESS=true
-                success "Build successful after installing dev dependencies"
-            else
-                warn "Build still failed, will run in development mode"
-            fi
+            log "Build failed or skipped - will run in development mode"
+            BUILD_SUCCESS=false
         fi
     else
         log "Using npm for installation..."
-        npm install --production
         
-        # Try to build
+        # Install all dependencies (including dev dependencies)
+        npm install
+        
+        # Try to build backend - if it fails, continue with development mode
         log "Attempting to build backend..."
         if npm run build:backend 2>/dev/null; then
             BUILD_SUCCESS=true
-            success "Build successful"
+            success "Build successful - will run in production mode"
         else
-            warn "Build failed, installing dev dependencies..."
-            npm install
-            
-            # Try building again
-            log "Retrying build with dev dependencies..."
-            if npm run build:backend 2>/dev/null; then
-                BUILD_SUCCESS=true
-                success "Build successful after installing dev dependencies"
-            else
-                warn "Build still failed, will run in development mode"
-            fi
+            log "Build failed or skipped - will run in development mode"
+            BUILD_SUCCESS=false
         fi
     fi
     
