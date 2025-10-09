@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { getCurrentHost, setHost } from '../lib/config';
+import { showSuccess } from '../utils/toast';
 
 interface ApiSettingsModalProps {
   isOpen: boolean;
@@ -82,7 +83,7 @@ export const ApiSettingsModal: React.FC<ApiSettingsModalProps> = ({ isOpen, onCl
 
     if (connectionStatus === 'success') {
       setHost(apiHost.trim());
-      alert(t('apiSettingsModal.saveSuccess'));
+      showSuccess(t('apiSettingsModal.saveSuccess'));
       window.location.reload();
     }
   };

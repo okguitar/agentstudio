@@ -5,6 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { ProjectSelector } from '../components/ProjectSelector';
 import type { AgentConfig } from '../types/index.js';
 import { useTranslation } from 'react-i18next';
+import { showError, showInfo } from '../utils/toast';
 
 export const HomePage: React.FC = () => {
   const { t } = useTranslation('home');
@@ -40,7 +41,7 @@ export const HomePage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['agents'] });
     } catch (error) {
       console.error('Failed to toggle agent:', error);
-      alert(t('errors.toggleFailed'));
+      showError(t('errors.toggleFailed'));
     }
   };
 
@@ -77,7 +78,7 @@ export const HomePage: React.FC = () => {
             <h2 className="text-2xl font-semibold text-gray-900">{t('availableAgents')}</h2>
             <div className="flex items-center space-x-4">
               <button
-                onClick={() => alert(t('customAgentComingSoon'))}
+                onClick={() => showInfo(t('customAgentComingSoon'))}
                 className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 <Plus className="w-4 h-4" />

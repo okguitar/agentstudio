@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { getCurrentHost, setHost } from '../../lib/config.js';
+import { showSuccess } from '../../utils/toast';
 
 export const ApiSettingsPage: React.FC = () => {
   const { t } = useTranslation('pages');
@@ -73,7 +74,7 @@ export const ApiSettingsPage: React.FC = () => {
 
     if (connectionStatus === 'success') {
       setHost(apiHost.trim());
-      alert(t('settings.apiSettings.settingsSavedRefresh'));
+      showSuccess(t('settings.apiSettings.settingsSavedRefresh'));
     }
   };
 

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { API_BASE } from '../lib/config';
 import { authFetch } from '../lib/authFetch';
+import { showError, showSuccess, showInfo } from '../utils/toast';
 import {
   Plus,
   Trash2,
@@ -202,7 +203,7 @@ export const McpPage: React.FC = () => {
         }
       } catch (error) {
         console.error('Delete config failed:', error);
-        alert(`${t('mcp.errors.deleteFailed')}: ${error instanceof Error ? error.message : t('errors:common.unknownError')}`);
+        showError(t('mcp.errors.deleteFailed'), error instanceof Error ? error.message : t('errors:common.unknownError'));
       }
     }
   };
@@ -226,7 +227,7 @@ export const McpPage: React.FC = () => {
         const claudeCodeServers = result.servers || [];
 
         if (claudeCodeServers.length === 0) {
-          alert(t('mcp.import.noConfigFound'));
+          showInfo(t('mcp.import.noConfigFound'));
           return;
         }
 
@@ -273,9 +274,9 @@ export const McpPage: React.FC = () => {
         }
 
         if (importedCount > 0) {
-          alert(t('mcp.import.success', { imported: importedCount, skipped: skippedCount }));
+          showSuccess(t('mcp.import.success', { imported: importedCount, skipped: skippedCount }));
         } else {
-          alert(t('mcp.import.allExist'));
+          showInfo(t('mcp.import.allExist'));
         }
       } else {
         const error = await response.json();
@@ -283,7 +284,7 @@ export const McpPage: React.FC = () => {
       }
     } catch (error) {
       console.error('Failed to import from Claude Code:', error);
-      alert(`${t('mcp.errors.importFailed')}: ${error instanceof Error ? error.message : t('errors:common.unknownError')}`);
+      showError(t('mcp.errors.importFailed'), error instanceof Error ? error.message : t('errors:common.unknownError'));
     } finally {
       setLoading(false);
     }
@@ -327,12 +328,12 @@ export const McpPage: React.FC = () => {
     e.preventDefault();
 
     if (!formData.name.trim()) {
-      alert(t('mcp.form.nameRequired'));
+      showError(t('mcp.form.nameRequired'));
       return;
     }
 
     if (!validateConfig(formData.config, formData.type)) {
-      alert(t('mcp.form.configInvalid', {
+      showError(t('mcp.form.configInvalid', {
         fields: formData.type === 'stdio'
           ? t('mcp.form.requiredFieldsStdio')
           : t('mcp.form.requiredFieldsHttp')
@@ -399,7 +400,7 @@ export const McpPage: React.FC = () => {
 
     } catch (error) {
       console.error('Failed to save MCP config:', error);
-      alert(`${t('mcp.errors.saveFailed')}: ${error instanceof Error ? error.message : t('errors:common.unknownError')}`);
+      showError(t('mcp.errors.saveFailed'), error instanceof Error ? error.message : t('errors:common.unknownError'));
     } finally {
       setIsSubmitting(false);
     }

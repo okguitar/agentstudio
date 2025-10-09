@@ -8,6 +8,7 @@ import {
   Globe,
   // Terminal
 } from 'lucide-react';
+import { showSuccess } from '../../utils/toast';
 
 export const GeneralSettingsPage: React.FC = () => {
   const { t, i18n } = useTranslation('pages');
@@ -51,7 +52,7 @@ export const GeneralSettingsPage: React.FC = () => {
   };
 
   const saveSettings = () => {
-    alert(t('settings.general.settingsSaved'));
+    showSuccess(t('settings.general.settingsSaved'));
   };
 
   return (

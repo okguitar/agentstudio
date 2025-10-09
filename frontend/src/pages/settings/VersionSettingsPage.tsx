@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { API_BASE } from '../../lib/config';
 import { authFetch } from '../../lib/authFetch';
+import { showError, showSuccess } from '../../utils/toast';
 import {
   Download,
   RefreshCw,
@@ -232,7 +233,7 @@ export const VersionSettingsPage: React.FC = () => {
   const handleSave = async () => {
     try {
       if (!formData.name || !formData.alias) {
-        alert(t('settings.version.errors.requiredFields'));
+        showError(t('settings.version.errors.requiredFields'));
         return;
       }
 
@@ -249,33 +250,33 @@ export const VersionSettingsPage: React.FC = () => {
           id: editingVersion.id,
           data: dataToSave as ClaudeVersionUpdate
         });
-        alert(t('settings.version.success.updateVersion'));
+        showSuccess(t('settings.version.success.updateVersion'));
       } else {
         // 创建新版本
         await createClaudeVersion.mutateAsync(dataToSave as ClaudeVersionCreate);
-        alert(t('settings.version.success.createVersion'));
+        showSuccess(t('settings.version.success.createVersion'));
       }
 
       handleCancel();
     } catch (error) {
       console.error('Error saving version:', error);
-      alert(error instanceof Error ? error.message : t('settings.version.errors.saveFailed'));
+      showError(t('settings.version.errors.saveFailed'), error instanceof Error ? error.message : undefined);
     }
   };
 
   const handleDelete = async (version: ClaudeVersion) => {
     if (version.isSystem) {
-      alert(t('settings.version.errors.cannotDeleteSystem'));
+      showError(t('settings.version.errors.cannotDeleteSystem'));
       return;
     }
 
     if (confirm(t('settings.version.confirmDelete', { alias: version.alias }))) {
       try {
         await deleteClaudeVersion.mutateAsync(version.id);
-        alert(t('settings.version.success.deleteVersion'));
+        showSuccess(t('settings.version.success.deleteVersion'));
       } catch (error) {
         console.error('Error deleting version:', error);
-        alert(error instanceof Error ? error.message : t('settings.version.errors.deleteFailed'));
+        showError(t('settings.version.errors.deleteFailed'), error instanceof Error ? error.message : undefined);
       }
     }
   };
@@ -283,10 +284,10 @@ export const VersionSettingsPage: React.FC = () => {
   const handleSetDefault = async (version: ClaudeVersion) => {
     try {
       await setDefaultClaudeVersion.mutateAsync(version.id);
-      alert(t('settings.version.success.setDefault', { alias: version.alias }));
+      showSuccess(t('settings.version.success.setDefault', { alias: version.alias }));
     } catch (error) {
       console.error('Error setting default version:', error);
-      alert(error instanceof Error ? error.message : t('settings.version.errors.setDefaultFailed'));
+      showError(t('settings.version.errors.setDefaultFailed'), error instanceof Error ? error.message : undefined);
     }
   };
 
@@ -294,16 +295,16 @@ export const VersionSettingsPage: React.FC = () => {
     try {
       const command = generateClaudeCommand(version);
       const success = await copyToClipboard(command);
-      
+
       if (success) {
-        alert(t('settings.version.success.copyCommand'));
+        showSuccess(t('settings.version.success.copyCommand'));
       } else {
         // 如果复制失败，显示命令让用户手动复制
-        alert(t('settings.version.errors.copyFailed') + '\n\n' + command);
+        showError(t('settings.version.errors.copyFailed'), command);
       }
     } catch (error) {
       console.error('Error copying command:', error);
-      alert(t('settings.version.errors.copyFailed'));
+      showError(t('settings.version.errors.copyFailed'));
     }
   };
 

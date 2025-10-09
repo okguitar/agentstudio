@@ -16,6 +16,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useAgents } from '../hooks/useAgents';
 import { smartNavigate, showNavigationNotification } from '../utils/smartNavigation';
 import { useTranslation } from 'react-i18next';
+import { showError } from '../utils/toast';
 
 export const SessionsDashboard: React.FC = () => {
   const { t } = useTranslation('components');
@@ -32,7 +33,7 @@ export const SessionsDashboard: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['sessions'] });
     } catch (error) {
       console.error('Failed to cleanup session:', error);
-      alert(t('sessionsDashboard.errors.cleanupFailed'));
+      showError(t('sessionsDashboard.errors.cleanupFailed'));
     } finally {
       setCleanupLoading(null);
     }

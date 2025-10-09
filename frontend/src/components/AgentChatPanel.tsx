@@ -14,15 +14,16 @@ import { ChatMessageRenderer } from './ChatMessageRenderer';
 import { SessionsDropdown } from './SessionsDropdown';
 import { UnifiedToolSelector } from './UnifiedToolSelector';
 import type { AgentConfig } from '../types/index.js';
-import { 
-  isCommandTrigger, 
-  extractCommandSearch, 
-  formatCommandMessage, 
+import {
+  isCommandTrigger,
+  extractCommandSearch,
+  formatCommandMessage,
   type CommandType
 } from '../utils/commandFormatter';
 import { createCommandHandler, SystemCommand } from '../utils/commandHandler';
 import { eventBus, EVENTS } from '../utils/eventBus';
 import { useTranslation } from 'react-i18next';
+import { showInfo } from '../utils/toast';
 
 interface AgentChatPanelProps {
   agent: AgentConfig;
@@ -430,7 +431,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
         agentStore: useAgentStore.getState(),
         onNewSession: handleNewSession,
         onNavigate: (path: string) => {
-          alert(t('agentChat.navigateToAlert', { path }));
+          showInfo(t('agentChat.navigateToAlert', { path }));
         },
         onConfirm: (message: string, onConfirm: () => void) => {
           setConfirmMessage(message);

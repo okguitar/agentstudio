@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { API_BASE } from '../lib/config';
 import { authFetch } from '../lib/authFetch';
+import { showError } from '../utils/toast';
 import {
   Plus,
   Search,
@@ -348,7 +349,7 @@ export const ProjectsPage: React.FC = () => {
       }
     } catch (error) {
       console.error('Failed to create project:', error);
-      alert(`${t('projects.errors.createFailed')}: ${error instanceof Error ? error.message : t('errors:common.unknownError')}`);
+      showError(t('projects.errors.createFailed'), error instanceof Error ? error.message : t('errors:common.unknownError'));
     }
   };
 
@@ -395,7 +396,7 @@ export const ProjectsPage: React.FC = () => {
         }
       } catch (error) {
         console.error('Failed to delete project:', error);
-        alert(`${t('projects.errors.deleteFailed')}: ${error instanceof Error ? error.message : t('errors:common.unknownError')}`);
+        showError(t('projects.errors.deleteFailed'), error instanceof Error ? error.message : t('errors:common.unknownError'));
       }
     }
   };
@@ -442,11 +443,11 @@ export const ProjectsPage: React.FC = () => {
         window.open(url, '_blank');
       } else {
         const error = await response.json();
-        alert(`${t('errors:agent.setFailed')}: ${error.error || t('errors:common.unknownError')}`);
+        showError(t('errors:agent.setFailed'), error.error || t('errors:common.unknownError'));
       }
     } catch (error) {
       console.error('Failed to select agent:', error);
-      alert(`${t('errors:agent.setFailed')}: ${error instanceof Error ? error.message : t('errors:common.unknownError')}`);
+      showError(t('errors:agent.setFailed'), error instanceof Error ? error.message : t('errors:common.unknownError'));
     }
   };
 

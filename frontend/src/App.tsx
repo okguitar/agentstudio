@@ -16,6 +16,8 @@ import { ChatPage } from './pages/ChatPage';
 import LandingPage from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { Toaster } from './components/ui/toaster';
+import { ToastTestPage } from './pages/ToastTestPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -112,6 +114,13 @@ const AppContent: React.FC = () => {
           <Route path="subagents" element={<SubagentsPage />} />
         </Route>
 
+        {/* Toast Test Page */}
+        <Route path="/toast-test" element={
+          <ProtectedRoute>
+            <Layout><ToastTestPage /></Layout>
+          </ProtectedRoute>
+        } />
+
         {/* Catch-all route for unmatched paths */}
         <Route path="*" element={
           <ProtectedRoute>
@@ -127,6 +136,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AppContent />
+      <Toaster />
     </QueryClientProvider>
   );
 }

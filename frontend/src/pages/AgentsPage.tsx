@@ -14,6 +14,7 @@ import { ProjectSelector } from '../components/ProjectSelector';
 import { UnifiedToolSelector } from '../components/UnifiedToolSelector';
 import type { AgentConfig, AgentTool } from '../types/index.js';
 import { useTranslation } from 'react-i18next';
+import { showError } from '../utils/toast';
 
 
 export const AgentsPage: React.FC = () => {
@@ -66,7 +67,7 @@ export const AgentsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['agents'] });
     } catch (error) {
       console.error('Failed to toggle agent:', error);
-      alert(t('agents.errors.toggleFailed'));
+      showError(t('agents.errors.toggleFailed'));
     }
   };
 
@@ -215,7 +216,7 @@ export const AgentsPage: React.FC = () => {
 
   const handleDelete = async (agent: AgentConfig) => {
     if (agent.id === 'ppt-editor' || agent.id === 'code-assistant' || agent.id === 'document-writer') {
-      alert(t('agents.errors.builtinCannotDelete'));
+      showError(t('agents.errors.builtinCannotDelete'));
       return;
     }
 
@@ -227,7 +228,7 @@ export const AgentsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['agents'] });
     } catch (error) {
       console.error('Failed to delete agent:', error);
-      alert(t('agents.errors.deleteFailed'));
+      showError(t('agents.errors.deleteFailed'));
     }
   };
 

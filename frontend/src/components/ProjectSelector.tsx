@@ -7,6 +7,7 @@ import { useCreateProject, useAgentProjects } from '../hooks/useAgents.js';
 import { FileBrowser } from './FileBrowser.js';
 import { API_BASE } from '../lib/config';
 import { authFetch } from '../lib/authFetch';
+import { showError } from '../utils/toast';
 
 interface ProjectSelectorProps {
   agent: AgentConfig;
@@ -52,9 +53,10 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
       onProjectSelect(result.project.path);
     } catch (error) {
       console.error('Failed to create project:', error);
-      alert(t('projectSelector.createProjectFailed', {
-        error: error instanceof Error ? error.message : t('projectSelector.unknownError')
-      }));
+      showError(
+        t('projectSelector.createProjectFailed', { error: '' }),
+        error instanceof Error ? error.message : t('projectSelector.unknownError')
+      );
     } finally {
       setIsCreatingProject(false);
     }
@@ -90,9 +92,10 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
       onProjectSelect(result.project.path);
     } catch (error) {
       console.error('Failed to create project:', error);
-      alert(t('projectSelector.createProjectFailed', {
-        error: error instanceof Error ? error.message : t('projectSelector.unknownError')
-      }));
+      showError(
+        t('projectSelector.createProjectFailed', { error: '' }),
+        error instanceof Error ? error.message : t('projectSelector.unknownError')
+      );
     } finally {
       setIsCreatingProject(false);
       setShowProjectNameDialog(false);

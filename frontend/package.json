@@ -16,9 +16,11 @@
   "dependencies": {
     "@agentstudio/shared": "workspace:*",
     "@monaco-editor/react": "^4.7.0",
+    "@radix-ui/react-toast": "^1.2.15",
     "@tanstack/react-query": "^5.85.5",
     "@types/prismjs": "^1.26.5",
     "ai": "^5.0.22",
+    "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "diff": "^7.0.0",
     "i18next": "^25.5.2",

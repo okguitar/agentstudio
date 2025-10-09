@@ -8,6 +8,7 @@ import {
   Edit,
   FileText
 } from 'lucide-react';
+import { showError, showSuccess } from '../../utils/toast';
 
 export const MemorySettingsPage: React.FC = () => {
   const { t } = useTranslation('pages');
@@ -47,13 +48,13 @@ export const MemorySettingsPage: React.FC = () => {
 
       if (response.ok) {
         setIsEditingMemory(false);
-        alert(t('settings.memorySettings.saveSuccess'));
+        showSuccess(t('settings.memorySettings.saveSuccess'));
       } else {
         throw new Error('Failed to save');
       }
     } catch (error) {
       console.error('Failed to save global memory:', error);
-      alert(t('settings.memorySettings.saveFailed'));
+      showError(t('settings.memorySettings.saveFailed'));
     }
   };
 

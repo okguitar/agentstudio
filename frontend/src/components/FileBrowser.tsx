@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { API_BASE } from '../lib/config';
 import { authFetch } from '../lib/authFetch';
+import { showError } from '../utils/toast';
 import {
   Folder,
   File,
@@ -142,7 +143,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
       setNewFolderName('');
     } catch (error) {
       console.error('Failed to create directory:', error);
-      alert(error instanceof Error ? error.message : t('fileBrowser.errors.createFailed'));
+      showError(t('fileBrowser.errors.createFailed'), error instanceof Error ? error.message : undefined);
     } finally {
       setCreatingFolder(false);
     }
