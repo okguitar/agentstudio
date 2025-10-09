@@ -45,7 +45,10 @@ log "Operating System: $OS"
 # Check GLIBC version (Linux only)
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
     if command -v ldd >/dev/null 2>&1; then
-        GLIBC_VERSION=$(ldd --version 2>/dev/null | head -n1 | grep -oP '\d+\.\d+$' || echo "unknown")
+        GLIBC_VERSION=$(ldd --version 2>/dev/null | head -n1 | sed -n 's/.*[^0-9]\([0-9][0-9]*\.[0-9][0-9]*\)$/\1/p')
+        if [ -z "$GLIBC_VERSION" ]; then
+            GLIBC_VERSION="unknown"
+        fi
         log "GLIBC Version: $GLIBC_VERSION"
 
         if [ "$GLIBC_VERSION" != "unknown" ]; then

@@ -111,12 +111,16 @@ check_glibc_version() {
         return
     fi
 
-    # Check GLIBC version
-    local GLIBC_VERSION=$(ldd --version 2>/dev/null | head -n1 | grep -oP '\d+\.\d+$' || echo "0.0")
+    # Check GLIBC version - using more portable regex
+    local GLIBC_VERSION=$(ldd --version 2>/dev/null | head -n1 | sed -n 's/.*[^0-9]\([0-9][0-9]*\.[0-9][0-9]*\)$/\1/p')
+    if [ -z "$GLIBC_VERSION" ]; then
+        GLIBC_VERSION="0.0"
+    fi
     local GLIBC_MAJOR=$(echo "$GLIBC_VERSION" | cut -d. -f1)
     local GLIBC_MINOR=$(echo "$GLIBC_VERSION" | cut -d. -f2)
 
-    log "Detected GLIBC version: $GLIBC_VERSION"
+    # Output logs to stderr to avoid mixing with return value
+    log "Detected GLIBC version: $GLIBC_VERSION" >&2
 
     # Node.js version requirements:
     # v22+: GLIBC 2.28+
@@ -126,20 +130,20 @@ check_glibc_version() {
 
     if [ "$GLIBC_MAJOR" -gt 2 ] || ([ "$GLIBC_MAJOR" -eq 2 ] && [ "$GLIBC_MINOR" -ge 28 ]); then
         # GLIBC 2.28+: Use latest LTS (Node.js 22)
-        log "GLIBC version is sufficient for latest Node.js LTS"
+        log "GLIBC version is sufficient for latest Node.js LTS" >&2
         echo "lts/*"
     elif [ "$GLIBC_MAJOR" -eq 2 ] && [ "$GLIBC_MINOR" -ge 27 ]; then
         # GLIBC 2.27: Use Node.js 18
-        warn "GLIBC version requires Node.js 18 (older LTS)"
+        warn "GLIBC version requires Node.js 18 (older LTS)" >&2
         echo "18"
     elif [ "$GLIBC_MAJOR" -eq 2 ] && [ "$GLIBC_MINOR" -ge 17 ]; then
         # GLIBC 2.17-2.26: Use Node.js 16
-        warn "GLIBC version requires Node.js 16 (older LTS)"
+        warn "GLIBC version requires Node.js 16 (older LTS)" >&2
         echo "16"
     else
         # Very old GLIBC: warn user
-        error "GLIBC version $GLIBC_VERSION is too old for modern Node.js"
-        error "Please upgrade your system or use a newer distribution"
+        error "GLIBC version $GLIBC_VERSION is too old for modern Node.js" >&2
+        error "Please upgrade your system or use a newer distribution" >&2
         return 1
     fi
 }
