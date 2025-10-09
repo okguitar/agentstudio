@@ -148,26 +148,50 @@ install_nodejs_via_nvm() {
 install_nodejs_linux() {
     log "Installing Node.js on Linux..."
     
+    # Determine if we need sudo
+    local SUDO_CMD=""
+    if [ "$EUID" -ne 0 ]; then
+        SUDO_CMD="sudo"
+    fi
+    
     case "$DISTRO" in
         "debian")
             log "Using apt package manager..."
             # Add NodeSource repository
-            curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
-            sudo apt-get install -y nodejs
+            if ! curl -fsSL https://deb.nodesource.com/setup_lts.x | $SUDO_CMD -E bash -; then
+                error "Failed to add NodeSource repository"
+                return 1
+            fi
+            if ! $SUDO_CMD apt-get install -y nodejs; then
+                error "Failed to install Node.js via apt"
+                return 1
+            fi
             ;;
         "redhat")
             log "Using yum/dnf package manager..."
             # Add NodeSource repository
-            curl -fsSL https://rpm.nodesource.com/setup_lts.x | sudo bash -
+            if ! curl -fsSL https://rpm.nodesource.com/setup_lts.x | $SUDO_CMD bash -; then
+                error "Failed to add NodeSource repository"
+                return 1
+            fi
             if command -v dnf >/dev/null 2>&1; then
-                sudo dnf install -y nodejs npm
+                if ! $SUDO_CMD dnf install -y nodejs npm; then
+                    error "Failed to install Node.js via dnf"
+                    return 1
+                fi
             else
-                sudo yum install -y nodejs npm
+                if ! $SUDO_CMD yum install -y nodejs npm; then
+                    error "Failed to install Node.js via yum"
+                    return 1
+                fi
             fi
             ;;
         "arch")
             log "Using pacman package manager..."
-            sudo pacman -S --noconfirm nodejs npm
+            if ! $SUDO_CMD pacman -S --noconfirm nodejs npm; then
+                error "Failed to install Node.js via pacman"
+                return 1
+            fi
             ;;
         *)
             log "Unknown Linux distribution, trying NVM..."
@@ -200,7 +224,8 @@ auto_install_nodejs() {
         case "$OS" in
             "linux")
                 # Try package manager first, fallback to NVM
-                if [ "$DISTRO" != "unknown" ] && [ "$EUID" -ne 0 ] && command -v sudo >/dev/null 2>&1; then
+                # Check if we can use system package manager (either as root or with sudo)
+                if [ "$DISTRO" != "unknown" ] && ([ "$EUID" -eq 0 ] || command -v sudo >/dev/null 2>&1); then
                     if ! install_nodejs_linux; then
                         warn "System package manager installation failed, trying NVM..."
                         install_nodejs_via_nvm
@@ -346,6 +371,9 @@ run_installation() {
     log "Installing dependencies..."
     BUILD_SUCCESS=false
     
+    # Set CI environment variable to handle TTY issues
+    export CI=true
+    
     if command -v pnpm >/dev/null 2>&1; then
         log "Using pnpm for installation..."
         pnpm install --prod
@@ -357,7 +385,17 @@ run_installation() {
             success "Build successful"
         else
             warn "Build failed, installing dev dependencies..."
-            echo "y" | pnpm install
+            # Install all dependencies including dev dependencies
+            pnpm install
+            
+            # Try building again
+            log "Retrying build with dev dependencies..."
+            if pnpm run build:backend 2>/dev/null; then
+                BUILD_SUCCESS=true
+                success "Build successful after installing dev dependencies"
+            else
+                warn "Build still failed, will run in development mode"
+            fi
         fi
     else
         log "Using npm for installation..."
@@ -371,6 +409,15 @@ run_installation() {
         else
             warn "Build failed, installing dev dependencies..."
             npm install
+            
+            # Try building again
+            log "Retrying build with dev dependencies..."
+            if npm run build:backend 2>/dev/null; then
+                BUILD_SUCCESS=true
+                success "Build successful after installing dev dependencies"
+            else
+                warn "Build still failed, will run in development mode"
+            fi
         fi
     fi
     
