@@ -15,7 +15,7 @@
     "@agentstudio/shared": "workspace:*",
     "@ai-sdk/anthropic": "^1.0.5",
     "@ai-sdk/openai": "^1.0.7",
-    "@anthropic-ai/claude-code": "^2.0.1",
+    "@anthropic-ai/claude-code": "^2.0.10",
     "ai": "^5.0.22",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
@@ -32,7 +32,7 @@
     "@types/fs-extra": "^11.0.1",
     "@types/node": "^20.5.0",
     "ts-node": "^10.9.2",
-    "tsx": "^3.12.7",
+    "tsx": "^4.20.6",
     "typescript": "^5.1.6"
   }
 }

@@ -4,7 +4,7 @@
   "description": "Claude-powered AgentStudio with React frontend and Node.js backend, built on top of Claude Code SDK",
   "type": "module",
   "private": true,
-  "packageManager": "pnpm@9.0.0",
+  "packageManager": "pnpm@10.18.1",
   "scripts": {
     "dev": "pnpm --parallel run dev",
     "dev:frontend": "pnpm --filter frontend run dev",
@@ -45,7 +45,7 @@
     "url": "https://github.com/git-men/agentstudio/issues"
   },
   "devDependencies": {
-    "typescript": "^5.9.2",
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "typescript": "^5.9.2"
   }
 }
