@@ -222,7 +222,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
           className={`text-sm leading-relaxed break-words overflow-hidden ${
             message.role === 'user'
               ? 'text-white p-3 rounded-lg'
-              : 'text-gray-800'
+              : 'text-gray-800 dark:text-gray-200'
           }`}
           style={message.role === 'user' ? { backgroundColor: agent.ui.primaryColor } : {}}
         >

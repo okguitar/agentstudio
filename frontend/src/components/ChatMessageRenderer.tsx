@@ -59,7 +59,7 @@ const ChatMessageRendererComponent: React.FC<ChatMessageRendererProps> = ({ mess
         {sortedParts.map((part) => {
           if (part.type === 'command' && part.content) {
             return (
-              <div key={part.id} className="inline-flex items-center px-2 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-md text-sm font-mono">
+              <div key={part.id} className="inline-flex items-center px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700 rounded-md text-sm font-mono">
                 {part.content}
               </div>
             );
@@ -82,11 +82,11 @@ const ChatMessageRendererComponent: React.FC<ChatMessageRendererProps> = ({ mess
           } else if (part.type === 'thinking' && part.content) {
             return (
               <details key={part.id} className="my-2">
-                <summary className="cursor-pointer text-gray-500 text-sm hover:text-gray-700 transition-colors select-none">
+                <summary className="cursor-pointer text-gray-500 dark:text-gray-400 text-sm hover:text-gray-700 dark:hover:text-gray-300 transition-colors select-none">
                   💭 思考过程...
                 </summary>
-                <div className="mt-2 pl-4 border-l-2 border-gray-200">
-                  <div className="text-gray-600 text-sm whitespace-pre-wrap break-words leading-relaxed italic">
+                <div className="mt-2 pl-4 border-l-2 border-gray-200 dark:border-gray-700">
+                  <div className="text-gray-600 dark:text-gray-300 text-sm whitespace-pre-wrap break-words leading-relaxed italic">
                     {part.content}
                   </div>
                 </div>
@@ -111,7 +111,7 @@ const ChatMessageRendererComponent: React.FC<ChatMessageRendererProps> = ({ mess
                 <img
                   src={imageUrl}
                   alt={part.imageData.filename || 'Image'}
-                  className="max-w-32 max-h-32 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity"
+                  className="max-w-32 max-h-32 object-cover rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-80 transition-opacity"
                   onClick={() => openImagePreview(imageUrl)}
                   title={part.imageData.filename || 'Click to preview'}
                 />
@@ -143,11 +143,11 @@ const ChatMessageRendererComponent: React.FC<ChatMessageRendererProps> = ({ mess
               
               return (
                 <details key={part.id} className="my-2">
-                  <summary className="cursor-pointer text-gray-500 text-sm hover:text-gray-700 transition-colors select-none">
+                  <summary className="cursor-pointer text-gray-500 dark:text-gray-400 text-sm hover:text-gray-700 dark:hover:text-gray-300 transition-colors select-none">
                     💭 思考过程... (历史消息)
                   </summary>
-                  <div className="mt-2 pl-4 border-l-2 border-gray-200">
-                    <div className="text-gray-600 text-sm whitespace-pre-wrap break-words leading-relaxed italic">
+                  <div className="mt-2 pl-4 border-l-2 border-gray-200 dark:border-gray-700">
+                    <div className="text-gray-600 dark:text-gray-300 text-sm whitespace-pre-wrap break-words leading-relaxed italic">
                       {thinkingText}
                     </div>
                   </div>
@@ -191,7 +191,7 @@ const ChatMessageRendererComponent: React.FC<ChatMessageRendererProps> = ({ mess
                 key={image.id}
                 src={imageUrl}
                 alt={image.filename || 'Image'}
-                className="max-w-32 max-h-32 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity"
+                className="max-w-32 max-h-32 object-cover rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-80 transition-opacity"
                 onClick={() => openImagePreview(imageUrl)}
                 title={image.filename || 'Click to preview'}
               />
@@ -215,7 +215,7 @@ const ChatMessageRendererComponent: React.FC<ChatMessageRendererProps> = ({ mess
               if (commandMatch) {
                 // Render as command block
                 return (
-                  <div className="inline-flex items-center px-2 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-md text-sm font-mono">
+                  <div className="inline-flex items-center px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700 rounded-md text-sm font-mono">
                     {commandMatch[1]}
                   </div>
                 );
