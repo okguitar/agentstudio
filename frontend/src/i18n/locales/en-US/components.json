@@ -158,7 +158,8 @@
       "title": "Select Claude Version",
       "default": "Claude",
       "custom": "Custom",
-      "system": "System"
+      "system": "System",
+      "locked": "Version Locked (Active Session)"
     },
     "commandWarning": "Unknown command: {{command}}. Available commands: {{commands}}",
     "navigateTo": "Navigate to: {{path}}",

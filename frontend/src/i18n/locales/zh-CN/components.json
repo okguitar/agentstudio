@@ -158,7 +158,8 @@
       "title": "选择Claude版本",
       "default": "Claude",
       "custom": "自定义",
-      "system": "系统"
+      "system": "系统",
+      "locked": "版本已锁定（活跃会话）"
     },
     "commandWarning": "未知命令: {{command}}。可用命令: {{commands}}",
     "navigateTo": "导航到: {{path}}",
