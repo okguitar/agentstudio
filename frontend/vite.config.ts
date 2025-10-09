@@ -12,6 +12,32 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // 将大型第三方库分离到独立chunk
+          'monaco-editor': ['@monaco-editor/react'],
+          'syntax-highlighting': ['prismjs', 'react-syntax-highlighter'],
+          'ui-components': ['lucide-react', 'react-icons'],
+          'data-structures': ['react-arborist'],
+          // 将工具组件分离
+          'tools': [
+            './src/components/tools/TodoWriteTool.tsx',
+            './src/components/tools/KillBashTool.tsx',
+            './src/components/tools/BashOutputTool.tsx'
+          ],
+          // 将代理相关组件分离
+          'agents': [
+            './src/agents/slides/components/SlidePreview.tsx',
+            './src/agents/documents/components/DocumentOutlinePanel.tsx',
+            './src/agents/code/components/CodeExplorerPanel.tsx'
+          ]
+        }
+      }
+    },
+    chunkSizeWarningLimit: 1000, // 提高警告阈值
+  },
   server: {
     port: 3000,
     proxy: {

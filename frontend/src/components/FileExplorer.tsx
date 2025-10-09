@@ -1,7 +1,9 @@
-import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef, lazy } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Tree, NodeApi, TreeApi } from 'react-arborist';
-import Editor from '@monaco-editor/react';
+
+// 动态导入Monaco Editor
+const Editor = lazy(() => import('@monaco-editor/react'));
 import {
   FaFolder, FaFolderOpen, FaFile, FaCss3Alt, FaHtml5, FaJsSquare,
   FaReact, FaMarkdown, FaImage, FaPython, FaJava, FaFilePdf, FaFileWord
@@ -753,19 +755,25 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
           );
         }
         return (
-          <Editor
-            height="100%"
-            theme="vs-light"
-            language={getLanguageForFile(activeTab.name)}
-            value={fileContentData.content}
-            options={{
-              readOnly: true,
-              minimap: { enabled: false },
-              fontSize: 14,
-              wordWrap: 'on',
-              scrollBeyondLastLine: false,
-            }}
-          />
+          <React.Suspense fallback={
+            <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
+            </div>
+          }>
+            <Editor
+              height="100%"
+              theme="vs-light"
+              language={getLanguageForFile(activeTab.name)}
+              value={fileContentData.content}
+              options={{
+                readOnly: true,
+                minimap: { enabled: false },
+                fontSize: 14,
+                wordWrap: 'on',
+                scrollBeyondLastLine: false,
+              }}
+            />
+          </React.Suspense>
         );
 
       default:
