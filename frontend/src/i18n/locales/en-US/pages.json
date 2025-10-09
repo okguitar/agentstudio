@@ -339,6 +339,7 @@
       "pathLabel": "Path",
       "envVarsLabel": "Environment Variables",
       "setAsDefault": "Set as Default",
+      "copyCommand": "Copy Command",
       "edit": "Edit",
       "delete": "Delete",
       "confirmDelete": "Are you sure you want to delete version \"{{alias}}\"?",
@@ -410,13 +411,15 @@
         "saveFailed": "Save failed",
         "cannotDeleteSystem": "Cannot delete system version",
         "deleteFailed": "Delete failed",
-        "setDefaultFailed": "Failed to set default version"
+        "setDefaultFailed": "Failed to set default version",
+        "copyFailed": "Copy failed, please manually copy the following command:"
       },
       "success": {
         "createVersion": "Version created successfully",
         "updateVersion": "Version updated successfully",
         "deleteVersion": "Version deleted successfully",
-        "setDefault": "Set \"{{alias}}\" as default version"
+        "setDefault": "Set \"{{alias}}\" as default version",
+        "copyCommand": "Command copied to clipboard"
       }
     },
     "language": "Language Settings",

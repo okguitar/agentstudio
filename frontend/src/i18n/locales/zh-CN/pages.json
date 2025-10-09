@@ -339,6 +339,7 @@
       "pathLabel": "路径",
       "envVarsLabel": "环境变量",
       "setAsDefault": "设为默认",
+      "copyCommand": "复制命令",
       "edit": "编辑",
       "delete": "删除",
       "confirmDelete": "确定要删除版本 \"{{alias}}\" 吗？",
@@ -408,15 +409,17 @@
       "errors": {
         "requiredFields": "请填写所有必填字段",
         "saveFailed": "保存失败",
-        "cannotDeleteSystem": "不能删除系统版本",
         "deleteFailed": "删除失败",
-        "setDefaultFailed": "设置默认版本失败"
+        "setDefaultFailed": "设置默认版本失败",
+        "cannotDeleteSystem": "不能删除系统版本",
+        "copyFailed": "复制失败，请手动复制以下命令："
       },
       "success": {
         "createVersion": "版本创建成功",
         "updateVersion": "版本更新成功",
         "deleteVersion": "版本删除成功",
-        "setDefault": "已将 \"{{alias}}\" 设置为默认版本"
+        "setDefault": "已将 \"{{alias}}\" 设置为默认版本",
+        "copyCommand": "命令已复制到剪贴板"
       }
     },
     "language": "语言设置",
