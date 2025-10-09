@@ -116,6 +116,7 @@ export interface AgentSession {
   lastUpdated: number;
   messages: AgentMessage[];
   claudeSessionId?: string | null;
+  claudeVersionId?: string; // Claude version ID used for this session
   customData?: Record<string, unknown>;
 }
 

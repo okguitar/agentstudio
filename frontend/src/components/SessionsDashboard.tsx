@@ -9,11 +9,13 @@ import {
   Bot,
   Trash2,
   Heart,
-  AlertTriangle
+  AlertTriangle,
+  Terminal
 } from 'lucide-react';
 import { useSessions, cleanupSession, SessionInfo } from '../hooks/useSessions';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAgents } from '../hooks/useAgents';
+import { useClaudeVersions } from '../hooks/useClaudeVersions';
 import { smartNavigate, showNavigationNotification } from '../utils/smartNavigation';
 import { useTranslation } from 'react-i18next';
 import { showError } from '../utils/toast';
@@ -22,6 +24,7 @@ export const SessionsDashboard: React.FC = () => {
   const { t } = useTranslation('components');
   const { data: sessionsData, isLoading, error, refetch } = useSessions();
   const { data: agentsData } = useAgents();
+  const { data: claudeVersionsData } = useClaudeVersions();
   const queryClient = useQueryClient();
   const [cleanupLoading, setCleanupLoading] = useState<string | null>(null);
 
@@ -97,6 +100,13 @@ export const SessionsDashboard: React.FC = () => {
   const getAgentInfo = (agentId: string) => {
     const agents = agentsData?.agents || [];
     return agents.find(agent => agent.id === agentId);
+  };
+
+  const getClaudeVersionInfo = (versionId?: string) => {
+    if (!versionId || !claudeVersionsData?.versions) {
+      return null;
+    }
+    return claudeVersionsData.versions.find(v => v.id === versionId);
   };
 
   const getStatusColor = (session: SessionInfo) => {
@@ -238,6 +248,16 @@ export const SessionsDashboard: React.FC = () => {
                             <span>{t('sessionsDashboard.heartbeat.timeout')}</span>
                           </div>
                         )}
+                        {/* Claude 版本信息 */}
+                        {session.claudeVersionId && (() => {
+                          const versionInfo = getClaudeVersionInfo(session.claudeVersionId);
+                          return versionInfo ? (
+                            <div className="flex items-center space-x-1 text-green-600 dark:text-green-400">
+                              <Terminal className="w-3 h-3" />
+                              <span title={versionInfo.name}>{versionInfo.alias}</span>
+                            </div>
+                          ) : null;
+                        })()}
                       </div>
                     </div>
                   </div>

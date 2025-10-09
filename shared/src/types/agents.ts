@@ -61,6 +61,7 @@ export interface AgentSession {
   createdAt: number;
   lastUpdated: number;
   messages: AgentMessage[];
+  claudeVersionId?: string; // Claude version ID used for this session
   customData?: Record<string, unknown>;
 }
 

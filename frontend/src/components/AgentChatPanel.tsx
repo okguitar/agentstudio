@@ -8,6 +8,7 @@ import { useAgentChat, useAgentSessions, useAgentSessionMessages } from '../hook
 import { useCommands, useProjectCommands } from '../hooks/useCommands';
 import { useClaudeVersions } from '../hooks/useClaudeVersions';
 import { useSessionHeartbeatOnSuccess } from '../hooks/useSessionHeartbeatOnSuccess';
+import { useSessions } from '../hooks/useSessions';
 import { tabManager } from '../utils/tabManager';
 import { useQueryClient } from '@tanstack/react-query';
 import { ChatMessageRenderer } from './ChatMessageRenderer';
@@ -59,6 +60,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
   const [commandWarning, setCommandWarning] = useState<string | null>(null);
   const [hasSuccessfulResponse, setHasSuccessfulResponse] = useState(false);
   const [isNewSession, setIsNewSession] = useState(false);
+  const [isVersionLocked, setIsVersionLocked] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -84,6 +86,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
   const agentChatMutation = useAgentChat();
   const { data: sessionsData } = useAgentSessions(agent.id, searchTerm, projectPath);
   const { data: sessionMessagesData } = useAgentSessionMessages(agent.id, currentSessionId, projectPath);
+  const { data: activeSessionsData } = useSessions();
   
   // 会话心跳 - 基于 AI 响应成功状态
   useSessionHeartbeatOnSuccess({
@@ -1250,6 +1253,36 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // 检查当前会话是否在活跃会话中，如果是则切换至对应版本并锁定
+  useEffect(() => {
+    if (!currentSessionId || !activeSessionsData?.sessions) {
+      setIsVersionLocked(false);
+      return;
+    }
+
+    // 查找当前会话是否在活跃会话列表中
+    const activeSession = activeSessionsData.sessions.find(s => s.sessionId === currentSessionId);
+
+    if (activeSession) {
+      console.log(`🔒 Found active session: ${currentSessionId}, version: ${activeSession.claudeVersionId}`);
+
+      // 如果会话有指定的版本，切换到该版本并锁定
+      if (activeSession.claudeVersionId) {
+        setSelectedClaudeVersion(activeSession.claudeVersionId);
+        setIsVersionLocked(true);
+        console.log(`🔒 Locked to Claude version: ${activeSession.claudeVersionId}`);
+      } else {
+        // 会话没有指定版本，使用默认版本但不锁定
+        setIsVersionLocked(false);
+        console.log(`🔓 Session has no specific version, unlocked`);
+      }
+    } else {
+      // 会话不在活跃列表中，不锁定
+      setIsVersionLocked(false);
+      console.log(`🔓 Session ${currentSessionId} not in active sessions, unlocked`);
+    }
+  }, [currentSessionId, activeSessionsData]);
+
   return (
     <div className="flex flex-col h-full bg-white dark:bg-gray-900">
       {/* Header */}
@@ -1574,14 +1607,20 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
               {claudeVersionsData?.versions && claudeVersionsData.versions.length > 1 && (
                 <div className="relative dropdown-container">
                   <button
-                    onClick={() => setShowVersionDropdown(!showVersionDropdown)}
+                    onClick={() => !isVersionLocked && setShowVersionDropdown(!showVersionDropdown)}
                     className={`flex items-center space-x-1 px-3 py-2 text-sm rounded-lg transition-colors ${
-                      selectedClaudeVersion
+                      isVersionLocked
+                        ? 'text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 cursor-not-allowed'
+                        : selectedClaudeVersion
                         ? 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-900/50'
                         : 'text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600'
                     }`}
-                    disabled={isAiTyping}
-                    title={t('agentChat.claudeVersion.title')}
+                    disabled={isAiTyping || isVersionLocked}
+                    title={
+                      isVersionLocked
+                        ? t('agentChat.claudeVersion.locked')
+                        : t('agentChat.claudeVersion.title')
+                    }
                   >
                     <Terminal className="w-4 h-4" />
                     <span className="text-xs">

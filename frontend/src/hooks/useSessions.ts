@@ -12,6 +12,7 @@ export interface SessionInfo {
   heartbeatTimedOut: boolean;
   status: 'confirmed' | 'pending';
   projectPath: string | null;
+  claudeVersionId?: string;
 }
 
 export interface SessionsResponse {
