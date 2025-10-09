@@ -103,57 +103,120 @@ refresh_shell_env() {
     export PATH="$HOME/.local/bin:$PATH"
 }
 
+# Check GLIBC version and determine compatible Node.js version
+check_glibc_version() {
+    if [[ "$OS" != "linux" ]]; then
+        # Non-Linux systems don't have GLIBC version constraints
+        echo "lts/*"
+        return
+    fi
+
+    # Check GLIBC version
+    local GLIBC_VERSION=$(ldd --version 2>/dev/null | head -n1 | grep -oP '\d+\.\d+$' || echo "0.0")
+    local GLIBC_MAJOR=$(echo "$GLIBC_VERSION" | cut -d. -f1)
+    local GLIBC_MINOR=$(echo "$GLIBC_VERSION" | cut -d. -f2)
+
+    log "Detected GLIBC version: $GLIBC_VERSION"
+
+    # Node.js version requirements:
+    # v22+: GLIBC 2.28+
+    # v20+: GLIBC 2.28+
+    # v18: GLIBC 2.27+
+    # v16: GLIBC 2.17+
+
+    if [ "$GLIBC_MAJOR" -gt 2 ] || ([ "$GLIBC_MAJOR" -eq 2 ] && [ "$GLIBC_MINOR" -ge 28 ]); then
+        # GLIBC 2.28+: Use latest LTS (Node.js 22)
+        log "GLIBC version is sufficient for latest Node.js LTS"
+        echo "lts/*"
+    elif [ "$GLIBC_MAJOR" -eq 2 ] && [ "$GLIBC_MINOR" -ge 27 ]; then
+        # GLIBC 2.27: Use Node.js 18
+        warn "GLIBC version requires Node.js 18 (older LTS)"
+        echo "18"
+    elif [ "$GLIBC_MAJOR" -eq 2 ] && [ "$GLIBC_MINOR" -ge 17 ]; then
+        # GLIBC 2.17-2.26: Use Node.js 16
+        warn "GLIBC version requires Node.js 16 (older LTS)"
+        echo "16"
+    else
+        # Very old GLIBC: warn user
+        error "GLIBC version $GLIBC_VERSION is too old for modern Node.js"
+        error "Please upgrade your system or use a newer distribution"
+        return 1
+    fi
+}
+
 # Install Node.js via NVM
 install_nodejs_via_nvm() {
     log "Installing Node.js via NVM..."
-    
+
     # Check if curl is available
     if ! command -v curl >/dev/null 2>&1; then
         error "curl is required but not found. Please install curl first."
         return 1
     fi
-    
+
     # Download and install NVM
     log "Downloading NVM..."
     if ! curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash; then
         error "Failed to download or install NVM"
         return 1
     fi
-    
+
     # Source NVM
     export NVM_DIR="$HOME/.nvm"
     [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
     [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
-    
+
     # Check if NVM was installed successfully
     if ! command -v nvm >/dev/null 2>&1; then
         error "NVM installation failed"
         return 1
     fi
-    
-    # Install latest LTS Node.js
-    log "Installing Node.js LTS..."
-    if ! nvm install --lts; then
+
+    # Determine compatible Node.js version based on GLIBC
+    local NODE_VERSION=$(check_glibc_version)
+    if [ -z "$NODE_VERSION" ]; then
+        return 1
+    fi
+
+    # Install determined Node.js version
+    log "Installing Node.js $NODE_VERSION..."
+    log "Installing latest LTS version."
+    if ! nvm install "$NODE_VERSION"; then
         error "Failed to install Node.js via NVM"
         return 1
     fi
-    
-    nvm use --lts
-    nvm alias default lts/*
-    
+
+    nvm use "$NODE_VERSION"
+    nvm alias default "$NODE_VERSION"
+
     success "Node.js installed successfully via NVM"
 }
 
 # Install Node.js on Linux
 install_nodejs_linux() {
     log "Installing Node.js on Linux..."
-    
+
     # Determine if we need sudo
     local SUDO_CMD=""
     if [ "$EUID" -ne 0 ]; then
         SUDO_CMD="sudo"
     fi
-    
+
+    # Check GLIBC and determine compatible Node.js version
+    local NODE_VERSION=$(check_glibc_version)
+    if [ -z "$NODE_VERSION" ]; then
+        error "Cannot determine compatible Node.js version"
+        return 1
+    fi
+
+    # If not latest LTS, warn user and fall back to NVM for better version control
+    if [ "$NODE_VERSION" != "lts/*" ]; then
+        warn "System requires Node.js $NODE_VERSION due to GLIBC constraints"
+        warn "Using NVM for precise version control..."
+        install_nodejs_via_nvm
+        return $?
+    fi
+
     case "$DISTRO" in
         "debian")
             log "Using apt package manager..."
