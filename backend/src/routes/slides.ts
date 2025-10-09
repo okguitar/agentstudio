@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Router } from 'express';
 import fs from 'fs-extra';
 import { existsSync } from 'fs';
 import { join, dirname, resolve, relative } from 'path';
@@ -8,7 +8,7 @@ import { z } from 'zod';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const router = express.Router();
+const router: Router = express.Router();
 
 // Get working directory (project root)
 const getWorkingDir = () => {

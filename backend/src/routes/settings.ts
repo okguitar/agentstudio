@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Router } from 'express';
 import { readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { homedir } from 'os';
@@ -15,7 +15,7 @@ import {
 } from '@agentstudio/shared/utils/claudeVersionStorage';
 import { ClaudeVersionCreate, ClaudeVersionUpdate } from '@agentstudio/shared/types/claude-versions';
 
-const router = express.Router();
+const router: Router = express.Router();
 const execAsync = promisify(exec);
 
 // Package manager detection and utilities

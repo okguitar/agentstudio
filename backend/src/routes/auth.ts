@@ -1,7 +1,7 @@
-import express, { Request, Response } from 'express';
+import express, { Request, Response, Router } from 'express';
 import { generateToken, verifyToken } from '../utils/jwt.js';
 
-const router = express.Router();
+const router: Router = express.Router();
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 

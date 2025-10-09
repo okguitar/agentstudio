@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Router } from 'express';
 import fs from 'fs-extra';
 import { existsSync } from 'fs';
 import { join, resolve, relative, extname, dirname } from 'path';
@@ -8,7 +8,7 @@ import crypto from 'crypto';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const router = express.Router();
+const router: Router = express.Router();
 
 // Project ID to path mapping (in production, this should be stored in a database)
 const projectMappings = new Map<string, string>();

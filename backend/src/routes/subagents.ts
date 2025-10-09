@@ -1,11 +1,11 @@
-import express from 'express';
+import express, { Router } from 'express';
 import fs from 'fs';
 import path from 'path';
 import { promisify } from 'util';
 import matter from 'gray-matter';
 import { Subagent, SubagentCreate, SubagentUpdate, SubagentFilter } from '@agentstudio/shared/types/subagents';
 
-const router = express.Router();
+const router: Router = express.Router();
 const readdir = promisify(fs.readdir);
 const readFile = promisify(fs.readFile);
 const writeFile = promisify(fs.writeFile);
