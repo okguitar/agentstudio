@@ -136,12 +136,22 @@ export async function updateVersion(versionId: string, data: ClaudeVersionUpdate
     }
   }
   
+  // 合并更新数据，允许 undefined 值以便删除字段
   const updatedVersion: ClaudeVersion = {
     ...version,
     ...data,
     updatedAt: new Date().toISOString()
   };
-  
+
+  // 对于明确设置为 undefined 的可选字段，从对象中删除
+  // 这样 JSON.stringify 就不会保存这些字段
+  if (data.executablePath === undefined) {
+    delete (updatedVersion as any).executablePath;
+  }
+  if (data.description === undefined) {
+    delete (updatedVersion as any).description;
+  }
+
   storage.versions[versionIndex] = updatedVersion;
   await saveClaudeVersions(storage);
   

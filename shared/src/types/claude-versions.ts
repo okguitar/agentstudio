@@ -3,7 +3,7 @@ export interface ClaudeVersion {
   name: string;
   alias: string;
   description?: string;
-  executablePath: string;
+  executablePath?: string;
   isDefault: boolean;
   isSystem: boolean;
   environmentVariables?: Record<string, string>;
@@ -15,7 +15,7 @@ export interface ClaudeVersionCreate {
   name: string;
   alias: string;
   description?: string;
-  executablePath: string;
+  executablePath?: string;
   environmentVariables?: Record<string, string>;
 }
 
