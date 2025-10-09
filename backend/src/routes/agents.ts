@@ -536,7 +536,7 @@ async function buildQueryOptions(agent: any, projectPath: string | undefined, mc
 /**
  * 处理会话管理逻辑
  */
-async function handleSessionManagement(agentId: string, sessionId: string | null, projectPath: string | undefined, queryOptions: any) {
+async function handleSessionManagement(agentId: string, sessionId: string | null, projectPath: string | undefined, queryOptions: any, claudeVersionId?: string) {
   let claudeSession: any;
   let actualSessionId: string | null = sessionId || null;
 
@@ -548,25 +548,25 @@ async function handleSessionManagement(agentId: string, sessionId: string | null
       console.log(`♻️  Using existing persistent Claude session: ${sessionId} for agent: ${agentId}`);
     } else {
       console.log(`❌ Session ${sessionId} not found in memory for agent: ${agentId}`);
-      
+
       // 检查项目目录中是否存在会话历史
       console.log(`🔍 Checking project directory for session history: ${sessionId}, projectPath: ${projectPath}`);
       const sessionExists = sessionManager.checkSessionExists(sessionId, projectPath);
       console.log(`📁 Session history exists: ${sessionExists} for sessionId: ${sessionId}`);
-      
+
       if (sessionExists) {
         // 会话历史存在，使用 resume 参数恢复会话
         console.log(`🔄 Found session history for ${sessionId}, resuming session for agent: ${agentId}`);
-        claudeSession = sessionManager.createNewSession(agentId, queryOptions, sessionId);
+        claudeSession = sessionManager.createNewSession(agentId, queryOptions, sessionId, claudeVersionId);
       } else {
         // 会话历史不存在，创建新会话但保持原始 sessionId 用于前端识别
         console.log(`⚠️  Session ${sessionId} not found in memory or project history, creating new session for agent: ${agentId}`);
-        claudeSession = sessionManager.createNewSession(agentId, queryOptions);
+        claudeSession = sessionManager.createNewSession(agentId, queryOptions, undefined, claudeVersionId);
       }
     }
   } else {
     // 创建新的持续会话
-    claudeSession = sessionManager.createNewSession(agentId, queryOptions);
+    claudeSession = sessionManager.createNewSession(agentId, queryOptions, undefined, claudeVersionId);
     console.log(`🆕 Created new persistent Claude session for agent: ${agentId}`);
   }
 
@@ -670,7 +670,7 @@ router.post('/chat', async (req, res) => {
       const queryOptions = await buildQueryOptions(agent, projectPath, mcpTools, permissionMode, model, claudeVersion);
 
       // 处理会话管理
-      const { claudeSession, actualSessionId: initialSessionId } = await handleSessionManagement(agentId, sessionId || null, projectPath, queryOptions);
+      const { claudeSession, actualSessionId: initialSessionId } = await handleSessionManagement(agentId, sessionId || null, projectPath, queryOptions, claudeVersion);
       let actualSessionId = initialSessionId;
       
       // 设置会话到连接管理器

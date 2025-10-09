@@ -16,18 +16,20 @@ export class ClaudeSession {
   private isInitialized = false;
   private resumeSessionId: string | null = null;
   private projectPath: string | null = null;
-  
+  private claudeVersionId: string | undefined = undefined;
+
   // 响应分发器相关
   private responseCallbacks: Map<string, (response: any) => void> = new Map();
   private nextRequestId = 0;
   private isBackgroundRunning = false;
 
-  constructor(agentId: string, options: Options, resumeSessionId?: string) {
-    console.log(`🔧 [DEBUG] ClaudeSession constructor started for agent: ${agentId}, resumeSessionId: ${resumeSessionId}`);
+  constructor(agentId: string, options: Options, resumeSessionId?: string, claudeVersionId?: string) {
+    console.log(`🔧 [DEBUG] ClaudeSession constructor started for agent: ${agentId}, resumeSessionId: ${resumeSessionId}, claudeVersionId: ${claudeVersionId}`);
     this.agentId = agentId;
     this.options = { ...options };
     this.messageQueue = new MessageQueue();
     this.resumeSessionId = resumeSessionId || null;
+    this.claudeVersionId = claudeVersionId;
     // 从 options.cwd 获取项目路径
     this.projectPath = options.cwd || null;
     
@@ -69,6 +71,13 @@ export class ClaudeSession {
    */
   getProjectPath(): string | null {
     return this.projectPath;
+  }
+
+  /**
+   * 获取 Claude 版本ID
+   */
+  getClaudeVersionId(): string | undefined {
+    return this.claudeVersionId;
   }
 
   /**

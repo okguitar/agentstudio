@@ -118,9 +118,10 @@ export class SessionManager {
    * @param agentId Agent ID
    * @param options Claude 查询选项
    * @param resumeSessionId 可选的恢复会话ID
+   * @param claudeVersionId 可选的 Claude 版本ID
    */
-  createNewSession(agentId: string, options: Options, resumeSessionId?: string): ClaudeSession {
-    const session = new ClaudeSession(agentId, options, resumeSessionId);
+  createNewSession(agentId: string, options: Options, resumeSessionId?: string, claudeVersionId?: string): ClaudeSession {
+    const session = new ClaudeSession(agentId, options, resumeSessionId, claudeVersionId);
     if (resumeSessionId) {
       this.sessions.set(resumeSessionId, session);
       const sessionForAgent = this.agentSessions.get(agentId);
@@ -130,13 +131,13 @@ export class SessionManager {
         this.agentSessions.set(agentId, new Set([resumeSessionId]));
       }
 
-      console.log(`✅ Resumed persistent Claude session for agent: ${agentId} (sessionId: ${resumeSessionId})`);
+      console.log(`✅ Resumed persistent Claude session for agent: ${agentId} (sessionId: ${resumeSessionId}, claudeVersionId: ${claudeVersionId})`);
       return session;
     }
     // 生成临时键并存储
     const tempKey = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     this.tempSessions.set(tempKey, session);
-    console.log(`🆕 Created new persistent Claude session for agent: ${agentId} (temp key: ${tempKey})`);
+    console.log(`🆕 Created new persistent Claude session for agent: ${agentId} (temp key: ${tempKey}, claudeVersionId: ${claudeVersionId})`);
     return session;
   }
 
@@ -425,6 +426,7 @@ export class SessionManager {
     heartbeatTimedOut: boolean;
     status: 'confirmed' | 'pending';
     projectPath: string | null;
+    claudeVersionId?: string;
   }> {
     const now = Date.now();
     const result: Array<{
@@ -437,6 +439,7 @@ export class SessionManager {
       heartbeatTimedOut: boolean;
       status: 'confirmed' | 'pending';
       projectPath: string | null;
+      claudeVersionId?: string;
     }> = [];
 
     // 添加正式会话
@@ -451,7 +454,8 @@ export class SessionManager {
         lastHeartbeat,
         heartbeatTimedOut: this.isHeartbeatTimedOut(sessionId),
         status: 'confirmed',
-        projectPath: session.getProjectPath()
+        projectPath: session.getProjectPath(),
+        claudeVersionId: session.getClaudeVersionId()
       });
     }
 
@@ -466,7 +470,8 @@ export class SessionManager {
         lastHeartbeat: null,
         heartbeatTimedOut: false,
         status: 'pending',
-        projectPath: session.getProjectPath()
+        projectPath: session.getProjectPath(),
+        claudeVersionId: session.getClaudeVersionId()
       });
     }
 
