@@ -729,5 +729,17 @@
       "daysAgo": "{{count}} days ago",
       "daysAgo_one": "{{count}} day ago"
     }
+  },
+  "backendServiceSwitcher": {
+    "title": "Backend Services",
+    "noService": "No Service",
+    "namePlaceholder": "Service Name",
+    "urlPlaceholder": "Service URL",
+    "add": "Add",
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete",
+    "addNew": "Add New Service"
   }
 }

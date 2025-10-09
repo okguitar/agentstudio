@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { API_BASE } from '../lib/config.js';
+import { useBackendServices } from './useBackendServices';
+import { isTokenForDifferentService, isTokenExpired, extractToken } from '../utils/authHelpers';
 
 export function useAuth() {
   const { token, isAuthenticated, setToken, logout: storeLogout } = useAuthStore();
+  const { currentService } = useBackendServices();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,7 +30,16 @@ export function useAuth() {
         return false;
       }
 
-      setToken(data.token);
+      // Store token with service information
+      const tokenData = {
+        token: data.token,
+        serviceId: currentService?.id,
+        serviceName: currentService?.name,
+        serviceUrl: currentService?.url,
+        timestamp: Date.now()
+      };
+
+      setToken(tokenData);
       return true;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Network error');
@@ -40,12 +52,12 @@ export function useAuth() {
   const logout = async () => {
     try {
       // Call logout endpoint (optional, mainly for consistency)
-      if (token) {
+      if (token && typeof token === 'object' && 'token' in token) {
         await fetch(`${API_BASE}/auth/logout`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${token.token}`,
           },
         });
       }
@@ -60,13 +72,31 @@ export function useAuth() {
   const verifyToken = async (): Promise<boolean> => {
     if (!token) return false;
 
+    // Check if token is for a different service
+    if (isTokenForDifferentService(token, currentService)) {
+      storeLogout();
+      return false;
+    }
+
+    // Check if token is expired
+    if (isTokenExpired(token)) {
+      storeLogout();
+      return false;
+    }
+
     try {
+      const actualToken = extractToken(token);
+      if (!actualToken) {
+        storeLogout();
+        return false;
+      }
+
       const response = await fetch(`${API_BASE}/auth/verify`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ token }),
+        body: JSON.stringify({ token: actualToken }),
       });
 
       const data = await response.json();

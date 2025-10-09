@@ -1,10 +1,18 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+interface TokenData {
+  token: string;
+  serviceId?: string;
+  serviceName?: string;
+  serviceUrl?: string;
+  timestamp: number;
+}
+
 interface AuthState {
-  token: string | null;
+  token: string | TokenData | null;
   isAuthenticated: boolean;
-  setToken: (token: string | null) => void;
+  setToken: (token: string | TokenData | null) => void;
   logout: () => void;
 }
 

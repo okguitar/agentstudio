@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { ApiSettingsModal } from './ApiSettingsModal';
+import { BackendServiceSwitcher } from './BackendServiceSwitcher';
 import { getCurrentHost } from '../lib/config';
 
 const getNavigationItems = (t: (key: string) => string) => [
@@ -272,35 +273,36 @@ export const Sidebar: React.FC = () => {
 
       {/* Footer */}
       <div className="flex-shrink-0 p-4 border-t border-gray-200 dark:border-gray-700">
-        <div className="flex items-center justify-between">
-          <div className="text-xs text-gray-500 dark:text-gray-400">
-            {t('footer.version', { version: '1.0.0' })}
-          </div>
+        <div className="space-y-3">
+          {/* Backend Service Switcher */}
+          <div className="flex items-center justify-between">
+            <BackendServiceSwitcher />
 
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => setShowApiModal(true)}
-              className={getApiButtonStyles().buttonClass}
-              title={getApiButtonStyles().title}
-            >
-              <Server className={getApiButtonStyles().iconClass} />
-            </button>
-            {apiStatus === 'disconnected' && (
-              <span className="text-xs text-red-500 api-text-breathing cursor-pointer"
-                    onClick={() => setShowApiModal(true)}>
-                {t('footer.serviceStatus.unavailable')}
-              </span>
-            )}
-            {apiStatus === 'connected' && (
-              <span className="text-xs text-green-600">
-                {t('footer.serviceStatus.normal')}
-              </span>
-            )}
-            {apiStatus === 'checking' && (
-              <span className="text-xs text-gray-500">
-                {t('footer.serviceStatus.checking')}
-              </span>
-            )}
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setShowApiModal(true)}
+                className={getApiButtonStyles().buttonClass}
+                title={getApiButtonStyles().title}
+              >
+                <Server className={getApiButtonStyles().iconClass} />
+              </button>
+              {apiStatus === 'disconnected' && (
+                <span className="text-xs text-red-500 api-text-breathing cursor-pointer"
+                      onClick={() => setShowApiModal(true)}>
+                  {t('footer.serviceStatus.unavailable')}
+                </span>
+              )}
+              {apiStatus === 'connected' && (
+                <span className="text-xs text-green-600">
+                  {t('footer.serviceStatus.normal')}
+                </span>
+              )}
+              {apiStatus === 'checking' && (
+                <span className="text-xs text-gray-500">
+                  {t('footer.serviceStatus.checking')}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>

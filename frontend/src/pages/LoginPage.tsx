@@ -2,11 +2,14 @@ import { useState, FormEvent } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
+import { useBackendServices } from '../hooks/useBackendServices';
+import { Server } from 'lucide-react';
 
 export function LoginPage() {
   const { t } = useTranslation('pages');
   const [password, setPassword] = useState('');
   const { login, isLoading, error } = useAuth();
+  const { currentService } = useBackendServices();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -33,6 +36,18 @@ export function LoginPage() {
             <p className="text-gray-600 dark:text-gray-400">
               {t('login.subtitle')}
             </p>
+
+            {/* Current Service Info */}
+            {currentService && (
+              <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                <div className="flex items-center justify-center space-x-2 text-sm text-blue-700 dark:text-blue-300">
+                  <Server className="w-4 h-4" />
+                  <span className="font-medium">{currentService.name}</span>
+                  <span className="text-blue-600 dark:text-blue-400">•</span>
+                  <span className="text-xs truncate max-w-40">{currentService.url}</span>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Login Form */}
