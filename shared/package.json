@@ -3,22 +3,56 @@
   "version": "0.1.0",
   "description": "Shared types and utilities for AgentStudio",
   "type": "module",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./src/index.ts",
-    "./types/agents": "./src/types/agents.ts",
-    "./types/commands": "./src/types/commands.ts",
-    "./types/subagents": "./src/types/subagents.ts",
-    "./types/projects": "./src/types/projects.ts",
-    "./types/claude-versions": "./src/types/claude-versions.ts",
-    "./types/claude-history": "./src/types/claude-history.ts",
-    "./utils/agentStorage": "./src/utils/agentStorage.ts",
-    "./utils/toolMapping": "./src/utils/toolMapping.ts",
-    "./utils/projectMetadataStorage": "./src/utils/projectMetadataStorage.ts",
-    "./utils/claudeVersionStorage": "./src/utils/claudeVersionStorage.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./types/agents": {
+      "types": "./dist/types/agents.d.ts",
+      "default": "./dist/types/agents.js"
+    },
+    "./types/commands": {
+      "types": "./dist/types/commands.d.ts",
+      "default": "./dist/types/commands.js"
+    },
+    "./types/subagents": {
+      "types": "./dist/types/subagents.d.ts",
+      "default": "./dist/types/subagents.js"
+    },
+    "./types/projects": {
+      "types": "./dist/types/projects.d.ts",
+      "default": "./dist/types/projects.js"
+    },
+    "./types/claude-versions": {
+      "types": "./dist/types/claude-versions.d.ts",
+      "default": "./dist/types/claude-versions.js"
+    },
+    "./types/claude-history": {
+      "types": "./dist/types/claude-history.d.ts",
+      "default": "./dist/types/claude-history.js"
+    },
+    "./utils/agentStorage": {
+      "types": "./dist/utils/agentStorage.d.ts",
+      "default": "./dist/utils/agentStorage.js"
+    },
+    "./utils/toolMapping": {
+      "types": "./dist/utils/toolMapping.d.ts",
+      "default": "./dist/utils/toolMapping.js"
+    },
+    "./utils/projectMetadataStorage": {
+      "types": "./dist/utils/projectMetadataStorage.d.ts",
+      "default": "./dist/utils/projectMetadataStorage.js"
+    },
+    "./utils/claudeVersionStorage": {
+      "types": "./dist/utils/claudeVersionStorage.d.ts",
+      "default": "./dist/utils/claudeVersionStorage.js"
+    }
   },
   "scripts": {
+    "build": "tsc",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
