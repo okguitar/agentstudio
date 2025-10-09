@@ -44,7 +44,7 @@ export const RecentActivity: React.FC = () => {
       subtitle: c.description,
       timestamp: c.createdAt || new Date().toISOString(),
       icon: <Command className="w-4 h-4 text-blue-600" />,
-      href: `/commands`,
+      href: `/settings/commands`,
     })),
     ...sessions.slice(0, 3).map(s => ({
       id: `session-${s.sessionId}`,

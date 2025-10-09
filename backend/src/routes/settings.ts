@@ -456,10 +456,10 @@ router.post('/claude-versions', async (req, res) => {
     const data: ClaudeVersionCreate = req.body;
     
     // 验证必填字段
-    if (!data.name || !data.alias || !data.executablePath) {
+    if (!data.name || !data.alias) {
       return res.status(400).json({
         error: 'Missing required fields',
-        message: 'name, alias, and executablePath are required'
+        message: 'name and alias are required'
       });
     }
     

@@ -45,7 +45,7 @@ export const DashboardPage: React.FC = () => {
       value: stats.commands.total,
       icon: Command,
       color: 'bg-orange-500',
-      href: '/commands'
+      href: '/settings/commands'
     },
     {
       name: t('dashboard.stats.activeSessions'),
