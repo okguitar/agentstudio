@@ -12,8 +12,11 @@
     "./types/subagents": "./src/types/subagents.ts",
     "./types/projects": "./src/types/projects.ts",
     "./types/claude-versions": "./src/types/claude-versions.ts",
+    "./types/claude-history": "./src/types/claude-history.ts",
     "./utils/agentStorage": "./src/utils/agentStorage.ts",
-    "./utils/toolMapping": "./src/utils/toolMapping.ts"
+    "./utils/toolMapping": "./src/utils/toolMapping.ts",
+    "./utils/projectMetadataStorage": "./src/utils/projectMetadataStorage.ts",
+    "./utils/claudeVersionStorage": "./src/utils/claudeVersionStorage.ts"
   },
   "scripts": {
     "type-check": "tsc --noEmit"
