@@ -10,6 +10,7 @@ export class ClaudeSession {
   private claudeSessionId: string | null = null;
   private messageQueue: MessageQueue;
   private queryStream: AsyncIterable<any> | null = null;
+  private queryObject: any | null = null; // 保存 query 对象（带有 interrupt 方法）
   private isActive = true;
   private lastActivity = Date.now();
   private options: Options;
@@ -120,13 +121,17 @@ export class ClaudeSession {
       // 这个 query 对象会持续运行，通过 messageQueue 接收新的用户输入
       console.log(`🔧 [DEBUG] About to call query() for agent: ${this.agentId}`);
       console.log(`🔧 [DEBUG] MessageQueue ready: ${!!this.messageQueue}, queryOptions ready: ${!!queryOptions}`);
-      
-      this.queryStream = query({
+
+      // query 返回的对象既是 AsyncGenerator 又有 interrupt() 等方法
+      this.queryObject = query({
         prompt: this.messageQueue, // messageQueue 实现了 AsyncIterable
         options: queryOptions
       });
-      
-      console.log(`🔧 [DEBUG] query() called, queryStream created: ${!!this.queryStream} for agent: ${this.agentId}`);
+
+      // queryObject 本身就是 AsyncIterable，可以直接赋值给 queryStream
+      this.queryStream = this.queryObject;
+
+      console.log(`🔧 [DEBUG] query() called, queryObject created: ${!!this.queryObject}, has interrupt: ${typeof this.queryObject?.interrupt === 'function'} for agent: ${this.agentId}`);
 
       this.isInitialized = true;
       const action = this.resumeSessionId ? 'Resumed' : 'Initialized';
@@ -256,12 +261,32 @@ export class ClaudeSession {
   }
 
   /**
+   * 中断当前正在执行的 Claude 请求
+   * 调用 query 对象的 interrupt() 方法停止当前任务
+   */
+  async interrupt(): Promise<void> {
+    console.log(`🛑 Interrupting Claude session for agent: ${this.agentId}, sessionId: ${this.claudeSessionId}`);
+
+    if (!this.queryObject || typeof this.queryObject.interrupt !== 'function') {
+      throw new Error('Query object does not support interrupt');
+    }
+
+    try {
+      await this.queryObject.interrupt();
+      console.log(`✅ Successfully interrupted Claude session for agent: ${this.agentId}, sessionId: ${this.claudeSessionId}`);
+    } catch (error) {
+      console.error(`❌ Failed to interrupt Claude session for agent ${this.agentId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
    * 关闭会话
    */
   async close(): Promise<void> {
     console.log(`🔚 Closing Claude session for agent: ${this.agentId}, sessionId: ${this.claudeSessionId}`);
     this.isActive = false;
-    
+
     // 结束消息队列，这会让 async generator 完成
     this.messageQueue.end();
   }

@@ -191,6 +191,9 @@
     "unknownCommandWarning": "未知命令: /{{command}}。可用命令: {{commands}}",
     "navigateToAlert": "导航到: {{path}}",
     "generationStopped": "⏹️ 生成已停止",
+    "stopping": "正在停止...",
+    "stopFailed": "❌ **停止失败**",
+    "initializingSession": "正在启动新会话，请稍候...",
     "maxTurnsReached": "⏱️ **达到最大轮次限制**",
     "permissionDenials": "⚠️ **权限拒绝的操作**:",
     "permissionNote": "💡 某些操作需要用户权限确认才能执行。",
@@ -691,6 +694,7 @@
   "agentChatPanel": {
     "send": "发送",
     "stop": "停止",
+    "stopping": "停止中...",
     "sendMessage": "发送消息",
     "stopGeneration": "停止生成",
     "aiTyping": "AI正在输入中",

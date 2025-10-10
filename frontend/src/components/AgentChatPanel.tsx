@@ -4,7 +4,7 @@ import { ImagePreview } from './ImagePreview';
 import { CommandSelector } from './CommandSelector';
 import { ConfirmDialog } from './ConfirmDialog';
 import { useAgentStore } from '../stores/useAgentStore';
-import { useAgentChat, useAgentSessions, useAgentSessionMessages } from '../hooks/useAgents';
+import { useAgentChat, useAgentSessions, useAgentSessionMessages, useInterruptSession } from '../hooks/useAgents';
 import { useCommands, useProjectCommands } from '../hooks/useCommands';
 import { useClaudeVersions } from '../hooks/useClaudeVersions';
 import { useSessionHeartbeatOnSuccess } from '../hooks/useSessionHeartbeatOnSuccess';
@@ -61,6 +61,8 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
   const [hasSuccessfulResponse, setHasSuccessfulResponse] = useState(false);
   const [isNewSession, setIsNewSession] = useState(false);
   const [isVersionLocked, setIsVersionLocked] = useState(false);
+  const [isStopping, setIsStopping] = useState(false);
+  const [isInitializingSession, setIsInitializingSession] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -84,6 +86,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
   
   const queryClient = useQueryClient();
   const agentChatMutation = useAgentChat();
+  const interruptSessionMutation = useInterruptSession();
   const { data: sessionsData } = useAgentSessions(agent.id, searchTerm, projectPath);
   const { data: sessionMessagesData } = useAgentSessionMessages(agent.id, currentSessionId, projectPath);
   const { data: activeSessionsData } = useSessions();
@@ -550,6 +553,12 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
 
     setAiTyping(true);
 
+    // 检查是否需要创建新会话
+    if (!currentSessionId) {
+      console.log('🆕 No current session, will create new session');
+      setIsInitializingSession(true);
+    }
+
     // Create abort controller for this request
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
@@ -595,6 +604,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
           if (eventData.type === 'error') {
             console.error('Claude Code SDK error:', eventData);
             setAiTyping(false);
+            setIsInitializingSession(false);
             abortControllerRef.current = null;
             
             let errorMessage = `${t('agentChat.errorMessages.claudeCodeSDKError')}\n\n`;
@@ -626,6 +636,10 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
           if (eventData.type === 'system' && eventData.subtype === 'init' && (eventData.sessionId || eventData.session_id)) {
             const newSessionId = eventData.sessionId || eventData.session_id;
             console.log('Setting session ID from AI response:', newSessionId);
+
+            // 会话初始化完成，关闭初始化提示
+            setIsInitializingSession(false);
+
             // Only set session ID if we don't have one (new session created by AI)
             if (!currentSessionId && newSessionId) {
               setCurrentSessionId(newSessionId);
@@ -641,16 +655,19 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
           } 
           else if (eventData.type === 'session_resumed' && eventData.subtype === 'new_branch') {
             // Handle session resume notification from backend
-            const resumeData = eventData as any as { 
-              originalSessionId: string; 
-              newSessionId: string; 
-              message: string; 
-              sessionId: string; 
+            const resumeData = eventData as any as {
+              originalSessionId: string;
+              newSessionId: string;
+              message: string;
+              sessionId: string;
             };
-            
+
             console.log('🔄 Session resumed with new branch:', resumeData);
             console.log('🔄 Updating session ID from', currentSessionId, 'to', resumeData.newSessionId);
-            
+
+            // 会话恢复完成，关闭初始化提示
+            setIsInitializingSession(false);
+
             // Update session ID to the new one (this will trigger useAgentSessionMessages to reload history)
             setCurrentSessionId(resumeData.newSessionId);
             // This is a resumed session creating a new branch
@@ -982,6 +999,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
         onError: (error) => {
           console.error('SSE error:', error);
           setAiTyping(false);
+          setIsInitializingSession(false);
           abortControllerRef.current = null;
           
           // Check if error is due to user cancellation
@@ -1027,6 +1045,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
     } catch (error) {
       console.error('Chat error:', error);
       setAiTyping(false);
+      setIsInitializingSession(false);
       abortControllerRef.current = null;
       
       // Check if error is due to user cancellation
@@ -1086,17 +1105,48 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
     setSearchTerm('');
   };
 
-  const handleStopGeneration = () => {
-    if (abortControllerRef.current) {
+  const handleStopGeneration = async () => {
+    if (!abortControllerRef.current || !currentSessionId) {
+      return;
+    }
+
+    try {
+      // 设置停止中状态
+      setIsStopping(true);
+      console.log('🛑 Stopping generation for session:', currentSessionId);
+
+      // 先调用后端 interrupt API
+      try {
+        await interruptSessionMutation.mutateAsync(currentSessionId);
+        console.log('✅ Successfully interrupted session via API');
+      } catch (interruptError) {
+        console.error('❌ Failed to interrupt session:', interruptError);
+        // interrupt 失败，显示错误消息
+        const errorMessage = interruptError instanceof Error ? interruptError.message : 'Unknown error';
+        addMessage({
+          content: `${t('agentChat.stopFailed')}\n\n${errorMessage}`,
+          role: 'assistant'
+        });
+        setIsStopping(false);
+        return; // 不继续执行 abort，按照用户要求不强制断开
+      }
+
+      // interrupt 成功后，断开 SSE 连接
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
       setAiTyping(false);
-      
+      setIsStopping(false);
+      setIsInitializingSession(false);
+
       // Add a message indicating the generation was stopped
       addMessage({
         content: t('agentChat.generationStopped'),
         role: 'assistant'
       });
+    } catch (error) {
+      console.error('Error stopping generation:', error);
+      setIsStopping(false);
+      setIsInitializingSession(false);
     }
   };
 
@@ -1381,13 +1431,23 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
 
         {renderedMessages}
 
-        {isAiTyping && (
-          <div className="flex justify-center py-2">
+        {(isAiTyping || isStopping || isInitializingSession) && (
+          <div className="flex flex-col items-center py-2 space-y-2">
             <div className="flex space-x-1">
               <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce"></div>
               <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
               <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
             </div>
+            {isStopping && (
+              <div className="text-xs text-gray-500 dark:text-gray-400">
+                {t('agentChat.stopping')}
+              </div>
+            )}
+            {!isStopping && isInitializingSession && (
+              <div className="text-xs text-gray-500 dark:text-gray-400">
+                {t('agentChat.initializingSession')}
+              </div>
+            )}
           </div>
         )}
 
@@ -1713,14 +1773,19 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
                 </div>
               )}
 
-              {isAiTyping ? (
+              {isAiTyping || isStopping ? (
                 <button
                   onClick={handleStopGeneration}
-                  className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium shadow-sm"
-                  title={t('agentChatPanel.stopGeneration')}
+                  disabled={isStopping}
+                  className={`flex items-center space-x-2 px-4 py-2 text-white rounded-lg transition-colors text-sm font-medium shadow-sm ${
+                    isStopping
+                      ? 'bg-red-400 cursor-not-allowed'
+                      : 'bg-red-600 hover:bg-red-700'
+                  }`}
+                  title={isStopping ? t('agentChatPanel.stopping') : t('agentChatPanel.stopGeneration')}
                 >
                   <Square className="w-4 h-4" />
-                  <span>{t('agentChatPanel.stop')}</span>
+                  <span>{isStopping ? t('agentChatPanel.stopping') : t('agentChatPanel.stop')}</span>
                 </button>
               ) : (
                 <button

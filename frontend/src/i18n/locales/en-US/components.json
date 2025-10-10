@@ -191,6 +191,9 @@
     "unknownCommandWarning": "Unknown command: /{{command}}. Available commands: {{commands}}",
     "navigateToAlert": "Navigate to: {{path}}",
     "generationStopped": "⏹️ Generation stopped",
+    "stopping": "Stopping...",
+    "stopFailed": "❌ **Stop Failed**",
+    "initializingSession": "Initializing new session, please wait...",
     "maxTurnsReached": "⏱️ **Maximum turns reached**",
     "permissionDenials": "⚠️ **Permission Denied Operations:**",
     "permissionNote": "💡 Some operations require user permission confirmation to execute.",
@@ -691,6 +694,7 @@
   "agentChatPanel": {
     "send": "Send",
     "stop": "Stop",
+    "stopping": "Stopping...",
     "sendMessage": "Send message",
     "stopGeneration": "Stop generation",
     "aiTyping": "AI is typing",

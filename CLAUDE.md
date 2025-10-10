@@ -371,3 +371,11 @@ The project supports multiple deployment configurations:
 - **Frontend**: Vercel + **Backend**: Cloud server (full remote)
 - **Frontend**: Local build + **Backend**: Local (full local)
 - **Frontend**: Any static host + **Backend**: Any server with CORS configured
+
+## Git Workflow
+
+### Commit Messages
+- Write clear, concise commit messages that describe the changes
+- **DO NOT** include Claude Code signatures or Co-Authored-By tags
+- Follow conventional commit format when appropriate (e.g., `feat:`, `fix:`, `docs:`)
+- Keep commit messages focused on what changed and why

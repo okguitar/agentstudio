@@ -310,6 +310,31 @@ export class SessionManager {
   }
 
   /**
+   * 中断指定会话的当前请求
+   * @param sessionId 会话ID
+   * @returns 是否成功中断
+   */
+  async interruptSession(sessionId: string): Promise<{ success: boolean; error?: string }> {
+    console.log(`🛑 Interrupt requested for session: ${sessionId}`);
+
+    const session = this.sessions.get(sessionId);
+    if (!session) {
+      console.warn(`⚠️  Session not found: ${sessionId}`);
+      return { success: false, error: 'Session not found' };
+    }
+
+    try {
+      await session.interrupt();
+      console.log(`✅ Successfully interrupted session: ${sessionId}`);
+      return { success: true };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error(`❌ Failed to interrupt session ${sessionId}:`, error);
+      return { success: false, error: errorMessage };
+    }
+  }
+
+  /**
    * 清理空闲会话和心跳超时会话
    */
   private async cleanupIdleSessions(): Promise<void> {

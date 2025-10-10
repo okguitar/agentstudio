@@ -83,7 +83,7 @@ router.delete('/sessions/:sessionId', async (req, res) => {
   try {
     const { sessionId } = req.params;
     const removed = await sessionManager.removeSession(sessionId);
-    
+
     if (removed) {
       res.json({ success: true, message: `Session ${sessionId} closed` });
     } else {
@@ -92,6 +92,36 @@ router.delete('/sessions/:sessionId', async (req, res) => {
   } catch (error) {
     console.error('Failed to close session:', error);
     res.status(500).json({ error: 'Failed to close session' });
+  }
+});
+
+// 中断指定会话的当前请求
+router.post('/sessions/:sessionId/interrupt', async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    console.log(`🛑 API: Interrupt request for session: ${sessionId}`);
+
+    const result = await sessionManager.interruptSession(sessionId);
+
+    if (result.success) {
+      res.json({
+        success: true,
+        message: `Session ${sessionId} interrupted successfully`
+      });
+    } else {
+      res.status(result.error === 'Session not found' ? 404 : 500).json({
+        success: false,
+        error: result.error || 'Failed to interrupt session'
+      });
+    }
+  } catch (error) {
+    console.error('Failed to interrupt session:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({
+      success: false,
+      error: 'Failed to interrupt session',
+      details: errorMessage
+    });
   }
 });
 

@@ -317,3 +317,21 @@ export const useAgentProjects = (agentId: string) => {
     enabled: !!agentId
   });
 };
+
+// Interrupt agent session
+export const useInterruptSession = () => {
+  return useMutation({
+    mutationFn: async (sessionId: string) => {
+      const response = await authFetch(`${API_BASE}/agents/sessions/${sessionId}/interrupt`, {
+        method: 'POST'
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to interrupt session');
+      }
+
+      return response.json();
+    }
+  });
+};
