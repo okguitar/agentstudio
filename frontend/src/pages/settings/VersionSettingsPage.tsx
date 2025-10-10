@@ -20,10 +20,11 @@ import {
   FolderOpen,
   Sparkles,
   ExternalLink,
-  Copy
+  Copy,
+  Eye
 } from 'lucide-react';
 import { useClaudeVersions, useCreateClaudeVersion, useUpdateClaudeVersion, useDeleteClaudeVersion, useSetDefaultClaudeVersion } from '../../hooks/useClaudeVersions';
-import { ClaudeVersion, ClaudeVersionCreate, ClaudeVersionUpdate } from '@agentstudio/shared/types/claude-versions';
+import { ClaudeVersion, ClaudeVersionCreate, ClaudeVersionUpdate, ModelConfig } from '@agentstudio/shared/types/claude-versions';
 import { FileBrowser } from '../../components/FileBrowser';
 import { VERSION_TEMPLATES, type VersionTemplate } from '../../types/versionTemplates';
 import { generateClaudeCommand, copyToClipboard } from '../../utils/commandGenerator';
@@ -44,9 +45,11 @@ export const VersionSettingsPage: React.FC = () => {
     alias: '',
     description: '',
     executablePath: '',
-    environmentVariables: {}
+    environmentVariables: {},
+    models: []
   });
   const [envVarInput, setEnvVarInput] = useState({ key: '', value: '' });
+  const [modelInput, setModelInput] = useState({ id: '', name: '', isVision: false });
   const [showFileBrowser, setShowFileBrowser] = useState(false);
   const [currentTemplateTokenUrl, setCurrentTemplateTokenUrl] = useState<string | null>(null);
   
@@ -122,9 +125,11 @@ export const VersionSettingsPage: React.FC = () => {
       alias: '',
       description: '',
       executablePath: '',
-      environmentVariables: {}
+      environmentVariables: {},
+      models: []
     });
     setEnvVarInput({ key: '', value: '' });
+    setModelInput({ id: '', name: '', isVision: false });
   };
 
   const handleCreate = () => {
@@ -162,7 +167,8 @@ export const VersionSettingsPage: React.FC = () => {
       name: translatedName,
       alias: template.alias,
       description: translatedDescription,
-      environmentVariables: envVars
+      environmentVariables: envVars,
+      models: template.models || [] // 应用模板的模型配置
     }));
 
     // 保存模板的 token URL
@@ -177,7 +183,8 @@ export const VersionSettingsPage: React.FC = () => {
       alias: version.alias,
       description: version.description || '',
       executablePath: version.executablePath,
-      environmentVariables: version.environmentVariables || {}
+      environmentVariables: version.environmentVariables || {},
+      models: version.models || []
     });
   };
 
@@ -198,6 +205,41 @@ export const VersionSettingsPage: React.FC = () => {
       }));
       setEnvVarInput({ key: '', value: '' });
     }
+  };
+
+  // 模型管理函数
+  const addModel = () => {
+    if (modelInput.id && modelInput.name) {
+      setFormData(prev => ({
+        ...prev,
+        models: [
+          ...(prev.models || []),
+          {
+            id: modelInput.id,
+            name: modelInput.name,
+            isVision: modelInput.isVision,
+            description: modelInput.name // 使用名称作为默认描述
+          }
+        ]
+      }));
+      setModelInput({ id: '', name: '', isVision: false });
+    }
+  };
+
+  const removeModel = (modelId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      models: (prev.models || []).filter(model => model.id !== modelId)
+    }));
+  };
+
+  const updateModel = (modelId: string, updates: Partial<ModelConfig>) => {
+    setFormData(prev => ({
+      ...prev,
+      models: (prev.models || []).map(model =>
+        model.id === modelId ? { ...model, ...updates } : model
+      )
+    }));
   };
 
   const removeEnvironmentVariable = (key: string) => {
@@ -597,6 +639,24 @@ export const VersionSettingsPage: React.FC = () => {
                           </div>
                         </div>
                       )}
+                      {version.models && version.models.length > 0 && (
+                        <div className="mt-2">
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('settings.version.modelsLabel')}:</span>
+                          <div className="flex flex-wrap gap-2 mt-1">
+                            {version.models.map(model => (
+                              <span
+                                key={model.id}
+                                className="px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded flex items-center space-x-1"
+                              >
+                                <span>{model.name}</span>
+                                {model.isVision && (
+                                  <Eye className="w-3 h-3" />
+                                )}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                     <div className="flex items-center space-x-2">
                       <button
@@ -615,23 +675,21 @@ export const VersionSettingsPage: React.FC = () => {
                           <StarOff className="w-4 h-4" />
                         </button>
                       )}
+                      <button
+                        onClick={() => handleEdit(version)}
+                        className="p-2 text-gray-500 dark:text-gray-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                        title={t('settings.version.edit')}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
                       {!version.isSystem && (
-                        <>
-                          <button
-                            onClick={() => handleEdit(version)}
-                            className="p-2 text-gray-500 dark:text-gray-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-                            title={t('settings.version.edit')}
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(version)}
-                            className="p-2 text-gray-500 dark:text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                            title={t('settings.version.delete')}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </>
+                        <button
+                          onClick={() => handleDelete(version)}
+                          className="p-2 text-gray-500 dark:text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                          title={t('settings.version.delete')}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       )}
                     </div>
                   </div>
@@ -655,9 +713,16 @@ export const VersionSettingsPage: React.FC = () => {
           <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-2xl max-h-[90vh] mx-4 flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                {editingVersion ? t('settings.version.form.editTitle') : t('settings.version.form.createTitle')}
-              </h3>
+              <div className="flex items-center space-x-3">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  {editingVersion ? t('settings.version.form.editTitle') : t('settings.version.form.createTitle')}
+                </h3>
+                {editingVersion?.isSystem && (
+                  <span className="px-2 py-1 text-xs bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded">
+                    {t('settings.version.systemLabel')}
+                  </span>
+                )}
+              </div>
               <button
                 onClick={handleCancel}
                 className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
@@ -669,51 +734,68 @@ export const VersionSettingsPage: React.FC = () => {
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-6">
               <div className="space-y-4">
-                {/* 配置模板选择 */}
-                <div className="p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg">
-                  <div className="flex items-center space-x-2 mb-3">
-                    <Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                    <h4 className="text-sm font-medium text-purple-800 dark:text-purple-300">
-                      {t('settings.version.templates.title')}
-                    </h4>
+                {/* 系统版本提示 */}
+                {editingVersion?.isSystem && (
+                  <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                    <div className="flex items-center space-x-2">
+                      <Settings className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                      <h4 className="text-sm font-medium text-blue-800 dark:text-blue-300">
+                        系统版本编辑
+                      </h4>
+                    </div>
+                    <p className="text-xs text-blue-700 dark:text-blue-400 mt-2">
+                      系统版本是自动检测的 Claude Code 版本，某些字段（如可执行路径）无法修改，但您可以配置支持的模型。
+                    </p>
                   </div>
-                  <p className="text-xs text-purple-700 dark:text-purple-400 mb-3">
-                    {t('settings.version.templates.description')}
-                  </p>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    {VERSION_TEMPLATES.map(template => (
-                      <button
-                        key={template.id}
-                        onClick={() => handleApplyTemplate(template)}
-                        className="p-3 bg-white dark:bg-gray-800 border border-purple-200 dark:border-purple-700
-                                 hover:border-purple-400 dark:hover:border-purple-500 rounded-md text-left
-                                 transition-all duration-200 group"
-                      >
-                        <div className="flex flex-col space-y-2">
-                          <div className="flex items-center space-x-2">
-                            {template.logoUrl && (
-                              <img
-                                src={template.logoUrl}
-                                alt={template.name}
-                                className="w-6 h-6 flex-shrink-0"
-                                onError={(e) => {
-                                  // Fallback to Sparkles icon if logo fails to load
-                                  e.currentTarget.style.display = 'none';
-                                }}
-                              />
-                            )}
-                            <h5 className="font-medium text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400">
-                              {t(`settings.version.templates.providers.${template.id}.name`)}
-                            </h5>
+                )}
+
+                {/* 配置模板选择 - 只在新建时显示 */}
+                {isCreating && (
+                  <div className="p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg">
+                    <div className="flex items-center space-x-2 mb-3">
+                      <Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                      <h4 className="text-sm font-medium text-purple-800 dark:text-purple-300">
+                        {t('settings.version.templates.title')}
+                      </h4>
+                    </div>
+                    <p className="text-xs text-purple-700 dark:text-purple-400 mb-3">
+                      {t('settings.version.templates.description')}
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      {VERSION_TEMPLATES.map(template => (
+                        <button
+                          key={template.id}
+                          onClick={() => handleApplyTemplate(template)}
+                          className="p-3 bg-white dark:bg-gray-800 border border-purple-200 dark:border-purple-700
+                                   hover:border-purple-400 dark:hover:border-purple-500 rounded-md text-left
+                                   transition-all duration-200 group"
+                        >
+                          <div className="flex flex-col space-y-2">
+                            <div className="flex items-center space-x-2">
+                              {template.logoUrl && (
+                                <img
+                                  src={template.logoUrl}
+                                  alt={template.name}
+                                  className="w-6 h-6 flex-shrink-0"
+                                  onError={(e) => {
+                                    // Fallback to Sparkles icon if logo fails to load
+                                    e.currentTarget.style.display = 'none';
+                                  }}
+                                />
+                              )}
+                              <h5 className="font-medium text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400">
+                                {t(`settings.version.templates.providers.${template.id}.name`)}
+                              </h5>
+                            </div>
+                            <p className="text-xs text-gray-600 dark:text-gray-400">
+                              {t(`settings.version.templates.providers.${template.id}.description`)}
+                            </p>
                           </div>
-                          <p className="text-xs text-gray-600 dark:text-gray-400">
-                            {t(`settings.version.templates.providers.${template.id}.description`)}
-                          </p>
-                        </div>
-                      </button>
-                    ))}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -726,6 +808,7 @@ export const VersionSettingsPage: React.FC = () => {
                       onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder={t('settings.version.form.versionNamePlaceholder')}
+                      disabled={editingVersion?.isSystem}
                     />
                   </div>
                   <div>
@@ -738,6 +821,7 @@ export const VersionSettingsPage: React.FC = () => {
                       onChange={(e) => setFormData(prev => ({ ...prev, alias: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder={t('settings.version.form.aliasPlaceholder')}
+                      disabled={editingVersion?.isSystem}
                     />
                   </div>
                 </div>
@@ -750,6 +834,7 @@ export const VersionSettingsPage: React.FC = () => {
                     rows={2}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder={t('settings.version.form.descriptionPlaceholder')}
+                    disabled={editingVersion?.isSystem}
                   />
                 </div>
 
@@ -764,14 +849,105 @@ export const VersionSettingsPage: React.FC = () => {
                       onChange={(e) => setFormData(prev => ({ ...prev, executablePath: e.target.value }))}
                       className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder={t('settings.version.form.executablePathPlaceholder')}
+                      disabled={editingVersion?.isSystem}
                     />
                     <button
                       onClick={selectExecutablePath}
                       className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                       title={t('settings.version.form.browseFile')}
+                      disabled={editingVersion?.isSystem}
                     >
                       <FolderOpen className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                     </button>
+                  </div>
+                </div>
+
+                {/* 模型配置 */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('settings.version.form.models')}</label>
+                  <div className="space-y-3">
+                    {/* 现有模型 */}
+                    {formData.models && formData.models.length > 0 && (
+                      <div className="space-y-2">
+                        {formData.models.map(model => (
+                          <div key={model.id} className="flex items-center space-x-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded">
+                            <div className="flex-1 grid grid-cols-3 gap-2">
+                              <input
+                                type="text"
+                                value={model.id}
+                                onChange={(e) => updateModel(model.id, { id: e.target.value })}
+                                className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder={t('settings.version.form.modelId')}
+                              />
+                              <input
+                                type="text"
+                                value={model.name}
+                                onChange={(e) => updateModel(model.id, { name: e.target.value })}
+                                className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder={t('settings.version.form.modelName')}
+                              />
+                              <div className="flex items-center space-x-2">
+                                <label className="flex items-center space-x-1 text-sm text-gray-700 dark:text-gray-300">
+                                  <input
+                                    type="checkbox"
+                                    checked={model.isVision}
+                                    onChange={(e) => updateModel(model.id, { isVision: e.target.checked })}
+                                    className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                                  />
+                                  <span>{t('settings.version.form.visionModel')}</span>
+                                </label>
+                                {model.isVision && (
+                                  <Eye className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                )}
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => removeModel(model.id)}
+                              className="p-1 text-red-500 hover:text-red-700 rounded flex-shrink-0"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* 添加新模型 */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <input
+                        type="text"
+                        value={modelInput.id}
+                        onChange={(e) => setModelInput(prev => ({ ...prev, id: e.target.value }))}
+                        className="px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder={t('settings.version.form.modelId')}
+                      />
+                      <input
+                        type="text"
+                        value={modelInput.name}
+                        onChange={(e) => setModelInput(prev => ({ ...prev, name: e.target.value }))}
+                        className="px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder={t('settings.version.form.modelName')}
+                      />
+                      <div className="flex items-center space-x-2">
+                        <label className="flex items-center space-x-1 text-sm text-gray-700 dark:text-gray-300">
+                          <input
+                            type="checkbox"
+                            checked={modelInput.isVision}
+                            onChange={(e) => setModelInput(prev => ({ ...prev, isVision: e.target.checked }))}
+                            className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span>{t('settings.version.form.visionModel')}</span>
+                        </label>
+                        <button
+                          onClick={addModel}
+                          disabled={!modelInput.id || !modelInput.name}
+                          className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center space-x-1"
+                        >
+                          <Plus className="w-4 h-4" />
+                          <span>{t('settings.version.form.addModel')}</span>
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
