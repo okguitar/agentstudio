@@ -52,11 +52,15 @@ function migrateVersionData(storage: VersionStorage): VersionStorage {
     return version;
   });
 
-  return {
+  const result = {
     ...storage,
-    versions: migratedVersions,
-    _needsSave: needsSave as any // 标记是否需要保存
+    versions: migratedVersions
   };
+  
+  // 标记是否需要保存
+  (result as any)._needsSave = needsSave;
+  
+  return result;
 }
 
 // 读取版本配置

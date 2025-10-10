@@ -1613,7 +1613,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
                     <Terminal className="w-4 h-4" />
                     <span className="text-xs">
                       {selectedClaudeVersion
-                        ? claudeVersionsData.versions.find(v => v.id === selectedClaudeVersion)?.alias || t('agentChat.claudeVersion.custom')
+                        ? claudeVersionsData.versions.find(v => v.id === selectedClaudeVersion)?.name || t('agentChat.claudeVersion.custom')
                         : t('agentChat.claudeVersion.default')
                       }
                     </span>
