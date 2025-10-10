@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
 import { useBackendServices } from '../hooks/useBackendServices';
 import { Server, ChevronDown, ChevronUp, Settings, Trash2, Plus, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
-import { API_BASE } from '../lib/config.js';
 
 export function LoginPage() {
   const { t } = useTranslation('pages');

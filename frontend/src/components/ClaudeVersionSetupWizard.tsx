@@ -7,7 +7,6 @@ import {
   AlertCircle,
   Terminal,
   Package,
-  Key,
   Rocket
 } from 'lucide-react';
 import { API_BASE } from '../lib/config';

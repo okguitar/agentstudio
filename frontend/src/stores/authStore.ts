@@ -81,7 +81,7 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'auth-storage', // LocalStorage key
       // Migration function to convert old single token to new format
-      migrate: (persistedState: any, version: number) => {
+      migrate: (persistedState: any, _version: number) => {
         if (persistedState.token && !persistedState.tokens) {
           const token = persistedState.token;
           if (typeof token === 'object' && token.serviceId) {

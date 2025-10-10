@@ -31,7 +31,6 @@ export const DashboardPage: React.FC = () => {
 
   // 检测是否需要显示初始化引导
   const needsSetup = !versionsLoading && (!versionsData?.versions || versionsData.versions.length === 0);
-  const shouldShowWizard = needsSetup && !showSetupWizard;
 
   React.useEffect(() => {
     if (needsSetup) {

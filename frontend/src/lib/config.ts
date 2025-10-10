@@ -107,4 +107,4 @@ export const isApiUnavailableError = (error: any): boolean => {
   return false;
 };
 
-export { API_BASE, MEDIA_BASE, HOST };
+export { API_BASE, MEDIA_BASE };

@@ -3,7 +3,6 @@ import { ChevronDown, Server, Check, Plus, Settings, Trash2, AlertTriangle } fro
 import { useTranslation } from 'react-i18next';
 import { BackendService } from '../types/backendServices';
 import { useBackendServices } from '../hooks/useBackendServices';
-import { API_BASE } from '../lib/config.js';
 
 interface BackendServiceSwitcherProps {
   className?: string;
