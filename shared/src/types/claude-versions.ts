@@ -1,3 +1,11 @@
+// 模型配置类型
+export interface ModelConfig {
+  id: string; // 模型ID，如 'sonnet', 'opus', 'haiku'
+  name: string; // 显示名称
+  isVision: boolean; // 是否支持视觉功能
+  description?: string; // 模型描述
+}
+
 export interface ClaudeVersion {
   id: string;
   name: string;
@@ -7,6 +15,7 @@ export interface ClaudeVersion {
   isDefault: boolean;
   isSystem: boolean;
   environmentVariables?: Record<string, string>;
+  models: ModelConfig[]; // 该版本支持的模型列表
   createdAt: string;
   updatedAt: string;
 }
@@ -17,6 +26,7 @@ export interface ClaudeVersionCreate {
   description?: string;
   executablePath?: string;
   environmentVariables?: Record<string, string>;
+  models?: ModelConfig[]; // 可选的模型列表，如果不提供则使用默认模型
 }
 
 export interface ClaudeVersionUpdate {
@@ -25,6 +35,7 @@ export interface ClaudeVersionUpdate {
   description?: string;
   executablePath?: string;
   environmentVariables?: Record<string, string>;
+  models?: ModelConfig[]; // 可选的模型列表更新
 }
 
 export interface ClaudeVersionResponse {
