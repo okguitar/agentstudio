@@ -251,13 +251,26 @@ install_nodejs_linux() {
         "debian")
             log "Using apt package manager..."
             # Add NodeSource repository
-            if ! curl -fsSL https://deb.nodesource.com/setup_lts.x | $SUDO_CMD -E bash -; then
-                error "Failed to add NodeSource repository"
-                return 1
-            fi
-            if ! $SUDO_CMD apt-get install -y nodejs; then
-                error "Failed to install Node.js via apt"
-                return 1
+            if [ -z "$SUDO_CMD" ]; then
+                # Running as root - no sudo needed
+                if ! curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -; then
+                    error "Failed to add NodeSource repository"
+                    return 1
+                fi
+                if ! apt-get install -y nodejs; then
+                    error "Failed to install Node.js via apt"
+                    return 1
+                fi
+            else
+                # Running as normal user - use sudo
+                if ! curl -fsSL https://deb.nodesource.com/setup_lts.x | $SUDO_CMD -E bash -; then
+                    error "Failed to add NodeSource repository"
+                    return 1
+                fi
+                if ! $SUDO_CMD apt-get install -y nodejs; then
+                    error "Failed to install Node.js via apt"
+                    return 1
+                fi
             fi
             ;;
         "redhat")
