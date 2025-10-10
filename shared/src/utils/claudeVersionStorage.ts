@@ -1,7 +1,23 @@
 import { readFile, writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { homedir } from 'os';
-import { ClaudeVersion, ClaudeVersionCreate, ClaudeVersionUpdate } from '../types/claude-versions.js';
+import { ClaudeVersion, ClaudeVersionCreate, ClaudeVersionUpdate, ModelConfig } from '../types/claude-versions.js';
+
+// 默认模型配置（用于Claude系统版本）
+const DEFAULT_MODELS: ModelConfig[] = [
+  {
+    id: 'sonnet',
+    name: 'Sonnet',
+    isVision: true,
+    description: 'Claude 3.5 Sonnet - 平衡性能和成本的模型'
+  },
+  {
+    id: 'opus',
+    name: 'Opus',
+    isVision: true,
+    description: 'Claude 3 Opus - 最强大的模型'
+  }
+];
 
 const CLAUDE_AGENT_DIR = join(homedir(), '.claude-agent');
 const VERSIONS_FILE = join(CLAUDE_AGENT_DIR, 'claude-versions.json');
@@ -20,13 +36,47 @@ async function ensureClaudeAgentDir() {
   }
 }
 
+// 数据迁移：为旧版本添加models字段
+function migrateVersionData(storage: VersionStorage): VersionStorage {
+  let needsSave = false;
+
+  const migratedVersions = storage.versions.map(version => {
+    // 如果版本没有models字段，添加默认模型
+    if (!version.models || version.models.length === 0) {
+      needsSave = true;
+      return {
+        ...version,
+        models: DEFAULT_MODELS
+      };
+    }
+    return version;
+  });
+
+  return {
+    ...storage,
+    versions: migratedVersions,
+    _needsSave: needsSave as any // 标记是否需要保存
+  };
+}
+
 // 读取版本配置
 export async function loadClaudeVersions(): Promise<VersionStorage> {
   await ensureClaudeAgentDir();
-  
+
   try {
     const content = await readFile(VERSIONS_FILE, 'utf-8');
-    return JSON.parse(content);
+    const storage = JSON.parse(content);
+
+    // 执行数据迁移
+    const migrated = migrateVersionData(storage);
+
+    // 如果数据有变化，保存回文件
+    if ((migrated as any)._needsSave) {
+      delete (migrated as any)._needsSave;
+      await saveClaudeVersions(migrated);
+    }
+
+    return migrated;
   } catch (error) {
     // 文件不存在或解析失败，返回默认配置
     return {
@@ -95,6 +145,7 @@ export async function createVersion(data: ClaudeVersionCreate): Promise<ClaudeVe
     isDefault: storage.versions.length === 0, // 第一个版本默认为默认版本
     isSystem: false,
     environmentVariables: data.environmentVariables || {},
+    models: data.models || DEFAULT_MODELS, // 使用提供的模型或默认模型
     createdAt: now,
     updatedAt: now
   };
@@ -212,6 +263,7 @@ export async function initializeSystemVersion(executablePath: string): Promise<C
     isDefault: storage.versions.length === 0,
     isSystem: true,
     environmentVariables: {},
+    models: DEFAULT_MODELS, // 系统版本使用默认模型
     createdAt: now,
     updatedAt: now
   };
