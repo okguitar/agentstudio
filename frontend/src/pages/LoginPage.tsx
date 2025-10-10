@@ -62,6 +62,7 @@ export function LoginPage() {
 
   const handleSwitchService = (serviceId: string) => {
     switchService(serviceId);
+    // Reload to apply new service configuration
     window.location.reload();
   };
 

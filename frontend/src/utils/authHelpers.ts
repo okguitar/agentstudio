@@ -2,6 +2,7 @@ import { TokenData } from '../stores/authStore';
 import { BackendService } from '../types/backendServices';
 
 // Check if the stored token is for a different service than the current one
+// Kept for backward compatibility
 export const isTokenForDifferentService = (
   token: string | TokenData | null,
   currentService: BackendService | null
@@ -32,4 +33,15 @@ export const isTokenExpired = (token: string | TokenData | null): boolean => {
 export const extractToken = (token: string | TokenData | null): string | null => {
   if (!token) return null;
   return typeof token === 'object' && 'token' in token ? token.token : token;
+};
+
+// Check if a service has a valid (non-expired) token
+export const hasValidToken = (
+  serviceId: string,
+  tokens: Record<string, TokenData>
+): boolean => {
+  const token = tokens[serviceId];
+  if (!token) return false;
+
+  return !isTokenExpired(token);
 };

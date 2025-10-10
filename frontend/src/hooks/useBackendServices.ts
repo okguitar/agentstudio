@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { BackendService, BackendServicesState } from '../types/backendServices';
 import {
   loadBackendServices,
@@ -18,7 +18,8 @@ export const useBackendServices = () => {
     saveBackendServices(state);
   }, [state]);
 
-  const currentService = getCurrentService(state);
+  // Memoize currentService to avoid unnecessary re-renders
+  const currentService = useMemo(() => getCurrentService(state), [state.currentServiceId, state.services]);
 
   const addService = (service: Omit<BackendService, 'id'>) => {
     setState(prev => addBackendService(prev, service));

@@ -75,6 +75,7 @@ export const BackendServiceSwitcher: React.FC<BackendServiceSwitcherProps> = ({ 
       // Connection successful, switch immediately
       switchService(service.id);
       setIsOpen(false);
+      // Reload to apply new service - user won't need to re-login as token is stored per service
       window.location.reload();
     }
   };
@@ -85,6 +86,7 @@ export const BackendServiceSwitcher: React.FC<BackendServiceSwitcherProps> = ({ 
       setShowWarning(false);
       setPendingService(null);
       setIsOpen(false);
+      // Reload to apply new service - user won't need to re-login as token is stored per service
       window.location.reload();
     }
   };

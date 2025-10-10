@@ -1,6 +1,7 @@
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useEffect, useState, useRef } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useBackendServices } from '../hooks/useBackendServices';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -8,21 +9,37 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { isAuthenticated, verifyToken } = useAuth();
+  const { currentService } = useBackendServices();
   const location = useLocation();
   const [isVerifying, setIsVerifying] = useState(true);
   const [isValid, setIsValid] = useState(false);
+  const lastServiceId = useRef<string | null>(null);
 
   useEffect(() => {
     const verify = async () => {
+      // Only verify if the service has changed or on initial load
+      const currentServiceId = currentService?.id || null;
+      const shouldVerify = currentServiceId !== lastServiceId.current;
+
+      if (!shouldVerify && !isVerifying) {
+        return;
+      }
+
+      setIsVerifying(true);
+      lastServiceId.current = currentServiceId;
+
       if (isAuthenticated) {
         const valid = await verifyToken();
         setIsValid(valid);
+      } else {
+        setIsValid(false);
       }
       setIsVerifying(false);
     };
 
     verify();
-  }, [isAuthenticated, verifyToken]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentService?.id]); // Only depend on service ID to avoid infinite loops
 
   // Show loading state while verifying token
   if (isVerifying) {

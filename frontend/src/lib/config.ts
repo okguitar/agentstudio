@@ -24,31 +24,30 @@ const getCurrentBackendServiceUrl = (): string => {
   return 'http://127.0.0.1:4936';
 };
 
-let HOST = getCurrentBackendServiceUrl();
+// Export as getter functions to ensure they always return the current value
+export const getApiBase = (): string => {
+  return getCurrentBackendServiceUrl() + '/api';
+};
 
-// 监听后端服务变化并更新HOST
-if (typeof window !== 'undefined') {
-  // 在页面加载时重新获取当前服务
-  window.addEventListener('storage', (event) => {
-    if (event.key === 'backendServices') {
-      HOST = getCurrentBackendServiceUrl();
-    }
-  });
-}
+export const getMediaBase = (): string => {
+  return getCurrentBackendServiceUrl() + '/media';
+};
 
-const MEDIA_BASE = HOST + '/media';
-const API_BASE = HOST + '/api';
+// For backward compatibility, export constant that gets current value
+// WARNING: These will be the value at import time, use getApiBase() for current value
+const MEDIA_BASE = getMediaBase();
+const API_BASE = getApiBase();
 
 // Helper function to build API URLs
 export const buildApiUrl = (path: string): string => {
   // Remove leading slash if present to avoid double slashes
   const cleanPath = path.startsWith('/') ? path.slice(1) : path;
-  return `${API_BASE}/${cleanPath}`;
+  return `${getApiBase()}/${cleanPath}`;
 };
 
 // Helper function to get the current HOST setting
 export const getCurrentHost = (): string => {
-  return HOST;
+  return getCurrentBackendServiceUrl();
 };
 
 // Helper function to update HOST setting (保持向后兼容性)
