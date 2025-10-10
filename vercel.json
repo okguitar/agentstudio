@@ -1,7 +1,7 @@
 {
   "name": "agent-studio-frontend",
   "version": 2,
-  "buildCommand": "pnpm --filter frontend run build",
+  "buildCommand": "pnpm --filter shared run build && pnpm --filter frontend run build",
   "outputDirectory": "frontend/dist",
   "devCommand": "pnpm --filter frontend run dev",
   "installCommand": "pnpm install",
