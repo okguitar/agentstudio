@@ -743,6 +743,14 @@
     "cancel": "取消",
     "edit": "编辑",
     "delete": "删除",
-    "addNew": "添加新服务"
+    "addNew": "添加新服务",
+    "testingConnection": "正在测试连接...",
+    "connectionWarning": {
+      "title": "无法连接到服务",
+      "message": "无法连接到服务 \"{{name}}\" ({{url}})。",
+      "consequence": "如果继续切换，您将无法登录或使用该服务，但可以在登录页面中重新配置服务地址。",
+      "cancel": "取消",
+      "continue": "仍然切换"
+    }
   }
 }

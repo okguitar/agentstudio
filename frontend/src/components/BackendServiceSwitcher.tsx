@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, Server, Check, Plus, Settings, Trash2 } from 'lucide-react';
+import { ChevronDown, Server, Check, Plus, Settings, Trash2, AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { BackendService } from '../types/backendServices';
 import { useBackendServices } from '../hooks/useBackendServices';
+import { API_BASE } from '../lib/config.js';
 
 interface BackendServiceSwitcherProps {
   className?: string;
@@ -23,6 +24,9 @@ export const BackendServiceSwitcher: React.FC<BackendServiceSwitcherProps> = ({ 
   const [isAdding, setIsAdding] = useState(false);
   const [isEditing, setIsEditing] = useState<string | null>(null);
   const [newService, setNewService] = useState({ name: '', url: '' });
+  const [showWarning, setShowWarning] = useState(false);
+  const [pendingService, setPendingService] = useState<BackendService | null>(null);
+  const [isTesting, setIsTesting] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
@@ -39,11 +43,55 @@ export const BackendServiceSwitcher: React.FC<BackendServiceSwitcherProps> = ({ 
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleSwitchService = (service: BackendService) => {
-    switchService(service.id);
-    setIsOpen(false);
-    // Reload the page to apply new settings
-    window.location.reload();
+  const testConnection = async (serviceUrl: string): Promise<boolean> => {
+    setIsTesting(true);
+    try {
+      const testUrl = `${serviceUrl}/api/health`;
+      const response = await fetch(testUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        signal: AbortSignal.timeout(5000)
+      });
+
+      return response.ok;
+    } catch (error) {
+      return false;
+    } finally {
+      setIsTesting(false);
+    }
+  };
+
+  const handleSwitchService = async (service: BackendService) => {
+    // Test connection first
+    const isConnected = await testConnection(service.url);
+
+    if (!isConnected) {
+      // Show warning dialog
+      setPendingService(service);
+      setShowWarning(true);
+    } else {
+      // Connection successful, switch immediately
+      switchService(service.id);
+      setIsOpen(false);
+      window.location.reload();
+    }
+  };
+
+  const confirmSwitch = () => {
+    if (pendingService) {
+      switchService(pendingService.id);
+      setShowWarning(false);
+      setPendingService(null);
+      setIsOpen(false);
+      window.location.reload();
+    }
+  };
+
+  const cancelSwitch = () => {
+    setShowWarning(false);
+    setPendingService(null);
   };
 
   const handleAddService = () => {
@@ -246,6 +294,59 @@ export const BackendServiceSwitcher: React.FC<BackendServiceSwitcherProps> = ({ 
                 <span>{t('backendServiceSwitcher.addNew')}</span>
               </button>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Warning Dialog */}
+      {showWarning && pendingService && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md mx-4">
+            <div className="flex items-start space-x-3 mb-4">
+              <AlertTriangle className="w-6 h-6 text-yellow-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                  {t('backendServiceSwitcher.connectionWarning.title')}
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
+                  {t('backendServiceSwitcher.connectionWarning.message', {
+                    name: pendingService.name,
+                    url: pendingService.url
+                  })}
+                </p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {t('backendServiceSwitcher.connectionWarning.consequence')}
+                </p>
+              </div>
+            </div>
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={cancelSwitch}
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+              >
+                {t('backendServiceSwitcher.connectionWarning.cancel')}
+              </button>
+              <button
+                onClick={confirmSwitch}
+                className="px-4 py-2 text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700 rounded-md"
+              >
+                {t('backendServiceSwitcher.connectionWarning.continue')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Testing Overlay */}
+      {isTesting && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-[99]">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6">
+            <div className="flex items-center space-x-3">
+              <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-sm text-gray-700 dark:text-gray-300">
+                {t('backendServiceSwitcher.testingConnection')}
+              </p>
+            </div>
           </div>
         </div>
       )}

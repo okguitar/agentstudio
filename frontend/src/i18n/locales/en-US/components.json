@@ -741,6 +741,14 @@
     "cancel": "Cancel",
     "edit": "Edit",
     "delete": "Delete",
-    "addNew": "Add New Service"
+    "addNew": "Add New Service",
+    "testingConnection": "Testing connection...",
+    "connectionWarning": {
+      "title": "Unable to Connect to Service",
+      "message": "Cannot connect to service \"{{name}}\" ({{url}}).",
+      "consequence": "If you continue switching, you won't be able to login or use this service, but you can reconfigure the service address on the login page.",
+      "cancel": "Cancel",
+      "continue": "Switch Anyway"
+    }
   }
 }

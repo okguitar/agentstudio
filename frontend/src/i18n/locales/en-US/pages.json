@@ -33,7 +33,19 @@
     "passwordPlaceholder": "Enter password",
     "loginButton": "Sign In",
     "loggingIn": "Signing in...",
-    "footer": "Please contact your administrator if you forgot your password"
+    "footer": "Please contact your administrator if you forgot your password",
+    "manageServices": "Manage Backend Services",
+    "serviceName": "Service Name",
+    "serviceUrl": "Service URL",
+    "current": "Current",
+    "testConnection": "Test Connection",
+    "switchTo": "Switch to this service",
+    "edit": "Edit",
+    "delete": "Delete",
+    "save": "Save",
+    "cancel": "Cancel",
+    "add": "Add",
+    "addService": "Add New Service"
   },
   "landing": {
     "pageTitle": "AgentStudio - AI Agent Platform | Powered by Claude Code",
