@@ -6,7 +6,7 @@
   "private": true,
   "packageManager": "pnpm@10.18.1",
   "scripts": {
-    "dev": "pnpm --parallel run dev",
+    "dev": "concurrently \"pnpm --filter frontend run dev\" \"pnpm --filter backend run dev\"",
     "dev:frontend": "pnpm --filter frontend run dev",
     "dev:backend": "pnpm --filter backend run dev",
     "build": "pnpm --filter shared run build && pnpm --filter frontend run build && pnpm --filter backend run build",
