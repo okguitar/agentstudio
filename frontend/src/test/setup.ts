@@ -1,4 +1,5 @@
 import '@testing-library/jest-dom';
+import '../i18n/index';
 
 // Mock ResizeObserver
 (globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver = class ResizeObserver {
