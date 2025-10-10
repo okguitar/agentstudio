@@ -52,7 +52,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
   const [showToolSelector, setShowToolSelector] = useState(false);
   const [selectedRegularTools, setSelectedRegularTools] = useState<string[]>([]);
   const [permissionMode, setPermissionMode] = useState<'default' | 'acceptEdits' | 'bypassPermissions'>('acceptEdits');
-  const [selectedModel, setSelectedModel] = useState<'sonnet' | 'opus'>('sonnet');
+  const [selectedModel, setSelectedModel] = useState<string>('sonnet');
   const [showPermissionDropdown, setShowPermissionDropdown] = useState(false);
   const [showModelDropdown, setShowModelDropdown] = useState(false);
   const [selectedClaudeVersion, setSelectedClaudeVersion] = useState<string | undefined>(undefined);
@@ -124,6 +124,35 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
   
   // Claude版本数据
   const { data: claudeVersionsData } = useClaudeVersions();
+
+  // 根据选择的版本获取可用模型
+  const availableModels = useMemo(() => {
+    if (!claudeVersionsData?.versions) return [];
+
+    // 如果选择了版本，返回该版本的模型
+    if (selectedClaudeVersion) {
+      const version = claudeVersionsData.versions.find(v => v.id === selectedClaudeVersion);
+      return version?.models || [];
+    }
+
+    // 如果没有选择版本，使用默认版本的模型
+    const defaultVersion = claudeVersionsData.versions.find(
+      v => v.id === claudeVersionsData.defaultVersionId
+    ) || claudeVersionsData.versions[0];
+
+    return defaultVersion?.models || [];
+  }, [claudeVersionsData, selectedClaudeVersion]);
+
+  // 当可用模型变化时，确保当前选择的模型仍然有效
+  useEffect(() => {
+    if (availableModels.length > 0) {
+      const currentModelValid = availableModels.some(m => m.id === selectedModel);
+      if (!currentModelValid) {
+        // 当前选择的模型不在可用列表中，切换到第一个可用模型
+        setSelectedModel(availableModels[0].id);
+      }
+    }
+  }, [availableModels, selectedModel]);
 
   // System commands definition
   const SYSTEM_COMMANDS: SystemCommand[] = [
@@ -1561,49 +1590,8 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
                   </div>
                 )}
               </div>
-              
-              {/* 模型切换下拉 */}
-              <div className="relative dropdown-container">
-                <button
-                  onClick={() => setShowModelDropdown(!showModelDropdown)}
-                  className={`flex items-center space-x-1 px-3 py-2 text-sm rounded-lg transition-colors ${
-                    selectedModel === 'opus'
-                      ? 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 dark:hover:bg-purple-900/50'
-                      : 'text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600'
-                  }`}
-                  disabled={isAiTyping}
-                >
-                  <Cpu className="w-4 h-4" />
-                  <span className="text-xs">{t(`agentChat.model.${selectedModel}`)}</span>
-                  <ChevronDown className="w-3 h-3" />
-                </button>
 
-                {showModelDropdown && (
-                  <div className="absolute bottom-full left-0 mb-2 w-24 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
-                    {[
-                      { value: 'sonnet', label: t('agentChat.model.sonnet') },
-                      { value: 'opus', label: t('agentChat.model.opus') }
-                    ].map(option => (
-                      <button
-                        key={option.value}
-                        onClick={() => {
-                          setSelectedModel(option.value as any);
-                          setShowModelDropdown(false);
-                        }}
-                        className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 first:rounded-t-lg last:rounded-b-lg ${
-                          selectedModel === option.value
-                            ? (option.value === 'opus' ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300')
-                            : 'text-gray-700 dark:text-gray-300'
-                        }`}
-                      >
-                        {option.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-              
-              {/* Claude版本选择下拉 - 只在有多个版本时显示 */}
+              {/* Claude版本选择下拉 - 只在有多个版本时显示，位置移到模型选择之前 */}
               {claudeVersionsData?.versions && claudeVersionsData.versions.length > 1 && (
                 <div className="relative dropdown-container">
                   <button
@@ -1676,7 +1664,55 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
                   )}
                 </div>
               )}
-              
+
+              {/* 模型切换下拉 - 只在可用模型数量大于等于2时显示 */}
+              {availableModels.length >= 2 && (
+                <div className="relative dropdown-container">
+                  <button
+                    onClick={() => setShowModelDropdown(!showModelDropdown)}
+                    className={`flex items-center space-x-1 px-3 py-2 text-sm rounded-lg transition-colors ${
+                      selectedModel === 'opus'
+                        ? 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 dark:hover:bg-purple-900/50'
+                        : 'text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600'
+                    }`}
+                    disabled={isAiTyping}
+                  >
+                    <Cpu className="w-4 h-4" />
+                    <span className="text-xs whitespace-nowrap overflow-hidden text-ellipsis max-w-[100px]" title={availableModels.find(m => m.id === selectedModel)?.name || t(`agentChat.model.${selectedModel}`)}>
+                      {availableModels.find(m => m.id === selectedModel)?.name || t(`agentChat.model.${selectedModel}`)}
+                    </span>
+                    <ChevronDown className="w-3 h-3" />
+                  </button>
+
+                  {showModelDropdown && (
+                    <div className="absolute bottom-full left-0 mb-2 min-w-[160px] max-w-[200px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
+                      {availableModels.map(model => (
+                        <button
+                          key={model.id}
+                          onClick={() => {
+                            setSelectedModel(model.id);
+                            setShowModelDropdown(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 first:rounded-t-lg last:rounded-b-lg ${
+                            selectedModel === model.id
+                              ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
+                              : 'text-gray-700 dark:text-gray-300'
+                          }`}
+                          title={model.description}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="whitespace-nowrap overflow-hidden text-ellipsis flex-1 pr-2" title={model.name}>{model.name}</span>
+                            {model.isVision && (
+                              <span className="text-xs text-gray-400 flex-shrink-0">👁️</span>
+                            )}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {isAiTyping ? (
                 <button
                   onClick={handleStopGeneration}

@@ -196,7 +196,7 @@ export const useAgentChat = () => {
       projectPath?: string;
       mcpTools?: string[];
       permissionMode?: 'default' | 'acceptEdits' | 'bypassPermissions' | 'plan';
-      model?: 'sonnet' | 'opus';
+      model?: string;
       claudeVersion?: string;
       abortController?: AbortController;
       onMessage?: (data: unknown) => void;

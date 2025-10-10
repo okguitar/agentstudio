@@ -231,7 +231,7 @@ const ChatRequestSchema = z.object({
   projectPath: z.string().optional(),
   mcpTools: z.array(z.string()).optional(),
   permissionMode: z.enum(['default', 'acceptEdits', 'bypassPermissions', 'plan']).optional(),
-  model: z.enum(['sonnet', 'opus']).optional(),
+  model: z.string().optional(),
   claudeVersion: z.string().optional(), // Claude版本ID
   context: z.object({
     currentSlide: z.number().optional().nullable(),
