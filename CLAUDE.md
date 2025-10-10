@@ -287,6 +287,84 @@ When modifying API endpoints or adding new hooks:
 3. **Dynamic Configuration**: Support both development and production environments
 4. **Connection Testing**: Implement health checks for new API endpoints at `/api/health`
 
+### Development Workflow with Git Worktree
+
+#### Worktree-Based Development Strategy
+When developing new features or fixing issues, follow this workflow based on task complexity:
+
+**Small Tasks (Main Directory)**
+- **Scope**: Simple bug fixes, minor UI tweaks, documentation updates
+- **Criteria**:
+  - Affects ≤ 3 files
+  - Estimated time < 30 minutes
+  - No breaking changes
+  - No new dependencies
+- **Workflow**: Work directly in main directory on main branch
+
+**Medium to Large Features (Worktree Required)**
+- **Scope**: New components, API endpoints, agent integrations, UI features
+- **Criteria**:
+  - Affects > 3 files
+  - Estimated time ≥ 30 minutes
+  - Adds new dependencies
+  - Requires testing
+- **Workflow**: Create dedicated feature branch with worktree
+- **Testing Requirement**: Must pass user testing and approval before merging to main
+
+#### Worktree Commands
+```bash
+# Create feature branch and worktree
+git checkout -b feature-name
+git worktree add ../agentstudio-feature-name feature-name
+
+# Switch to worktree
+cd ../agentstudio-feature-name
+
+# Install dependencies and start development
+pnpm install
+pnpm run dev
+
+# After completion, request user testing and approval
+# User must test the feature and confirm it's ready for merge
+
+# Once approved, merge from main directory
+cd ../agentstudio
+git merge feature-name
+
+# Clean up worktree
+git worktree remove ../agentstudio-feature-name
+git branch -d feature-name
+```
+
+#### Testing and Approval Process
+Before merging any feature branch to main, follow this mandatory testing and approval process:
+
+**Developer Testing (Required)**
+- Run all automated tests: `cd frontend && pnpm test:run`
+- Build verification: `pnpm run build`
+- Manual testing of new functionality
+- Check for breaking changes in existing features
+
+**User Testing and Approval (Mandatory)**
+- Provide clear instructions for user to test the feature
+- Include specific test scenarios and expected outcomes
+- Wait for explicit user confirmation before merging
+- Document any issues found during user testing
+
+**Merge Criteria**
+- All automated tests pass
+- Build succeeds without errors
+- User has tested and approved the feature
+- No breaking changes to existing functionality
+- Code review completed if applicable
+
+#### Worktree Benefits for This Project
+- **Independent Development Environments**: Each worktree has separate dependency installations and build caches
+- **Parallel Testing**: Run different test suites simultaneously across worktrees
+- **Agent Isolation**: Test different agent configurations without interference
+- **Performance**: Avoid constant dependency reinstallation when switching contexts
+- **Safe Testing**: Users can test features in isolation before merging to main
+
 ### Deployment Architecture Patterns
 The project supports multiple deployment configurations:
 - **Frontend**: Vercel (CDN-optimized) + **Backend**: Local/Self-hosted
