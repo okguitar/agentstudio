@@ -531,6 +531,16 @@ run_installation() {
         # Production mode
         cat > "$INSTALL_DIR/start.sh" << 'EOF'
 #!/bin/bash
+
+# Load NVM if available
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+# Add common Node.js paths to PATH
+export PATH="$NVM_DIR/versions/node/$(nvm current 2>/dev/null || echo 'system')/bin:$PATH" 2>/dev/null || true
+export PATH="/usr/local/bin:/usr/bin:$PATH"
+export PATH="$HOME/.local/bin:$PATH"
+
 echo "🚀 Starting Agent Studio Backend (Production Mode)..."
 cd "$HOME/.agent-studio"
 export NODE_ENV=production
@@ -552,6 +562,16 @@ EOF
         # Development mode
         cat > "$INSTALL_DIR/start.sh" << 'EOF'
 #!/bin/bash
+
+# Load NVM if available
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+# Add common Node.js paths to PATH
+export PATH="$NVM_DIR/versions/node/$(nvm current 2>/dev/null || echo 'system')/bin:$PATH" 2>/dev/null || true
+export PATH="/usr/local/bin:/usr/bin:$PATH"
+export PATH="$HOME/.local/bin:$PATH"
+
 echo "🚀 Starting Agent Studio Backend (Development Mode)..."
 cd "$HOME/.agent-studio"
 export NODE_ENV=development
@@ -653,11 +673,10 @@ After=network.target
 Type=simple
 User=$ACTUAL_USER
 WorkingDirectory=$INSTALL_DIR
-Environment=PATH=/usr/bin:/usr/local/bin
 Environment=NODE_ENV=production
 Environment=PORT=$SERVICE_PORT
 Environment=SLIDES_DIR=$USER_HOME/slides
-ExecStart=$INSTALL_DIR/start.sh
+ExecStart=/bin/bash $INSTALL_DIR/start.sh
 Restart=always
 RestartSec=10
 StandardOutput=journal
