@@ -620,11 +620,19 @@ install_systemd_service() {
     echo ""
     echo "=== System Service Configuration ==="
     echo ""
-    read -p "Would you like to install Agent Studio as a system service? (y/N): " -n 1 -r
-    echo ""
 
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        return 0
+    # Check if we're running in a non-interactive environment (piped input)
+    if [ ! -t 0 ]; then
+        # Non-interactive mode - automatically install systemd service
+        log "Non-interactive mode detected - installing systemd service automatically"
+    else
+        # Interactive mode - ask for confirmation
+        read -p "Would you like to install Agent Studio as a system service? (y/N): " -n 1 -r
+        echo ""
+
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            return 0
+        fi
     fi
 
     log "Installing systemd service..."
@@ -668,15 +676,29 @@ EOF
     echo "  sudo journalctl -u $SERVICE_NAME -f"
     echo ""
 
-    read -p "Would you like to start the service now? (y/N): " -n 1 -r
-    echo ""
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
+    # Check if we're running in a non-interactive environment
+    if [ ! -t 0 ]; then
+        # Non-interactive mode - automatically start the service
+        log "Non-interactive mode detected - starting systemd service automatically"
         systemctl start "$SERVICE_NAME"
         sleep 3
         if systemctl is-active --quiet "$SERVICE_NAME"; then
             success "Service started successfully!"
         else
             error "Service failed to start. Check logs: journalctl -u $SERVICE_NAME"
+        fi
+    else
+        # Interactive mode - ask for confirmation
+        read -p "Would you like to start the service now? (y/N): " -n 1 -r
+        echo ""
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            systemctl start "$SERVICE_NAME"
+            sleep 3
+            if systemctl is-active --quiet "$SERVICE_NAME"; then
+                success "Service started successfully!"
+            else
+                error "Service failed to start. Check logs: journalctl -u $SERVICE_NAME"
+            fi
         fi
     fi
 }
@@ -701,10 +723,25 @@ configure_service() {
 # Start the service
 start_service() {
     echo ""
-    read -p "Would you like to start the Agent Studio backend now? (y/N): " -n 1 -r
-    echo ""
 
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
+    # Check if we're running in a non-interactive environment
+    if [ ! -t 0 ]; then
+        # Non-interactive mode - automatically start the service
+        log "Non-interactive mode detected - starting backend automatically"
+        START_SERVICE=true
+    else
+        # Interactive mode - ask for confirmation
+        read -p "Would you like to start the Agent Studio backend now? (y/N): " -n 1 -r
+        echo ""
+
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            START_SERVICE=true
+        else
+            START_SERVICE=false
+        fi
+    fi
+
+    if [ "$START_SERVICE" = true ]; then
         log "Starting Agent Studio backend..."
 
         if [ -f "$INSTALL_DIR/start.sh" ]; then
@@ -777,14 +814,30 @@ main() {
     echo "Target user: $ACTUAL_USER"
     echo ""
 
-    if [ "$EUID" -eq 0 ] && [ "$OS" = "linux" ]; then
-        echo "🔧 System service available:"
+    # Check if systemd service was installed
+    if [ "$OS" = "linux" ] && [ "$EUID" -eq 0 ] && [ -f "/etc/systemd/system/$SERVICE_NAME.service" ]; then
+        echo "🔧 System Service Installed:"
+        echo "   ✅ Systemd service configured and enabled"
+        echo "   ✅ Service will start automatically on boot"
+        echo ""
+        echo "🚀 Service Management Commands:"
+        echo "   sudo systemctl start $SERVICE_NAME      # Start the service"
+        echo "   sudo systemctl stop $SERVICE_NAME       # Stop the service"
+        echo "   sudo systemctl restart $SERVICE_NAME    # Restart the service"
+        echo "   sudo systemctl status $SERVICE_NAME     # Check service status"
+        echo "   sudo journalctl -u $SERVICE_NAME -f     # View service logs"
+        echo ""
+        echo "📝 If the service is not already running, start it with:"
+        echo "   sudo systemctl start $SERVICE_NAME"
+        echo ""
+    elif [ "$EUID" -eq 0 ] && [ "$OS" = "linux" ]; then
+        echo "🔧 System Service Available:"
         echo "   sudo systemctl start $SERVICE_NAME"
         echo "   sudo systemctl status $SERVICE_NAME"
         echo ""
     fi
 
-    echo "🚀 Manual startup commands:"
+    echo "🚀 Manual Startup Commands:"
     echo "  $INSTALL_DIR/start.sh    # Start the backend"
     echo "  $INSTALL_DIR/stop.sh     # Stop the backend"
     echo ""
