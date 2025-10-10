@@ -756,5 +756,51 @@
       "cancel": "取消",
       "continue": "仍然切换"
     }
+  },
+  "claudeVersionSetup": {
+    "detecting": {
+      "title": "正在检测 Claude CLI",
+      "description": "正在检测您的系统中是否安装了 Claude..."
+    },
+    "selection": {
+      "title": "选择 Claude 版本",
+      "description": "我们检测到以下 Claude CLI 安装，请选择要使用的版本",
+      "userInstalled": "用户全局安装",
+      "systemInstalled": "系统 npm 包",
+      "path": "路径",
+      "version": "版本",
+      "packageManager": "包管理器",
+      "useUserInstalled": "使用用户安装的 Claude",
+      "useUserInstalledDesc": "使用您通过包管理器全局安装的 Claude CLI",
+      "useSystemPackage": "使用系统 npm 包",
+      "useSystemPackageDesc": "使用本项目 node_modules 中自带的 Claude CLI",
+      "noClaudeFound": "未检测到 Claude CLI",
+      "noClaudeFoundDesc": "请先安装 Claude CLI 或确保项目依赖已正确安装"
+    },
+    "config": {
+      "title": "配置认证方式",
+      "description": "选择如何配置 Claude 的认证凭证",
+      "skipToken": "暂不配置（推荐）",
+      "skipTokenDesc": "跳过认证配置，效果与 Claude Pro 订阅用户一样",
+      "claudePro": "Claude Pro 订阅用户",
+      "claudeProDesc": "我是 Claude Pro 订阅用户，将在 CLI 中自行登录",
+      "enterToken": "手动输入 Token",
+      "enterTokenDesc": "手动输入 ANTHROPIC_AUTH_TOKEN 环境变量",
+      "tokenPlaceholder": "输入您的 ANTHROPIC_AUTH_TOKEN"
+    },
+    "creating": {
+      "title": "正在创建系统版本",
+      "description": "正在为您配置 Claude 版本，请稍候..."
+    },
+    "success": {
+      "title": "配置成功！",
+      "description": "Claude 版本已成功创建，即将返回控制台..."
+    },
+    "actions": {
+      "skip": "跳过",
+      "next": "下一步",
+      "back": "上一步",
+      "create": "创建版本"
+    }
   }
 }

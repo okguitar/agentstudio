@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Bot,
   FolderOpen,
@@ -16,13 +16,37 @@ import { useAgents } from '../hooks/useAgents';
 import { SessionsDashboard } from '../components/SessionsDashboard';
 import { RecentActivity } from '../components/RecentActivity';
 import { useDashboardStats } from '../hooks/useDashboardStats';
+import { useClaudeVersions } from '../hooks/useClaudeVersions';
+import { ClaudeVersionSetupWizard } from '../components/ClaudeVersionSetupWizard';
 
 export const DashboardPage: React.FC = () => {
   const { t } = useTranslation('pages');
   const { data: agentsData } = useAgents();
   const { stats, isLoading } = useDashboardStats();
+  const { data: versionsData, isLoading: versionsLoading, refetch: refetchVersions } = useClaudeVersions();
+  const [showSetupWizard, setShowSetupWizard] = useState(false);
+
   const agents = agentsData?.agents || [];
   const enabledAgents = agents.filter(agent => agent.enabled);
+
+  // 检测是否需要显示初始化引导
+  const needsSetup = !versionsLoading && (!versionsData?.versions || versionsData.versions.length === 0);
+  const shouldShowWizard = needsSetup && !showSetupWizard;
+
+  React.useEffect(() => {
+    if (needsSetup) {
+      setShowSetupWizard(true);
+    }
+  }, [needsSetup]);
+
+  const handleSetupComplete = () => {
+    setShowSetupWizard(false);
+    refetchVersions();
+  };
+
+  const handleSetupSkip = () => {
+    setShowSetupWizard(false);
+  };
 
   const statCards = [
     {
@@ -61,6 +85,14 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <div className="p-8">
+      {/* Claude 版本初始化引导（模态窗口） */}
+      {showSetupWizard && (
+        <ClaudeVersionSetupWizard
+          onComplete={handleSetupComplete}
+          onSkip={handleSetupSkip}
+        />
+      )}
+
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('dashboard.title')}</h1>

@@ -754,5 +754,51 @@
       "cancel": "Cancel",
       "continue": "Switch Anyway"
     }
+  },
+  "claudeVersionSetup": {
+    "detecting": {
+      "title": "Detecting Claude CLI",
+      "description": "Checking if Claude is installed on your system..."
+    },
+    "selection": {
+      "title": "Select Claude Version",
+      "description": "We detected the following Claude CLI installations, please select which one to use",
+      "userInstalled": "User Global Installation",
+      "systemInstalled": "System npm Package",
+      "path": "Path",
+      "version": "Version",
+      "packageManager": "Package Manager",
+      "useUserInstalled": "Use User-Installed Claude",
+      "useUserInstalledDesc": "Use the Claude CLI installed globally via package manager",
+      "useSystemPackage": "Use System npm Package",
+      "useSystemPackageDesc": "Use the Claude CLI bundled in project's node_modules",
+      "noClaudeFound": "No Claude CLI Found",
+      "noClaudeFoundDesc": "Please install Claude CLI or ensure project dependencies are properly installed"
+    },
+    "config": {
+      "title": "Configure Authentication",
+      "description": "Choose how to configure Claude authentication credentials",
+      "skipToken": "Skip Configuration (Recommended)",
+      "skipTokenDesc": "Skip authentication setup, works the same as Claude Pro subscription",
+      "claudePro": "Claude Pro Subscriber",
+      "claudeProDesc": "I'm a Claude Pro subscriber, will login via CLI myself",
+      "enterToken": "Enter Token Manually",
+      "enterTokenDesc": "Manually enter ANTHROPIC_AUTH_TOKEN environment variable",
+      "tokenPlaceholder": "Enter your ANTHROPIC_AUTH_TOKEN"
+    },
+    "creating": {
+      "title": "Creating System Version",
+      "description": "Configuring Claude version for you, please wait..."
+    },
+    "success": {
+      "title": "Setup Successful!",
+      "description": "Claude version has been created successfully, returning to dashboard..."
+    },
+    "actions": {
+      "skip": "Skip",
+      "next": "Next",
+      "back": "Back",
+      "create": "Create Version"
+    }
   }
 }
