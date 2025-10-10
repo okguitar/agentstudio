@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  agentstudio:
+    image: agentstudio:latest
+    container_name: agentstudio
+    ports:
+      - "80:80"        # Frontend (nginx)
+      - "4936:4936"    # Backend API (optional, for direct access)
+    environment:
+      - NODE_ENV=production
+      - PORT=4936
+      # Uncomment and set your API keys
+      # - ANTHROPIC_API_KEY=your_anthropic_key_here
+      # - OPENAI_API_KEY=your_openai_key_here
+    env_file:
+      - ./backend/.env  # Optional: use .env file instead
+    volumes:
+      - agentstudio_data:/app/data  # Persist application data (agents, sessions, etc.)
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/", "&&", "curl", "-f", "http://localhost:4936/api/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  agentstudio_data:

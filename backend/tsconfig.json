@@ -18,8 +18,8 @@
     "resolveJsonModule": true,
     "baseUrl": ".",
     "paths": {
-      "@agentstudio/shared": ["../shared/src"],
-      "@agentstudio/shared/*": ["../shared/src/*"]
+      "@agentstudio/shared": ["../shared/dist", "../shared/src"],
+      "@agentstudio/shared/*": ["../shared/dist/*", "../shared/src/*"]
     }
   },
   "include": ["src/**/*"],

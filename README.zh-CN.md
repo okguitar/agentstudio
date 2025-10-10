@@ -68,6 +68,30 @@ AgentStudio 是一个基于 Claude Code SDK 构建的现代化个人智能体工
 
 ## 🚀 快速开始
 
+### 🐳 Docker 部署（推荐快速测试）
+
+**一行命令启动：**
+
+```bash
+# 构建并运行
+docker build -t agentstudio:latest .
+docker-compose up -d
+```
+
+然后在浏览器中打开 http://localhost
+
+**你将获得：**
+- ✅ **一体化容器**：前端 + 后端在单个容器中
+- ✅ **数据持久化**：通过 Docker volume 自动备份数据
+- ✅ **零配置**：开箱即用
+- ✅ **轻松更新**：简单的重新构建和重启
+
+📖 **完整文档：**
+- [Docker 部署指南](DOCKER.md) - 详细的设置和配置说明
+- [快速入门指南](QUICKSTART.md) - 包含示例的分步教程
+
+---
+
 ### 普通用户（一键安装）
 
 **🐧 Linux & 🍎 macOS - 用户空间安装（推荐 - 无需 sudo）**

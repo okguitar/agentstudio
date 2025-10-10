@@ -70,6 +70,30 @@ AgentStudio is a modern, web-based personal agent workspace platform built on to
 
 ### 🚀 Quick Start
 
+#### 🐳 Docker Deployment (Recommended for Quick Testing)
+
+**One-Command Setup:**
+
+```bash
+# Build and run with docker-compose
+docker build -t agentstudio:latest .
+docker-compose up -d
+```
+
+Then open http://localhost in your browser.
+
+**What you get:**
+- ✅ **All-in-One Container**: Frontend + Backend in a single container
+- ✅ **Data Persistence**: Automatic data backup via Docker volumes
+- ✅ **Zero Configuration**: Works out of the box
+- ✅ **Easy Updates**: Simple rebuild and restart
+
+📖 **Full Documentation:**
+- [Docker Deployment Guide](DOCKER.md) - Detailed setup and configuration
+- [Quick Start Guide](QUICKSTART.md) - Step-by-step tutorial with examples
+
+---
+
 #### For End Users (One-Click Installation)
 
 **🐧 Linux & 🍎 macOS - User Installation (Recommended - No sudo required)**
