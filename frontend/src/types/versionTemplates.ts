@@ -30,7 +30,7 @@ export const VERSION_TEMPLATES: VersionTemplate[] = [
     envVars: [
       {
         key: 'ANTHROPIC_BASE_URL',
-        value: 'https://api.z.ai/api/anthropic',
+        value: 'https://open.bigmodel.cn/api/anthropic',
         isRequired: true,
         description: '智谱AI的Anthropic兼容端点'
       },
