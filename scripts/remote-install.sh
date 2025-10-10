@@ -11,9 +11,30 @@ GITHUB_REPO="git-men/agentstudio"
 GITHUB_BRANCH="main"
 TEMP_DIR="/tmp/agent-studio-remote-$(date +%s)"
 SERVICE_NAME="agent-studio"
-USER_HOME="$HOME"
-INSTALL_DIR="$USER_HOME/.agent-studio"
 SERVICE_PORT="4936"
+
+# Detect if running as root or with sudo
+if [ -n "$SUDO_USER" ] && [ "$EUID" -eq 0 ]; then
+    # Running with sudo - use the original user's home
+    ACTUAL_USER="$SUDO_USER"
+    USER_HOME=$(getent passwd "$SUDO_USER" | cut -d: -f6)
+    ACTUAL_UID=$(id -u "$SUDO_USER")
+    ACTUAL_GID=$(id -g "$SUDO_USER")
+elif [ "$EUID" -eq 0 ]; then
+    # Running as root directly - ask for target user
+    ACTUAL_USER="root"
+    USER_HOME="/root"
+    ACTUAL_UID=0
+    ACTUAL_GID=0
+else
+    # Running as normal user
+    ACTUAL_USER="$USER"
+    USER_HOME="$HOME"
+    ACTUAL_UID=$(id -u)
+    ACTUAL_GID=$(id -g)
+fi
+
+INSTALL_DIR="$USER_HOME/.agent-studio"
 
 # Colors for output
 RED='\033[0;31m'
@@ -42,20 +63,20 @@ success() {
 # Check installation environment
 check_environment() {
     log "Installing Agent Studio to user directory: $INSTALL_DIR"
-    log "Current user: $USER"
-    
+    log "Target user: $ACTUAL_USER (UID: $ACTUAL_UID)"
+
     # Check if previous installation exists and is writable
     if [ -d "$INSTALL_DIR" ]; then
         log "Found existing installation directory..."
-        if [ -w "$INSTALL_DIR" ]; then
-            log "Cleaning existing installation..."
-            rm -rf "$INSTALL_DIR"
-            success "Cleanup completed"
-        else
-            error "$INSTALL_DIR exists but is not writable"
-            error "Please remove it manually: rm -rf $INSTALL_DIR"
-            exit 1
-        fi
+        log "Cleaning existing installation..."
+        rm -rf "$INSTALL_DIR"
+        success "Cleanup completed"
+    fi
+
+    # Ensure parent directory exists and has correct permissions
+    mkdir -p "$USER_HOME"
+    if [ "$ACTUAL_USER" != "root" ] && [ "$EUID" -eq 0 ]; then
+        chown -R "$ACTUAL_UID:$ACTUAL_GID" "$USER_HOME"
     fi
 }
 
@@ -431,6 +452,11 @@ run_installation() {
     log "Copying application files..."
     cd "$TEMP_DIR"
     cp -r ./* "$INSTALL_DIR/"
+
+    # Set correct ownership if running as root
+    if [ "$ACTUAL_USER" != "root" ] && [ "$EUID" -eq 0 ]; then
+        chown -R "$ACTUAL_UID:$ACTUAL_GID" "$INSTALL_DIR"
+    fi
     
     cd "$INSTALL_DIR"
     
@@ -564,6 +590,76 @@ cleanup() {
     success "Cleanup completed"
 }
 
+# Install systemd service (Linux only)
+install_systemd_service() {
+    if [ "$OS" != "linux" ] || [ "$EUID" -ne 0 ]; then
+        return 0
+    fi
+
+    echo ""
+    echo "=== System Service Configuration ==="
+    echo ""
+    read -p "Would you like to install Agent Studio as a system service? (y/N): " -n 1 -r
+    echo ""
+
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        return 0
+    fi
+
+    log "Installing systemd service..."
+
+    # Create systemd service file
+    local SERVICE_FILE="/etc/systemd/system/$SERVICE_NAME.service"
+    cat > "$SERVICE_FILE" << EOF
+[Unit]
+Description=Agent Studio Backend
+After=network.target
+
+[Service]
+Type=simple
+User=$ACTUAL_USER
+WorkingDirectory=$INSTALL_DIR
+Environment=PATH=/usr/bin:/usr/local/bin
+Environment=NODE_ENV=production
+Environment=PORT=$SERVICE_PORT
+Environment=SLIDES_DIR=$USER_HOME/slides
+ExecStart=$INSTALL_DIR/start.sh
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    # Reload systemd and enable service
+    systemctl daemon-reload
+    systemctl enable "$SERVICE_NAME.service"
+
+    success "Systemd service installed and enabled"
+    echo ""
+    echo "Service commands:"
+    echo "  sudo systemctl start $SERVICE_NAME"
+    echo "  sudo systemctl stop $SERVICE_NAME"
+    echo "  sudo systemctl restart $SERVICE_NAME"
+    echo "  sudo systemctl status $SERVICE_NAME"
+    echo "  sudo journalctl -u $SERVICE_NAME -f"
+    echo ""
+
+    read -p "Would you like to start the service now? (y/N): " -n 1 -r
+    echo ""
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        systemctl start "$SERVICE_NAME"
+        sleep 3
+        if systemctl is-active --quiet "$SERVICE_NAME"; then
+            success "Service started successfully!"
+        else
+            error "Service failed to start. Check logs: journalctl -u $SERVICE_NAME"
+        fi
+    fi
+}
+
 # Service configuration (optional)
 configure_service() {
     echo ""
@@ -574,6 +670,11 @@ configure_service() {
     echo "The service can run without additional configuration."
     echo "API keys can be added later if needed by editing:"
     echo "  $USER_HOME/.agent-studio-config/config.env"
+
+    # Offer systemd service installation on Linux with root privileges
+    if [ "$OS" = "linux" ] && [ "$EUID" -eq 0 ]; then
+        install_systemd_service
+    fi
 }
 
 # Start the service
@@ -624,8 +725,19 @@ main() {
     echo "║  • Dependencies (npm/pnpm)              ║"
     echo "║  • Start/Stop scripts                   ║"
     echo "║  • Configuration files                  ║"
+    if [ "$OS" = "linux" ] && [ "$EUID" -eq 0 ]; then
+        echo "║  • Systemd service (optional)          ║"
+    fi
     echo "╚══════════════════════════════════════════╝"
     echo ""
+
+    if [ -n "$SUDO_USER" ] && [ "$EUID" -eq 0 ] && [ "$ACTUAL_USER" != "root" ]; then
+        warn "Running with sudo - installing for user: $ACTUAL_USER"
+        echo ""
+    elif [ "$EUID" -eq 0 ] && [ "$ACTUAL_USER" = "root" ]; then
+        warn "Running as root - installing for root user"
+        echo ""
+    fi
     
     check_environment
     detect_os
@@ -640,13 +752,22 @@ main() {
     echo ""
     echo "🎉 Installation Complete!"
     echo ""
-    echo "Agent Studio Backend is now installed in your user directory."
+    echo "Agent Studio Backend is now installed in: $INSTALL_DIR"
+    echo "Target user: $ACTUAL_USER"
     echo ""
-    echo "Useful commands:"
+
+    if [ "$EUID" -eq 0 ] && [ "$OS" = "linux" ]; then
+        echo "🔧 System service available:"
+        echo "   sudo systemctl start $SERVICE_NAME"
+        echo "   sudo systemctl status $SERVICE_NAME"
+        echo ""
+    fi
+
+    echo "🚀 Manual startup commands:"
     echo "  $INSTALL_DIR/start.sh    # Start the backend"
     echo "  $INSTALL_DIR/stop.sh     # Stop the backend"
     echo ""
-    echo "Configuration file:"
+    echo "⚙️  Configuration file:"
     echo "  $USER_HOME/.agent-studio-config/config.env"
     echo ""
     echo "✨ Access the application at:"
@@ -669,5 +790,4 @@ main() {
 trap cleanup INT TERM
 
 # Run main function
-main "$@"
 main "$@"
