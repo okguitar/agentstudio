@@ -13,6 +13,11 @@ TEMP_DIR="/tmp/agent-studio-remote-$(date +%s)"
 SERVICE_NAME="agent-studio"
 SERVICE_PORT="4936"
 
+# Detect if running via pipe (for non-interactive mode)
+if [ -p /dev/stdin ] || [ ! -t 0 ]; then
+    PIPED_INSTALL="true"
+fi
+
 # Detect if running as root or with sudo
 if [ -n "$SUDO_USER" ] && [ "$EUID" -eq 0 ]; then
     # Running with sudo - use the original user's home
@@ -307,7 +312,7 @@ auto_install_nodejs() {
     echo "Node.js is required but not found on your system."
 
     # Check if we're running in a non-interactive environment (piped input)
-    if [ ! -t 0 ]; then
+    if [ ! -t 0 ] || [ -n "$PIPED_INSTALL" ]; then
         # Non-interactive mode - automatically install Node.js
         log "Non-interactive mode detected - proceeding with automatic Node.js installation"
     else
@@ -401,7 +406,7 @@ check_pnpm() {
     echo ""
 
     # Check if we're running in a non-interactive environment (piped input)
-    if [ ! -t 0 ]; then
+    if [ ! -t 0 ] || [ -n "$PIPED_INSTALL" ]; then
         # Non-interactive mode - automatically install pnpm
         log "Non-interactive mode detected - installing pnpm automatically"
         install_pnpm
@@ -622,7 +627,7 @@ install_systemd_service() {
     echo ""
 
     # Check if we're running in a non-interactive environment (piped input)
-    if [ ! -t 0 ]; then
+    if [ ! -t 0 ] || [ -n "$PIPED_INSTALL" ]; then
         # Non-interactive mode - automatically install systemd service
         log "Non-interactive mode detected - installing systemd service automatically"
     else
@@ -677,7 +682,7 @@ EOF
     echo ""
 
     # Check if we're running in a non-interactive environment
-    if [ ! -t 0 ]; then
+    if [ ! -t 0 ] || [ -n "$PIPED_INSTALL" ]; then
         # Non-interactive mode - automatically start the service
         log "Non-interactive mode detected - starting systemd service automatically"
         systemctl start "$SERVICE_NAME"
@@ -725,7 +730,7 @@ start_service() {
     echo ""
 
     # Check if we're running in a non-interactive environment
-    if [ ! -t 0 ]; then
+    if [ ! -t 0 ] || [ -n "$PIPED_INSTALL" ]; then
         # Non-interactive mode - automatically start the service
         log "Non-interactive mode detected - starting backend automatically"
         START_SERVICE=true
