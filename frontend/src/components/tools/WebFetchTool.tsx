@@ -12,7 +12,7 @@ export const WebFetchTool: React.FC<WebFetchToolProps> = ({ execution }) => {
   const input = execution.toolInput as WebFetchToolInput;
 
   return (
-    <BaseToolComponent execution={execution} hideToolName={true}>
+    <BaseToolComponent execution={execution} hideToolName={true} subtitle={input.url}>
       <div>
         <div className="flex items-center space-x-2 mb-2">
           <span className="text-xs font-medium text-gray-600">{t('webFetchTool.urlLabel')}</span>
