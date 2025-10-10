@@ -305,47 +305,55 @@ install_nodejs_macos() {
 auto_install_nodejs() {
     echo ""
     echo "Node.js is required but not found on your system."
-    read -p "Would you like to install Node.js automatically? (Y/n): " -n 1 -r
-    echo ""
-    
-    if [[ ! $REPLY =~ ^[Nn]$ ]]; then
-        case "$OS" in
-            "linux")
-                # Try package manager first, fallback to NVM
-                # Check if we can use system package manager (either as root or with sudo)
-                if [ "$DISTRO" != "unknown" ] && ([ "$EUID" -eq 0 ] || command -v sudo >/dev/null 2>&1); then
-                    if ! install_nodejs_linux; then
-                        warn "System package manager installation failed, trying NVM..."
-                        install_nodejs_via_nvm
-                    fi
-                else
-                    log "Cannot use system package manager, using NVM..."
-                    install_nodejs_via_nvm
-                fi
-                ;;
-            "macos")
-                if ! install_nodejs_macos; then
-                    warn "Homebrew installation failed, trying NVM..."
-                    install_nodejs_via_nvm
-                fi
-                ;;
-            *)
-                install_nodejs_via_nvm
-                ;;
-        esac
-        
-        # Refresh environment and verify installation
-        refresh_shell_env
-        
-        if command -v node >/dev/null 2>&1; then
-            success "Node.js $(node --version) installed successfully"
-        else
-            error "Node.js installation failed. Please install manually."
+
+    # Check if we're running in a non-interactive environment (piped input)
+    if [ ! -t 0 ]; then
+        # Non-interactive mode - automatically install Node.js
+        log "Non-interactive mode detected - proceeding with automatic Node.js installation"
+    else
+        # Interactive mode - ask for confirmation
+        read -p "Would you like to install Node.js automatically? (Y/n): " -n 1 -r
+        echo ""
+
+        if [[ $REPLY =~ ^[Nn]$ ]]; then
+            error "Node.js is required to continue. Please install Node.js 18 or later first."
             error "Visit: https://nodejs.org/"
             exit 1
         fi
+    fi
+
+    case "$OS" in
+        "linux")
+            # Try package manager first, fallback to NVM
+            # Check if we can use system package manager (either as root or with sudo)
+            if [ "$DISTRO" != "unknown" ] && ([ "$EUID" -eq 0 ] || command -v sudo >/dev/null 2>&1); then
+                if ! install_nodejs_linux; then
+                    warn "System package manager installation failed, trying NVM..."
+                    install_nodejs_via_nvm
+                fi
+            else
+                log "Cannot use system package manager, using NVM..."
+                install_nodejs_via_nvm
+            fi
+            ;;
+        "macos")
+            if ! install_nodejs_macos; then
+                warn "Homebrew installation failed, trying NVM..."
+                install_nodejs_via_nvm
+            fi
+            ;;
+        *)
+            install_nodejs_via_nvm
+            ;;
+    esac
+
+    # Refresh environment and verify installation
+    refresh_shell_env
+
+    if command -v node >/dev/null 2>&1; then
+        success "Node.js $(node --version) installed successfully"
     else
-        error "Node.js is required to continue. Please install Node.js 18 or later first."
+        error "Node.js installation failed. Please install manually."
         error "Visit: https://nodejs.org/"
         exit 1
     fi
@@ -389,19 +397,32 @@ check_pnpm() {
         success "pnpm is available"
         return
     fi
-    
+
     echo ""
-    read -p "pnpm not found. Would you like to install it for faster package management? (Y/n): " -n 1 -r
-    echo ""
-    
-    if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+
+    # Check if we're running in a non-interactive environment (piped input)
+    if [ ! -t 0 ]; then
+        # Non-interactive mode - automatically install pnpm
+        log "Non-interactive mode detected - installing pnpm automatically"
         install_pnpm
         refresh_shell_env
         if ! command -v pnpm >/dev/null 2>&1; then
             warn "pnpm installation failed, will use npm instead"
         fi
     else
-        log "Will use npm instead of pnpm"
+        # Interactive mode - ask for confirmation
+        read -p "pnpm not found. Would you like to install it for faster package management? (Y/n): " -n 1 -r
+        echo ""
+
+        if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+            install_pnpm
+            refresh_shell_env
+            if ! command -v pnpm >/dev/null 2>&1; then
+                warn "pnpm installation failed, will use npm instead"
+            fi
+        else
+            log "Will use npm instead of pnpm"
+        fi
     fi
 }
 
