@@ -12,11 +12,7 @@ import {
   Loader2,
   AlertTriangle,
   Edit,
-  Tag,
-  Server,
-  Settings,
-  Globe,
-  Monitor
+  Tag
 } from 'lucide-react';
 import {
   Table,

@@ -1,7 +1,6 @@
 import React from 'react';
 import { Menu } from 'lucide-react';
 import { MobileSidebar } from './MobileSidebar';
-import { MobileNavigation } from './MobileNavigation';
 import { Sidebar } from './Sidebar';
 import { useMobileContext } from '../contexts/MobileContext';
 

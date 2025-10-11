@@ -160,11 +160,6 @@ export const ChatPage: React.FC = () => {
     setHideRightPanel(false);
   };
 
-  // 处理移动端面板切换
-  const handleMobilePanelToggle = () => {
-    // This will be handled by the mobile context in SplitLayout
-  };
-
   // Render layout based on plugin configuration
   const renderLayout = () => {
     // 始终使用分栏布局，右侧根据是否有自定义组件来决定显示内容

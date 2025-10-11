@@ -92,15 +92,9 @@ export const DashboardPage: React.FC = () => {
   const recentAgents = enabledAgents.slice(0, 3);
 
   return (
-<<<<<<< HEAD
-    <div className="p-8">
-      {/* Claude 版本初始化引导 */}
-      {showClaudeSetup && (
-=======
     <div className={`${isMobile ? 'p-4' : 'p-8'}`}>
       {/* Claude 版本初始化引导（模态窗口） */}
-      {showSetupWizard && (
->>>>>>> 724e879 (feat: complete mobile adaptation for agentstudio)
+      {showClaudeSetup && (
         <ClaudeVersionSetupWizard
           onComplete={handleClaudeSetupComplete}
           onSkip={handleClaudeSetupSkip}

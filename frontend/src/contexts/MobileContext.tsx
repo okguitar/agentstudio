@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useMobile, useBreakpoints, useScreenSize, useOrientation } from '../hooks/useMobile';
+import { useBreakpoints, useScreenSize, useOrientation } from '../hooks/useMobile';
 
 interface MobileContextType {
   isMobile: boolean;

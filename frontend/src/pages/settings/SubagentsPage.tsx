@@ -105,7 +105,7 @@ export const SubagentsPage: React.FC = () => {
 
         {/* Search and Add Button */}
         <div className={isMobile ? 'space-y-3' : 'flex items-center space-x-4'}>
-          <div className={isMobile ? '' : 'flex-1'} bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4>
+          <div className={`${isMobile ? '' : 'flex-1'} bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4`}>
             <div className={`${isMobile ? 'flex items-center space-x-2' : 'relative'}`}>
               <Search className={`${isMobile ? 'text-gray-400 w-4 h-4' : 'absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5'}`} />
               <input

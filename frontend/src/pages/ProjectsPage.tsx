@@ -6,21 +6,12 @@ import { showError } from '../utils/toast';
 import {
   Plus,
   Search,
-  Calendar,
-  User,
-  ExternalLink,
-  Trash2,
   Folder,
-  X,
-  // Settings,
-  Brain,
-  Command,
-  Bot
+  X
 } from 'lucide-react';
 import { ProjectTable } from '../components/ProjectTable';
 import { useAgents } from '../hooks/useAgents';
 import { FileBrowser } from '../components/FileBrowser';
-import { formatRelativeTime } from '../utils';
 import { ProjectMemoryModal } from '../components/ProjectMemoryModal';
 import { ProjectCommandsModal } from '../components/ProjectCommandsModal';
 import { ProjectSubAgentsModal } from '../components/ProjectSubAgentsModal';

@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { Brain, Command, Bot, Trash2, MoreVertical, CheckCircle, Edit } from 'lucide-react';
+import { Brain, Command, Bot, Trash2, CheckCircle, Edit } from 'lucide-react';
 
 interface ProjectSwipeActionsProps {
   children: React.ReactNode;

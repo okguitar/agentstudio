@@ -51,7 +51,6 @@ export const ResponsiveTable: React.FC<ResponsiveTableProps> = ({
   };
 
   const visibleColumns = getVisibleColumns();
-  const hasMultipleColumns = visibleColumns.length > 1;
 
   // 移动端卡片视图
   if (!sm) {
