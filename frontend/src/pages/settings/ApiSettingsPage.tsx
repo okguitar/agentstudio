@@ -10,9 +10,11 @@ import {
 import { useTranslation } from 'react-i18next';
 import { getCurrentHost, setHost } from '../../lib/config.js';
 import { showSuccess } from '../../utils/toast';
+import { useMobileContext } from '../../contexts/MobileContext';
 
 export const ApiSettingsPage: React.FC = () => {
   const { t } = useTranslation('pages');
+  const { isMobile } = useMobileContext();
   const [apiHost, setApiHost] = useState('');
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'unknown' | 'success' | 'error'>('unknown');
@@ -120,39 +122,39 @@ export const ApiSettingsPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <div className="flex items-center space-x-3 mb-6">
-          <Server className="w-6 h-6 text-blue-500" />
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white">{t('settings.apiSettings.title')}</h3>
+    <div className={`${isMobile ? 'space-y-4' : 'space-y-6'}`}>
+      <div className={`bg-white dark:bg-gray-800 ${isMobile ? 'p-4' : 'p-6'} rounded-lg shadow-sm border border-gray-200 dark:border-gray-700`}>
+        <div className={`flex items-center ${isMobile ? 'space-x-2 mb-4' : 'space-x-3 mb-6'}`}>
+          <Server className={`${isMobile ? 'w-5 h-5' : 'w-6 h-6'} text-blue-500`} />
+          <h3 className={`${isMobile ? 'text-base' : 'text-lg'} font-medium text-gray-900 dark:text-white`}>{t('settings.apiSettings.title')}</h3>
         </div>
 
-        <div className="space-y-4">
+        <div className={`${isMobile ? 'space-y-3' : 'space-y-4'}`}>
           <div>
             <label htmlFor="api-host" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               {t('settings.apiSettings.hostLabel')}
             </label>
-            <div className="flex space-x-2">
+            <div className={`${isMobile ? 'flex flex-col space-y-2' : 'flex space-x-2'}`}>
               <input
                 id="api-host"
                 type="url"
                 value={apiHost}
                 onChange={(e) => setApiHost(e.target.value)}
                 placeholder={t('settings.apiSettings.hostPlaceholder')}
-                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm
+                className={`${isMobile ? 'flex-1' : 'flex-1'} px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm
                          focus:outline-none focus:ring-blue-500 focus:border-blue-500
-                         dark:bg-gray-700 dark:text-white"
+                         dark:bg-gray-700 dark:text-white ${isMobile ? 'text-sm' : ''}`}
               />
               <button
                 onClick={handleTest}
                 disabled={isConnecting || !apiHost.trim()}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md
-                         disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                className={`${isMobile ? 'w-full py-2.5 px-4' : 'px-4 py-2'} bg-blue-600 hover:bg-blue-700 text-white rounded-md
+                         disabled:opacity-50 disabled:cursor-not-allowed flex items-center ${isMobile ? 'justify-center space-x-2' : 'space-x-2'} ${isMobile ? 'text-sm' : ''}`}
               >
                 {isConnecting ? (
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
-                  <Server className="w-4 h-4" />
+                  <Server className={`${isMobile ? 'w-4 h-4' : 'w-4 h-4'}`} />
                 )}
                 <span>{t('settings.apiSettings.testConnection')}</span>
               </button>
@@ -161,24 +163,24 @@ export const ApiSettingsPage: React.FC = () => {
             {/* Quick Select Buttons */}
             <div className="mt-3">
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{t('settings.apiSettings.quickSelect')}</p>
-              <div className="flex flex-wrap gap-2">
+              <div className={`${isMobile ? 'grid grid-cols-1 gap-2' : 'flex flex-wrap gap-2'}`}>
                 <button
                   onClick={() => handleQuickSelect('http://127.0.0.1:4936')}
-                  className="px-3 py-1.5 text-xs bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600
+                  className={`${isMobile ? 'px-4 py-2.5' : 'px-3 py-1.5'} ${isMobile ? 'text-sm' : 'text-xs'} bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600
                            text-gray-700 dark:text-gray-300 rounded-md border border-gray-300 dark:border-gray-600
-                           transition-colors duration-200 flex items-center space-x-1"
+                           transition-colors duration-200 flex items-center ${isMobile ? 'justify-center space-x-2' : 'space-x-1'}`}
                 >
                   <span>@</span>
-                  <span>http://127.0.0.1:4936</span>
+                  <span>{isMobile ? '本地开发服务器' : 'http://127.0.0.1:4936'}</span>
                 </button>
                 <button
                   onClick={() => handleQuickSelect('https://srv.agentstudio.cc')}
-                  className="px-3 py-1.5 text-xs bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600
+                  className={`${isMobile ? 'px-4 py-2.5' : 'px-3 py-1.5'} ${isMobile ? 'text-sm' : 'text-xs'} bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600
                            text-gray-700 dark:text-gray-300 rounded-md border border-gray-300 dark:border-gray-600
-                           transition-colors duration-200 flex items-center space-x-1"
+                           transition-colors duration-200 flex items-center ${isMobile ? 'justify-center space-x-2' : 'space-x-1'}`}
                 >
                   <span>@</span>
-                  <span>https://srv.agentstudio.cc</span>
+                  <span>{isMobile ? '生产服务器' : 'https://srv.agentstudio.cc'}</span>
                 </button>
               </div>
             </div>
@@ -213,23 +215,23 @@ export const ApiSettingsPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex justify-between mt-6">
+        <div className={`${isMobile ? 'grid grid-cols-2 gap-2' : 'flex justify-between'} mt-6`}>
           <button
             onClick={handleReset}
-            className="flex items-center space-x-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-md"
+            className={`${isMobile ? 'flex-1' : ''} flex items-center ${isMobile ? 'justify-center space-x-1' : 'space-x-2'} ${isMobile ? 'px-3 py-2.5' : 'px-4 py-2'} bg-gray-600 hover:bg-gray-700 text-white rounded-md ${isMobile ? 'text-sm' : ''}`}
           >
-            <RotateCcw className="w-4 h-4" />
-            <span>{t('settings.apiSettings.resetToDefault')}</span>
+            <RotateCcw className={`${isMobile ? 'w-4 h-4' : 'w-4 h-4'}`} />
+            <span>{isMobile ? '重置' : t('settings.apiSettings.resetToDefault')}</span>
           </button>
 
           <button
             onClick={handleSave}
             disabled={isConnecting || connectionStatus === 'error'}
-            className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md
-                     disabled:opacity-50 disabled:cursor-not-allowed"
+            className={`${isMobile ? 'flex-1' : ''} flex items-center ${isMobile ? 'justify-center space-x-1' : 'space-x-2'} ${isMobile ? 'px-3 py-2.5' : 'px-4 py-2'} bg-green-600 hover:bg-green-700 text-white rounded-md
+                     disabled:opacity-50 disabled:cursor-not-allowed ${isMobile ? 'text-sm' : ''}`}
           >
-            <Save className="w-4 h-4" />
-            <span>{t('settings.apiSettings.saveSettings')}</span>
+            <Save className={`${isMobile ? 'w-4 h-4' : 'w-4 h-4'}`} />
+            <span>{isMobile ? '保存' : t('settings.apiSettings.saveSettings')}</span>
           </button>
         </div>
       </div>

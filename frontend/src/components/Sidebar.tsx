@@ -17,6 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { ApiSettingsModal } from './ApiSettingsModal';
 import { BackendServiceSwitcher } from './BackendServiceSwitcher';
 import { getCurrentHost } from '../lib/config';
+import { useMobileContext } from '../contexts/MobileContext';
 
 const getNavigationItems = (t: (key: string) => string) => [
   {
@@ -73,10 +74,15 @@ const getNavigationItems = (t: (key: string) => string) => [
   },
 ];
 
-export const Sidebar: React.FC = () => {
+interface SidebarProps {
+  onClose?: () => void; // For mobile sidebar auto-close
+}
+
+export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
   const { t } = useTranslation('pages');
   const location = useLocation();
   const navigate = useNavigate();
+  const { isMobile } = useMobileContext();
   const [expandedMenus, setExpandedMenus] = useState<string[]>(() => {
     // Auto-expand the settings menu if we're on a settings page
     return location.pathname.startsWith('/settings') ? [t('nav.settings')] : [];
@@ -207,6 +213,12 @@ export const Sidebar: React.FC = () => {
                   <li key={subItem.name}>
                     <NavLink
                       to={subItem.href}
+                      onClick={() => {
+                        // Auto-close sidebar on mobile after navigation
+                        if (isMobile && onClose) {
+                          onClose();
+                        }
+                      }}
                       className={({ isActive }) =>
                         `flex items-center space-x-3 px-4 py-2 rounded-lg transition-colors text-sm ${
                           isActive
@@ -231,6 +243,12 @@ export const Sidebar: React.FC = () => {
       <li key={item.name}>
         <NavLink
           to={item.href}
+          onClick={() => {
+            // Auto-close sidebar on mobile after navigation
+            if (isMobile && onClose) {
+              onClose();
+            }
+          }}
           className={({ isActive }) =>
             `flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
               isActive

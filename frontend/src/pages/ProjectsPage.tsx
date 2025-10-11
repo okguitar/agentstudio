@@ -17,14 +17,7 @@ import {
   Command,
   Bot
 } from 'lucide-react';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { ProjectTable } from '../components/ProjectTable';
 import { useAgents } from '../hooks/useAgents';
 import { FileBrowser } from '../components/FileBrowser';
 import { formatRelativeTime } from '../utils';
@@ -536,135 +529,14 @@ export const ProjectsPage: React.FC = () => {
           )}
         </div>
       ) : (
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('projects.table.project')}
-                </TableHead>
-                <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('projects.table.agent')}
-                </TableHead>
-                <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('common:path')}
-                </TableHead>
-                <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('common:createdAt')}
-                </TableHead>
-                <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('projects.table.lastActive')}
-                </TableHead>
-                <TableHead className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('projects.table.actions')}
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredProjects.map((project, index) => (
-                <TableRow
-                  key={project.id + '-' + index}
-                  className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                >
-                  <TableCell className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="text-xl mr-3">{project.defaultAgentIcon || '❓'}</div>
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2">
-                          <button
-                            onClick={() => handleOpenProject(project)}
-                            className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline cursor-pointer text-left"
-                          >
-                            {project.name}
-                          </button>
-                          <button
-                            onClick={() => handleOpenProject(project)}
-                            className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
-                            title={t('projects.actions.open')}
-                          >
-                            <ExternalLink className="w-3 h-3" />
-                          </button>
-                        </div>
-                        {project.description && (
-                          <div className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-xs">
-                            {project.description}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="px-6 py-4 whitespace-nowrap">
-                    {project.defaultAgentName ? (
-                      <span 
-                        className="inline-flex px-2 py-1 text-xs font-medium rounded-full"
-                        style={{
-                          backgroundColor: project.defaultAgentColor + '20',
-                          color: project.defaultAgentColor
-                        }}
-                      >
-                        {project.defaultAgentName}
-                      </span>
-                    ) : (
-                      <span className="text-xs text-gray-400 italic">{t('projects.status.never')}</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
-                      <Folder className="w-4 h-4" />
-                      <span className="truncate max-w-sm" title={project.path}>
-                        {project.path}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                    <div className="flex items-center space-x-1">
-                      <Calendar className="w-4 h-4" />
-                      <span>{formatRelativeTime(project.createdAt)}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                    <div className="flex items-center space-x-1">
-                      <User className="w-4 h-4" />
-                      <span>{formatRelativeTime(project.lastAccessed)}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex items-center justify-end space-x-1">
-                      <button
-                        onClick={() => handleMemoryManagement(project)}
-                        className="p-1.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
-                        title={t('components:projectMemory.title')}
-                      >
-                        <Brain className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleCommandManagement(project)}
-                        className="p-1.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
-                        title={t('components:projectCommands.title')}
-                      >
-                        <Command className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleSubAgentManagement(project)}
-                        className="p-1.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
-                        title={t('components:projectSubAgents.title')}
-                      >
-                        <Bot className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteProject(project)}
-                        className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/50 rounded-md transition-colors"
-                        title={t('projects.actions.delete')}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <ProjectTable
+          projects={filteredProjects}
+          onOpenProject={handleOpenProject}
+          onMemoryManagement={handleMemoryManagement}
+          onCommandManagement={handleCommandManagement}
+          onSubAgentManagement={handleSubAgentManagement}
+          onDeleteProject={handleDeleteProject}
+        />
       )}
 
       {/* Create Project Modal */}
