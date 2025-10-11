@@ -9,6 +9,7 @@ import zhCN_home from './locales/zh-CN/home.json';
 import zhCN_components from './locales/zh-CN/components.json';
 import zhCN_errors from './locales/zh-CN/errors.json';
 import zhCN_agents from './locales/zh-CN/agents.json';
+import zhCN_onboarding from './locales/zh-CN/onboarding.json';
 
 import enUS_common from './locales/en-US/common.json';
 import enUS_pages from './locales/en-US/pages.json';
@@ -16,6 +17,7 @@ import enUS_home from './locales/en-US/home.json';
 import enUS_components from './locales/en-US/components.json';
 import enUS_errors from './locales/en-US/errors.json';
 import enUS_agents from './locales/en-US/agents.json';
+import enUS_onboarding from './locales/en-US/onboarding.json';
 
 const resources = {
   'zh-CN': {
@@ -25,6 +27,7 @@ const resources = {
     components: zhCN_components,
     errors: zhCN_errors,
     agents: zhCN_agents,
+    onboarding: zhCN_onboarding,
   },
   'en-US': {
     common: enUS_common,
@@ -33,6 +36,7 @@ const resources = {
     components: enUS_components,
     errors: enUS_errors,
     agents: enUS_agents,
+    onboarding: enUS_onboarding,
   },
 };
 
@@ -43,7 +47,7 @@ i18n
     resources,
     fallbackLng: 'zh-CN',
     defaultNS: 'common',
-    ns: ['common', 'pages', 'home', 'components', 'errors', 'agents'],
+    ns: ['common', 'pages', 'home', 'components', 'errors', 'agents', 'onboarding'],
 
     interpolation: {
       escapeValue: false, // React已经处理了XSS
