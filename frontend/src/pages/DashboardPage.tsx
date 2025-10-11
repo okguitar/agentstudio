@@ -18,33 +18,40 @@ import { RecentActivity } from '../components/RecentActivity';
 import { useDashboardStats } from '../hooks/useDashboardStats';
 import { useClaudeVersions } from '../hooks/useClaudeVersions';
 import { ClaudeVersionSetupWizard } from '../components/ClaudeVersionSetupWizard';
+import { useBackendServices } from '../hooks/useBackendServices';
+import { getClaudeSetupStatus } from '../utils/onboardingStorage';
 
 export const DashboardPage: React.FC = () => {
   const { t } = useTranslation('pages');
   const { data: agentsData } = useAgents();
   const { stats, isLoading } = useDashboardStats();
   const { data: versionsData, isLoading: versionsLoading, refetch: refetchVersions } = useClaudeVersions();
-  const [showSetupWizard, setShowSetupWizard] = useState(false);
+  const { currentServiceId } = useBackendServices();
+  const [showClaudeSetup, setShowClaudeSetup] = useState(false);
 
   const agents = agentsData?.agents || [];
   const enabledAgents = agents.filter(agent => agent.enabled);
 
-  // 检测是否需要显示初始化引导
-  const needsSetup = !versionsLoading && (!versionsData?.versions || versionsData.versions.length === 0);
+  // Check if Claude setup is needed
+  const needsClaudeSetup = !versionsLoading && versionsData && (!versionsData.versions || versionsData.versions.length === 0);
 
   React.useEffect(() => {
-    if (needsSetup) {
-      setShowSetupWizard(true);
+    // Only show Claude wizard if backend needs setup (no versions)
+    if (needsClaudeSetup && currentServiceId) {
+      const alreadyCompleted = getClaudeSetupStatus(currentServiceId);
+      if (!alreadyCompleted) {
+        setShowClaudeSetup(true);
+      }
     }
-  }, [needsSetup]);
+  }, [needsClaudeSetup, currentServiceId]);
 
-  const handleSetupComplete = () => {
-    setShowSetupWizard(false);
+  const handleClaudeSetupComplete = () => {
+    setShowClaudeSetup(false);
     refetchVersions();
   };
 
-  const handleSetupSkip = () => {
-    setShowSetupWizard(false);
+  const handleClaudeSetupSkip = () => {
+    setShowClaudeSetup(false);
   };
 
   const statCards = [
@@ -84,11 +91,11 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <div className="p-8">
-      {/* Claude 版本初始化引导（模态窗口） */}
-      {showSetupWizard && (
+      {/* Claude 版本初始化引导 */}
+      {showClaudeSetup && (
         <ClaudeVersionSetupWizard
-          onComplete={handleSetupComplete}
-          onSkip={handleSetupSkip}
+          onComplete={handleClaudeSetupComplete}
+          onSkip={handleClaudeSetupSkip}
         />
       )}
 
