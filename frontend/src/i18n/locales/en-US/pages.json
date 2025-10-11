@@ -45,7 +45,8 @@
     "save": "Save",
     "cancel": "Cancel",
     "add": "Add",
-    "addService": "Add New Service"
+    "addService": "Add New Service",
+    "rerunOnboarding": "Rerun Configuration Wizard"
   },
   "landing": {
     "pageTitle": "AgentStudio - AI Agent Platform | Powered by Claude Code",
@@ -353,6 +354,9 @@
       "title": "Version Management",
       "subtitle": "Manage multiple Claude Code versions, specify executable paths, aliases and environment variables",
       "addVersion": "Add Version",
+      "reinitialize": "Reinitialize",
+      "reinitializeTitle": "Rerun Claude version setup wizard",
+      "reinitializeSuccess": "Configuration has been reset, reloading page",
       "noVersions": "No Claude versions configured yet",
       "clickToAddFirst": "Click \"Add Version\" to configure your first Claude version",
       "systemLabel": "System",

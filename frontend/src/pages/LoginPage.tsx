@@ -3,7 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
 import { useBackendServices } from '../hooks/useBackendServices';
-import { Server, ChevronDown, ChevronUp, Settings, Trash2, Plus, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { resetBackendOnboarding } from '../utils/onboardingStorage';
+import { Server, ChevronDown, ChevronUp, Settings, Trash2, Plus, CheckCircle, XCircle, AlertCircle, Rocket } from 'lucide-react';
 
 export function LoginPage() {
   const { t } = useTranslation('pages');
@@ -105,6 +106,11 @@ export function LoginPage() {
     }
   };
 
+  const handleRerunOnboarding = () => {
+    resetBackendOnboarding();
+    window.location.reload();
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
       <div className="max-w-md w-full mx-4">
@@ -197,6 +203,15 @@ export function LoginPage() {
                 <span>{t('login.manageServices')}</span>
               </span>
               {showServiceManagement ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </button>
+
+            {/* Rerun Onboarding Button */}
+            <button
+              onClick={handleRerunOnboarding}
+              className="w-full mt-3 flex items-center justify-center space-x-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+            >
+              <Rocket className="w-4 h-4" />
+              <span>{t('login.rerunOnboarding')}</span>
             </button>
 
             {showServiceManagement && (
