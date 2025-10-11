@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Eye, EyeOff, Search, Edit, Trash2, Save, X, Play, Settings, Wrench, Tag } from 'lucide-react';
+import { Plus, Eye, EyeOff, Search, Edit, Trash2, Save, X, Play, Settings, Wrench, Tag, MoreVertical } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -15,10 +15,12 @@ import { UnifiedToolSelector } from '../components/UnifiedToolSelector';
 import type { AgentConfig, AgentTool } from '../types/index.js';
 import { useTranslation } from 'react-i18next';
 import { showError } from '../utils/toast';
+import { useMobileContext } from '../contexts/MobileContext';
 
 
 export const AgentsPage: React.FC = () => {
   const { t } = useTranslation('pages');
+  const { isMobile } = useMobileContext();
   const { data: agentsData, isLoading } = useAgents();
   const updateAgent = useUpdateAgent();
   const deleteAgent = useDeleteAgent();
@@ -320,156 +322,238 @@ export const AgentsPage: React.FC = () => {
           )}
         </div>
       ) : (
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('agents.table.agent')}
-                </TableHead>
-                <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('agents.table.type')}
-                </TableHead>
-                <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('agents.table.config')}
-                </TableHead>
-                <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  工具
-                </TableHead>
-                <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('agents.table.status')}
-                </TableHead>
-                <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('agents.table.actions')}
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+        <>
+          {/* Mobile Card View */}
+          {isMobile && (
+            <div className="space-y-4">
               {filteredAgents.map((agent) => (
-                <TableRow key={agent.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                  {/* Agent */}
-                  <TableCell className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className={`text-2xl mr-4 ${!agent.enabled ? 'opacity-50' : ''}`}>
-                        {agent.ui.icon}
-                      </div>
-                      <div>
-                        <div className={`text-sm font-medium ${
-                          agent.enabled ? 'text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'
-                        }`}>
-                          {agent.name}
-                        </div>
-                        <div className={`text-sm ${
-                          agent.enabled ? 'text-gray-500 dark:text-gray-400' : 'text-gray-400 dark:text-gray-500'
-                        }`}>
-                          {agent.description}
-                        </div>
-                      </div>
+                <div key={agent.id} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                  {/* Agent Header */}
+                  <div className="flex items-start space-x-3 mb-4">
+                    <div className={`text-2xl ${!agent.enabled ? 'opacity-50' : ''}`}>
+                      {agent.ui.icon}
                     </div>
-                  </TableCell>
-
-                  {/* Type */}
-                  <TableCell className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      agent.ui.componentType === 'slides' ? 'bg-blue-100 text-blue-800' :
-                      agent.ui.componentType === 'code' ? 'bg-green-100 text-green-800' :
-                      agent.ui.componentType === 'documents' ? 'bg-purple-100 text-purple-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      {agent.ui.componentType}
-                    </span>
-                  </TableCell>
-
-                  {/* Configuration */}
-                  <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                    <div className="space-y-1">
-                      <div className="flex items-center">
-                        <Settings className="w-3 h-3 mr-1 text-gray-400" />
-                        <span>最大轮次: {agent.maxTurns !== undefined ? agent.maxTurns : '不限制'}</span>
-                      </div>
-                      <div className="flex items-center">
-                        <Wrench className="w-3 h-3 mr-1 text-gray-400" />
-                        <span>权限: {
-                          agent.permissionMode === 'default' ? '默认' :
-                          agent.permissionMode === 'acceptEdits' ? '自动接受编辑' :
-                          agent.permissionMode === 'bypassPermissions' ? '绕过权限' :
-                          agent.permissionMode === 'plan' ? '规划模式' : '默认'
-                        }</span>
-                      </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className={`text-base font-medium ${agent.enabled ? 'text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'} truncate`}>
+                        {agent.name}
+                      </h3>
+                      <p className={`text-sm ${agent.enabled ? 'text-gray-500 dark:text-gray-400' : 'text-gray-400 dark:text-gray-500'} truncate mt-1`}>
+                        {agent.description}
+                      </p>
                     </div>
-                  </TableCell>
+                  </div>
 
-                  {/* Tools */}
-                  <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                    <div className="flex items-center">
-                      <Tag className="w-3 h-3 mr-1 text-gray-400" />
-                      <span>{agent.allowedTools?.length || 0} 个工具</span>
+                  {/* Agent Details */}
+                  <div className="space-y-2 text-sm mb-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-500 dark:text-gray-400">类型:</span>
+                      <span className={`px-2 py-1 text-xs rounded-full ${
+                        agent.ui.componentType === 'slides' ? 'bg-blue-100 text-blue-800' :
+                        agent.ui.componentType === 'code' ? 'bg-green-100 text-green-800' :
+                        agent.ui.componentType === 'documents' ? 'bg-purple-100 text-purple-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {agent.ui.componentType}
+                      </span>
                     </div>
-                  </TableCell>
 
-                  {/* Status */}
-                  <TableCell className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      agent.enabled 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {agent.enabled ? '已启用' : '已禁用'}
-                    </span>
-                  </TableCell>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-500 dark:text-gray-400">工具:</span>
+                      <span className="text-gray-900 dark:text-white">{agent.allowedTools?.length || 0} 个</span>
+                    </div>
 
-                  {/* Actions */}
-                  <TableCell className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex items-center space-x-2">
-                      {/* Start Using Button - Only show for enabled agents */}
-                      {agent.enabled && (
-                        <button
-                          onClick={() => {
-                            setSelectedAgentForStart(agent);
-                            setShowProjectSelector(true);
-                          }}
-                          className="flex items-center space-x-1 px-3 py-1 text-xs text-white rounded-md transition-colors hover:opacity-90"
-                          style={{ backgroundColor: agent.ui.primaryColor }}
-                          title="开始使用助手"
-                        >
-                          <Play className="w-3 h-3" />
-                          <span>使用</span>
-                        </button>
-                      )}
-                      
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-500 dark:text-gray-400">状态:</span>
+                      <span className={`px-2 py-1 text-xs rounded-full ${
+                        agent.enabled ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {agent.enabled ? '已启用' : '已禁用'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Quick Actions */}
+                  <div className="flex items-center justify-between border-t border-gray-200 dark:border-gray-700 pt-3">
+                    {agent.enabled && (
                       <button
-                        onClick={() => handleToggleEnabled(agent)}
-                        className={`p-1 rounded transition-colors ${
-                          agent.enabled
-                            ? 'text-green-600 hover:bg-green-50 dark:hover:bg-green-900/50'
-                            : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-                        }`}
-                        title={agent.enabled ? '禁用助手' : '启用助手'}
+                        onClick={() => {
+                          setSelectedAgentForStart(agent);
+                          setShowProjectSelector(true);
+                        }}
+                        className="flex items-center space-x-1 px-3 py-1 text-xs text-white rounded-md"
+                        style={{ backgroundColor: agent.ui.primaryColor }}
                       >
-                        {agent.enabled ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                        <Play className="w-3 h-3" />
+                        <span>使用</span>
                       </button>
-                      <button
-                        onClick={() => handleEdit(agent)}
-                        className="p-1 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/50 rounded transition-colors"
-                        title="编辑助手"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(agent)}
-                        className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/50 rounded transition-colors"
-                        title="删除助手"
-                        disabled={agent.id === 'ppt-editor' || agent.id === 'code-assistant' || agent.id === 'document-writer'}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </TableCell>
-                </TableRow>
+                    )}
+                    <button
+                      onClick={() => handleEdit(agent)}
+                      className="p-1 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/50 rounded"
+                      title="编辑助手"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
               ))}
-            </TableBody>
-          </Table>
-        </div>
+            </div>
+          )}
+
+          {/* Desktop Table View */}
+          {!isMobile && (
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {t('agents.table.agent')}
+                    </TableHead>
+                    <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {t('agents.table.type')}
+                    </TableHead>
+                    <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {t('agents.table.config')}
+                    </TableHead>
+                    <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      工具
+                    </TableHead>
+                    <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {t('agents.table.status')}
+                    </TableHead>
+                    <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {t('agents.table.actions')}
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredAgents.map((agent) => (
+                    <TableRow key={agent.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                      {/* Agent */}
+                      <TableCell className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className={`text-2xl mr-4 ${!agent.enabled ? 'opacity-50' : ''}`}>
+                            {agent.ui.icon}
+                          </div>
+                          <div>
+                            <div className={`text-sm font-medium ${
+                              agent.enabled ? 'text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'
+                            }`}>
+                              {agent.name}
+                            </div>
+                            <div className={`text-sm ${
+                              agent.enabled ? 'text-gray-500 dark:text-gray-400' : 'text-gray-400 dark:text-gray-500'
+                            }`}>
+                              {agent.description}
+                            </div>
+                          </div>
+                        </div>
+                      </TableCell>
+
+                      {/* Type */}
+                      <TableCell className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          agent.ui.componentType === 'slides' ? 'bg-blue-100 text-blue-800' :
+                          agent.ui.componentType === 'code' ? 'bg-green-100 text-green-800' :
+                          agent.ui.componentType === 'documents' ? 'bg-purple-100 text-purple-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {agent.ui.componentType}
+                        </span>
+                      </TableCell>
+
+                      {/* Configuration */}
+                      <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                        <div className="space-y-1">
+                          <div className="flex items-center">
+                            <Settings className="w-3 h-3 mr-1 text-gray-400" />
+                            <span>最大轮次: {agent.maxTurns !== undefined ? agent.maxTurns : '不限制'}</span>
+                          </div>
+                          <div className="flex items-center">
+                            <Wrench className="w-3 h-3 mr-1 text-gray-400" />
+                            <span>权限: {
+                              agent.permissionMode === 'default' ? '默认' :
+                              agent.permissionMode === 'acceptEdits' ? '自动接受编辑' :
+                              agent.permissionMode === 'bypassPermissions' ? '绕过权限' :
+                              agent.permissionMode === 'plan' ? '规划模式' : '默认'
+                            }</span>
+                          </div>
+                        </div>
+                      </TableCell>
+
+                      {/* Tools */}
+                      <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                        <div className="flex items-center">
+                          <Tag className="w-3 h-3 mr-1 text-gray-400" />
+                          <span>{agent.allowedTools?.length || 0} 个工具</span>
+                        </div>
+                      </TableCell>
+
+                      {/* Status */}
+                      <TableCell className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          agent.enabled
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {agent.enabled ? '已启用' : '已禁用'}
+                        </span>
+                      </TableCell>
+
+                      {/* Actions */}
+                      <TableCell className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex items-center space-x-2">
+                          {/* Start Using Button - Only show for enabled agents */}
+                          {agent.enabled && (
+                            <button
+                              onClick={() => {
+                                setSelectedAgentForStart(agent);
+                                setShowProjectSelector(true);
+                              }}
+                              className="flex items-center space-x-1 px-3 py-1 text-xs text-white rounded-md transition-colors hover:opacity-90"
+                              style={{ backgroundColor: agent.ui.primaryColor }}
+                              title="开始使用助手"
+                            >
+                              <Play className="w-3 h-3" />
+                              <span>使用</span>
+                            </button>
+                          )}
+
+                          <button
+                            onClick={() => handleToggleEnabled(agent)}
+                            className={`p-1 rounded transition-colors ${
+                              agent.enabled
+                                ? 'text-green-600 hover:bg-green-50 dark:hover:bg-green-900/50'
+                                : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                            }`}
+                            title={agent.enabled ? '禁用助手' : '启用助手'}
+                          >
+                            {agent.enabled ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                          </button>
+                          <button
+                            onClick={() => handleEdit(agent)}
+                            className="p-1 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/50 rounded transition-colors"
+                            title="编辑助手"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(agent)}
+                            className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/50 rounded transition-colors"
+                            title="删除助手"
+                            disabled={agent.id === 'ppt-editor' || agent.id === 'code-assistant' || agent.id === 'document-writer'}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </>
       )}
 
       {/* Agent Edit/Create Modal */}

@@ -12,9 +12,11 @@ import {
   Loader2,
   AlertTriangle,
   Edit,
-  // Clock,
-  // Terminal,
-  Tag
+  Tag,
+  Server,
+  Settings,
+  Globe,
+  Monitor
 } from 'lucide-react';
 import {
   Table,
@@ -24,6 +26,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useMobileContext } from '../contexts/MobileContext';
+// import { SwipeActions, McpSwipeActions } from '../components/SwipeActions';
 
 interface McpServerConfig {
   name: string;
@@ -45,6 +49,7 @@ interface McpServerConfig {
 
 export const McpPage: React.FC = () => {
   const { t } = useTranslation('pages');
+  const { isMobile } = useMobileContext();
   const [servers, setServers] = useState<McpServerConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -413,7 +418,7 @@ export const McpPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="p-8 flex items-center justify-center">
+      <div className={`${isMobile ? 'p-4' : 'p-8'} flex items-center justify-center min-h-[60vh]`}>
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <div className="text-gray-600 dark:text-gray-400">{t('mcp.loading')}</div>
@@ -423,223 +428,370 @@ export const McpPage: React.FC = () => {
   }
 
   return (
-    <div className="p-8">
+    <div className={`${isMobile ? 'p-4' : 'p-8'}`}>
       {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-6">
+      <div className={`${isMobile ? 'mb-6' : 'mb-8'}`}>
+        <div className={`flex items-center ${isMobile ? 'mb-4' : 'justify-between mb-6'}`}>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('mcp.title')}</h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-2">{t('mcp.subtitle')}</p>
+            <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold text-gray-900 dark:text-white`}>{t('mcp.title')}</h1>
+            <p className={`text-gray-600 dark:text-gray-400 ${isMobile ? 'mt-1' : 'mt-2'}`}>{t('mcp.subtitle')}</p>
           </div>
         </div>
 
         {/* Search and Add Button */}
-        <div className="flex items-center space-x-4">
-          <div className="flex-1 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+        <div className={`${isMobile ? 'space-y-3' : 'flex items-center space-x-4'}`}>
+          {/* Search */}
+          <div className={`${isMobile ? '' : 'flex-1'} bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 ${isMobile ? 'p-3' : 'p-4'}`}>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 ${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
               <input
                 type="text"
                 placeholder={t('mcp.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-4 py-2 w-full border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                className={`pl-10 pr-4 py-2 w-full border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white ${isMobile ? 'text-sm' : ''}`}
               />
             </div>
           </div>
-          <button
-            onClick={handleImportFromClaudeCode}
-            className="flex items-center space-x-2 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors whitespace-nowrap"
-          >
-            <span>{t('mcp.import.button')}</span>
-          </button>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
-          >
-            <Plus className="w-5 h-5" />
-            <span>{t('mcp.addServer')}</span>
-          </button>
+
+          {/* Action Buttons */}
+          <div className={`${isMobile ? 'flex space-x-2' : 'flex items-center space-x-4'}`}>
+            <button
+              onClick={handleImportFromClaudeCode}
+              className={`${isMobile ? 'flex-1 px-3 py-2 text-sm' : 'px-4 py-3'} bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors whitespace-nowrap`}
+            >
+              <span>{t('mcp.import.button')}</span>
+            </button>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className={`${isMobile ? 'flex-1 px-3 py-2 text-sm' : 'px-6 py-3'} bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap flex items-center ${isMobile ? 'justify-center' : 'space-x-2'}`}
+            >
+              <Plus className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
+              <span>{t('mcp.addServer')}</span>
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Servers Table */}
       {filteredServers.length === 0 ? (
-        <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-          <div className="text-6xl mb-4">🖥️</div>
-          <h3 className="text-xl font-medium text-gray-900 dark:text-white mb-2">
+        <div className={`text-center ${isMobile ? 'py-8' : 'py-16'} bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700`}>
+          <div className={`${isMobile ? 'text-4xl' : 'text-6xl'} mb-4`}>🖥️</div>
+          <h3 className={`${isMobile ? 'text-lg' : 'text-xl'} font-medium text-gray-900 dark:text-white mb-2`}>
             {debouncedSearchQuery ? t('mcp.noResults') : t('mcp.noServers')}
           </h3>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
+          <p className={`text-gray-600 dark:text-gray-400 ${isMobile ? 'mb-4' : 'mb-6'}`}>
             {debouncedSearchQuery ? t('mcp.adjustSearch') : t('mcp.addFirstServer')}
           </p>
           {!debouncedSearchQuery && (
             <button
               onClick={() => setShowAddModal(true)}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className={`${isMobile ? 'px-4 py-2 text-sm' : 'px-6 py-3'} bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors`}
             >
               {t('mcp.addServer')}
             </button>
           )}
         </div>
       ) : (
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('mcp.table.server')}
-                </TableHead>
-                <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('mcp.table.type')}
-                </TableHead>
-                <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('mcp.table.status')}
-                </TableHead>
-                <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('mcp.table.tools')}
-                </TableHead>
-                <TableHead className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('mcp.table.actions')}
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredServers.map((server, index) => (
-                <TableRow
-                  key={server.name + '-' + index}
-                  className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                >
-                  <TableCell className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="text-xl mr-3">{server.type === 'http' ? '🌐' : '🖥️'}</div>
-                      <div>
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">
-                          {server.name}
-                        </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                          {server.type === 'stdio'
-                            ? `${server.command} ${server.args?.join(' ') || ''}`.trim()
-                            : server.url
-                          }
-                        </div>
-                        {server.status === 'error' && server.error && (
-                          <div className="text-sm text-red-600 dark:text-red-400 truncate max-w-xs">
-                            {server.error}
-                          </div>
+        <div className="space-y-4">
+          {/* Mobile Card View */}
+          <div className="md:hidden space-y-4">
+            {filteredServers.map((server, index) => (
+              <div
+                key={server.name + '-' + index}
+                className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow"
+              >
+                <div className="p-4">
+                  {/* Server Header */}
+                  <div className="flex items-start space-x-3 mb-3">
+                    <div className="text-2xl">
+                      {server.type === 'http' ? '🌐' : '🖥️'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-base font-medium text-gray-900 dark:text-white truncate">
+                        {server.name}
+                      </h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 truncate mt-1">
+                        {server.type === 'stdio'
+                          ? `${server.command} ${server.args?.join(' ') || ''}`.trim()
+                          : server.url
+                        }
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Server Details */}
+                  <div className="grid grid-cols-2 gap-3 text-sm mb-3">
+                    <div>
+                      <span className="text-gray-500 dark:text-gray-400 block mb-1">
+                        {t('mcp.table.type')}:
+                      </span>
+                      <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
+                        server.type === 'http'
+                          ? 'bg-blue-100 text-blue-800'
+                          : 'bg-purple-100 text-purple-800'
+                      }`}>
+                        {server.type === 'http' ? 'HTTP' : 'Stdio'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500 dark:text-gray-400 block mb-1">
+                        {t('mcp.table.status')}:
+                      </span>
+                      {server.status === 'active' && (
+                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          {t('mcp.status.active')}
+                        </span>
+                      )}
+                      {server.status === 'error' && (
+                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
+                          <XCircle className="w-3 h-3 mr-1" />
+                          {t('mcp.status.error')}
+                        </span>
+                      )}
+                      {server.status === 'validating' && (
+                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                          <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                          {t('mcp.status.validating')}
+                        </span>
+                      )}
+                      {!server.status && (
+                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
+                          <AlertTriangle className="w-3 h-3 mr-1" />
+                          {t('mcp.status.unvalidated')}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Tools Section */}
+                  {server.status === 'active' && server.tools && server.tools.length > 0 && (
+                    <div className="mb-3">
+                      <div className="flex items-center space-x-1 text-sm text-gray-500 dark:text-gray-400 mb-2">
+                        <Tag className="w-3 h-3" />
+                        <span>{t('mcp.table.toolsCount', { count: server.tools.length })}</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {server.tools.slice(0, 3).map((tool, idx) => (
+                          <code key={idx} className="bg-green-50 dark:bg-green-900/50 text-green-700 dark:text-green-400 px-1.5 py-0.5 rounded text-xs">
+                            {tool}
+                          </code>
+                        ))}
+                        {server.tools.length > 3 && (
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            +{server.tools.length - 3} {t('common:more')}
+                          </span>
                         )}
                       </div>
                     </div>
-                  </TableCell>
-                  <TableCell className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
-                      server.type === 'http'
-                        ? 'bg-blue-100 text-blue-800'
-                        : 'bg-purple-100 text-purple-800'
-                    }`}>
-                      {server.type === 'http' ? 'HTTP' : 'Stdio'}
-                    </span>
-                  </TableCell>
-                  <TableCell className="px-6 py-4 whitespace-nowrap">
-                    {server.status === 'active' && (
-                      <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-                        <CheckCircle className="w-3 h-3 mr-1" />
-                        {t('mcp.status.active')}
-                      </span>
-                    )}
-                    {server.status === 'error' && (
-                      <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
-                        <XCircle className="w-3 h-3 mr-1" />
-                        {t('mcp.status.error')}
-                      </span>
-                    )}
-                    {server.status === 'validating' && (
-                      <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
-                        <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                        {t('mcp.status.validating')}
-                      </span>
-                    )}
-                    {!server.status && (
-                      <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
-                        <AlertTriangle className="w-3 h-3 mr-1" />
-                        {t('mcp.status.unvalidated')}
-                      </span>
-                    )}
-                  </TableCell>
-                  <TableCell className="px-6 py-4">
-                    {server.status === 'active' && server.tools && server.tools.length > 0 ? (
-                      <div>
-                        <div className="flex items-center space-x-1 text-sm text-gray-500 dark:text-gray-400 mb-1">
-                          <Tag className="w-3 h-3" />
-                          <span>{t('mcp.table.toolsCount', { count: server.tools.length })}</span>
-                        </div>
-                        <div className="flex flex-wrap gap-1">
-                          {server.tools.map((tool, idx) => (
-                            <code key={idx} className="bg-green-50 dark:bg-green-900/50 text-green-700 dark:text-green-400 px-1.5 py-0.5 rounded text-xs">
-                              {tool}
-                            </code>
-                          ))}
-                        </div>
-                      </div>
-                    ) : (
-                      <span className="text-sm text-gray-400">
-                        {server.status === 'active' ? t('mcp.table.noTools') : '-'}
-                      </span>
-                    )}
-                  </TableCell>
-                  <TableCell className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex items-center justify-end space-x-2">
+                  )}
+
+                  {/* Error Display */}
+                  {server.status === 'error' && server.error && (
+                    <div className="text-sm text-red-600 dark:text-red-400 mb-3">
+                      {server.error}
+                    </div>
+                  )}
+                </div>
+
+                {/* 直接显示操作按钮 */}
+                <div className="border-t border-gray-200 dark:border-gray-700 p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">{t('mcp.table.actions')}</span>
+                    <div className="flex items-center space-x-2">
                       <button
                         onClick={() => validateMcpServer(server.name)}
                         disabled={server.status === 'validating'}
-                        className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-600 bg-green-50 dark:bg-green-900/50 rounded-md hover:bg-green-100 dark:hover:bg-green-900/70 transition-colors disabled:opacity-50"
+                        className="p-2 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/50 rounded-md transition-colors disabled:opacity-50"
                         title={t('mcp.actions.validate')}
                       >
                         {server.status === 'validating' ? (
-                          <Loader2 className="w-3 h-3 animate-spin" />
+                          <Loader2 className="w-4 h-4 animate-spin" />
                         ) : (
-                          <CheckCircle className="w-3 h-3" />
+                          <CheckCircle className="w-4 h-4" />
                         )}
                       </button>
                       <button
                         onClick={() => handleEditServer(server)}
-                        className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 dark:bg-blue-900/50 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/70 transition-colors"
+                        className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/50 rounded-md transition-colors"
                         title={t('mcp.actions.edit')}
                       >
-                        <Edit className="w-3 h-3 mr-1" />
-                        {t('mcp.actions.edit')}
+                        <Edit className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDeleteServer(server.name)}
-                        className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/50 rounded-lg transition-colors"
+                        className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/50 rounded-md transition-colors"
                         title={t('mcp.actions.delete')}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
-                  </TableCell>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop Table View */}
+          <div className="hidden md:block bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {t('mcp.table.server')}
+                  </TableHead>
+                  <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {t('mcp.table.type')}
+                  </TableHead>
+                  <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {t('mcp.table.status')}
+                  </TableHead>
+                  <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {t('mcp.table.tools')}
+                  </TableHead>
+                  <TableHead className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {t('mcp.table.actions')}
+                  </TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredServers.map((server, index) => (
+                  <TableRow
+                    key={server.name + '-' + index}
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                  >
+                    <TableCell className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="text-xl mr-3">{server.type === 'http' ? '🌐' : '🖥️'}</div>
+                        <div>
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">
+                            {server.name}
+                          </div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            {server.type === 'stdio'
+                              ? `${server.command} ${server.args?.join(' ') || ''}`.trim()
+                              : server.url
+                            }
+                          </div>
+                          {server.status === 'error' && server.error && (
+                            <div className="text-sm text-red-600 dark:text-red-400 truncate max-w-xs">
+                              {server.error}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
+                        server.type === 'http'
+                          ? 'bg-blue-100 text-blue-800'
+                          : 'bg-purple-100 text-purple-800'
+                      }`}>
+                        {server.type === 'http' ? 'HTTP' : 'Stdio'}
+                      </span>
+                    </TableCell>
+                    <TableCell className="px-6 py-4 whitespace-nowrap">
+                      {server.status === 'active' && (
+                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          {t('mcp.status.active')}
+                        </span>
+                      )}
+                      {server.status === 'error' && (
+                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
+                          <XCircle className="w-3 h-3 mr-1" />
+                          {t('mcp.status.error')}
+                        </span>
+                      )}
+                      {server.status === 'validating' && (
+                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                          <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                          {t('mcp.status.validating')}
+                        </span>
+                      )}
+                      {!server.status && (
+                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
+                          <AlertTriangle className="w-3 h-3 mr-1" />
+                          {t('mcp.status.unvalidated')}
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell className="px-6 py-4">
+                      {server.status === 'active' && server.tools && server.tools.length > 0 ? (
+                        <div>
+                          <div className="flex items-center space-x-1 text-sm text-gray-500 dark:text-gray-400 mb-1">
+                            <Tag className="w-3 h-3" />
+                            <span>{t('mcp.table.toolsCount', { count: server.tools.length })}</span>
+                          </div>
+                          <div className="flex flex-wrap gap-1">
+                            {server.tools.map((tool, idx) => (
+                              <code key={idx} className="bg-green-50 dark:bg-green-900/50 text-green-700 dark:text-green-400 px-1.5 py-0.5 rounded text-xs">
+                                {tool}
+                              </code>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-sm text-gray-400">
+                          {server.status === 'active' ? t('mcp.table.noTools') : '-'}
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex items-center justify-end space-x-2">
+                        <button
+                          onClick={() => validateMcpServer(server.name)}
+                          disabled={server.status === 'validating'}
+                          className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-600 bg-green-50 dark:bg-green-900/50 rounded-md hover:bg-green-100 dark:hover:bg-green-900/70 transition-colors disabled:opacity-50"
+                          title={t('mcp.actions.validate')}
+                        >
+                          {server.status === 'validating' ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <CheckCircle className="w-3 h-3" />
+                          )}
+                        </button>
+                        <button
+                          onClick={() => handleEditServer(server)}
+                          className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 dark:bg-blue-900/50 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/70 transition-colors"
+                          title={t('mcp.actions.edit')}
+                        >
+                          <Edit className="w-3 h-3 mr-1" />
+                          {t('mcp.actions.edit')}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteServer(server.name)}
+                          className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/50 rounded-lg transition-colors"
+                          title={t('mcp.actions.delete')}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </div>
       )}
 
       {/* Add Server Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full ${isMobile ? 'max-w-full' : 'max-w-2xl'} mx-4 max-h-[90vh] overflow-y-auto`}>
+            <div className={`${isMobile ? 'p-4' : 'p-6'}`}>
+              <div className={`flex items-center ${isMobile ? 'flex-col space-y-3' : 'justify-between'} mb-4`}>
+                <h2 className={`${isMobile ? 'text-lg' : 'text-xl'} font-semibold text-gray-900 dark:text-white`}>
                   {editingServer ? t('mcp.modal.editTitle') : t('mcp.modal.addTitle')}
                 </h2>
-                <div className="flex space-x-3">
+                <div className={`flex ${isMobile ? 'w-full space-x-2' : 'space-x-3'}`}>
                   <button
                     type="button"
                     onClick={closeModal}
                     disabled={isSubmitting}
-                    className="px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
+                    className={`${isMobile ? 'flex-1 px-3 py-2 text-sm' : 'px-4 py-2'} text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50`}
                   >
                     {t('common:actions.cancel')}
                   </button>
@@ -647,7 +799,7 @@ export const McpPage: React.FC = () => {
                     type="submit"
                     form="mcp-config-form"
                     disabled={isSubmitting || !formData.name.trim() || !validateConfig(formData.config, formData.type)}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className={`${isMobile ? 'flex-1 px-3 py-2 text-sm' : 'px-4 py-2'} bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed`}
                   >
                     {isSubmitting ? t('mcp.modal.saving') : editingServer ? t('mcp.modal.saveConfig') : t('mcp.modal.addConfig')}
                   </button>
@@ -655,7 +807,7 @@ export const McpPage: React.FC = () => {
               </div>
               
               <form id="mcp-config-form" onSubmit={handleSubmit}>
-                <div className="space-y-6">
+                <div className={`${isMobile ? 'space-y-4' : 'space-y-6'}`}>
                   {/* Service Name */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -666,7 +818,7 @@ export const McpPage: React.FC = () => {
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       placeholder={t('mcp.form.serverNamePlaceholder')}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                      className={`w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white ${isMobile ? 'text-sm' : ''}`}
                       required
                       disabled={!!editingServer}
                     />
@@ -711,7 +863,7 @@ export const McpPage: React.FC = () => {
 }`
                         });
                       }}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                      className={`w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white ${isMobile ? 'text-sm' : ''}`}
                       required
                     >
                       <option value="stdio">{t('mcp.form.stdioOption')}</option>
@@ -752,8 +904,8 @@ export const McpPage: React.FC = () => {
     "interactive_feedback"
   ]
 }`}
-                      rows={15}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm dark:bg-gray-700 dark:text-white"
+                      rows={isMobile ? 10 : 15}
+                      className={`w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm dark:bg-gray-700 dark:text-white ${isMobile ? 'text-xs' : ''}`}
                       required
                     />
                     {formData.config && !validateConfig(formData.config, formData.type) && (
@@ -765,7 +917,7 @@ export const McpPage: React.FC = () => {
                         })}
                       </p>
                     )}
-                    <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    <div className={`mt-2 text-xs text-gray-500 dark:text-gray-400 ${isMobile ? 'text-xs' : ''}`}>
                       <p><strong>{t('mcp.form.requiredFields')}</strong></p>
                       <ul className="list-disc ml-4 mt-1">
                         <li><code>type</code>: {t('mcp.form.typeField')}</li>
