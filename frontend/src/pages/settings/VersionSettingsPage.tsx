@@ -21,16 +21,20 @@ import {
   Sparkles,
   ExternalLink,
   Copy,
-  Eye
+  Eye,
+  Rocket
 } from 'lucide-react';
 import { useClaudeVersions, useCreateClaudeVersion, useUpdateClaudeVersion, useDeleteClaudeVersion, useSetDefaultClaudeVersion } from '../../hooks/useClaudeVersions';
 import { ClaudeVersion, ClaudeVersionCreate, ClaudeVersionUpdate, ModelConfig } from '@agentstudio/shared/types/claude-versions';
 import { FileBrowser } from '../../components/FileBrowser';
 import { VERSION_TEMPLATES, type VersionTemplate } from '../../types/versionTemplates';
 import { generateClaudeCommand, copyToClipboard } from '../../utils/commandGenerator';
+import { useBackendServices } from '../../hooks/useBackendServices';
+import { resetClaudeSetup } from '../../utils/onboardingStorage';
 
 export const VersionSettingsPage: React.FC = () => {
   const { t } = useTranslation('pages');
+  const { currentServiceId } = useBackendServices();
   // 系统版本检查相关状态
   const [versions, setVersions] = useState<any>(null);
   const [isLoadingVersions, setIsLoadingVersions] = useState(false);
@@ -192,6 +196,17 @@ export const VersionSettingsPage: React.FC = () => {
     setIsCreating(false);
     setEditingVersion(null);
     resetForm();
+  };
+
+  const handleReinitializeSetup = () => {
+    if (currentServiceId) {
+      resetClaudeSetup(currentServiceId);
+      showSuccess(t('settings.version.reinitializeSuccess'));
+      // Reload page to trigger the setup wizard
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    }
   };
 
   const addEnvironmentVariable = () => {
@@ -391,6 +406,16 @@ export const VersionSettingsPage: React.FC = () => {
           >
             <Plus className="w-4 h-4" />
             <span>{t('settings.version.addVersion')}</span>
+          </button>
+
+          {/* 重新初始化按钮 */}
+          <button
+            onClick={handleReinitializeSetup}
+            className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            title={t('settings.version.reinitializeTitle')}
+          >
+            <Rocket className="w-4 h-4" />
+            <span>{t('settings.version.reinitialize')}</span>
           </button>
         </div>
       </div>
