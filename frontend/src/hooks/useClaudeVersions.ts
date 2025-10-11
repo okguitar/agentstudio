@@ -2,11 +2,20 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ClaudeVersion, ClaudeVersionCreate, ClaudeVersionUpdate, ClaudeVersionResponse } from '@agentstudio/shared/types/claude-versions';
 import { API_BASE } from '../lib/config';
 import { authFetch } from '../lib/authFetch';
+import { useBackendServices } from './useBackendServices';
+import { getClaudeSetupStatus, setClaudeSetupCompleted } from '../utils/onboardingStorage';
+import { useEffect, useRef } from 'react';
 
 // 获取所有Claude版本
 export const useClaudeVersions = () => {
-  return useQuery<ClaudeVersionResponse>({
-    queryKey: ['claude-versions'],
+  const { currentServiceId } = useBackendServices();
+  const hasMarkedRef = useRef(false);
+
+  // Check if we should query based on localStorage
+  const shouldQuery = currentServiceId ? !getClaudeSetupStatus(currentServiceId) : false;
+
+  const query = useQuery<ClaudeVersionResponse>({
+    queryKey: ['claude-versions', currentServiceId], // Include serviceId in queryKey
     queryFn: async () => {
       const response = await authFetch(`${API_BASE}/settings/claude-versions`);
       if (!response.ok) {
@@ -14,7 +23,25 @@ export const useClaudeVersions = () => {
       }
       return response.json();
     },
+    enabled: shouldQuery, // Only query if not already checked
+    retry: false, // Disable auto retry
+    refetchOnWindowFocus: false, // Disable refetch on window focus
+    refetchOnReconnect: false, // Disable refetch on reconnect
+    staleTime: Infinity, // Data never expires
   });
+
+  // Mark as completed after query finishes (success or error)
+  useEffect(() => {
+    if (!currentServiceId || hasMarkedRef.current || shouldQuery === false) return;
+
+    if (query.isError && !query.isLoading) {
+      // API failed, mark as skipped
+      setClaudeSetupCompleted(currentServiceId, true);
+      hasMarkedRef.current = true;
+    }
+  }, [query.isError, query.isLoading, currentServiceId, shouldQuery]);
+
+  return query;
 };
 
 // 创建新版本
