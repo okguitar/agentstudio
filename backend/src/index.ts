@@ -59,30 +59,50 @@ const getAllowedOrigins = () => {
 app.use(cors({
   origin: (origin, callback) => {
     const allowedOrigins = getAllowedOrigins();
-    
+
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
-    
+
     // Check if the origin is allowed
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
-    
+
     // Allow Vercel preview URLs (*.vercel.app)
     if (origin.endsWith('.vercel.app')) {
       return callback(null, true);
     }
-    
+
+    // Allow agentstudio.cc and its subdomains (*.agentstudio.cc) - hardcoded
+    if (origin === 'https://agentstudio.cc' || origin.endsWith('.agentstudio.cc')) {
+      return callback(null, true);
+    }
+
+    // Allow custom domains from environment variable (CORS_ALLOWED_DOMAINS)
+    const customDomains = process.env.CORS_ALLOWED_DOMAINS ?
+      process.env.CORS_ALLOWED_DOMAINS.split(',').map(domain => domain.trim()) : [];
+
+    for (const domain of customDomains) {
+      // Match exact domain (https://example.com)
+      if (origin === `https://${domain}` || origin === `http://${domain}`) {
+        return callback(null, true);
+      }
+      // Match subdomains (https://*.example.com)
+      if (origin.endsWith(`.${domain}`)) {
+        return callback(null, true);
+      }
+    }
+
     // Allow any localhost with any port for development
     if (origin.match(/^https?:\/\/localhost(:\d+)?$/)) {
       return callback(null, true);
     }
-    
+
     // Allow 127.0.0.1 with any port for development
     if (origin.match(/^https?:\/\/127\.0\.0\.1(:\d+)?$/)) {
       return callback(null, true);
     }
-    
+
     const msg = `The CORS policy for this site does not allow access from the specified Origin: ${origin}`;
     return callback(new Error(msg), false);
   },
