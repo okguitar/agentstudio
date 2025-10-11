@@ -11,6 +11,8 @@ import {
 } from 'lucide-react';
 import { API_BASE } from '../lib/config';
 import { authFetch } from '../lib/authFetch';
+import { useBackendServices } from '../hooks/useBackendServices';
+import { setClaudeSetupCompleted } from '../utils/onboardingStorage';
 
 interface DetectResult {
   userInstalled: boolean;
@@ -31,6 +33,7 @@ export const ClaudeVersionSetupWizard: React.FC<ClaudeVersionSetupWizardProps> =
   onSkip
 }) => {
   const { t } = useTranslation('components');
+  const { currentServiceId } = useBackendServices();
   const [step, setStep] = useState<'detecting' | 'selection' | 'config' | 'creating' | 'success'>('detecting');
   const [detectResult, setDetectResult] = useState<DetectResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -82,6 +85,17 @@ export const ClaudeVersionSetupWizard: React.FC<ClaudeVersionSetupWizardProps> =
     detectClaude();
   }, [onSkip]);
 
+  // Handle skip
+  const handleSkip = () => {
+    // Mark setup as skipped for this backend
+    if (currentServiceId) {
+      setClaudeSetupCompleted(currentServiceId, true);
+    }
+    if (onSkip) {
+      onSkip();
+    }
+  };
+
   // 创建系统版本
   const handleCreateVersion = async () => {
     setStep('creating');
@@ -106,6 +120,12 @@ export const ClaudeVersionSetupWizard: React.FC<ClaudeVersionSetupWizardProps> =
       }
 
       setStep('success');
+
+      // Mark setup as completed for this backend
+      if (currentServiceId) {
+        setClaudeSetupCompleted(currentServiceId, false);
+      }
+
       setTimeout(() => {
         onComplete();
       }, 2000);
@@ -249,7 +269,7 @@ export const ClaudeVersionSetupWizard: React.FC<ClaudeVersionSetupWizardProps> =
       <div className="flex space-x-3">
         {onSkip && (
           <button
-            onClick={onSkip}
+            onClick={handleSkip}
             className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           >
             {t('claudeVersionSetup.actions.skip')}
