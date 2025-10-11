@@ -4,7 +4,6 @@ import {
   loadBackendServices,
   saveBackendServices,
   getCurrentService,
-  addBackendService,
   updateBackendService,
   removeBackendService,
   switchBackendService

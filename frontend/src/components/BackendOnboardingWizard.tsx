@@ -23,7 +23,6 @@ export const BackendOnboardingWizard: React.FC<BackendOnboardingWizardProps> = (
   const [step, setStep] = useState<Step>('welcome');
   const [detectedService, setDetectedService] = useState<{ name: string; url: string } | null>(null);
   const [showSkipConfirm, setShowSkipConfirm] = useState(false);
-  const [previousStep, setPreviousStep] = useState<Step | null>(null);
 
   // Step 2: Auto-detect local backend after welcome
   useEffect(() => {
@@ -81,7 +80,6 @@ export const BackendOnboardingWizard: React.FC<BackendOnboardingWizardProps> = (
   };
 
   const handleAddOtherService = () => {
-    setPreviousStep('found');
     setStep('add-service');
   };
 
