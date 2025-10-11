@@ -7,12 +7,16 @@ import { getClaudeSetupStatus, setClaudeSetupCompleted } from '../utils/onboardi
 import { useEffect, useRef } from 'react';
 
 // 获取所有Claude版本
-export const useClaudeVersions = () => {
+export const useClaudeVersions = (options?: { forSetupWizard?: boolean }) => {
   const { currentServiceId } = useBackendServices();
   const hasMarkedRef = useRef(false);
+  const forSetupWizard = options?.forSetupWizard ?? false;
 
-  // Check if we should query based on localStorage
-  const shouldQuery = currentServiceId ? !getClaudeSetupStatus(currentServiceId) : false;
+  // Only apply setup check restriction when explicitly used for setup wizard
+  // By default, always allow querying (for chat interface, settings page, etc.)
+  const shouldQuery = forSetupWizard
+    ? currentServiceId ? !getClaudeSetupStatus(currentServiceId) : false
+    : true;
 
   const query = useQuery<ClaudeVersionResponse>({
     queryKey: ['claude-versions', currentServiceId], // Include serviceId in queryKey
@@ -23,23 +27,24 @@ export const useClaudeVersions = () => {
       }
       return response.json();
     },
-    enabled: shouldQuery, // Only query if not already checked
+    enabled: shouldQuery, // By default always query, only restrict for setup wizard
     retry: false, // Disable auto retry
     refetchOnWindowFocus: false, // Disable refetch on window focus
     refetchOnReconnect: false, // Disable refetch on reconnect
-    staleTime: Infinity, // Data never expires
+    staleTime: forSetupWizard ? Infinity : 30000, // Setup wizard: never expire; Others: 30s cache
   });
 
   // Mark as completed after query finishes (success or error)
+  // Only mark when in setup wizard mode
   useEffect(() => {
-    if (!currentServiceId || hasMarkedRef.current || shouldQuery === false) return;
+    if (!forSetupWizard || !currentServiceId || hasMarkedRef.current || shouldQuery === false) return;
 
     if (query.isError && !query.isLoading) {
       // API failed, mark as skipped
       setClaudeSetupCompleted(currentServiceId, true);
       hasMarkedRef.current = true;
     }
-  }, [query.isError, query.isLoading, currentServiceId, shouldQuery]);
+  }, [query.isError, query.isLoading, currentServiceId, shouldQuery, forSetupWizard]);
 
   return query;
 };
