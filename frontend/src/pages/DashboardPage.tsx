@@ -27,7 +27,7 @@ export const DashboardPage: React.FC = () => {
   const { isMobile } = useMobileContext();
   const { data: agentsData } = useAgents();
   const { stats, isLoading } = useDashboardStats();
-  const { data: versionsData, isLoading: versionsLoading, refetch: refetchVersions } = useClaudeVersions({ forSetupWizard: true });
+  const { data: versionsData, isLoading: versionsLoading, refetch: refetchVersions } = useClaudeVersions();
   const { currentServiceId } = useBackendServices();
   const [showClaudeSetup, setShowClaudeSetup] = useState(false);
 
