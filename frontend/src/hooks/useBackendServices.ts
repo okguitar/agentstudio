@@ -21,8 +21,18 @@ export const useBackendServices = () => {
   // Memoize currentService to avoid unnecessary re-renders
   const currentService = useMemo(() => getCurrentService(state), [state.currentServiceId, state.services]);
 
-  const addService = (service: Omit<BackendService, 'id'>) => {
-    setState(prev => addBackendService(prev, service));
+  const addService = (service: Omit<BackendService, 'id'>): BackendService => {
+    const newService: BackendService = {
+      ...service,
+      id: Date.now().toString()
+    };
+
+    setState(prev => ({
+      ...prev,
+      services: [...prev.services, newService]
+    }));
+
+    return newService;
   };
 
   const updateService = (serviceId: string, updates: Partial<BackendService>) => {
