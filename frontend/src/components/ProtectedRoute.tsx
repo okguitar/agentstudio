@@ -2,6 +2,8 @@ import { ReactNode, useEffect, useState, useRef } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useBackendServices } from '../hooks/useBackendServices';
+import { BackendOnboardingWizard } from './BackendOnboardingWizard';
+import { getBackendOnboardingStatus } from '../utils/onboardingStorage';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -13,10 +15,25 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const location = useLocation();
   const [isVerifying, setIsVerifying] = useState(true);
   const [isValid, setIsValid] = useState(false);
+  const [showBackendOnboarding, setShowBackendOnboarding] = useState(false);
   const lastServiceId = useRef<string | null>(null);
+
+  // Check backend onboarding status first
+  useEffect(() => {
+    const status = getBackendOnboardingStatus();
+    if (!status.completed) {
+      setShowBackendOnboarding(true);
+      setIsVerifying(false);
+    }
+  }, []);
 
   useEffect(() => {
     const verify = async () => {
+      // Skip verification if showing backend onboarding
+      if (showBackendOnboarding) {
+        return;
+      }
+
       // Only verify if the service has changed or on initial load
       const currentServiceId = currentService?.id || null;
       const shouldVerify = currentServiceId !== lastServiceId.current;
@@ -39,7 +56,18 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
     verify();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentService?.id]); // Only depend on service ID to avoid infinite loops
+  }, [currentService?.id, showBackendOnboarding]); // Only depend on service ID and onboarding status to avoid infinite loops
+
+  // Handle backend onboarding completion
+  const handleBackendOnboardingComplete = () => {
+    setShowBackendOnboarding(false);
+    setIsVerifying(true); // Start verifying login after onboarding
+  };
+
+  // Show backend onboarding wizard if needed (highest priority)
+  if (showBackendOnboarding) {
+    return <BackendOnboardingWizard onComplete={handleBackendOnboardingComplete} />;
+  }
 
   // Show loading state while verifying token
   if (isVerifying) {
