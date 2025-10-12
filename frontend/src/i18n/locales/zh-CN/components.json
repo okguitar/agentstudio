@@ -128,6 +128,9 @@
   "agentChat": {
     "newSession": "新建会话",
     "sessionHistory": "会话历史",
+    "refreshMessages": "刷新消息",
+    "messagesRefreshed": "消息已刷新",
+    "loadingMessages": "正在加载消息...",
     "currentSession": "当前会话",
     "imagePreview": "预览",
     "deleteImage": "删除图片",

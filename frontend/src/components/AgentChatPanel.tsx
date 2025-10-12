@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { Send, Clock, Square, Image, Wrench, X, Plus, Zap, Cpu, ChevronDown, Terminal } from 'lucide-react';
+import { Send, Clock, Square, Image, Wrench, X, Plus, Zap, Cpu, ChevronDown, Terminal, RefreshCw } from 'lucide-react';
 import { ImagePreview } from './ImagePreview';
 import { CommandSelector } from './CommandSelector';
 import { ConfirmDialog } from './ConfirmDialog';
@@ -67,6 +67,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
   const [isVersionLocked, setIsVersionLocked] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
   const [isInitializingSession, setIsInitializingSession] = useState(false);
+const [isLoadingMessages, setIsLoadingMessages] = useState(false);
 
   // Get current backend service name
   const [currentServiceName, setCurrentServiceName] = useState<string>('默认服务');
@@ -89,6 +90,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
     addMessage,
     addTextPartToMessage,
     addThinkingPartToMessage,
+    addCompactSummaryPartToMessage,
     addToolPartToMessage,
     updateToolPartInMessage,
     setAiTyping,
@@ -102,7 +104,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
   const agentChatMutation = useAgentChat();
   const interruptSessionMutation = useInterruptSession();
   const { data: sessionsData } = useAgentSessions(agent.id, searchTerm, projectPath);
-  const { data: sessionMessagesData } = useAgentSessionMessages(agent.id, currentSessionId, projectPath);
+  const { data: sessionMessagesData, isLoading: isQueryLoading } = useAgentSessionMessages(agent.id, currentSessionId, projectPath);
   const { data: activeSessionsData } = useSessions();
   
   // 会话心跳 - 基于 AI 响应成功状态
@@ -580,7 +582,10 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
     try {
       // Add initial AI message placeholder
       let aiMessageId: string | null = null;
-      
+
+      // Track if this is a compact command for special handling in SSE stream
+      const isCompactCommand = userMessage.trim() === '/compact';
+
       // console.log('Sending agent chat request:', { agentId: agent.id, message: userMessage, context, sessionId: currentSessionId, projectPath });
 
       // 合并常规工具和MCP工具
@@ -750,7 +755,13 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
                   // Add text as a separate part
                   if (block.text) {
                     console.log('📝 Adding text part:', block.text.substring(0, 100) + (block.text.length > 100 ? '...' : ''));
-                    addTextPartToMessage(aiMessageId, block.text);
+                    // Check if this is a response to /compact command
+                    if (isCompactCommand) {
+                      console.log('📦 Detected /compact command response, adding as compactSummary');
+                      addCompactSummaryPartToMessage(aiMessageId, block.text);
+                    } else {
+                      addTextPartToMessage(aiMessageId, block.text);
+                    }
                   } else {
                     console.warn('📝 Text block has no text content');
                   }
@@ -1091,6 +1102,8 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
   const handleSwitchSession = (sessionId: string) => {
     setCurrentSessionId(sessionId);
     setShowSessions(false);
+    // Set loading state for message loading
+    setIsLoadingMessages(true);
     // Reset heartbeat states for resumed session
     setIsNewSession(false);
     setHasSuccessfulResponse(false); // 恢复会话时重置，等待检查存在性
@@ -1117,6 +1130,16 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
     }
     // Clear search term
     setSearchTerm('');
+  };
+
+  const handleRefreshMessages = () => {
+    if (currentSessionId) {
+      // Set loading state
+      setIsLoadingMessages(true);
+      // Clear messages first, then invalidate to trigger fresh load
+      clearMessages();
+      queryClient.invalidateQueries({ queryKey: ['agent-session-messages', agent.id, currentSessionId] });
+    }
   };
 
   const handleStopGeneration = async () => {
@@ -1318,18 +1341,34 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
       sessionMessagesData: sessionMessagesData?.messages?.length || 0,
       currentSessionId,
       hasSessionMessagesData: !!sessionMessagesData,
-      messagesLength: sessionMessagesData?.messages?.length
+      messagesLength: sessionMessagesData?.messages?.length,
+      isLoadingMessages
     });
-    
+
     if (sessionMessagesData?.messages && currentSessionId) {
       console.log('✅ Loading session messages:', sessionMessagesData.messages.length);
       loadSessionMessages(sessionMessagesData.messages);
+
+      // If we were loading messages (from refresh), clear loading state after render
+      if (isLoadingMessages) {
+        // Wait for next tick to ensure messages are rendered
+        setTimeout(() => {
+          setIsLoadingMessages(false);
+        }, 100);
+      }
     } else if (currentSessionId && sessionMessagesData && sessionMessagesData.messages?.length === 0) {
       console.log('🗑️ Loading empty session messages');
       // Handle empty session - clear messages
       loadSessionMessages([]);
+
+      // If we were loading messages (from refresh), clear loading state
+      if (isLoadingMessages) {
+        setTimeout(() => {
+          setIsLoadingMessages(false);
+        }, 100);
+      }
     }
-  }, [sessionMessagesData, currentSessionId, loadSessionMessages]);
+  }, [sessionMessagesData, currentSessionId, loadSessionMessages, isLoadingMessages, t]);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -1434,6 +1473,14 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
                 onSearchChange={setSearchTerm}
               />
             </div>
+            <button
+              onClick={handleRefreshMessages}
+              disabled={!currentSessionId || isLoadingMessages || isQueryLoading}
+              className="p-2 hover:bg-white/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title={t('agentChat.refreshMessages')}
+            >
+              <RefreshCw className={`w-5 h-5 ${(isLoadingMessages || isQueryLoading) ? 'animate-spin' : ''}`} />
+            </button>
           </div>
         </div>
       </div>
@@ -1447,7 +1494,20 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
           </div>
         </div>
 
-        {renderedMessages}
+        {(isLoadingMessages || (isQueryLoading && currentSessionId)) ? (
+          <div className="flex flex-col items-center justify-center py-12 space-y-3">
+            <div className="flex space-x-2">
+              <div className="w-3 h-3 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce"></div>
+              <div className="w-3 h-3 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+              <div className="w-3 h-3 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+            </div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">
+              {t('agentChat.loadingMessages')}
+            </div>
+          </div>
+        ) : (
+          renderedMessages
+        )}
 
         {(isAiTyping || isStopping || isInitializingSession) && (
           <div className="flex flex-col items-center py-2 space-y-2">
