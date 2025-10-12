@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { ChevronDown, ChevronUp, AlertCircle, Copy, CheckCircle } from 'lucide-react';
 
 interface ErrorMessageProps {
-  error: string | Error | { message: string; details?: any; stack?: string };
+  error: string | Error | { message: string; details?: unknown; stack?: string };
   title?: string;
   showDetails?: boolean;
 }
@@ -25,15 +25,15 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({
       };
     } else if (typeof error === 'object' && error !== null) {
       return {
-        message: error.message || JSON.stringify(error),
-        details: error.details || error.stack || JSON.stringify(error, null, 2),
+        message: (error as { message?: string }).message || JSON.stringify(error),
+        details: (error as { details?: unknown; stack?: string }).details || (error as { stack?: string }).stack || JSON.stringify(error, null, 2),
         raw: error
       };
     } else {
       return {
         message: String(error),
         details: '',
-        raw: error
+        raw: String(error)
       };
     }
   };
@@ -113,7 +113,7 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({
                   </button>
                 </div>
                 <pre className="text-xs text-red-800 dark:text-red-200 whitespace-pre-wrap break-words overflow-x-auto font-mono max-h-40 overflow-y-auto">
-                  {errorInfo.details || JSON.stringify(errorInfo.raw, null, 2)}
+                  {typeof errorInfo.details === 'string' ? errorInfo.details : JSON.stringify(errorInfo.details)}
                 </pre>
               </div>
 

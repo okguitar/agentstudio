@@ -116,6 +116,37 @@ cd frontend && pnpm run lint   # ESLint for frontend only
 cd backend && pnpm run type-check # TypeScript check for backend only
 ```
 
+## 🔧 **IMPORTANT**: Pre-Commit Build Verification
+
+**ALWAYS run build and lint checks before committing code to prevent Vercel deployment failures:**
+
+```bash
+# ✅ MANDATORY: Run this before every commit
+pnpm run build                 # Full build for all workspaces (shared, frontend, backend)
+pnpm run lint                  # Check for linting errors
+
+# 🚫 NEVER skip these steps - they will cause Vercel build failures!
+# ❌ Common mistakes that cause Vercel failures:
+# - TypeScript errors (untyped variables, missing types)
+# - ESLint errors (unused variables, code style issues)
+# - Missing dependencies or import errors
+# - Git merge conflicts left in files
+
+# ✅ Example safe commit workflow:
+# 1. Make your changes
+# 2. pnpm run build && pnpm run lint
+# 3. If no errors: git add . && git commit -m "feat: your changes"
+# 4. git push origin your-branch
+# 5. Check Vercel build status
+
+# 📋 Quick checklist before commits:
+# □ pnpm run build passes
+# □ pnpm run lint passes (or use --fix for auto-fixable issues)
+# □ No Git conflicts remaining in files
+# □ All new dependencies added to package.json
+# □ TypeScript types properly defined (avoid 'any' type)
+```
+
 ## Environment Configuration
 
 Backend requires `.env` file in `backend/` directory:

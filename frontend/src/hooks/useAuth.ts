@@ -50,7 +50,7 @@ export function useAuth() {
           timestamp?: number;
         };
         loginError.status = response.status;
-        loginError.details = data;
+        loginError.details = data as unknown;
         loginError.url = API_BASE;
         loginError.timestamp = Date.now();
         setError(loginError);

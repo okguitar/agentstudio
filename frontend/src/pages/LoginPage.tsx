@@ -29,7 +29,7 @@ export function LoginPage() {
   const [testingService, setTestingService] = useState<string | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<Record<string, 'success' | 'error' | 'unknown'>>({});
 
-  const from = (location.state as any)?.from?.pathname || '/';
+  const from = (location.state as { from?: { pathname?: string } })?.from?.pathname || '/';
 
   const testConnection = async (serviceUrl: string, serviceId?: string) => {
     if (serviceId) {
