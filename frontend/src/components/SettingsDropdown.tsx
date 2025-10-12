@@ -10,7 +10,7 @@ interface SettingsDropdownProps {
   selectedModel: string;
   onModelChange: (model: string) => void;
   availableModels: Array<{ id: string; name: string; description?: string; isVision?: boolean }>;
-  claudeVersionsData?: { versions: Array<{ id: string; name: string; isSystem?: boolean }>; defaultVersionId: string };
+  claudeVersionsData?: { versions: Array<{ id: string; name: string; isSystem?: boolean }>; defaultVersionId: string | null };
   isVersionLocked: boolean;
   isAiTyping: boolean;
   className?: string;
@@ -126,7 +126,7 @@ export const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
                 </div>
               </button>
               {claudeVersionsData.versions
-                .filter(version => version.id !== claudeVersionsData.defaultVersionId)
+                .filter(version => claudeVersionsData.defaultVersionId && version.id !== claudeVersionsData.defaultVersionId)
                 .map(version => (
                   <button
                     key={version.id}
