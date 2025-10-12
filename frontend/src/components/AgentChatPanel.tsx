@@ -90,7 +90,7 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
     addMessage,
     addTextPartToMessage,
     addThinkingPartToMessage,
-    addCompactSummaryPartToMessage,
+    // addCompactSummaryPartToMessage,
     addToolPartToMessage,
     updateToolPartInMessage,
     setAiTyping,
@@ -758,7 +758,8 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
                     // Check if this is a response to /compact command
                     if (isCompactCommand) {
                       console.log('📦 Detected /compact command response, adding as compactSummary');
-                      addCompactSummaryPartToMessage(aiMessageId, block.text);
+                      // addCompactSummaryPartToMessage(aiMessageId, block.text);
+                      addTextPartToMessage(aiMessageId, block.text);
                     } else {
                       addTextPartToMessage(aiMessageId, block.text);
                     }
