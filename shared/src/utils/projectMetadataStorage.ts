@@ -155,14 +155,12 @@ export class ProjectMetadataStorage {
     let defaultAgent = metadata.defaultAgent;
     let defaultAgentName = '';
     let defaultAgentIcon = '';
-    let defaultAgentColor = '';
 
     if (defaultAgent && metadata.agents[defaultAgent]?.enabled) {
       const agent = this.agentStorage.getAgent(defaultAgent);
       if (agent) {
         defaultAgentName = agent.name;
         defaultAgentIcon = agent.ui.icon;
-        defaultAgentColor = agent.ui.primaryColor;
       }
     } else if (enabledAgents.length > 0) {
       // Use the most recently used agent as default
@@ -176,8 +174,7 @@ export class ProjectMetadataStorage {
       if (agent) {
         defaultAgentName = agent.name;
         defaultAgentIcon = agent.ui.icon;
-        defaultAgentColor = agent.ui.primaryColor;
-        
+
         // Update metadata with new default
         metadata.defaultAgent = defaultAgent;
         this.saveProjectMetadata(dirName, metadata);
@@ -203,7 +200,6 @@ export class ProjectMetadataStorage {
       defaultAgent,
       defaultAgentName,
       defaultAgentIcon,
-      defaultAgentColor,
       tags: metadata.tags,
       metadata: metadata.metadata
     };

@@ -39,7 +39,6 @@ export interface ProjectWithAgentInfo {
   defaultAgent: string;
   defaultAgentName: string;
   defaultAgentIcon: string;
-  defaultAgentColor: string;
   
   // Metadata
   tags: string[];
