@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
 import { useBackendServices } from '../hooks/useBackendServices';
 import { resetBackendOnboarding } from '../utils/onboardingStorage';
+import { ErrorMessage } from '../components/ErrorMessage';
 import { Server, ChevronDown, ChevronUp, Settings, Trash2, Plus, CheckCircle, XCircle, AlertCircle, Rocket } from 'lucide-react';
 
 export function LoginPage() {
@@ -164,11 +165,11 @@ export function LoginPage() {
 
             {/* Error Message */}
             {error && (
-              <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
-                <p className="text-sm text-red-600 dark:text-red-400">
-                  {error}
-                </p>
-              </div>
+              <ErrorMessage
+                error={error}
+                title="Login failed"
+                showDetails={true}
+              />
             )}
 
             {/* Submit Button */}

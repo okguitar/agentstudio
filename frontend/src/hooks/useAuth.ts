@@ -8,7 +8,7 @@ export function useAuth() {
   const { token, setToken, removeToken, getToken } = useAuthStore();
   const { currentService } = useBackendServices();
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<Error | string | null>(null);
 
   // Use only the service ID to avoid unnecessary re-renders
   const currentServiceId = currentService?.id;
@@ -42,7 +42,18 @@ export function useAuth() {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || 'Login failed');
+        // Create detailed error object
+        const loginError = new Error(data.error || 'Login failed') as Error & {
+          status?: number;
+          details?: any;
+          url?: string;
+          timestamp?: number;
+        };
+        loginError.status = response.status;
+        loginError.details = data;
+        loginError.url = API_BASE;
+        loginError.timestamp = Date.now();
+        setError(loginError);
         return false;
       }
 
@@ -58,7 +69,30 @@ export function useAuth() {
       setToken(tokenData);
       return true;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Network error');
+      // Create detailed error object for network/other errors
+      const networkError = new Error('Network error occurred during login') as Error & {
+        originalError?: any;
+        type?: string;
+        url?: string;
+        timestamp?: number;
+      };
+
+      if (err instanceof Error) {
+        networkError.originalError = {
+          message: err.message,
+          stack: err.stack,
+          name: err.name
+        };
+        networkError.type = err.name;
+      } else {
+        networkError.originalError = err;
+        networkError.type = typeof err;
+      }
+
+      networkError.url = API_BASE;
+      networkError.timestamp = Date.now();
+
+      setError(networkError);
       return false;
     } finally {
       setIsLoading(false);
