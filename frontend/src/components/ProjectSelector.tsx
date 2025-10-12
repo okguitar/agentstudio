@@ -189,11 +189,10 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
               <button
                 onClick={handleNewProject}
                 disabled={isCreatingProject}
-                className="w-full flex items-center space-x-4 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ borderColor: agent.ui.primaryColor + '40', backgroundColor: agent.ui.primaryColor + '08' }}
+                className="w-full flex items-center space-x-4 p-4 border border-primary/40 rounded-lg hover:bg-primary/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <div className="flex-shrink-0">
-                  <FolderPlus className={`w-6 h-6 ${isCreatingProject ? 'text-gray-400' : ''}`} style={{ color: isCreatingProject ? undefined : agent.ui.primaryColor }} />
+                  <FolderPlus className={`w-6 h-6 ${isCreatingProject ? 'text-gray-400' : 'text-primary'}`} />
                 </div>
                 <div className="text-left flex-1">
                   <div className="font-medium text-gray-900">
@@ -254,9 +253,8 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
                       onClick={() => onProjectSelect(project.path)}
                       className="w-full flex items-center space-x-3 p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors text-left"
                     >
-                      <div 
-                        className="w-5 h-5 flex-shrink-0 text-xl"
-                        style={{ color: project.defaultAgentColor || '#3B82F6' }}
+                      <div
+                        className="w-5 h-5 flex-shrink-0 text-xl text-primary"
                       >
                         {project.defaultAgentIcon || '📁'}
                       </div>

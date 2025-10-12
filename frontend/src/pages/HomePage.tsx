@@ -151,8 +151,7 @@ export const HomePage: React.FC = () => {
                       setSelectedAgentForStart(agent);
                       setShowProjectSelector(true);
                     }}
-                    className="w-full flex items-center justify-center space-x-2 px-4 py-3 text-white rounded-lg hover:opacity-90 transition-colors"
-                    style={{ backgroundColor: agent.ui.primaryColor }}
+                    className="w-full flex items-center justify-center space-x-2 px-4 py-3 text-primary-foreground bg-primary hover:opacity-90 transition-colors"
                   >
                     <Play className="w-4 h-4" />
                     <span>{t('startUsing')}</span>

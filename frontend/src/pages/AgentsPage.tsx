@@ -103,7 +103,6 @@ export const AgentsPage: React.FC = () => {
       ],
       ui: {
         icon: '🤖',
-        primaryColor: '#3B82F6',
         headerTitle: '',
         headerDescription: '',
         componentType: 'chat'
@@ -380,8 +379,7 @@ export const AgentsPage: React.FC = () => {
                           setSelectedAgentForStart(agent);
                           setShowProjectSelector(true);
                         }}
-                        className="flex items-center space-x-1 px-3 py-1 text-xs text-white rounded-md"
-                        style={{ backgroundColor: agent.ui.primaryColor }}
+                        className="flex items-center space-x-1 px-3 py-1 text-xs text-primary-foreground bg-primary rounded-md"
                       >
                         <Play className="w-3 h-3" />
                         <span>使用</span>
@@ -510,8 +508,7 @@ export const AgentsPage: React.FC = () => {
                                 setSelectedAgentForStart(agent);
                                 setShowProjectSelector(true);
                               }}
-                              className="flex items-center space-x-1 px-3 py-1 text-xs text-white rounded-md transition-colors hover:opacity-90"
-                              style={{ backgroundColor: agent.ui.primaryColor }}
+                              className="flex items-center space-x-1 px-3 py-1 text-xs text-primary-foreground bg-primary rounded-md transition-colors hover:opacity-90"
                               title="开始使用助手"
                             >
                               <Play className="w-3 h-3" />
@@ -693,20 +690,6 @@ export const AgentsPage: React.FC = () => {
                           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                         />
                       </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">主题颜色</label>
-                        <input
-                          type="color"
-                          value={editForm.ui?.primaryColor || '#3B82F6'}
-                          onChange={(e) => setEditForm({
-                            ...editForm,
-                            ui: { ...editForm.ui, primaryColor: e.target.value } as any
-                          })}
-                          className="w-full h-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
-                        />
-                      </div>
-                    </div>
                   </div>
                 </div>
 

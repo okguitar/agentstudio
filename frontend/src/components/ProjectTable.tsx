@@ -22,7 +22,6 @@ interface Project {
   defaultAgent: string;
   defaultAgentName: string;
   defaultAgentIcon: string;
-  defaultAgentColor: string;
   createdAt: string;
   lastAccessed: string;
   description?: string;
@@ -82,11 +81,7 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({
   const renderAssistant = (project: Project) => (
     project.defaultAgentName ? (
       <span
-        className="inline-flex px-2 py-1 text-xs font-medium rounded-full"
-        style={{
-          backgroundColor: project.defaultAgentColor + '20',
-          color: project.defaultAgentColor
-        }}
+        className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-primary/20 text-primary"
       >
         {project.defaultAgentName}
       </span>

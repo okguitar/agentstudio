@@ -89,7 +89,6 @@ export interface AgentConfig {
   allowedTools: AgentTool[];
   ui: {
     icon: string;
-    primaryColor: string;
     headerTitle: string;
     headerDescription: string;
     welcomeMessage?: string; // Custom welcome message instead of title + description

@@ -26,7 +26,6 @@ interface Project {
   defaultAgent: string;
   defaultAgentName: string;
   defaultAgentIcon: string;
-  defaultAgentColor: string;
   createdAt: string;
   lastAccessed: string;
   description?: string;
