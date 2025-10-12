@@ -44,7 +44,7 @@ export const MarkdownMessage: React.FC<MarkdownMessageProps> = ({ content }) => 
           <h3 className="text-sm font-bold mt-2 mb-1 text-gray-900">{children}</h3>
         ),
         p: ({ children }) => (
-          <p className="mb-2 leading-relaxed break-words overflow-wrap-anywhere">{children}</p>
+          <p className="mb-2 leading-relaxed break-words overflow-wrap-anywhere text-gray-800 dark:text-gray-200">{children}</p>
         ),
         ul: ({ children }) => (
           <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>
@@ -53,10 +53,10 @@ export const MarkdownMessage: React.FC<MarkdownMessageProps> = ({ content }) => 
           <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>
         ),
         li: ({ children }) => (
-          <li className="leading-relaxed break-words overflow-wrap-anywhere">{children}</li>
+          <li className="leading-relaxed break-words overflow-wrap-anywhere text-gray-800 dark:text-gray-200">{children}</li>
         ),
         blockquote: ({ children }) => (
-          <blockquote className="border-l-4 border-gray-300 pl-3 italic text-gray-600 mb-2">
+          <blockquote className="border-l-4 border-gray-300 dark:border-gray-600 pl-3 italic text-gray-600 dark:text-gray-400 mb-2">
             {children}
           </blockquote>
         ),
@@ -77,17 +77,17 @@ export const MarkdownMessage: React.FC<MarkdownMessageProps> = ({ content }) => 
           </a>
         ),
         table: ({ children }) => (
-          <table className="border-collapse border border-gray-300 mb-2 text-sm">
+          <table className="border-collapse border border-gray-300 dark:border-gray-600 mb-2 text-sm">
             {children}
           </table>
         ),
         th: ({ children }) => (
-          <th className="border border-gray-300 px-2 py-1 bg-gray-100 font-semibold text-left">
+          <th className="border border-gray-300 dark:border-gray-600 px-2 py-1 bg-gray-100 dark:bg-gray-800 font-semibold text-left text-gray-900 dark:text-gray-100">
             {children}
           </th>
         ),
         td: ({ children }) => (
-          <td className="border border-gray-300 px-2 py-1">{children}</td>
+          <td className="border border-gray-300 dark:border-gray-600 px-2 py-1 text-gray-800 dark:text-gray-200">{children}</td>
         ),
       }}
       >
