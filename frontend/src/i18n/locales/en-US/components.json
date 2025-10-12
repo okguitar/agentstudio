@@ -161,6 +161,13 @@
       "system": "System",
       "locked": "Version Locked (Active Session)"
     },
+    "settings": {
+      "title": "Settings",
+      "permissionMode": "Permission Mode",
+      "claudeVersion": "Claude Version",
+      "model": "Model",
+      "noSettings": "No settings available"
+    },
     "commandWarning": "Unknown command: {{command}}. Available commands: {{commands}}",
     "navigateTo": "Navigate to: {{path}}",
     "errorMessages": {

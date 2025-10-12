@@ -161,6 +161,13 @@
       "system": "系统",
       "locked": "版本已锁定（活跃会话）"
     },
+    "settings": {
+      "title": "设置",
+      "permissionMode": "权限模式",
+      "claudeVersion": "Claude版本",
+      "model": "模型",
+      "noSettings": "暂无可用设置"
+    },
     "commandWarning": "未知命令: {{command}}。可用命令: {{commands}}",
     "navigateTo": "导航到: {{path}}",
     "errorMessages": {

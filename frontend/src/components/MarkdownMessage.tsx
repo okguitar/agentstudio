@@ -29,7 +29,7 @@ export const MarkdownMessage: React.FC<MarkdownMessageProps> = ({ content }) => 
               {String(children).replace(/\n$/, '')}
             </SyntaxHighlighter>
           ) : (
-            <code className="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono" {...props}>
+            <code className="bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 px-1 py-0.5 rounded text-sm font-mono" {...props}>
               {children}
             </code>
           );

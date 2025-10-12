@@ -3,12 +3,14 @@ import { Send, Clock, Square, Image, Wrench, X, Plus, Zap, Cpu, ChevronDown, Ter
 import { ImagePreview } from './ImagePreview';
 import { CommandSelector } from './CommandSelector';
 import { ConfirmDialog } from './ConfirmDialog';
+import { SettingsDropdown } from './SettingsDropdown';
 import { useAgentStore } from '../stores/useAgentStore';
 import { useAgentChat, useAgentSessions, useAgentSessionMessages, useInterruptSession } from '../hooks/useAgents';
 import { useCommands, useProjectCommands } from '../hooks/useCommands';
 import { useClaudeVersions } from '../hooks/useClaudeVersions';
 import { useSessionHeartbeatOnSuccess } from '../hooks/useSessionHeartbeatOnSuccess';
 import { useSessions } from '../hooks/useSessions';
+import { useResponsiveSettings } from '../hooks/useResponsiveSettings';
 import { tabManager } from '../utils/tabManager';
 import { useQueryClient } from '@tanstack/react-query';
 import { ChatMessageRenderer } from './ChatMessageRenderer';
@@ -35,6 +37,7 @@ interface AgentChatPanelProps {
 
 export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPath, onSessionChange }) => {
   const { t } = useTranslation('components');
+  const { isCompactMode } = useResponsiveSettings();
   const [inputMessage, setInputMessage] = useState('');
   const [showSessions, setShowSessions] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -1625,167 +1628,185 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
             </div>
             
             <div className="flex items-center space-x-2">
-              {/* 权限模式下拉 */}
-              <div className="relative dropdown-container">
-                <button
-                  onClick={() => setShowPermissionDropdown(!showPermissionDropdown)}
-                  className={`flex items-center space-x-1 px-3 py-2 text-sm rounded-lg transition-colors ${
-                    permissionMode !== 'default'
-                      ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50'
-                      : 'text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600'
-                  }`}
-                  disabled={isAiTyping}
-                >
-                  <Zap className="w-4 h-4" />
-                  <span className="text-xs">{t(`agentChat.permissionMode.${permissionMode}`)}</span>
-                  <ChevronDown className="w-3 h-3" />
-                </button>
+              {/* 窄屏模式：设置下拉菜单 */}
+              {isCompactMode ? (
+                <SettingsDropdown
+                  permissionMode={permissionMode}
+                  onPermissionModeChange={setPermissionMode}
+                  selectedClaudeVersion={selectedClaudeVersion}
+                  onClaudeVersionChange={setSelectedClaudeVersion}
+                  selectedModel={selectedModel}
+                  onModelChange={setSelectedModel}
+                  availableModels={availableModels}
+                  claudeVersionsData={claudeVersionsData}
+                  isVersionLocked={isVersionLocked}
+                  isAiTyping={isAiTyping}
+                />
+              ) : (
+                <>
+                  {/* 权限模式下拉 */}
+                  <div className="relative dropdown-container">
+                    <button
+                      onClick={() => setShowPermissionDropdown(!showPermissionDropdown)}
+                      className={`flex items-center space-x-1 px-3 py-2 text-sm rounded-lg transition-colors ${
+                        permissionMode !== 'default'
+                          ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50'
+                          : 'text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600'
+                      }`}
+                      disabled={isAiTyping}
+                    >
+                      <Zap className="w-4 h-4" />
+                      <span className="text-xs">{t(`agentChat.permissionMode.${permissionMode}`)}</span>
+                      <ChevronDown className="w-3 h-3" />
+                    </button>
 
-                {showPermissionDropdown && (
-                  <div className="absolute bottom-full left-0 mb-2 w-32 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
-                    {[
-                      { value: 'default', label: t('agentChat.permissionMode.default') },
-                      { value: 'acceptEdits', label: t('agentChat.permissionMode.acceptEdits') },
-                      { value: 'bypassPermissions', label: t('agentChat.permissionMode.bypassPermissions') },
-                      // { value: 'plan', label: t('agentChat.permissionMode.plan') }
-                    ].map(option => (
-                      <button
-                        key={option.value}
-                        onClick={() => {
-                          setPermissionMode(option.value as any);
-                          setShowPermissionDropdown(false);
-                        }}
-                        className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 first:rounded-t-lg last:rounded-b-lg ${
-                          permissionMode === option.value ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'
-                        }`}
-                      >
-                        {option.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Claude版本选择下拉 - 只在有多个版本时显示，位置移到模型选择之前 */}
-              {claudeVersionsData?.versions && claudeVersionsData.versions.length > 1 && (
-                <div className="relative dropdown-container">
-                  <button
-                    onClick={() => !isVersionLocked && setShowVersionDropdown(!showVersionDropdown)}
-                    className={`flex items-center space-x-1 px-3 py-2 text-sm rounded-lg transition-colors ${
-                      isVersionLocked
-                        ? 'text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 cursor-not-allowed'
-                        : selectedClaudeVersion
-                        ? 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-900/50'
-                        : 'text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600'
-                    }`}
-                    disabled={isAiTyping || isVersionLocked}
-                    title={
-                      isVersionLocked
-                        ? t('agentChat.claudeVersion.locked')
-                        : t('agentChat.claudeVersion.title')
-                    }
-                  >
-                    <Terminal className="w-4 h-4" />
-                    <span className="text-xs">
-                      {selectedClaudeVersion
-                        ? claudeVersionsData.versions.find(v => v.id === selectedClaudeVersion)?.name || t('agentChat.claudeVersion.custom')
-                        : t('agentChat.claudeVersion.default')
-                      }
-                    </span>
-                    <ChevronDown className="w-3 h-3" />
-                  </button>
-
-                  {showVersionDropdown && (
-                    <div className="absolute bottom-full left-0 mb-2 w-32 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
-                      {/* 默认版本选项 */}
-                      <button
-                        onClick={() => {
-                          setSelectedClaudeVersion(undefined);
-                          setShowVersionDropdown(false);
-                        }}
-                        className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 first:rounded-t-lg ${
-                          !selectedClaudeVersion ? 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300' : 'text-gray-700 dark:text-gray-300'
-                        }`}
-                      >
-                        {t('agentChat.claudeVersion.default')}
-                      </button>
-
-                      {/* 其他版本选项 */}
-                      {claudeVersionsData.versions
-                        .filter(version => version.id !== claudeVersionsData.defaultVersionId)
-                        .map(version => (
+                    {showPermissionDropdown && (
+                      <div className="absolute bottom-full left-0 mb-2 w-32 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
+                        {[
+                          { value: 'default', label: t('agentChat.permissionMode.default') },
+                          { value: 'acceptEdits', label: t('agentChat.permissionMode.acceptEdits') },
+                          { value: 'bypassPermissions', label: t('agentChat.permissionMode.bypassPermissions') },
+                          // { value: 'plan', label: t('agentChat.permissionMode.plan') }
+                        ].map(option => (
                           <button
-                            key={version.id}
+                            key={option.value}
                             onClick={() => {
-                              setSelectedClaudeVersion(version.id);
-                              setShowVersionDropdown(false);
+                              setPermissionMode(option.value as any);
+                              setShowPermissionDropdown(false);
                             }}
-                            className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 last:rounded-b-lg ${
-                              selectedClaudeVersion === version.id
-                                ? 'bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400'
-                                : 'text-gray-700 dark:text-gray-300'
+                            className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 first:rounded-t-lg last:rounded-b-lg ${
+                              permissionMode === option.value ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'
                             }`}
                           >
-                            <div className="flex items-center space-x-2">
-                              <span>{version.name}</span>
-                              {version.isSystem && (
-                                <span className="text-xs text-gray-500 dark:text-gray-400">({t('agentChat.claudeVersion.system')})</span>
-                              )}
-                            </div>
+                            {option.label}
                           </button>
-                        ))
-                      }
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Claude版本选择下拉 - 只在有多个版本时显示，位置移到模型选择之前 */}
+                  {claudeVersionsData?.versions && claudeVersionsData.versions.length > 1 && (
+                    <div className="relative dropdown-container">
+                      <button
+                        onClick={() => !isVersionLocked && setShowVersionDropdown(!showVersionDropdown)}
+                        className={`flex items-center space-x-1 px-3 py-2 text-sm rounded-lg transition-colors ${
+                          isVersionLocked
+                            ? 'text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 cursor-not-allowed'
+                            : selectedClaudeVersion
+                            ? 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-900/50'
+                            : 'text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600'
+                        }`}
+                        disabled={isAiTyping || isVersionLocked}
+                        title={
+                          isVersionLocked
+                            ? t('agentChat.claudeVersion.locked')
+                            : t('agentChat.claudeVersion.title')
+                        }
+                      >
+                        <Terminal className="w-4 h-4" />
+                        <span className="text-xs">
+                          {selectedClaudeVersion
+                            ? claudeVersionsData.versions.find(v => v.id === selectedClaudeVersion)?.name || t('agentChat.claudeVersion.custom')
+                            : t('agentChat.claudeVersion.default')
+                          }
+                        </span>
+                        <ChevronDown className="w-3 h-3" />
+                      </button>
+
+                      {showVersionDropdown && (
+                        <div className="absolute bottom-full left-0 mb-2 w-32 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
+                          {/* 默认版本选项 */}
+                          <button
+                            onClick={() => {
+                              setSelectedClaudeVersion(undefined);
+                              setShowVersionDropdown(false);
+                            }}
+                            className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 first:rounded-t-lg ${
+                              !selectedClaudeVersion ? 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300' : 'text-gray-700 dark:text-gray-300'
+                            }`}
+                          >
+                            {t('agentChat.claudeVersion.default')}
+                          </button>
+
+                          {/* 其他版本选项 */}
+                          {claudeVersionsData.versions
+                            .filter(version => version.id !== claudeVersionsData.defaultVersionId)
+                            .map(version => (
+                              <button
+                                key={version.id}
+                                onClick={() => {
+                                  setSelectedClaudeVersion(version.id);
+                                  setShowVersionDropdown(false);
+                                }}
+                                className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 last:rounded-b-lg ${
+                                  selectedClaudeVersion === version.id
+                                    ? 'bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400'
+                                    : 'text-gray-700 dark:text-gray-300'
+                                }`}
+                              >
+                                <div className="flex items-center space-x-2">
+                                  <span>{version.name}</span>
+                                  {version.isSystem && (
+                                    <span className="text-xs text-gray-500 dark:text-gray-400">({t('agentChat.claudeVersion.system')})</span>
+                                  )}
+                                </div>
+                              </button>
+                            ))
+                          }
+                        </div>
+                      )}
                     </div>
                   )}
-                </div>
-              )}
 
-              {/* 模型切换下拉 - 只在可用模型数量大于等于2时显示 */}
-              {availableModels.length >= 2 && (
-                <div className="relative dropdown-container">
-                  <button
-                    onClick={() => setShowModelDropdown(!showModelDropdown)}
-                    className={`flex items-center space-x-1 px-3 py-2 text-sm rounded-lg transition-colors ${
-                      selectedModel === 'opus'
-                        ? 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 dark:hover:bg-purple-900/50'
-                        : 'text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600'
-                    }`}
-                    disabled={isAiTyping}
-                  >
-                    <Cpu className="w-4 h-4" />
-                    <span className="text-xs whitespace-nowrap overflow-hidden text-ellipsis max-w-[100px]" title={availableModels.find(m => m.id === selectedModel)?.name || t(`agentChat.model.${selectedModel}`)}>
-                      {availableModels.find(m => m.id === selectedModel)?.name || t(`agentChat.model.${selectedModel}`)}
-                    </span>
-                    <ChevronDown className="w-3 h-3" />
-                  </button>
+                  {/* 模型切换下拉 - 只在可用模型数量大于等于2时显示 */}
+                  {availableModels.length >= 2 && (
+                    <div className="relative dropdown-container">
+                      <button
+                        onClick={() => setShowModelDropdown(!showModelDropdown)}
+                        className={`flex items-center space-x-1 px-3 py-2 text-sm rounded-lg transition-colors ${
+                          selectedModel === 'opus'
+                            ? 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 dark:hover:bg-purple-900/50'
+                            : 'text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600'
+                        }`}
+                        disabled={isAiTyping}
+                      >
+                        <Cpu className="w-4 h-4" />
+                        <span className="text-xs whitespace-nowrap overflow-hidden text-ellipsis max-w-[100px]" title={availableModels.find(m => m.id === selectedModel)?.name || t(`agentChat.model.${selectedModel}`)}>
+                          {availableModels.find(m => m.id === selectedModel)?.name || t(`agentChat.model.${selectedModel}`)}
+                        </span>
+                        <ChevronDown className="w-3 h-3" />
+                      </button>
 
-                  {showModelDropdown && (
-                    <div className="absolute bottom-full left-0 mb-2 min-w-[160px] max-w-[200px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
-                      {availableModels.map(model => (
-                        <button
-                          key={model.id}
-                          onClick={() => {
-                            setSelectedModel(model.id);
-                            setShowModelDropdown(false);
-                          }}
-                          className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 first:rounded-t-lg last:rounded-b-lg ${
-                            selectedModel === model.id
-                              ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
-                              : 'text-gray-700 dark:text-gray-300'
-                          }`}
-                          title={model.description}
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="whitespace-nowrap overflow-hidden text-ellipsis flex-1 pr-2" title={model.name}>{model.name}</span>
-                            {model.isVision && (
-                              <span className="text-xs text-gray-400 flex-shrink-0">👁️</span>
-                            )}
-                          </div>
-                        </button>
-                      ))}
+                      {showModelDropdown && (
+                        <div className="absolute bottom-full left-0 mb-2 min-w-[160px] max-w-[200px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
+                          {availableModels.map(model => (
+                            <button
+                              key={model.id}
+                              onClick={() => {
+                                setSelectedModel(model.id);
+                                setShowModelDropdown(false);
+                              }}
+                              className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 first:rounded-t-lg last:rounded-b-lg ${
+                                selectedModel === model.id
+                                  ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
+                                  : 'text-gray-700 dark:text-gray-300'
+                              }`}
+                              title={model.description}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="whitespace-nowrap overflow-hidden text-ellipsis flex-1 pr-2" title={model.name}>{model.name}</span>
+                                {model.isVision && (
+                                  <span className="text-xs text-gray-400 flex-shrink-0">👁️</span>
+                                )}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
-                </div>
+                </>
               )}
 
               {isAiTyping || isStopping ? (
