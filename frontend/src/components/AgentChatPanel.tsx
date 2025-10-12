@@ -25,6 +25,7 @@ import { createCommandHandler, SystemCommand } from '../utils/commandHandler';
 import { eventBus, EVENTS } from '../utils/eventBus';
 import { useTranslation } from 'react-i18next';
 import { showInfo } from '../utils/toast';
+import { loadBackendServices, getCurrentService } from '../utils/backendServiceStorage';
 
 interface AgentChatPanelProps {
   agent: AgentConfig;
@@ -63,6 +64,16 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
   const [isVersionLocked, setIsVersionLocked] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
   const [isInitializingSession, setIsInitializingSession] = useState(false);
+
+  // Get current backend service name
+  const [currentServiceName, setCurrentServiceName] = useState<string>('默认服务');
+  useEffect(() => {
+    const backendServices = loadBackendServices();
+    const currentService = getCurrentService(backendServices);
+    if (currentService) {
+      setCurrentServiceName(currentService.name);
+    }
+  }, []);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -260,13 +271,13 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
               ? 'text-white p-3 rounded-lg'
               : 'text-gray-800 dark:text-gray-200'
           }`}
-          style={message.role === 'user' ? { backgroundColor: agent.ui.primaryColor } : {}}
+          style={message.role === 'user' ? { backgroundColor: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))' } : {}}
         >
           <ChatMessageRenderer message={message as any} />
         </div>
       </div>
     ));
-  }, [messages, agent.ui.primaryColor]);
+  }, [messages]);
 
   // Reset selected index when commands change
   useEffect(() => {
@@ -1366,44 +1377,48 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
     <div className="flex flex-col h-full bg-white dark:bg-gray-900">
       {/* Header */}
       <div
-        className="px-5 py-4 border-b border-gray-200 dark:border-gray-700 text-white"
-        style={{ background: `linear-gradient(135deg, ${agent.ui.primaryColor}, ${agent.ui.primaryColor}dd)` }}
+        className="px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800"
       >
-        <div className="flex items-center justify-between min-h-[60px]">
+        <div className="flex items-center justify-between min-h-[36px]">
+          {/* Title */}
           <div className="flex-1 min-w-0">
-            <h1 className="text-lg font-semibold mb-1 flex items-center space-x-2 min-h-[28px]">
-              <span className="text-2xl flex-shrink-0">{agent.ui.icon}</span>
-              <span className="truncate">{agent.ui.headerTitle}</span>
+            <h1 className="text-base font-semibold flex items-center space-x-2 text-gray-900 dark:text-white">
+              <span className="text-lg flex-shrink-0">{agent.ui.icon}</span>
+              <span className="truncate">[{currentServiceName}]</span>
               {projectPath && (
-                <span className="text-xs opacity-75 font-normal truncate flex-shrink-0" title={projectPath}>
-                  📁 {projectPath.split('/').pop() || projectPath}
+                <span className="text-sm opacity-75 font-normal truncate flex-shrink-0" title={projectPath}>
+                  {projectPath.split('/').pop() || projectPath}
                 </span>
               )}
+              {currentSessionId && (
+                <>
+                  <span className="text-sm opacity-75">-</span>
+                  <span className="text-sm opacity-75 truncate">
+                    {sessionsData?.sessions?.find((s: any) => s.id === currentSessionId)?.title || t('agentChat.currentSession')}
+                  </span>
+                </>
+              )}
             </h1>
-            <p className="text-sm opacity-90 truncate">
-              {currentSessionId ?
-                (sessionsData?.sessions?.find((s: any) => s.id === currentSessionId)?.title || t('agentChat.currentSession')) :
-                agent.ui.headerDescription
-              }
-            </p>
           </div>
-          <div className="flex space-x-2 flex-shrink-0 ml-4">
+
+          {/* Action Buttons */}
+          <div className="flex space-x-1 flex-shrink-0 ml-2">
             <button
               onClick={handleNewSession}
-              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+              className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md transition-colors text-gray-600 dark:text-gray-300"
               title={t('agentChat.newSession')}
             >
-              <Plus className="w-5 h-5" />
+              <Plus className="w-4 h-4" />
             </button>
             <div className="relative">
               <button
                 onClick={() => setShowSessions(!showSessions)}
-                className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+                className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md transition-colors text-gray-600 dark:text-gray-300"
                 title={t('agentChat.sessionHistory')}
               >
-                <Clock className="w-5 h-5" />
+                <Clock className="w-4 h-4" />
               </button>
-              
+
               {/* Sessions Dropdown */}
               <SessionsDropdown
                 isOpen={showSessions}
@@ -1529,7 +1544,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
             rows={1}
             className="w-full resize-none border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 disabled:bg-gray-50 dark:disabled:bg-gray-700 disabled:text-gray-500 dark:disabled:text-gray-400"
             style={{
-              '--focus-ring-color': agent.ui.primaryColor,
+              '--focus-ring-color': 'hsl(var(--primary))',
               minHeight: '44px',
               maxHeight: '120px'
             } as React.CSSProperties}
@@ -1792,7 +1807,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
                   onClick={handleSendMessage}
                   disabled={isSendDisabled()}
                   className="flex items-center space-x-2 px-4 py-2 text-white rounded-lg hover:opacity-90 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 text-sm font-medium shadow-sm"
-                  style={{ backgroundColor: !isSendDisabled() ? agent.ui.primaryColor : undefined }}
+                  style={{ backgroundColor: !isSendDisabled() ? 'hsl(var(--primary))' : undefined }}
                   title={
                     isAiTyping ? t('agentChatPanel.aiTyping') :
                     !inputMessage.trim() && selectedImages.length === 0 ? t('agentChatPanel.noContentToSend') :
