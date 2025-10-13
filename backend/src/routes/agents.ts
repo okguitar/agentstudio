@@ -187,8 +187,9 @@ router.post('/', (req, res) => {
     }
 
     const agent = globalAgentStorage.createAgent({
+      ...agentData,
       version: '1.0.0',
-      ...agentData
+      model: 'claude-sonnet-4-20250514'
     } as Omit<AgentConfig, 'createdAt' | 'updatedAt'>);
 
     res.json({ agent, message: 'Agent created successfully' });
