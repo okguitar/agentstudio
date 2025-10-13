@@ -20,6 +20,7 @@ interface AgentState {
   updateMessage: (messageId: string, updates: Partial<AgentMessage>) => void;
   addTextPartToMessage: (messageId: string, text: string) => void;
   addThinkingPartToMessage: (messageId: string, thinking: string) => void;
+  addCompactSummaryPartToMessage: (messageId: string, content: string) => void;
   addToolPartToMessage: (messageId: string, tool: Omit<ToolUsageData, 'id'>) => void;
   updateToolPartInMessage: (messageId: string, toolId: string, updates: Partial<ToolUsageData>) => void;
   setAiTyping: (typing: boolean) => void;
@@ -88,8 +89,8 @@ export const useAgentStore = create<AgentState>((set) => ({
   })),
   
   addThinkingPartToMessage: (messageId, thinking) => set((state) => ({
-    messages: state.messages.map((msg) => 
-      msg.id === messageId 
+    messages: state.messages.map((msg) =>
+      msg.id === messageId
         ? {
             ...msg,
             messageParts: [
@@ -105,7 +106,26 @@ export const useAgentStore = create<AgentState>((set) => ({
         : msg
     )
   })),
-  
+
+  addCompactSummaryPartToMessage: (messageId, content) => set((state) => ({
+    messages: state.messages.map((msg) =>
+      msg.id === messageId
+        ? {
+            ...msg,
+            messageParts: [
+              ...(msg.messageParts || []),
+              {
+                id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                type: 'compactSummary' as const,
+                content,
+                order: (msg.messageParts || []).length
+              }
+            ]
+          }
+        : msg
+    )
+  })),
+
   addToolPartToMessage: (messageId, tool) => set((state) => ({
     messages: state.messages.map((msg) => 
       msg.id === messageId 

@@ -724,7 +724,84 @@ router.post('/chat', async (req, res) => {
       }
       
       // 使用会话的 sendMessage 方法发送消息
+      let compactMessageBuffer: any[] = []; // 缓存 compact 相关消息
+
       const currentRequestId = await claudeSession.sendMessage(userMessage, (sdkMessage: any) => {
+        // 🔍 添加详细日志来观察消息结构
+        if (message === '/compact') {
+          console.log('📦 [COMPACT] Received SDK message:', {
+            type: sdkMessage.type,
+            subtype: sdkMessage.subtype,
+            hasMessage: !!sdkMessage.message,
+            messageType: typeof sdkMessage.message,
+            messageContentType: sdkMessage.message?.content ? typeof sdkMessage.message.content : 'no content',
+            messageContentLength: Array.isArray(sdkMessage.message?.content) ? sdkMessage.message.content.length : 'not array',
+            firstBlock: Array.isArray(sdkMessage.message?.content) && sdkMessage.message.content.length > 0
+              ? { type: sdkMessage.message.content[0].type, hasText: !!sdkMessage.message.content[0].text, textPreview: sdkMessage.message.content[0].text?.substring(0, 100) }
+              : 'no blocks'
+          });
+        }
+
+        // 处理 /compact 命令的特殊消息序列
+        if (message === '/compact' && sdkMessage.type === 'system' && sdkMessage.subtype === 'compact_boundary') {
+          compactMessageBuffer.push(sdkMessage);
+          console.log('📦 [COMPACT] Detected compact_boundary, buffering messages...');
+          return; // 不发送给前端，等待完整的消息序列
+        }
+
+        // 如果在 compact 模式下，缓存消息直到找到完整序列
+        if (compactMessageBuffer.length > 0) {
+          compactMessageBuffer.push(sdkMessage);
+
+          // 检查是否有足够的消息来构成完整的 compact 序列
+          if (compactMessageBuffer.length >= 5) {
+            console.log('📦 [COMPACT] Processing complete compact sequence...');
+
+            // 提取摘要内容（第二个消息应该是 isCompactSummary）
+            const summaryMsg = compactMessageBuffer.find(msg => msg.isCompactSummary);
+            let compactContent = '会话上下文已压缩';
+
+            if (summaryMsg?.message?.content) {
+              if (Array.isArray(summaryMsg.message.content)) {
+                const textBlock = summaryMsg.message.content.find((block: any) => block.type === 'text');
+                compactContent = textBlock?.text || compactContent;
+              } else if (typeof summaryMsg.message.content === 'string') {
+                compactContent = summaryMsg.message.content;
+              }
+            }
+
+            // 创建 compact summary 消息发送给前端
+            const compactSummaryMessage = {
+              type: 'assistant',
+              role: 'assistant',
+              content: [
+                {
+                  type: 'compactSummary',
+                  text: compactContent
+                }
+              ],
+              agentId: agentId,
+              sessionId: actualSessionId || currentSessionId,
+              timestamp: Date.now(),
+              isCompactSummary: true
+            };
+
+            console.log('📦 [COMPACT] Sending compact summary to frontend:', compactContent.substring(0, 100));
+
+            try {
+              if (!res.destroyed && !connectionManager.isConnectionClosed()) {
+                res.write(`data: ${JSON.stringify(compactSummaryMessage)}\n\n`);
+              }
+            } catch (writeError: unknown) {
+              console.error('Failed to write compact summary:', writeError);
+            }
+
+            // 清空缓存
+            compactMessageBuffer = [];
+            return; // 不继续处理原始消息
+          }
+        }
+
         // 检查连接是否已关闭
         if (connectionManager.isConnectionClosed()) {
           console.log(`⚠️ Skipping response for closed connection, agent: ${agentId}`);
