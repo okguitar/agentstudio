@@ -280,12 +280,12 @@ export const useAgentChat = () => {
 // Create new project
 export const useCreateProject = () => {
   return useMutation({
-    mutationFn: async ({ agentId, projectName, parentDirectory }: { 
-      agentId: string; 
+    mutationFn: async ({ agentId, projectName, parentDirectory }: {
+      agentId: string;
       projectName: string;
       parentDirectory?: string;
     }) => {
-      const response = await authFetch(`${API_BASE}/agents/projects/create`, {
+      const response = await authFetch(`${API_BASE}/projects/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
