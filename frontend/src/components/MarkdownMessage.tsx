@@ -35,13 +35,13 @@ export const MarkdownMessage: React.FC<MarkdownMessageProps> = ({ content }) => 
           );
         },
         h1: ({ children }) => (
-          <h1 className="text-lg font-bold mt-4 mb-2 text-gray-900">{children}</h1>
+          <h1 className="text-lg font-bold mt-4 mb-2 text-gray-900 dark:text-gray-100">{children}</h1>
         ),
         h2: ({ children }) => (
-          <h2 className="text-base font-bold mt-3 mb-2 text-gray-900">{children}</h2>
+          <h2 className="text-base font-bold mt-3 mb-2 text-gray-900 dark:text-gray-100">{children}</h2>
         ),
         h3: ({ children }) => (
-          <h3 className="text-sm font-bold mt-2 mb-1 text-gray-900">{children}</h3>
+          <h3 className="text-sm font-bold mt-2 mb-1 text-gray-900 dark:text-gray-100">{children}</h3>
         ),
         p: ({ children }) => (
           <p className="mb-2 leading-relaxed break-words overflow-wrap-anywhere text-gray-800 dark:text-gray-200">{children}</p>
@@ -61,7 +61,7 @@ export const MarkdownMessage: React.FC<MarkdownMessageProps> = ({ content }) => 
           </blockquote>
         ),
         strong: ({ children }) => (
-          <strong className="font-semibold text-gray-900">{children}</strong>
+          <strong className="font-semibold text-gray-900 dark:text-gray-100">{children}</strong>
         ),
         em: ({ children }) => (
           <em className="italic">{children}</em>
