@@ -31,6 +31,7 @@ const CreateAgentSchema = z.object({
   systemPrompt: z.string().min(1),
   maxTurns: z.number().min(1).max(100).optional().default(25),
   permissionMode: z.enum(['default', 'acceptEdits', 'bypassPermissions', 'plan']).optional().default('acceptEdits'),
+  model: z.string().min(1).optional().default('claude-3-5-sonnet-20241022'),
   allowedTools: z.array(z.object({
     name: z.string(),
     enabled: z.boolean(),
