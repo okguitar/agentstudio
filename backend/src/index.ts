@@ -191,7 +191,12 @@ app.use('*', (req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-app.listen(PORT, HOST, () => {
-  console.log(`AI PPT Editor backend running on http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}`);
-  console.log(`Serving slides from: ${slidesDir}`);
-});
+// Check if this file is being run directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  app.listen(PORT, HOST, () => {
+    console.log(`AI PPT Editor backend running on http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}`);
+    console.log(`Serving slides from: ${slidesDir}`);
+  });
+}
+
+export default app;
