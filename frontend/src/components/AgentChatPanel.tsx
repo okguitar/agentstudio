@@ -94,6 +94,7 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
     addTextPartToMessage,
     addThinkingPartToMessage,
     // addCompactSummaryPartToMessage,
+    addCommandPartToMessage,
     addToolPartToMessage,
     updateToolPartInMessage,
     setAiTyping,
@@ -512,12 +513,18 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
           // 后端命令：直接使用原始用户输入，不做任何格式化
           userMessage = inputMessage.trim();
 
-          // 添加用户消息（显示原始命令）
-          addMessage({
-            content: userMessage,
-            role: 'user',
+          // 添加用户消息，使用 messageParts 显示命令组件
+          const message = {
+            content: '',
+            role: 'user' as const,
             images: imageData
-          });
+          };
+          addMessage(message);
+          // 获取刚添加的消息ID
+          const state = useAgentStore.getState();
+          const messageId = state.messages[state.messages.length - 1].id;
+          // 添加命令部分
+          addCommandPartToMessage(messageId, userMessage);
         } else {
           // 前端处理完成，添加格式化的用户命令消息
           const commandArgs = inputMessage.slice(command.content.length).trim() || undefined;
