@@ -214,7 +214,23 @@ router.post('/:name/validate', async (req, res) => {
       return res.status(404).json({ error: 'MCP configuration not found' });
     }
 
-    const serverConfig = config.mcpServers[name];
+    let serverConfig = config.mcpServers[name];
+
+    // Auto-detect type if not specified
+    if (!serverConfig.type) {
+      if (serverConfig.url) {
+        serverConfig.type = 'http';
+      } else if (serverConfig.command) {
+        serverConfig.type = 'stdio';
+      } else {
+        return res.status(400).json({ error: 'Cannot determine MCP server type. Please specify type, url, or command.' });
+      }
+
+      // Update config with detected type
+      config.mcpServers[name] = serverConfig;
+      writeMcpConfig(config);
+      console.log(`Auto-detected type for ${name}: ${serverConfig.type}`);
+    }
 
     if (serverConfig.type === 'http') {
       // Validate HTTP MCP server
@@ -223,7 +239,7 @@ router.post('/:name/validate', async (req, res) => {
       // Validate stdio MCP server
       await validateStdioMcpServer(name, serverConfig, config, res);
     } else {
-      res.status(400).json({ error: 'Invalid MCP server type' });
+      res.status(400).json({ error: 'Invalid MCP server type. Must be "stdio" or "http".' });
     }
   } catch (error) {
     console.error('Failed to validate MCP server:', error);
