@@ -437,8 +437,8 @@ The conversation history will be saved in \`.cc-sessions/${agentId}/\` within th
       // Return project info that matches frontend interface
       const projectId = `${agentId}-${Buffer.from(normalizedPath).toString('base64').replace(/[+/=]/g, '').slice(-8)}`;
       
-      res.json({ 
-        success: true, 
+      res.json({
+        success: true,
         project: {
           id: projectId,
           name: projectName,
@@ -446,7 +446,7 @@ The conversation history will be saved in \`.cc-sessions/${agentId}/\` within th
           agentId,
           agentName: agent.name,
           agentIcon: agent.ui.icon,
-          agentColor: agent.ui.icon, // Use icon as color fallback since primaryColor doesn't exist
+          agentColor: '#3B82F6', // 默认蓝色
           createdAt: new Date().toISOString(),
           lastAccessed: new Date().toISOString(),
           description: description || ''
