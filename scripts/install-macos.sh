@@ -407,6 +407,24 @@ export PATH="$PATH:/usr/local/bin:/usr/bin:/bin"
 export PATH="$HOME/Library/pnpm:$PATH"
 export PATH="$HOME/.local/share/pnpm:$PATH"
 
+# Dynamic fnm Node.js version detection
+add_fnm_node_paths() {
+    local fnm_dir="$HOME/.local/share/fnm/node-versions"
+    if [ -d "$fnm_dir" ]; then
+        # Find all Node.js versions, sort by version number (latest first)
+        for version_dir in $(ls -1r "$fnm_dir" 2>/dev/null); do
+            local bin_dir="$fnm_dir/$version_dir/installation/bin"
+            if [ -d "$bin_dir" ] && [ -x "$bin_dir/node" ]; then
+                export PATH="$bin_dir:$PATH"
+                break  # Use the first (latest) version found
+            fi
+        done
+    fi
+}
+
+# Try to add fnm paths
+add_fnm_node_paths
+
 # Detect Node.js paths
 if [ -f "/opt/homebrew/bin/node" ]; then
     export PATH="/opt/homebrew/bin:$PATH"
