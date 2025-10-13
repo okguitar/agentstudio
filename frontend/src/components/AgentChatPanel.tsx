@@ -107,7 +107,7 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const agentChatMutation = useAgentChat();
   const interruptSessionMutation = useInterruptSession();
   const { data: sessionsData } = useAgentSessions(agent.id, searchTerm, projectPath);
-  const { data: sessionMessagesData, isLoading: isQueryLoading } = useAgentSessionMessages(agent.id, currentSessionId, projectPath);
+  const { data: sessionMessagesData } = useAgentSessionMessages(agent.id, currentSessionId, projectPath);
   const { data: activeSessionsData } = useSessions();
   
   // 会话心跳 - 基于 AI 响应成功状态
@@ -507,18 +507,14 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
       if (command) {
         // 执行命令路由
         const result = await commandHandler.executeCommand(command);
-        
+
         if (result.shouldSendToBackend) {
-          // 发送到后端：使用原始用户输入
+          // 后端命令：直接使用原始用户输入，不做任何格式化
           userMessage = inputMessage.trim();
-          
-          // 前端显示：使用格式化的命令消息
-          const commandArgs = inputMessage.slice(command.content.length).trim() || undefined;
-          const formattedCommand = formatCommandMessage(command, commandArgs, projectPath);
-          
-          // 添加用户消息（前端显示用格式化版本）
+
+          // 添加用户消息（显示原始命令）
           addMessage({
-            content: formattedCommand,
+            content: userMessage,
             role: 'user',
             images: imageData
           });
@@ -1287,11 +1283,12 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   }, [commandWarning, commandSearch, showCommandSelector]);
   
   const handleCommandSelect = (command: CommandType) => {
-    // 命令选择器只是帮助填入命令，不立即执行
+    // 命令选择器只是帮助填入命令名称，不立即执行
     setSelectedCommand(command);
-    setInputMessage(command.content);
+    // 只填入命令名称（带斜杠），不填入完整的 content
+    setInputMessage(`/${command.name}`);
     setShowCommandSelector(false);
-    
+
     // 让用户手动点击发送来执行命令
     if (textareaRef.current) {
       textareaRef.current.focus();
@@ -1479,11 +1476,11 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
             </div>
             <button
               onClick={handleRefreshMessages}
-              disabled={!currentSessionId || isLoadingMessages || isQueryLoading}
-              className="p-2 hover:bg-white/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={!currentSessionId || isLoadingMessages}
+              className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md transition-colors text-gray-600 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
               title={t('agentChat.refreshMessages')}
             >
-              <RefreshCw className={`w-5 h-5 ${(isLoadingMessages || isQueryLoading) ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-4 h-4 ${isLoadingMessages ? 'animate-spin' : ''}`} />
             </button>
           </div>
         </div>
@@ -1498,7 +1495,7 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
           </div>
         </div>
 
-        {(isLoadingMessages || (isQueryLoading && currentSessionId)) ? (
+        {isLoadingMessages ? (
           <div className="flex flex-col items-center justify-center py-12 space-y-3">
             <div className="flex space-x-2">
               <div className="w-3 h-3 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce"></div>
@@ -1513,7 +1510,8 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
           renderedMessages
         )}
 
-        {(isAiTyping || isStopping || isInitializingSession) && (
+        {/* 加载指示器：会话初始化期间只显示一个，避免重复 */}
+        {!isInitializingSession && (isAiTyping || isStopping) && (
           <div className="flex flex-col items-center py-2 space-y-2">
             <div className="flex space-x-1">
               <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce"></div>
@@ -1525,11 +1523,20 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
                 {t('agentChat.stopping')}
               </div>
             )}
-            {!isStopping && isInitializingSession && (
-              <div className="text-xs text-gray-500 dark:text-gray-400">
-                {t('agentChat.initializingSession')}
-              </div>
-            )}
+          </div>
+        )}
+
+        {/* 会话初始化指示器：优先级最高 */}
+        {isInitializingSession && (
+          <div className="flex flex-col items-center py-2 space-y-2">
+            <div className="flex space-x-1">
+              <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce"></div>
+              <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+              <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+            </div>
+            <div className="text-xs text-gray-500 dark:text-gray-400">
+              {t('agentChat.initializingSession')}
+            </div>
           </div>
         )}
 
