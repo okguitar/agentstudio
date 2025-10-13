@@ -446,7 +446,7 @@ The conversation history will be saved in \`.cc-sessions/${agentId}/\` within th
           agentId,
           agentName: agent.name,
           agentIcon: agent.ui.icon,
-          agentColor: agent.ui.primaryColor,
+          agentColor: agent.ui.icon, // Use icon as color fallback since primaryColor doesn't exist
           createdAt: new Date().toISOString(),
           lastAccessed: new Date().toISOString(),
           description: description || ''
