@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Agent Studio macOS Installation Script
-# Optimized for macOS with Apple Silicon support and enhanced error handling
+# Agent Studio macOS Installation Script with launchd Support
+# Optimized for macOS with Apple Silicon support and user-level service management
 
 set -e
 
@@ -9,7 +9,7 @@ set -e
 GITHUB_REPO="git-men/agentstudio"
 GITHUB_BRANCH="main"
 TEMP_DIR="/tmp/agent-studio-macos-$(date +%s)"
-SERVICE_NAME="agent-studio"
+SERVICE_NAME="com.agentstudio.daemon"
 SERVICE_PORT="4936"
 
 # Detect if running via pipe (for non-interactive mode)
@@ -17,28 +17,14 @@ if [ -p /dev/stdin ] || [ ! -t 0 ]; then
     PIPED_INSTALL="true"
 fi
 
-# Detect if running as root or with sudo
-if [ -n "$SUDO_USER" ] && [ "$EUID" -eq 0 ]; then
-    # Running with sudo - use the original user's home
-    ACTUAL_USER="$SUDO_USER"
-    USER_HOME=$(getent passwd "$SUDO_USER" | cut -d: -f6)
-    ACTUAL_UID=$(id -u "$SUDO_USER")
-    ACTUAL_GID=$(id -g "$SUDO_USER")
-elif [ "$EUID" -eq 0 ]; then
-    # Running as root directly - ask for target user
-    ACTUAL_USER="root"
-    USER_HOME="/root"
-    ACTUAL_UID=0
-    ACTUAL_GID=0
-else
-    # Running as normal user
-    ACTUAL_USER="$USER"
-    USER_HOME="$HOME"
-    ACTUAL_UID=$(id -u)
-    ACTUAL_GID=$(id -g)
-fi
+# Always use current user for macOS installation
+ACTUAL_USER="$USER"
+USER_HOME="$HOME"
+ACTUAL_UID=$(id -u)
+ACTUAL_GID=$(id -g)
 
 INSTALL_DIR="$USER_HOME/.agent-studio"
+LAUNCHD_DIR="$USER_HOME/Library/LaunchAgents"
 
 # Colors for output
 RED='\033[0;31m'
@@ -50,8 +36,12 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Logging functions
-log() {
-    echo -e "${BLUE}[INFO]${NC} $1"
+macos_log() {
+    echo -e "${BLUE}[MACOS]${NC} $1"
+}
+
+success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
 }
 
 warn() {
@@ -62,48 +52,44 @@ error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
+info() {
+    echo -e "${CYAN}[INFO]${NC} $1"
 }
 
-macos_log() {
-    echo -e "${PURPLE}[MACOS]${NC} $1"
+# Display header
+display_header() {
+    echo -e "${PURPLE}╔══════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${PURPLE}║    Agent Studio macOS Installer         ║${NC}"
+    echo -e "${PURPLE}║                                          ║${NC}"
+    echo -e "${PURPLE}║  Features:                              ║${NC}"
+    echo -e "${PURPLE}║  • Apple Silicon and Intel Macs         ║${NC}"
+    echo -e "${PURPLE}║  • User-level installation              ║${NC}"
+    echo -e "${PURPLE}║  • launchd service management           ║${NC}"
+    echo -e "${PURPLE}║  • Homebrew package management          ║${NC}"
+    echo -e "${PURPLE}║  • Auto-start at login                  ║${NC}"
+    echo -e "${PURPLE}║  • Xcode Command Line Tools             ║${NC}"
+    echo -e "${PURPLE}╚══════════════════════════════════════════════════════════════╝${NC}"
+    echo
 }
 
-# Detect macOS architecture and version
-detect_macos_info() {
+# Detect macOS system information
+detect_system_info() {
     macos_log "Detecting macOS system information..."
 
-    # Architecture detection
-    ARCH=$(uname -m)
-    case "$ARCH" in
-        "arm64")
-            ARCH_NAME="Apple Silicon"
-            HOMEBREW_PREFIX="/opt/homebrew"
-            ;;
-        "x86_64")
-            ARCH_NAME="Intel"
-            HOMEBREW_PREFIX="/usr/local"
-            ;;
-        *)
-            error "Unsupported macOS architecture: $ARCH"
-            exit 1
-            ;;
-    esac
-
-    # macOS version detection
+    # Get macOS version
     MACOS_VERSION=$(sw_vers -productVersion)
-    MACOS_MAJOR=$(echo "$MACOS_VERSION" | cut -d. -f1)
-    MACOS_MINOR=$(echo "$MACOS_VERSION" | cut -d. -f2)
+    ARCH=$(uname -m)
+
+    if [[ "$ARCH" == "arm64" ]]; then
+        ARCH_NAME="Apple Silicon"
+    else
+        ARCH_NAME="Intel"
+    fi
 
     macos_log "Architecture: $ARCH_NAME ($ARCH)"
     macos_log "macOS Version: $MACOS_VERSION"
-
-    # Check minimum macOS version (10.15 Catalina)
-    if [ "$MACOS_MAJOR" -lt 10 ] || ([ "$MACOS_MAJOR" -eq 10 ] && [ "$MACOS_MINOR" -lt 15 ]); then
-        error "macOS $MACOS_VERSION is not supported. Requires macOS 10.15 (Catalina) or later."
-        exit 1
-    fi
+    macos_log "Installing Agent Studio to user directory: $INSTALL_DIR"
+    macos_log "Target user: $ACTUAL_USER (UID: $ACTUAL_UID)"
 }
 
 # Check if Xcode Command Line Tools are installed
@@ -112,345 +98,164 @@ check_xcode_tools() {
 
     if xcode-select -p >/dev/null 2>&1; then
         success "Xcode Command Line Tools are installed"
-        return 0
     else
-        warn "Xcode Command Line Tools are not installed"
+        warn "Xcode Command Line Tools not found. Installing..."
+        xcode-select --install
 
-        # Check if we're running in non-interactive mode
-        if [ ! -t 0 ] || [ -n "$PIPED_INSTALL" ]; then
-            macos_log "Non-interactive mode detected - installing Xcode Command Line Tools automatically"
-            log "Note: You may need to accept the license agreement manually"
-            xcode-select --install
-            log "Waiting for Xcode Command Line Tools installation..."
-            log "If the installation hangs, please run 'xcode-select --install' manually and continue"
+        # Wait for user to complete installation
+        macos_log "Waiting for Xcode Command Line Tools installation..."
+        macos_log "Press Enter when installation is complete, or wait 30 seconds..."
+        read -t 30 || true
 
-            # Wait for installation (max 5 minutes)
-            for i in {1..30}; do
-                if xcode-select -p >/dev/null 2>&1; then
-                    success "Xcode Command Line Tools installed successfully"
-                    return 0
-                fi
-                log "Waiting for installation... ($i/30)"
-                sleep 10
-            done
-
-            error "Xcode Command Line Tools installation timed out"
-            error "Please install manually with: xcode-select --install"
-            return 1
-        else
-            read -p "Would you like to install Xcode Command Line Tools? (Y/n): " -n 1 -r
-            echo ""
-
-            if [[ ! $REPLY =~ ^[Nn]$ ]]; then
-                xcode-select --install
-                log "Please accept the license agreement and press any key to continue..."
-                read -n 1 -s
-
-                # Wait for installation
-                while ! xcode-select -p >/dev/null 2>&1; do
-                    log "Waiting for Xcode Command Line Tools installation..."
-                    sleep 5
-                done
-
-                success "Xcode Command Line Tools installed successfully"
-                return 0
-            else
-                error "Xcode Command Line Tools are required for compilation"
-                exit 1
-            fi
-        fi
-    fi
-}
-
-# Setup Homebrew environment
-setup_homebrew_env() {
-    macos_log "Setting up Homebrew environment..."
-
-    # Add Homebrew to PATH based on architecture
-    if [ "$ARCH" = "arm64" ]; then
-        export PATH="$HOMEBREW_PREFIX/bin:$PATH"
-        if [ -d "$HOMEBREW_PREFIX/sbin" ]; then
-            export PATH="$HOMEBREW_PREFIX/sbin:$PATH"
-        fi
-    else
-        export PATH="$HOMEBREW_PREFIX/bin:$PATH"
-    fi
-
-    # Source bash profile if exists
-    [ -f "$USER_HOME/.bash_profile" ] && source "$USER_HOME/.bash_profile" 2>/dev/null || true
-    [ -f "$USER_HOME/.zprofile" ] && source "$USER_HOME/.zprofile" 2>/dev/null || true
-}
-
-# Check and install Homebrew
-check_homebrew() {
-    macos_log "Checking Homebrew installation..."
-
-    # Setup environment first
-    setup_homebrew_env
-
-    if command -v brew >/dev/null 2>&1 && brew --version >/dev/null 2>&1; then
-        success "Homebrew is available ($(brew --version | head -n1))"
-        return 0
-    else
-        warn "Homebrew is not installed or not working properly"
-
-        # Check if we're running in non-interactive mode
-        if [ ! -t 0 ] || [ -n "$PIPED_INSTALL" ]; then
-            macos_log "Non-interactive mode detected - installing Homebrew automatically"
-            /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-        else
-            read -p "Would you like to install Homebrew? (Y/n): " -n 1 -r
-            echo ""
-
-            if [[ ! $REPLY =~ ^[Nn]$ ]]; then
-                macos_log "Installing Homebrew..."
-                /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-            else
-                macos_log "Skipping Homebrew installation, will use NVM instead"
-                return 1
-            fi
-        fi
-
-        # Setup environment after installation
-        setup_homebrew_env
-
-        if command -v brew >/dev/null 2>&1 && brew --version >/dev/null 2>&1; then
-            success "Homebrew installed successfully"
-            return 0
-        else
-            warn "Homebrew installation failed, will use NVM instead"
-            return 1
-        fi
-    fi
-}
-
-# Refresh shell environment for macOS
-refresh_shell_env() {
-    macos_log "Refreshing shell environment..."
-
-    # Source common profile files (macOS typically uses these)
-    [ -f "$HOME/.bashrc" ] && source "$HOME/.bashrc" 2>/dev/null || true
-    [ -f "$HOME/.bash_profile" ] && source "$HOME/.bash_profile" 2>/dev/null || true
-    [ -f "$HOME/.zshrc" ] && source "$HOME/.zshrc" 2>/dev/null || true
-    [ -f "$HOME/.zprofile" ] && source "$HOME/.zprofile" 2>/dev/null || true
-    [ -f "$HOME/.profile" ] && source "$HOME/.profile" 2>/dev/null || true
-
-    # Setup Homebrew environment
-    setup_homebrew_env
-
-    # Source NVM if available
-    export NVM_DIR="$HOME/.nvm"
-    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" 2>/dev/null || true
-    [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion" 2>/dev/null || true
-
-    # Update PATH to include common Node.js installation paths
-    if command -v nvm >/dev/null 2>&1; then
-        export PATH="$HOME/.nvm/versions/node/$(nvm current 2>/dev/null || echo 'system')/bin:$PATH" 2>/dev/null || true
-    fi
-    export PATH="$HOMEBREW_PREFIX/bin:$PATH"
-    export PATH="$HOME/.local/bin:$PATH"
-}
-
-# Install Node.js via Homebrew (preferred for macOS)
-install_nodejs_homebrew() {
-    macos_log "Installing Node.js via Homebrew..."
-
-    # Ensure Homebrew is up to date
-    macos_log "Updating Homebrew..."
-    brew update
-
-    # Install Node.js (Homebrew typically provides the latest stable version)
-    if brew install node; then
-        success "Node.js installed successfully via Homebrew"
-        return 0
-    else
-        error "Failed to install Node.js via Homebrew"
-        return 1
-    fi
-}
-
-# Install Node.js via NVM (fallback)
-install_nodejs_nvm() {
-    macos_log "Installing Node.js via NVM..."
-
-    # Check if curl is available
-    if ! command -v curl >/dev/null 2>&1; then
-        error "curl is required but not found. Please install curl first."
-        return 1
-    fi
-
-    # Download and install NVM
-    macos_log "Downloading NVM..."
-    if ! curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash; then
-        error "Failed to download or install NVM"
-        return 1
-    fi
-
-    # Source NVM
-    export NVM_DIR="$HOME/.nvm"
-    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-    [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
-
-    # Check if NVM was installed successfully
-    if ! command -v nvm >/dev/null 2>&1; then
-        error "NVM installation failed"
-        return 1
-    fi
-
-    # Install latest LTS version
-    macos_log "Installing Node.js LTS version..."
-    if ! nvm install --lts; then
-        error "Failed to install Node.js via NVM"
-        return 1
-    fi
-
-    nvm use --lts
-    nvm alias default node
-
-    success "Node.js installed successfully via NVM"
-}
-
-# Auto-install Node.js on macOS
-auto_install_nodejs() {
-    echo ""
-    macos_log "Node.js is required but not found on your system."
-
-    # Check if we're running in a non-interactive environment
-    if [ ! -t 0 ] || [ -n "$PIPED_INSTALL" ]; then
-        macos_log "Non-interactive mode detected - proceeding with automatic Node.js installation"
-    else
-        read -p "Would you like to install Node.js automatically? (Y/n): " -n 1 -r
-        echo ""
-
-        if [[ $REPLY =~ ^[Nn]$ ]]; then
-            error "Node.js is required to continue. Please install Node.js 18 or later first."
-            error "Visit: https://nodejs.org/ or install via Homebrew: brew install node"
+        # Check again
+        if ! xcode-select -p >/dev/null 2>&1; then
+            error "Xcode Command Line Tools installation failed or incomplete"
+            macos_log "Please install manually with: xcode-select --install"
             exit 1
         fi
+        success "Xcode Command Line Tools installed successfully"
+    fi
+}
+
+# Install Homebrew if not present
+install_homebrew() {
+    macos_log "Checking for Homebrew..."
+
+    if command -v brew >/dev/null 2>&1; then
+        success "Homebrew is installed: $(brew --version | head -n1)"
+        return 0
     fi
 
-    # Try Homebrew first (preferred for macOS)
-    if check_homebrew; then
-        macos_log "Using Homebrew to install Node.js..."
-        if install_nodejs_homebrew; then
+    warn "Homebrew not found. Installing Homebrew..."
+
+    # Install Homebrew
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+    # Add Homebrew to PATH for current session
+    if [[ "$ARCH" == "arm64" ]]; then
+        eval "$(/opt/homebrew/bin/brew shellenv)"
+    else
+        eval "$(/usr/local/bin/brew shellenv)"
+    fi
+
+    success "Homebrew installed successfully"
+}
+
+# Install Node.js using Homebrew or NVM fallback
+install_nodejs() {
+    macos_log "Checking for Node.js..."
+
+    if command -v node >/dev/null 2>&1; then
+        NODE_VERSION=$(node --version)
+        success "Node.js is installed: $NODE_VERSION"
+
+        # Check if version is adequate (need Node 18+)
+        NODE_MAJOR=$(echo $NODE_VERSION | cut -d'.' -f1 | sed 's/v//')
+        if [ "$NODE_MAJOR" -lt 18 ]; then
+            warn "Node.js version $NODE_VERSION is too old. Installing newer version..."
+            install_nodejs_fresh
+        fi
+        return 0
+    fi
+
+    install_nodejs_fresh
+}
+
+install_nodejs_fresh() {
+    macos_log "Installing Node.js..."
+
+    # Try Homebrew first
+    if command -v brew >/dev/null 2>&1; then
+        macos_log "Installing Node.js via Homebrew..."
+        brew install node
+
+        if command -v node >/dev/null 2>&1; then
+            success "Node.js installed via Homebrew: $(node --version)"
             return 0
-        else
-            warn "Homebrew installation failed, trying NVM..."
         fi
     fi
 
     # Fallback to NVM
-    if install_nodejs_nvm; then
-        return 0
-    else
-        error "All Node.js installation methods failed"
-        error "Please install Node.js manually:"
-        error "  1. Via Homebrew: brew install node"
-        error "  2. Via download: https://nodejs.org/"
-        exit 1
-    fi
+    install_nvm_and_node
 }
 
-# Check Node.js installation
-check_nodejs() {
-    macos_log "Checking Node.js installation..."
+install_nvm_and_node() {
+    macos_log "Installing Node.js via NVM (fallback method)..."
 
-    if command -v node >/dev/null 2>&1; then
-        NODE_VERSION=$(node --version)
-        NODE_MAJOR_VERSION=$(echo "$NODE_VERSION" | cut -d'v' -f2 | cut -d'.' -f1)
+    # Install NVM
+    NVM_DIR="$USER_HOME/.nvm"
 
-        if [ "$NODE_MAJOR_VERSION" -ge 18 ]; then
-            success "Node.js $NODE_VERSION is available"
+    # Create NVM directory
+    mkdir -p "$NVM_DIR"
+
+    # Download and install NVM
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+
+    # Source NVM
+    export NVM_DIR="$NVM_DIR"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+
+    # Install latest LTS Node.js
+    if [ -s "$NVM_DIR/nvm.sh" ]; then
+        . "$NVM_DIR/nvm.sh"
+        nvm install --lts
+        nvm use --lts
+
+        if command -v node >/dev/null 2>&1; then
+            success "Node.js installed via NVM: $(node --version)"
             return 0
-        else
-            warn "Node.js version is too old: $NODE_VERSION. Need version 18 or later."
-            auto_install_nodejs
         fi
-    else
-        macos_log "Node.js is not installed."
-        auto_install_nodejs
     fi
+
+    error "Failed to install Node.js via NVM"
+    exit 1
 }
 
 # Install pnpm
 install_pnpm() {
     macos_log "Installing pnpm..."
 
+    if command -v pnpm >/dev/null 2>&1; then
+        success "pnpm is already installed: $(pnpm --version)"
+        return 0
+    fi
+
+    # Install pnpm using npm
     if command -v npm >/dev/null 2>&1; then
         npm install -g pnpm
-        success "pnpm installed successfully"
-    else
-        error "npm is not available, cannot install pnpm"
-        return 1
-    fi
-}
 
-# Check pnpm installation
-check_pnpm() {
+        if command -v pnpm >/dev/null 2>&1; then
+            success "pnpm installed successfully: $(pnpm --version)"
+            return 0
+        fi
+    fi
+
+    # Fallback: install using curl
+    curl -fsSL https://get.pnpm.io/install.sh | sh -
+
+    # Add pnpm to PATH for current session
+    PNPM_HOME="$USER_HOME/.local/share/pnpm"
+    export PATH="$PNPM_HOME:$PATH"
+
     if command -v pnpm >/dev/null 2>&1; then
-        success "pnpm is available"
+        success "pnpm installed via curl: $(pnpm --version)"
         return 0
     fi
 
-    echo ""
-
-    # Check if we're running in a non-interactive environment
-    if [ ! -t 0 ] || [ -n "$PIPED_INSTALL" ]; then
-        macos_log "Non-interactive mode detected - installing pnpm automatically"
-        install_pnpm
-        refresh_shell_env
-        if ! command -v pnpm >/dev/null 2>&1; then
-            warn "pnpm installation failed, will use npm instead"
-        fi
-    else
-        read -p "pnpm not found. Would you like to install it for faster package management? (Y/n): " -n 1 -r
-        echo ""
-
-        if [[ ! $REPLY =~ ^[Nn]$ ]]; then
-            install_pnpm
-            refresh_shell_env
-            if ! command -v pnpm >/dev/null 2>&1; then
-                warn "pnpm installation failed, will use npm instead"
-            fi
-        else
-            macos_log "Will use npm instead of pnpm"
-        fi
-    fi
+    warn "pnpm installation may have failed - will use npm as fallback"
 }
 
-# Check git installation
-check_git() {
-    if command -v git >/dev/null 2>&1; then
-        success "Git is available"
-        return 0
-    fi
-
-    error "Git is not installed. Please install git first."
-    error "You can install it via Homebrew: brew install git"
-    exit 1
-}
-
-# Check installation environment
-check_environment() {
-    macos_log "Installing Agent Studio to user directory: $INSTALL_DIR"
-    macos_log "Target user: $ACTUAL_USER (UID: $ACTUAL_UID)"
-
-    # Check if previous installation exists and is writable
-    if [ -d "$INSTALL_DIR" ]; then
-        macos_log "Found existing installation directory..."
-        macos_log "Cleaning existing installation..."
-        rm -rf "$INSTALL_DIR"
+# Cleanup function
+cleanup() {
+    if [ -d "$TEMP_DIR" ]; then
+        macos_log "Cleaning up temporary files..."
+        rm -rf "$TEMP_DIR"
         success "Cleanup completed"
     fi
-
-    # Ensure parent directory exists and has correct permissions
-    mkdir -p "$USER_HOME"
-    if [ "$ACTUAL_USER" != "root" ] && [ "$EUID" -eq 0 ]; then
-        chown -R "$ACTUAL_UID:$ACTUAL_GID" "$USER_HOME"
-    fi
 }
 
-# Download and extract Agent Studio
+# Download Agent Studio
 download_agent_studio() {
     macos_log "Downloading Agent Studio..."
 
@@ -462,16 +267,19 @@ download_agent_studio() {
     # Download the repository
     if command -v git >/dev/null 2>&1; then
         git clone "https://github.com/$GITHUB_REPO.git" .
-        git checkout "$GITHUB_BRANCH"
+        success "Repository cloned via Git"
     else
-        # Fallback to downloading tarball
-        curl -fsSL "https://github.com/$GITHUB_REPO/archive/$GITHUB_BRANCH.tar.gz" | tar -xz --strip-components=1
+        # Fallback to downloading zip file
+        macos_log "Git not found, downloading zip file..."
+        curl -L "https://github.com/$GITHUB_REPO/archive/refs/heads/$GITHUB_BRANCH.zip" -o agentstudio.zip
+        unzip -q agentstudio.zip
+        mv "agentstudio-$GITHUB_BRANCH"/* .
+        rm -rf "agentstudio-$GITHUB_BRANCH" agentstudio.zip
+        success "Repository downloaded via curl"
     fi
-
-    success "Agent Studio downloaded successfully"
 }
 
-# Run the main installation
+# Run installation
 run_installation() {
     macos_log "Installing Agent Studio to user directory..."
 
@@ -481,340 +289,419 @@ run_installation() {
     mkdir -p "$USER_HOME/.agent-studio-logs"
     mkdir -p "$USER_HOME/.agent-studio-config"
     mkdir -p "$USER_HOME/slides"
+    mkdir -p "$LAUNCHD_DIR"
 
     # Copy files
     macos_log "Copying application files..."
     cd "$TEMP_DIR"
     cp -r ./* "$INSTALL_DIR/"
 
-    # Set correct ownership if running as root
-    if [ "$ACTUAL_USER" != "root" ] && [ "$EUID" -eq 0 ]; then
-        chown -R "$ACTUAL_UID:$ACTUAL_GID" "$INSTALL_DIR"
-    fi
-
+    # Install dependencies
+    macos_log "Installing dependencies..."
     cd "$INSTALL_DIR"
 
-    # Install dependencies and try to build
-    macos_log "Installing dependencies..."
-    BUILD_SUCCESS=false
-
-    # Set CI environment variable to handle TTY issues
-    export CI=true
-
+    # Use appropriate package manager
     if command -v pnpm >/dev/null 2>&1; then
-        macos_log "Using pnpm for installation..."
-
-        # Install all dependencies (including dev dependencies)
         pnpm install
-
-        # Try to build backend - if it fails, continue with development mode
-        macos_log "Attempting to build backend..."
-        if pnpm run build:backend 2>/dev/null; then
-            BUILD_SUCCESS=true
-            success "Build successful - will run in production mode"
-        else
-            macos_log "Build failed or skipped - will run in development mode"
-            BUILD_SUCCESS=false
-        fi
-    else
-        macos_log "Using npm for installation..."
-
-        # Install all dependencies (including dev dependencies)
+    elif command -v npm >/dev/null 2>&1; then
         npm install
-
-        # Try to build backend - if it fails, continue with development mode
-        macos_log "Attempting to build backend..."
-        if npm run build:backend 2>/dev/null; then
-            BUILD_SUCCESS=true
-            success "Build successful - will run in production mode"
-        else
-            macos_log "Build failed or skipped - will run in development mode"
-            BUILD_SUCCESS=false
-        fi
-    fi
-
-    # Create start script optimized for macOS
-    macos_log "Creating macOS-optimized start script..."
-    if [ "$BUILD_SUCCESS" = true ]; then
-        # Production mode
-        cat > "$INSTALL_DIR/start.sh" << EOF
-#!/bin/bash
-
-# macOS Agent Studio Startup Script
-# Load NVM if available
-export NVM_DIR="\$HOME/.nvm"
-[ -s "\$NVM_DIR/nvm.sh" ] && \. "\$NVM_DIR/nvm.sh"
-
-# Setup Homebrew environment based on architecture
-if [[ \$(uname -m) == "arm64" ]]; then
-    export PATH="/opt/homebrew/bin:\$PATH"
-    if [ -d "/opt/homebrew/sbin" ]; then
-        export PATH="/opt/homebrew/sbin:\$PATH"
-    fi
-else
-    export PATH="/usr/local/bin:\$PATH"
-fi
-
-# Add Node.js paths
-if command -v nvm >/dev/null 2>&1; then
-    export PATH="\$HOME/.nvm/versions/node/\$(nvm current 2>/dev/null || echo 'system')/bin:\$PATH" 2>/dev/null || true
-fi
-export PATH="\$HOME/.local/bin:\$PATH"
-
-echo "🍎 Starting Agent Studio Backend on macOS (Production Mode)..."
-cd "\$HOME/.agent-studio"
-export NODE_ENV=production
-export PORT=4936
-export SLIDES_DIR="\$HOME/slides"
-echo "📂 Working directory: \$(pwd)"
-echo "🌐 Backend port: 4936"
-echo "📑 Slides directory: \$HOME/slides"
-echo "🖥️  Architecture: \$(uname -m)"
-echo ""
-echo "✨ Access the application at:"
-echo "   https://agentstudio-frontend.vercel.app/"
-echo ""
-echo "💡 Configure the backend URL in the web interface:"
-echo "   Settings → API Configuration → http://localhost:4936"
-echo ""
-node backend/dist/index.js
-EOF
     else
-        # Development mode
-        cat > "$INSTALL_DIR/start.sh" << EOF
+        error "No package manager found (npm or pnpm)"
+        exit 1
+    fi
+
+    # Build the application
+    macos_log "Building Agent Studio..."
+    if command -v pnpm >/dev/null 2>&1; then
+        pnpm run build
+    else
+        npm run build
+    fi
+
+    # Create launchd service
+    create_launchd_service
+
+    # Create management scripts
+    create_management_scripts
+
+    # Create configuration
+    create_config
+
+    success "Agent Studio installed successfully!"
+}
+
+# Create launchd service configuration
+create_launchd_service() {
+    macos_log "Creating launchd service configuration..."
+
+    # Create launchd plist file
+    cat > "$LAUNCHD_DIR/$SERVICE_NAME.plist" << EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>$SERVICE_NAME</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>$INSTALL_DIR/start.sh</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>$INSTALL_DIR</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>$USER_HOME/.agent-studio-logs/agent-studio-out.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>$USER_HOME/.agent-studio-logs/agent-studio-err.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>NODE_ENV</key>
+        <string>production</string>
+        <key>PORT</key>
+        <string>$SERVICE_PORT</string>
+        <key>PATH</key>
+        <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+
+    <key>ProcessType</key>
+    <string>Interactive</string>
+
+    <key>UserName</key>
+    <string>$ACTUAL_USER</string>
+
+    <key>HomeDirectory</key>
+    <string>$USER_HOME</string>
+</dict>
+</plist>
+EOF
+
+    # Create the start script for launchd
+    cat > "$INSTALL_DIR/start.sh" << 'EOF'
 #!/bin/bash
 
-# macOS Agent Studio Startup Script
-# Load NVM if available
-export NVM_DIR="\$HOME/.nvm"
-[ -s "\$NVM_DIR/nvm.sh" ] && \. "\$NVM_DIR/nvm.sh"
+# Agent Studio start script for launchd
+# This script is called by launchd
 
-# Setup Homebrew environment based on architecture
-if [[ \$(uname -m) == "arm64" ]]; then
-    export PATH="/opt/homebrew/bin:\$PATH"
-    if [ -d "/opt/homebrew/sbin" ]; then
-        export PATH="/opt/homebrew/sbin:\$PATH"
-    fi
+# Get script directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
+# Load environment
+export NODE_ENV=production
+export PORT=${PORT:-4936}
+
+# Add common paths
+export PATH="$PATH:/usr/local/bin:/usr/bin:/bin"
+
+# Detect Node.js paths
+if [ -f "/opt/homebrew/bin/node" ]; then
+    export PATH="/opt/homebrew/bin:$PATH"
+elif [ -f "/usr/local/bin/node" ]; then
+    export PATH="/usr/local/bin:$PATH"
+fi
+
+# Add NVM paths if available
+if [ -f "$HOME/.nvm/nvm.sh" ]; then
+    . "$HOME/.nvm/nvm.sh"
+fi
+
+# Add pnpm to path if available
+if [ -d "$HOME/.local/share/pnpm" ]; then
+    export PATH="$HOME/.local/share/pnpm:$PATH"
+fi
+
+# Set Node.js options based on architecture
+ARCH=$(uname -m)
+if [[ "$ARCH" == "arm64" ]]; then
+    export NODE_OPTIONS="--max-old-space-size=4096"
 else
-    export PATH="/usr/local/bin:\$PATH"
+    export NODE_OPTIONS="--max-old-space-size=2048"
 fi
 
-# Add Node.js paths
-if command -v nvm >/dev/null 2>&1; then
-    export PATH="\$HOME/.nvm/versions/node/\$(nvm current 2>/dev/null || echo 'system')/bin:\$PATH" 2>/dev/null || true
-fi
-export PATH="\$HOME/.local/bin:\$PATH"
-
-echo "🍎 Starting Agent Studio Backend on macOS (Development Mode)..."
-cd "\$HOME/.agent-studio"
-export NODE_ENV=development
-export PORT=4936
-export SLIDES_DIR="\$HOME/slides"
-echo "📂 Working directory: \$(pwd)"
-echo "🌐 Backend port: 4936"
-echo "📑 Slides directory: \$HOME/slides"
-echo "🖥️  Architecture: \$(uname -m)"
-echo ""
-echo "✨ Access the application at:"
-echo "   https://agentstudio-frontend.vercel.app/"
-echo ""
-echo "💡 Configure the backend URL in the web interface:"
-echo "   Settings → API Configuration → http://localhost:4936"
-echo ""
+# Start the application
 if command -v pnpm >/dev/null 2>&1; then
-    pnpm run dev:backend
+    exec pnpm start
+elif command -v npm >/dev/null 2>&1; then
+    exec npm start
 else
-    npm run dev:backend
+    echo "Error: Neither pnpm nor npm found in PATH" >&2
+    exit 1
 fi
 EOF
-    fi
 
     chmod +x "$INSTALL_DIR/start.sh"
 
-    # Create stop script
-    cat > "$INSTALL_DIR/stop.sh" << 'EOF'
+    success "launchd service configuration created"
+}
+
+# Create management scripts
+create_management_scripts() {
+    macos_log "Creating management scripts..."
+
+    # Create status script
+    cat > "$INSTALL_DIR/status.sh" << 'EOF'
 #!/bin/bash
-echo "🛑 Stopping Agent Studio Backend on macOS..."
-pkill -f "node backend" || echo "No production process running"
-pkill -f "tsx backend" || echo "No development process running"
-EOF
 
-    chmod +x "$INSTALL_DIR/stop.sh"
+# Agent Studio status script
 
-    # Create macOS-specific config file
-    macos_log "Creating macOS configuration file..."
-    cat > "$USER_HOME/.agent-studio-config/config.env" << EOF
-# Agent Studio Configuration for macOS
-NODE_ENV=production
-PORT=$SERVICE_PORT
-SLIDES_DIR=$USER_HOME/slides
+SERVICE_NAME="com.agentstudio.daemon"
 
-# macOS-specific settings
-MACOS_ARCH=$ARCH
-MACOS_VERSION=$MACOS_VERSION
+if launchctl list | grep -q "$SERVICE_NAME"; then
+    echo "Agent Studio service is loaded"
 
-# Optional: AI Provider API Keys
-# OPENAI_API_KEY=your_key_here
-# ANTHROPIC_API_KEY=your_key_here
-EOF
-
-    success "Agent Studio installation completed"
-
-    if [ "$BUILD_SUCCESS" = true ]; then
-        success "Build successful - will run in production mode"
-    else
-        warn "Build failed - will run in development mode (slower startup)"
-    fi
-}
-
-# Cleanup temp files
-cleanup() {
-    macos_log "Cleaning up temporary files..."
-    rm -rf "$TEMP_DIR"
-    success "Cleanup completed"
-}
-
-# Service configuration for macOS
-configure_service() {
-    echo ""
-    echo "=== macOS Service Configuration ==="
-    echo ""
-    success "Agent Studio Backend is ready to use on macOS!"
-    echo ""
-    echo "The service will run as a user process and can be managed with the provided scripts."
-    echo "API keys can be added later if needed by editing:"
-    echo "  $USER_HOME/.agent-studio-config/config.env"
-    echo ""
-    echo "🍎 macOS-specific features:"
-    echo "  ✅ Optimized for $ARCH_NAME"
-    echo "  ✅ Compatible with macOS $MACOS_VERSION"
-    echo "  ✅ Supports both Homebrew and NVM installations"
-    echo ""
-}
-
-# Start the service
-start_service() {
-    echo ""
-
-    # Check if we're running in a non-interactive environment
-    if [ ! -t 0 ] || [ -n "$PIPED_INSTALL" ]; then
-        macos_log "Non-interactive mode detected - starting backend automatically"
-        START_SERVICE=true
-    else
-        read -p "Would you like to start the Agent Studio backend now? (y/N): " -n 1 -r
-        echo ""
-
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
-            START_SERVICE=true
-        else
-            START_SERVICE=false
-        fi
-    fi
-
-    if [ "$START_SERVICE" = true ]; then
-        macos_log "Starting Agent Studio backend on macOS..."
-
-        if [ -f "$INSTALL_DIR/start.sh" ]; then
-            macos_log "Running start script..."
-            "$INSTALL_DIR/start.sh" &
-
-            # Wait a moment and check if service started
-            sleep 5
-            if curl -s http://localhost:4936/api/health >/dev/null 2>&1; then
-                success "Backend started successfully!"
-                echo ""
-                echo "✨ Access the application at:"
-                echo "   https://agentstudio-frontend.vercel.app/"
-                echo ""
-                echo "💡 Configure the backend URL in the web interface:"
-                echo "   Settings → API Configuration → http://localhost:4936"
-                echo ""
-                echo "🍎 Running on macOS $ARCH_NAME"
+    # Get PID if available
+    PID=$(launchctl list | grep "$SERVICE_NAME" | awk '{print $1}')
+    if [ "$PID" != "-" ] && [ -n "$PID" ]; then
+        echo "Process ID: $PID"
+        if ps -p "$PID" >/dev/null 2>&1; then
+            echo "Status: Running"
+            PORT=${PORT:-4936}
+            if lsof -i ":$PORT" >/dev/null 2>&1; then
+                echo "Listening on port: $PORT"
+                echo "Web interface: http://localhost:$PORT"
             else
-                warn "Backend may still be starting up..."
-                macos_log "You can check the status by running the start script again"
+                echo "Warning: Not listening on expected port $PORT"
             fi
         else
-            error "Start script not found. Please check the installation."
+            echo "Status: Process not found (may be restarting)"
         fi
     else
+        echo "Status: Starting..."
+    fi
+else
+    echo "Agent Studio service is not loaded"
+fi
+
+echo ""
+echo "Service management commands:"
+echo "  Load service:   launchctl load ~/Library/LaunchAgents/com.agentstudio.daemon.plist"
+echo "  Unload service: launchctl unload ~/Library/LaunchAgents/com.agentstudio.daemon.plist"
+echo "  Start service:  launchctl start com.agentstudio.daemon"
+echo "  Stop service:   launchctl stop com.agentstudio.daemon"
+echo "  Restart:        launchctl kickstart -k gui/$(id -u)/com.agentstudio.daemon"
+EOF
+
+    # Create management aliases
+    cat > "$INSTALL_DIR/agent-studio" << 'EOF'
+#!/bin/bash
+
+# Agent Studio management script
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SERVICE_NAME="com.agentstudio.daemon"
+
+case "$1" in
+    start)
+        echo "Starting Agent Studio service..."
+        launchctl load ~/Library/LaunchAgents/com.agent_name.daemon.plist
+        launchctl start "$SERVICE_NAME"
+        echo "Service started"
+        ;;
+    stop)
+        echo "Stopping Agent Studio service..."
+        launchctl stop "$SERVICE_NAME"
+        echo "Service stopped"
+        ;;
+    restart)
+        echo "Restarting Agent Studio service..."
+        launchctl kickstart -k "gui/$(id -u)/$SERVICE_NAME"
+        echo "Service restarted"
+        ;;
+    status)
+        "$SCRIPT_DIR/status.sh"
+        ;;
+    reload)
+        echo "Reloading Agent Studio service configuration..."
+        launchctl unload ~/Library/LaunchAgents/"$SERVICE_NAME".plist
+        launchctl load ~/Library/LaunchAgents/"$SERVICE_NAME".plist
+        echo "Service configuration reloaded"
+        ;;
+    logs)
+        echo "Agent Studio logs:"
+        echo "Standard output:"
+        tail -f ~/.agent-studio-logs/agent-studio-out.log
+        ;;
+    errors)
+        echo "Agent Studio error logs:"
+        echo "Standard error:"
+        tail -f ~/.agent-studio-logs/agent-studio-err.log
+        ;;
+    uninstall)
+        echo "Uninstalling Agent Studio service..."
+        launchctl unload ~/Library/LaunchAgents/"$SERVICE_NAME".plist 2>/dev/null || true
+        rm -f ~/Library/LaunchAgents/"$SERVICE_NAME".plist
+        echo "Service uninstalled"
+        ;;
+    *)
+        echo "Agent Studio Management Script"
         echo ""
-        echo "To start the backend later, run:"
-        echo "  $INSTALL_DIR/start.sh"
+        echo "Usage: $0 {start|stop|restart|status|reload|logs|errors|uninstall}"
+        echo ""
+        echo "Commands:"
+        echo "  start     - Start the service"
+        echo "  stop      - Stop the service"
+        echo "  restart   - Restart the service"
+        echo "  status    - Show service status"
+        echo "  reload    - Reload service configuration"
+        echo "  logs      - Follow standard output logs"
+        echo "  errors    - Follow error logs"
+        echo "  uninstall - Remove the service"
+        ;;
+esac
+EOF
+
+    # Make scripts executable
+    chmod +x "$INSTALL_DIR/status.sh"
+    chmod +x "$INSTALL_DIR/agent-studio"
+
+    # Create symlink for easy access
+    mkdir -p "$USER_HOME/.local/bin"
+    ln -sf "$INSTALL_DIR/agent-studio" "$USER_HOME/.local/bin/agent-studio"
+
+    success "Management scripts created"
+}
+
+# Create configuration file
+create_config() {
+    macos_log "Creating configuration files..."
+
+    # Create config directory
+    mkdir -p "$USER_HOME/.agent-studio-config"
+
+    # Create default configuration
+    cat > "$USER_HOME/.agent-studio-config/config.json" << EOF
+{
+    "port": $SERVICE_PORT,
+    "host": "0.0.0.0",
+    "logLevel": "info",
+    "slidesDir": "$USER_HOME/slides",
+    "maxFileSize": "10MB",
+    "allowedFileTypes": [".txt", ".md", ".js", ".ts", ".json", ".html", ".css"],
+    "macosOptimizations": {
+        "appleSilicon": true,
+        "memoryLimit": "4GB",
+        "cpuOptimization": true,
+        "launchdManaged": true
+    },
+    "service": {
+        "name": "$SERVICE_NAME",
+        "autoStart": true,
+        "keepAlive": true
+    }
+}
+EOF
+
+    success "Configuration created successfully"
+}
+
+# Load the launchd service
+load_service() {
+    macos_log "Loading Agent Studio service into launchd..."
+
+    # Load the service
+    launchctl load "$LAUNCHD_DIR/$SERVICE_NAME.plist"
+
+    if [ $? -eq 0 ]; then
+        success "Service loaded successfully"
+
+        # Start the service
+        launchctl start "$SERVICE_NAME"
+
+        if [ $? -eq 0 ]; then
+            success "Service started successfully"
+        else
+            warn "Service loaded but failed to start. Check logs for details."
+        fi
+    else
+        error "Failed to load service"
+        return 1
     fi
 }
 
-# Main installation function
-main() {
-    echo "╔══════════════════════════════════════════╗"
-    echo "║    Agent Studio macOS Installer         ║"
-    echo "║                                          ║"
-    echo "║  Optimized for macOS with support for:  ║"
-    echo "║  • Apple Silicon and Intel Macs         ║"
-    echo "║  • Homebrew package management          ║"
-    echo "║  • NVM fallback support                 ║"
-    echo "║  • Xcode Command Line Tools             ║"
-    echo "║  • macOS-specific optimizations         ║"
-    echo "╚══════════════════════════════════════════╝"
-    echo ""
+# Display installation summary
+display_summary() {
+    echo
+    success "🎉 Agent Studio installation completed successfully!"
+    echo
+    info "Installation Details:"
+    info "  • Installed to: $INSTALL_DIR"
+    info "  • User: $ACTUAL_USER"
+    info "  • Architecture: $ARCH_NAME"
+    info "  • Service: $SERVICE_NAME"
+    info "  • Configuration: $USER_HOME/.agent-studio-config/config.json"
+    info "  • Logs: $USER_HOME/.agent-studio-logs/"
+    info "  • Slides directory: $USER_HOME/slides"
+    info "  • Launch agent: $LAUNCHD_DIR/$SERVICE_NAME.plist"
+    echo
+    info "🔧 Service Management:"
+    info "  • Start service:     launchctl start $SERVICE_NAME"
+    info "  • Stop service:      launchctl stop $SERVICE_NAME"
+    info "  • Restart service:   launchctl kickstart -k gui/$(id -u)/$SERVICE_NAME"
+    info "  • Check status:      launchctl list | grep $SERVICE_NAME"
+    info "  • View logs:         tail -f ~/.agent-studio-logs/agent-studio-out.log"
+    info "  • View errors:       tail -f ~/.agent-studio-logs/agent-studio-err.log"
+    echo
+    info "🛠️  Management Script:"
+    info "  • Quick management:  $INSTALL_DIR/agent-studio {start|stop|restart|status|logs}"
+    info "  • Or symlink:        $USER_HOME/.local/bin/agent-studio"
+    echo
+    info "🌐 Web Interface:"
+    info "  • URL: http://localhost:$SERVICE_PORT"
+    echo
+    warn "Notes:"
+    warn "  • Service will auto-start at login"
+    warn "  • Service runs in user space (no sudo required)"
+    warn "  • Logs are stored in ~/.agent-studio-logs/"
+    warn "  • Make sure port $SERVICE_PORT is available"
+    echo
 
-    if [ -n "$SUDO_USER" ] && [ "$EUID" -eq 0 ] && [ "$ACTUAL_USER" != "root" ]; then
-        warn "Running with sudo - installing for user: $ACTUAL_USER"
-        echo ""
-    elif [ "$EUID" -eq 0 ] && [ "$ACTUAL_USER" = "root" ]; then
-        warn "Running as root - installing for root user"
-        echo ""
+    # Show current status
+    if [ -z "$PIPED_INSTALL" ]; then
+        info "Checking service status..."
+        sleep 2
+        "$INSTALL_DIR/status.sh"
+    else
+        info "To check service status, run:"
+        info "  $INSTALL_DIR/agent-studio status"
     fi
+}
 
-    detect_macos_info
-    check_environment
+# Main installation flow
+main() {
+    # Set up error handling
+    trap cleanup EXIT
+
+    display_header
+    detect_system_info
     check_xcode_tools
-    check_git
-    check_nodejs
-    check_pnpm
+    install_homebrew
+    install_nodejs
+    install_pnpm
     download_agent_studio
     run_installation
-    configure_service
-    start_service
 
-    echo ""
-    echo "🎉 macOS Installation Complete!"
-    echo ""
-    echo "Agent Studio Backend is now installed in: $INSTALL_DIR"
-    echo "Target user: $ACTUAL_USER"
-    echo "macOS Version: $MACOS_VERSION ($ARCH_NAME)"
-    echo ""
-    echo "🚀 macOS Startup Commands:"
-    echo "  $INSTALL_DIR/start.sh    # Start the backend"
-    echo "  $INSTALL_DIR/stop.sh     # Stop the backend"
-    echo ""
-    echo "⚙️  Configuration file:"
-    echo "  $USER_HOME/.agent-studio-config/config.env"
-    echo ""
-    echo "✨ Access the application at:"
-    echo "   https://agentstudio-frontend.vercel.app/"
-    echo ""
-    echo "💡 After starting the backend, configure the backend URL in the web interface:"
-    echo "   Settings → API Configuration → http://localhost:4936"
-    echo ""
-    echo "📁 Slides directory: $USER_HOME/slides"
-    echo ""
-    echo "🍎 macOS-specific notes:"
-    echo "  • Uses Homebrew by default when available"
-    echo "  • Supports both Apple Silicon and Intel Macs"
-    echo "  • Xcode Command Line Tools are required for compilation"
-    echo "  • NVM is used as fallback if Homebrew fails"
-    echo ""
-    echo "For more information, visit:"
-    echo "  https://github.com/$GITHUB_REPO"
-    echo ""
-
-    # Clean up temp files at the end
-    cleanup
+    # Load the service
+    if load_service; then
+        display_summary
+    else
+        error "Installation completed but service failed to load"
+        info "You can manually load the service with:"
+        info "  launchctl load $LAUNCHD_DIR/$SERVICE_NAME.plist"
+        info "  launchctl start $SERVICE_NAME"
+    fi
 }
 
-# Handle script interruption
-trap cleanup INT TERM
-
-# Run main function
-main "$@"
+# Check if script is being sourced or executed
+if [ "${BASH_SOURCE[0]}" = "${0}" ] || [ -n "$PIPED_INSTALL" ]; then
+    main "$@"
+fi
