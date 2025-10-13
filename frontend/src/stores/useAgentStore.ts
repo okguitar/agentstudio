@@ -21,6 +21,7 @@ interface AgentState {
   addTextPartToMessage: (messageId: string, text: string) => void;
   addThinkingPartToMessage: (messageId: string, thinking: string) => void;
   addCompactSummaryPartToMessage: (messageId: string, content: string) => void;
+  addCommandPartToMessage: (messageId: string, command: string) => void;
   addToolPartToMessage: (messageId: string, tool: Omit<ToolUsageData, 'id'>) => void;
   updateToolPartInMessage: (messageId: string, toolId: string, updates: Partial<ToolUsageData>) => void;
   setAiTyping: (typing: boolean) => void;
@@ -118,6 +119,25 @@ export const useAgentStore = create<AgentState>((set) => ({
                 id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
                 type: 'compactSummary' as const,
                 content,
+                order: (msg.messageParts || []).length
+              }
+            ]
+          }
+        : msg
+    )
+  })),
+
+  addCommandPartToMessage: (messageId, command) => set((state) => ({
+    messages: state.messages.map((msg) =>
+      msg.id === messageId
+        ? {
+            ...msg,
+            messageParts: [
+              ...(msg.messageParts || []),
+              {
+                id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                type: 'command' as const,
+                content: command,
                 order: (msg.messageParts || []).length
               }
             ]
