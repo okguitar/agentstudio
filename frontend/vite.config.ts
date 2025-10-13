@@ -40,7 +40,7 @@ export default defineConfig({
     chunkSizeWarningLimit: 1000, // 提高警告阈值
   },
   server: {
-    port: 3000,
+    port: Number(process.env.PORT) || 3000,
     proxy: {
       '/api': {
         target: target,

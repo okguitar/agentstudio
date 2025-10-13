@@ -25,7 +25,7 @@ import {
   Rocket
 } from 'lucide-react';
 import { useClaudeVersions, useCreateClaudeVersion, useUpdateClaudeVersion, useDeleteClaudeVersion, useSetDefaultClaudeVersion } from '../../hooks/useClaudeVersions';
-import { ClaudeVersion, ClaudeVersionCreate, ClaudeVersionUpdate, ModelConfig } from '@agentstudio/shared/types/claude-versions';
+import { ClaudeVersion, ClaudeVersionCreate, ClaudeVersionUpdate, ModelConfig } from 'agentstudio-shared/types/claude-versions';
 import { FileBrowser } from '../../components/FileBrowser';
 import { VERSION_TEMPLATES, type VersionTemplate } from '../../types/versionTemplates';
 import { generateClaudeCommand, copyToClipboard } from '../../utils/commandGenerator';

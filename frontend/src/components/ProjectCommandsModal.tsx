@@ -24,7 +24,7 @@ import { SlashCommand } from '../types/commands';
 import { useProjectCommands, useDeleteProjectCommand } from '../hooks/useCommands';
 import { CommandForm } from '../components/CommandForm';
 import { formatRelativeTime } from '../utils';
-import { getToolDisplayName } from '@agentstudio/shared/utils/toolMapping';
+import { getToolDisplayName } from 'agentstudio-shared/utils/toolMapping';
 import { useMobileContext } from '../contexts/MobileContext';
 
 interface Project {
