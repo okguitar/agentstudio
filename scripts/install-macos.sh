@@ -403,6 +403,10 @@ export PORT=${PORT:-4936}
 # Add common paths
 export PATH="$PATH:/usr/local/bin:/usr/bin:/bin"
 
+# Add user-specific Node.js paths (for fnm and pnpm)
+export PATH="$HOME/Library/pnpm:$PATH"
+export PATH="$HOME/.local/share/pnpm:$PATH"
+
 # Detect Node.js paths
 if [ -f "/opt/homebrew/bin/node" ]; then
     export PATH="/opt/homebrew/bin:$PATH"
@@ -415,9 +419,11 @@ if [ -f "$HOME/.nvm/nvm.sh" ]; then
     . "$HOME/.nvm/nvm.sh"
 fi
 
-# Add pnpm to path if available
-if [ -d "$HOME/.local/share/pnpm" ]; then
-    export PATH="$HOME/.local/share/pnpm:$PATH"
+# Try to initialize fnm if available
+if command -v fnm >/dev/null 2>&1; then
+    eval "$(fnm env --use-on-cd)"
+elif [ -f "$HOME/.fnm/fnm" ]; then
+    eval "$($HOME/.fnm/fnm env --use-on-cd)"
 fi
 
 # Set Node.js options based on architecture
