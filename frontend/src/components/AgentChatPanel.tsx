@@ -16,6 +16,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { ChatMessageRenderer } from './ChatMessageRenderer';
 import { SessionsDropdown } from './SessionsDropdown';
 import { UnifiedToolSelector } from './UnifiedToolSelector';
+import { MobileChatToolbar } from './MobileChatToolbar';
+import { useMobileContext } from '../contexts/MobileContext';
 import type { AgentConfig } from '../types/index.js';
 import {
   isCommandTrigger,
@@ -38,6 +40,7 @@ interface AgentChatPanelProps {
 export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPath, onSessionChange }) => {
   const { t } = useTranslation('components');
   const { isCompactMode } = useResponsiveSettings();
+  const { isMobile } = useMobileContext();
   const [inputMessage, setInputMessage] = useState('');
   const [showSessions, setShowSessions] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -1418,9 +1421,9 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-gray-900">
-      {/* Header */}
+      {/* Header - Fixed */}
       <div
-        className="px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800"
+        className="flex-shrink-0 px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800"
       >
         <div className="flex items-center justify-between min-h-[36px]">
           {/* Title */}
@@ -1486,8 +1489,8 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
         </div>
       </div>
 
-      {/* 主内容区域 - 聊天视图 */}
-      <div className="flex-1 px-5 py-5 overflow-y-auto space-y-4">
+      {/* 主内容区域 - 聊天视图 - Scrollable */}
+      <div className="flex-1 px-5 py-5 overflow-y-auto space-y-4 min-h-0">
         {/* Welcome message */}
         <div className="px-4">
           <div className="text-sm leading-relaxed break-words overflow-hidden text-gray-600 dark:text-gray-400">
@@ -1533,13 +1536,109 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Area */}
-        <div
-          className={`border-t border-gray-200 dark:border-gray-700 ${isDragOver ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700' : ''}`}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-        >
+      {/* Mobile vs Desktop Input Area */}
+    {isMobile ? (
+      /* Mobile Chat Toolbar */
+      <div
+        className={`flex-shrink-0 ${isDragOver ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700' : ''}`}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
+        {/* Drag Over Indicator */}
+        {isDragOver && (
+          <div className="absolute inset-0 bg-blue-100 dark:bg-blue-900/50 bg-opacity-75 flex items-center justify-center z-10 pointer-events-none">
+            <div className="text-blue-600 dark:text-blue-300 text-lg font-medium flex items-center space-x-2">
+              <Image className="w-6 h-6" />
+              <span>{t('agentChat.dropImageHere')}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Command Warning */}
+        {commandWarning && (
+          <div className="px-3 pt-2 pb-1">
+            <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-2 flex items-start space-x-2">
+              <div className="flex-shrink-0">
+                <svg className="w-4 h-4 text-red-600 dark:text-red-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <p className="text-xs text-red-800 dark:text-red-300">{commandWarning}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <MobileChatToolbar
+          inputMessage={inputMessage}
+          onInputChange={(value) => setInputMessage(value)}
+          onSend={handleSendMessage}
+          selectedImages={selectedImages}
+          onImageRemove={handleImageRemove}
+          onImageSelect={(files) => files && handleImageSelect({ target: { files } } as any)}
+          isAiTyping={isAiTyping}
+          showToolSelector={showToolSelector}
+          onToolSelectorToggle={() => setShowToolSelector(!showToolSelector)}
+          hasSelectedTools={selectedRegularTools.length > 0 || (mcpToolsEnabled && selectedMcpTools.length > 0)}
+        />
+
+        {/* Mobile Settings */}
+        <div className="px-3 pb-2 border-t border-gray-100 dark:border-gray-700">
+          <div className="flex items-center justify-between py-2">
+            <SettingsDropdown
+              permissionMode={permissionMode}
+              onPermissionModeChange={setPermissionMode}
+              selectedClaudeVersion={selectedClaudeVersion}
+              onClaudeVersionChange={setSelectedClaudeVersion}
+              selectedModel={selectedModel}
+              onModelChange={setSelectedModel}
+              availableModels={availableModels}
+              claudeVersionsData={claudeVersionsData}
+              isVersionLocked={isVersionLocked}
+              isAiTyping={isAiTyping}
+            />
+
+            {isAiTyping || isStopping ? (
+              <button
+                onClick={handleStopGeneration}
+                disabled={isStopping}
+                className={`flex items-center space-x-1 px-3 py-1.5 text-white rounded-lg transition-colors text-xs font-medium ${
+                  isStopping
+                    ? 'bg-red-400 cursor-not-allowed'
+                    : 'bg-red-600 hover:bg-red-700'
+                }`}
+                title={isStopping ? t('agentChatPanel.stopping') : t('agentChatPanel.stopGeneration')}
+              >
+                <Square className="w-3 h-3" />
+                <span>{isStopping ? t('agentChatPanel.stopping') : t('agentChatPanel.stop')}</span>
+              </button>
+            ) : null}
+          </div>
+        </div>
+
+        {/* Tool Selector */}
+        <UnifiedToolSelector
+          isOpen={showToolSelector}
+          onClose={() => setShowToolSelector(false)}
+          selectedRegularTools={selectedRegularTools}
+          onRegularToolsChange={setSelectedRegularTools}
+          selectedMcpTools={selectedMcpTools}
+          onMcpToolsChange={setSelectedMcpTools}
+          mcpToolsEnabled={mcpToolsEnabled}
+          onMcpEnabledChange={setMcpToolsEnabled}
+          presetTools={agent.allowedTools}
+        />
+      </div>
+    ) : (
+      /* Desktop Input Area - Fixed */
+      <div
+        className={`flex-shrink-0 border-t border-gray-200 dark:border-gray-700 ${isDragOver ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700' : ''}`}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
         {/* Selected Images Preview */}
         {selectedImages.length > 0 && (
           <div className="p-4 pb-2 border-b border-gray-100 dark:border-gray-700">
@@ -1629,7 +1728,7 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
                 onChange={handleImageSelect}
                 className="hidden"
               />
-              
+
               {/* 工具选择按钮 */}
               <div className="relative">
                 <button
@@ -1651,7 +1750,7 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
                     {selectedRegularTools.length + (mcpToolsEnabled ? selectedMcpTools.filter(t => t.startsWith('mcp__') && t.split('__').length === 3).length : 0)}
                   </span>
                 )}
-                
+
                 {/* 工具选择器 - 使用新的UnifiedToolSelector */}
                 <UnifiedToolSelector
                   isOpen={showToolSelector}
@@ -1665,7 +1764,7 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
                   presetTools={agent.allowedTools}
                 />
               </div>
-              
+
               {/* Tool buttons */}
               <div className="relative">
                 <button
@@ -1687,7 +1786,7 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
                 )}
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-2">
               {/* 窄屏模式：设置下拉菜单 */}
               {isCompactMode ? (
@@ -1904,7 +2003,8 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
             </div>
           </div>
         </div>
-        </div>
+      </div>
+    )}
 
       <CommandSelector
         isOpen={showCommandSelector}

@@ -75,41 +75,46 @@ export const SplitLayout: React.FC<SplitLayoutProps> = ({
   // 移动端布局渲染
   if (isMobile) {
     if (mobileLayout === 'tabs') {
+      // 只有当右侧面板存在且未隐藏时才显示 tabs
+      const shouldShowTabs = !hideRightPanel;
+
       return (
         <div className="flex flex-col h-full bg-gray-100">
-          {/* Tab Navigation */}
-          <div className="flex border-b border-gray-200 bg-white">
-            <button
-              onClick={() => {
-                setActiveTab('left');
-                setRightPanelOpen(false);
-              }}
-              className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
-                activeTab === 'left' && !rightPanelOpen
-                  ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
-                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              Chat
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab('right');
-                setRightPanelOpen(true);
-              }}
-              className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
-                activeTab === 'right' || rightPanelOpen
-                  ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
-                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              Preview
-            </button>
-          </div>
+          {/* Tab Navigation - 只在必要时显示 */}
+          {shouldShowTabs && (
+            <div className="flex-shrink-0 flex border-b border-gray-200 bg-white">
+              <button
+                onClick={() => {
+                  setActiveTab('left');
+                  setRightPanelOpen(false);
+                }}
+                className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+                  activeTab === 'left' && !rightPanelOpen
+                    ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                Chat
+              </button>
+              <button
+                onClick={() => {
+                  setActiveTab('right');
+                  setRightPanelOpen(true);
+                }}
+                className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+                  activeTab === 'right' || rightPanelOpen
+                    ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                Preview
+              </button>
+            </div>
+          )}
 
           {/* Tab Content */}
-          <div className="flex-1 overflow-hidden">
-            {(!hideRightPanel && (activeTab === 'right' || rightPanelOpen)) ? (
+          <div className="flex-1 min-h-0 overflow-hidden">
+            {(!hideRightPanel && shouldShowTabs && (activeTab === 'right' || rightPanelOpen)) ? (
               <div className="h-full">
                 {children[1]}
               </div>
@@ -127,7 +132,7 @@ export const SplitLayout: React.FC<SplitLayoutProps> = ({
     return (
       <div className="flex flex-col h-full bg-gray-100">
         {/* Main Panel - Always visible */}
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 min-h-0 overflow-hidden">
           {children[0]}
         </div>
 
