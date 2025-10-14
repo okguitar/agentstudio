@@ -9,7 +9,18 @@ set -e
 SERVICE_NAME="agent-studio"
 USER_NAME="${SUDO_USER:-$USER}"
 USER_HOME=$(eval echo "~$USER_NAME")
-INSTALL_DIR="$USER_HOME/.agent-studio"
+
+# Unified storage structure - all files in ~/.agent-studio
+BASE_DIR="$USER_HOME/.agent-studio"
+APP_DIR="$BASE_DIR/app"
+CONFIG_DIR="$BASE_DIR/config"
+LOGS_DIR="$BASE_DIR/logs"
+BACKUP_DIR="$BASE_DIR/backup"
+DATA_DIR="$BASE_DIR/data"
+SLIDES_DIR="$DATA_DIR/slides"
+
+# Legacy compatibility
+INSTALL_DIR="$APP_DIR"
 SERVICE_PORT="4936"
 
 # Colors for output
@@ -34,6 +45,26 @@ error() {
 
 success() {
     echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
+# Validate directory paths
+validate_paths() {
+    log "Validating installation paths..."
+
+    if [ -z "$USER_HOME" ] || [ "$USER_HOME" = "/" ]; then
+        error "Invalid user home directory: $USER_HOME"
+        exit 1
+    fi
+
+    if [ -z "$BASE_DIR" ]; then
+        error "Base directory path is empty"
+        exit 1
+    fi
+
+    log "User home: $USER_HOME"
+    log "Base directory: $BASE_DIR"
+    log "App directory: $APP_DIR"
+    success "Path validation completed"
 }
 
 # Check if running as root
@@ -96,21 +127,15 @@ check_dependencies() {
 setup_directories() {
     log "Setting up directories..."
     
-    # Create directories
-    mkdir -p "$INSTALL_DIR"
-    mkdir -p "$USER_HOME/.agent-studio-logs"
-    mkdir -p "$USER_HOME/.agent-studio-config"
-    
-    # Create slides directory in user home
-    if [ ! -d "$USER_HOME/slides" ]; then
-        mkdir -p "$USER_HOME/slides"
-    fi
-    
+    # Create unified directory structure
+    mkdir -p "$APP_DIR"
+    mkdir -p "$CONFIG_DIR"
+    mkdir -p "$LOGS_DIR"
+    mkdir -p "$BACKUP_DIR"
+    mkdir -p "$DATA_DIR/slides"
+
     # Set proper ownership to current user
-    chown -R "$USER_NAME:staff" "$INSTALL_DIR" 2>/dev/null || chown -R "$USER_NAME" "$INSTALL_DIR"
-    chown -R "$USER_NAME:staff" "$USER_HOME/.agent-studio-logs" 2>/dev/null || chown -R "$USER_NAME" "$USER_HOME/.agent-studio-logs"
-    chown -R "$USER_NAME:staff" "$USER_HOME/.agent-studio-config" 2>/dev/null || chown -R "$USER_NAME" "$USER_HOME/.agent-studio-config"
-    chown -R "$USER_NAME:staff" "$USER_HOME/slides" 2>/dev/null || chown -R "$USER_NAME" "$USER_HOME/slides"
+    chown -R "$USER_NAME:staff" "$BASE_DIR" 2>/dev/null || chown -R "$USER_NAME" "$BASE_DIR"
     
     success "Directories created successfully"
 }
@@ -149,14 +174,14 @@ install_app() {
 # Create environment file
 create_env_file() {
     log "Creating environment configuration..."
-    
-    ENV_FILE="$USER_HOME/.agent-studio-config/config.env"
-    
+
+    ENV_FILE="$CONFIG_DIR/config.env"
+
     cat > "$ENV_FILE" << EOF
 # Agent Studio Backend Configuration
 NODE_ENV=production
 PORT=$SERVICE_PORT
-SLIDES_DIR=$USER_HOME/slides
+SLIDES_DIR=$SLIDES_DIR
 
 # AI Provider Configuration (uncomment and configure one)
 # OPENAI_API_KEY=your_openai_api_key_here
@@ -165,11 +190,11 @@ SLIDES_DIR=$USER_HOME/slides
 # CORS Configuration (optional)
 # CORS_ORIGINS=https://your-frontend.vercel.app,https://custom-domain.com
 EOF
-    
+
     # Set permissions for user
     chown "$USER_NAME:staff" "$ENV_FILE" 2>/dev/null || chown "$USER_NAME" "$ENV_FILE"
     chmod 600 "$ENV_FILE"
-    
+
     success "Environment file created at $ENV_FILE"
     log "Configuration is optional - service is ready to use"
 }
@@ -213,7 +238,7 @@ install_launchd_service() {
         <key>PORT</key>
         <string>$SERVICE_PORT</string>
         <key>SLIDES_DIR</key>
-        <string>$USER_HOME/slides</string>
+        <string>$SLIDES_DIR</string>
     </dict>
     <key>UserName</key>
     <string>$USER_NAME</string>
@@ -224,9 +249,9 @@ install_launchd_service() {
     <key>KeepAlive</key>
     <true/>
     <key>StandardOutPath</key>
-    <string>$USER_HOME/.agent-studio-logs/output.log</string>
+    <string>$LOGS_DIR/output.log</string>
     <key>StandardErrorPath</key>
-    <string>$USER_HOME/.agent-studio-logs/error.log</string>
+    <string>$LOGS_DIR/error.log</string>
     <key>ThrottleInterval</key>
     <integer>10</integer>
 </dict>
@@ -273,8 +298,8 @@ SERVICE_NAME="agent-studio"
 USER_NAME="USER_NAME_PLACEHOLDER"
 USER_HOME="USER_HOME_PLACEHOLDER"
 INSTALL_DIR="$USER_HOME/.agent-studio"
-CONFIG_FILE="$USER_HOME/.agent-studio-config/config.env"
-LOG_DIR="$USER_HOME/.agent-studio-logs"
+CONFIG_FILE="$CONFIG_DIR/config.env"
+LOG_DIR="$LOGS_DIR"
 
 # Detect operating system and service manager
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
@@ -484,9 +509,7 @@ uninstall_service() {
     read -p "Remove application data and logs? [y/N]: " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        rm -rf "$INSTALL_DIR"
-        rm -rf "$LOG_DIR"
-        rm -rf "$USER_HOME/.agent-studio-config"
+        rm -rf "$BASE_DIR"
         success "Application data removed"
     else
         log "Application data preserved"
@@ -541,6 +564,7 @@ main() {
     echo ""
     
     check_root
+    validate_paths
     detect_os
     check_dependencies
     setup_directories
