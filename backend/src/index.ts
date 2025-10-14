@@ -16,6 +16,7 @@ import subagentsRouter from './routes/subagents.js';
 import projectsRouter from './routes/projects.js';
 import authRouter from './routes/auth.js';
 import configRouter from './routes/config.js';
+import slackRouter from './routes/slack.js';
 import { authMiddleware } from './middleware/auth.js';
 import { loadConfig, getSlidesDir } from './config/index.js';
 
@@ -155,6 +156,7 @@ if (process.env.NODE_ENV === 'production') {
 
 // Routes - Public routes
 app.use('/api/auth', authRouter);
+app.use('/api/slack', slackRouter); // Slack webhook (verified by signature, not auth middleware)
 
 // Protected routes - Require authentication
 app.use('/api/files', authMiddleware, filesRouter);
