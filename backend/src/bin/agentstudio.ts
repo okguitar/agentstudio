@@ -3,14 +3,19 @@ import { program } from 'commander';
 import app from '../index.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { readFileSync } from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Read version from root package.json
+const rootPackageJson = JSON.parse(readFileSync(path.join(__dirname, '../../../package.json'), 'utf8'));
+const version = rootPackageJson.version || '0.1.0';
+
 program
     .name('agentstudio')
     .description('AgentStudio - AI-powered presentation editor with Claude integration')
-    .version('0.1.0');
+    .version(version);
 
 // Start both frontend and backend
 program
