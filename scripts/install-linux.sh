@@ -11,14 +11,6 @@ GITHUB_BRANCH="main"
 SERVICE_NAME="agent-studio"
 SERVICE_PORT="4936"
 
-# Unified storage structure - all files in ~/.agent-studio
-BASE_DIR="$USER_HOME/.agent-studio"
-APP_DIR="$BASE_DIR/app"
-CONFIG_DIR="$BASE_DIR/config"
-LOGS_DIR="$BASE_DIR/logs"
-BACKUP_DIR="$BASE_DIR/backup"
-DATA_DIR="$BASE_DIR/data"
-
 # Detect if running via pipe (for non-interactive mode)
 if [ -p /dev/stdin ] || [ ! -t 0 ]; then
     PIPED_INSTALL="true"
@@ -44,6 +36,14 @@ else
     ACTUAL_UID=$(id -u)
     ACTUAL_GID=$(id -g)
 fi
+
+# Unified storage structure - all files in ~/.agent-studio
+BASE_DIR="$USER_HOME/.agent-studio"
+APP_DIR="$BASE_DIR/app"
+CONFIG_DIR="$BASE_DIR/config"
+LOGS_DIR="$BASE_DIR/logs"
+BACKUP_DIR="$BASE_DIR/backup"
+DATA_DIR="$BASE_DIR/data"
 
 # Legacy compatibility - INSTALL_DIR now points to app directory
 INSTALL_DIR="$APP_DIR"
@@ -76,6 +76,26 @@ success() {
 
 linux_log() {
     echo -e "${ORANGE}[LINUX]${NC} $1"
+}
+
+# Validate directory paths
+validate_paths() {
+    linux_log "Validating installation paths..."
+
+    if [ -z "$USER_HOME" ] || [ "$USER_HOME" = "/" ]; then
+        error "Invalid user home directory: $USER_HOME"
+        exit 1
+    fi
+
+    if [ -z "$BASE_DIR" ]; then
+        error "Base directory path is empty"
+        exit 1
+    fi
+
+    linux_log "User home: $USER_HOME"
+    linux_log "Base directory: $BASE_DIR"
+    linux_log "App directory: $APP_DIR"
+    success "Path validation completed"
 }
 
 # Detect Linux distribution and architecture
@@ -1026,6 +1046,7 @@ main() {
         echo ""
     fi
 
+    validate_paths
     detect_linux_info
     check_environment
     install_system_deps

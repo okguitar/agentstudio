@@ -11,14 +11,6 @@ GITHUB_BRANCH="main"
 SERVICE_NAME="com.agentstudio.daemon"
 SERVICE_PORT="4936"
 
-# Unified storage structure - all files in ~/.agent-studio
-BASE_DIR="$USER_HOME/.agent-studio"
-APP_DIR="$BASE_DIR/app"
-CONFIG_DIR="$BASE_DIR/config"
-LOGS_DIR="$BASE_DIR/logs"
-BACKUP_DIR="$BASE_DIR/backup"
-DATA_DIR="$BASE_DIR/data"
-
 # Detect if running via pipe (for non-interactive mode)
 if [ -p /dev/stdin ] || [ ! -t 0 ]; then
     PIPED_INSTALL="true"
@@ -29,6 +21,14 @@ ACTUAL_USER="$USER"
 USER_HOME="$HOME"
 ACTUAL_UID=$(id -u)
 ACTUAL_GID=$(id -g)
+
+# Unified storage structure - all files in ~/.agent-studio
+BASE_DIR="$USER_HOME/.agent-studio"
+APP_DIR="$BASE_DIR/app"
+CONFIG_DIR="$BASE_DIR/config"
+LOGS_DIR="$BASE_DIR/logs"
+BACKUP_DIR="$BASE_DIR/backup"
+DATA_DIR="$BASE_DIR/data"
 
 # Legacy compatibility - INSTALL_DIR now points to app directory
 INSTALL_DIR="$APP_DIR"
@@ -78,6 +78,26 @@ display_header() {
     echo -e "${PURPLE}║  • Xcode Command Line Tools             ║${NC}"
     echo -e "${PURPLE}╚══════════════════════════════════════════════════════════════╝${NC}"
     echo
+}
+
+# Validate directory paths
+validate_paths() {
+    macos_log "Validating installation paths..."
+
+    if [ -z "$USER_HOME" ] || [ "$USER_HOME" = "/" ]; then
+        error "Invalid user home directory: $USER_HOME"
+        exit 1
+    fi
+
+    if [ -z "$BASE_DIR" ]; then
+        error "Base directory path is empty"
+        exit 1
+    fi
+
+    macos_log "User home: $USER_HOME"
+    macos_log "Base directory: $BASE_DIR"
+    macos_log "App directory: $APP_DIR"
+    success "Path validation completed"
 }
 
 # Detect macOS system information
@@ -727,6 +747,7 @@ main() {
     trap cleanup EXIT
 
     display_header
+    validate_paths
     detect_system_info
     check_xcode_tools
     install_homebrew
