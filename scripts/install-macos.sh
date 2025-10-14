@@ -431,8 +431,6 @@ create_launchd_service() {
     <dict>
         <key>NODE_ENV</key>
         <string>production</string>
-        <key>PORT</key>
-        <string>$SERVICE_PORT</string>
         <key>PATH</key>
         <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
     </dict>
