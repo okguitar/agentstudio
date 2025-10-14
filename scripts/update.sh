@@ -100,12 +100,9 @@ create_backup() {
 
     mkdir -p "$BACKUP_DIR"
 
-    # Backup app directory
-    if [ -d "$APP_DIR" ]; then
-        log "Backing up application..."
-        cp -r "$APP_DIR" "$BACKUP_DIR/app"
-        success "Application backed up"
-    fi
+    # Skip app directory backup (managed by Git)
+    log "Skipping app directory backup (managed by Git)"
+    log "Application code will be updated directly from Git repository"
 
     # Backup configuration files
     if [ -d "$CONFIG_DIR" ]; then
@@ -121,20 +118,71 @@ create_backup() {
         success "Data backed up"
     fi
 
+      # Record current version information
+    cd "$APP_DIR"
+    CURRENT_VERSION=$(git describe --tags --always 2>/dev/null || echo "unknown")
+    CURRENT_COMMIT=$(git rev-parse HEAD 2>/dev/null || echo "unknown")
+    COMMIT_MESSAGE=$(git log -1 --pretty=format:"%s" 2>/dev/null || echo "No commit message")
+    COMMIT_DATE=$(git log -1 --pretty=format:"%cd" --date=short 2>/dev/null || echo "unknown")
+
     # Create backup info file
     cat > "$BACKUP_DIR/backup_info.txt" << EOF
 Backup created: $(date)
-Agent Studio version: $(cd "$APP_DIR" && git describe --tags --always 2>/dev/null || echo "unknown")
+Agent Studio version: $CURRENT_VERSION
+Git commit: $CURRENT_COMMIT
+Commit message: $COMMIT_MESSAGE
+Commit date: $COMMIT_DATE
 Backup location: $BACKUP_DIR
 Contents:
-- App directory (source code)
-- Configuration files
-- Data directory (slides, etc.)
+- Configuration files (user settings)
+- User data directory (slides, etc.)
 
-To restore: ./restore.sh $BACKUP_DIR
+Note: Application code is tracked in Git, use 'git log' for full history
 EOF
 
-    success "Backup created at $BACKUP_DIR"
+    # Create a simple restore script
+    cat > "$BACKUP_DIR/restore.sh" << EOF
+#!/bin/bash
+# Agent Studio Configuration Restore Script
+# Restores configuration and data from backup
+
+BACKUP_DIR="\$(dirname "\$0")"
+BASE_DIR="\$HOME/.agent-studio"
+
+echo "Restoring Agent Studio configuration and data..."
+echo "Backup location: \$BACKUP_DIR"
+echo "Target directory: \$BASE_DIR"
+echo ""
+
+# Restore configuration
+if [ -d "\$BACKUP_DIR/config" ]; then
+    echo "Restoring configuration files..."
+    cp -r "\$BACKUP_DIR/config/"* "\$BASE_DIR/config/"
+    echo "✅ Configuration restored"
+else
+    echo "⚠️  No configuration files found in backup"
+fi
+
+# Restore user data
+if [ -d "\$BACKUP_DIR/data" ]; then
+    echo "Restoring user data..."
+    cp -r "\$BACKUP_DIR/data/"* "\$BASE_DIR/data/"
+    echo "✅ User data restored"
+else
+    echo "⚠️  No user data found in backup"
+fi
+
+echo ""
+echo "✨ Restore completed!"
+echo "Note: Application code is managed by Git, use update script to restore"
+EOF
+
+    chmod +x "$BACKUP_DIR/restore.sh"
+
+    success "Lightweight backup created at $BACKUP_DIR"
+    log "✅ Configuration and user data backed up"
+    log "✅ Version info recorded: $CURRENT_VERSION"
+    log "✅ Application code skipped (managed by Git)"
 }
 
 # Check for updates
@@ -200,9 +248,9 @@ stop_service() {
     fi
 
     # Try to stop using stop script
-    if [ -f "$INSTALL_DIR/stop.sh" ]; then
+    if [ -f "$APP_DIR/stop.sh" ]; then
         log "Running stop script..."
-        "$INSTALL_DIR/stop.sh" || warn "Stop script encountered an error"
+        "$APP_DIR/stop.sh" || warn "Stop script encountered an error"
     fi
 
     # Kill any remaining processes
