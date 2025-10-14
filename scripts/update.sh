@@ -312,6 +312,42 @@ update_dependencies() {
 start_service() {
     header_log "Starting Agent Studio service..."
 
+    # Check if service is already running
+    if curl -s http://localhost:4936/api/health >/dev/null 2>&1; then
+        success "Agent Studio is already running (port 4936)"
+        log "No restart needed"
+        return 0
+    fi
+
+    # Check if port is in use by other processes
+    if lsof -i :4936 >/dev/null 2>&1; then
+        warn "Port 4936 is in use by another process"
+        log "Attempting to stop any existing processes..."
+
+        # Try to stop using stop script
+        if [ -f "$APP_DIR/stop.sh" ]; then
+            log "Running stop script to clear port..."
+            "$APP_DIR/stop.sh" || warn "Stop script encountered errors"
+        fi
+
+        # Kill any remaining agent-studio processes
+        if command -v pkill >/dev/null 2>&1; then
+            pkill -f "agent-studio" 2>/dev/null || true
+        fi
+
+        # Kill processes using port 4936
+        if command -v lsof >/dev/null 2>&1; then
+            PIDS=$(lsof -ti :4936 2>/dev/null)
+            if [ -n "$PIDS" ]; then
+                log "Terminating processes using port 4936: $PIDS"
+                echo "$PIDS" | xargs kill -9 2>/dev/null || true
+            fi
+        fi
+
+        # Wait a moment for cleanup
+        sleep 2
+    fi
+
     if [ -f "$APP_DIR/start.sh" ]; then
         log "Running start script..."
         "$APP_DIR/start.sh" &
