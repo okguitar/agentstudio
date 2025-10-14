@@ -11,6 +11,12 @@ export interface AgentStudioConfig {
   tokenRefreshThreshold?: string;
   corsOrigins?: string;
   corsAllowedDomains?: string;
+  logLevel?: string;
+  slidesDir?: string;
+  maxFileSize?: string;
+  allowedFileTypes?: string[];
+  linuxOptimizations?: Record<string, any>;
+  service?: Record<string, any>;
 }
 
 let cachedConfig: AgentStudioConfig | null = null;
@@ -41,11 +47,10 @@ export async function loadConfig(): Promise<AgentStudioConfig> {
     // Config file doesn't exist or can't be read, use empty object
   }
 
-  // Create final configuration
-  // For port: config file > environment variables > defaults  
-  // For others: environment variables > config file > defaults
+// Create final configuration with environment variables taking priority over config.json
+  // Priority: Environment variables > Config file > Defaults
   const finalConfig: AgentStudioConfig = {
-    port: parseInt(configData.port?.toString() || process.env.PORT || '4936'),
+    port: parseInt(process.env.PORT || configData.port?.toString() || '4936'),
     host: process.env.HOST || configData.host || '0.0.0.0',
     adminPassword: process.env.ADMIN_PASSWORD || configData.adminPassword || 'admin123',
     jwtSecret: process.env.JWT_SECRET || configData.jwtSecret || 'your-secret-key-change-this-in-production',
@@ -53,6 +58,12 @@ export async function loadConfig(): Promise<AgentStudioConfig> {
     tokenRefreshThreshold: process.env.TOKEN_REFRESH_THRESHOLD || configData.tokenRefreshThreshold || '24h',
     corsOrigins: process.env.CORS_ORIGINS || configData.corsOrigins || '',
     corsAllowedDomains: process.env.CORS_ALLOWED_DOMAINS || configData.corsAllowedDomains || '',
+    logLevel: process.env.LOG_LEVEL || configData.logLevel || 'info',
+    slidesDir: process.env.SLIDES_DIR || configData.slidesDir || join(homeDir, '.agent-studio', 'data', 'slides'),
+    maxFileSize: process.env.MAX_FILE_SIZE || configData.maxFileSize || '10MB',
+    allowedFileTypes: configData.allowedFileTypes || ['.txt', '.md', '.js', '.ts', '.json', '.html', '.css'],
+    linuxOptimizations: configData.linuxOptimizations || {},
+    service: configData.service || {},
   };
 
   cachedConfig = finalConfig;
