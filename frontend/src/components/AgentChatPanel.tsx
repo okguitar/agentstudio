@@ -2005,7 +2005,7 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
                 <button
                   onClick={handleSendMessage}
                   disabled={isSendDisabled()}
-                  className="flex items-center space-x-2 px-4 py-2 text-white rounded-lg hover:opacity-90 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 text-sm font-medium shadow-sm"
+                  className="flex items-center space-x-2 px-4 py-2 text-white rounded-lg hover:opacity-90 disabled:bg-gray-300 dark:disabled:bg-gray-700 dark:disabled:text-gray-500 disabled:cursor-not-allowed transition-all duration-200 text-sm font-medium shadow-sm"
                   style={{ backgroundColor: !isSendDisabled() ? 'hsl(var(--primary))' : undefined }}
                   title={
                     isAiTyping ? t('agentChatPanel.aiTyping') :
