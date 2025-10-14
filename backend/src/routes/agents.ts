@@ -513,11 +513,14 @@ async function buildQueryOptions(agent: any, projectPath: string | undefined, mc
     queryOptions.pathToClaudeCodeExecutable = executablePath;
   }
   
-  // Add environment variables if any
+  // Always merge environment variables with process.env
+  // This ensures critical variables like ANTHROPIC_API_KEY, PATH, etc. are available
+  queryOptions.env = { ...process.env, ...environmentVariables };
+
   if (Object.keys(environmentVariables).length > 0) {
-    // 合并用户环境变量和当前进程环境变量，避免丢失关键的系统环境变量如PATH
-    queryOptions.env = { ...process.env, ...environmentVariables };
-    console.log(`🌍 Using environment variables:`, environmentVariables);
+    console.log(`🌍 Using custom environment variables:`, environmentVariables);
+  } else {
+    console.log(`🌍 Using process environment variables (no custom variables defined)`);
   }
 
   // Add MCP configuration if MCP tools are selected
