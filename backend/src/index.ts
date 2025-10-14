@@ -35,12 +35,14 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Allow eval for development
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdn.jsdelivr.net"],
-      imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", "ws:", "wss:"],
-      frameAncestors: ["'self'", "http://localhost:3000", "https://localhost:3000", "http://localhost:3001"] // Allow iframe embedding
+      fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdn.jsdelivr.net", "data:"],
+      imgSrc: ["'self'", "data:", "https:", "http:", "blob:"],
+      connectSrc: ["'self'", "ws:", "wss:", "blob:", "data:"],
+      frameAncestors: ["'self'", "http://localhost:3000", "https://localhost:3000", "http://localhost:3001"], // Allow iframe embedding
+      workerSrc: ["'self'", "blob:"],
+      childSrc: ["'self'", "blob:"]
     }
   }
 }));
@@ -122,6 +124,34 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Static files - serve slides directory
 const slidesDir = await getSlidesDir();
 app.use('/slides', express.static(slidesDir));
+
+// Static files - serve frontend in production
+if (process.env.NODE_ENV === 'production') {
+  // Check if frontend build exists
+  const frontendDistPath = join(__dirname, '../../frontend/dist');
+  const fs = await import('fs');
+
+  if (fs.existsSync(frontendDistPath)) {
+    app.use(express.static(frontendDistPath));
+
+    // For SPA routing - serve index.html for any non-API routes
+    app.get('*', (req, res, next) => {
+      // Skip API routes and other specific routes
+      if (req.path.startsWith('/api') ||
+          req.path.startsWith('/media') ||
+          req.path.startsWith('/slides')) {
+        return next();
+      }
+
+      // Serve index.html for all other routes
+      res.sendFile(join(frontendDistPath, 'index.html'));
+    });
+
+    console.log('Frontend static files enabled');
+  } else {
+    console.log('Frontend build not found, serving API only');
+  }
+}
 
 // Routes - Public routes
 app.use('/api/auth', authRouter);

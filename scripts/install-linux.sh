@@ -705,10 +705,19 @@ run_installation() {
         # Try to build backend - if it fails, continue with development mode
         linux_log "Attempting to build backend..."
         if pnpm run build:backend 2>/dev/null; then
-            BUILD_SUCCESS=true
-            success "Build successful - will run in production mode"
+            linux_log "Backend build successful"
+
+            # Try to build frontend
+            linux_log "Attempting to build frontend..."
+            if pnpm run build:frontend 2>/dev/null; then
+                BUILD_SUCCESS=true
+                success "Full build successful - will run in production mode"
+            else
+                linux_log "Frontend build failed - will run in production mode with backend only"
+                BUILD_SUCCESS=true
+            fi
         else
-            linux_log "Build failed or skipped - will run in development mode"
+            linux_log "Backend build failed or skipped - will run in development mode"
             BUILD_SUCCESS=false
         fi
     else
@@ -720,10 +729,19 @@ run_installation() {
         # Try to build backend - if it fails, continue with development mode
         linux_log "Attempting to build backend..."
         if npm run build:backend 2>/dev/null; then
-            BUILD_SUCCESS=true
-            success "Build successful - will run in production mode"
+            linux_log "Backend build successful"
+
+            # Try to build frontend
+            linux_log "Attempting to build frontend..."
+            if npm run build:frontend 2>/dev/null; then
+                BUILD_SUCCESS=true
+                success "Full build successful - will run in production mode"
+            else
+                linux_log "Frontend build failed - will run in production mode with backend only"
+                BUILD_SUCCESS=true
+            fi
         else
-            linux_log "Build failed or skipped - will run in development mode"
+            linux_log "Backend build failed or skipped - will run in development mode"
             BUILD_SUCCESS=false
         fi
     fi
@@ -748,21 +766,24 @@ export PATH="/usr/local/bin:/usr/bin:\$PATH"
 export PATH="\$HOME/.local/bin:\$PATH"
 
 echo "🐧 Starting Agent Studio Backend on Linux (Production Mode)..."
-cd "\$HOME/.agent-studio"
+cd "\$HOME/.agent-studio/app"
 export NODE_ENV=production
 export PORT=4936
-export SLIDES_DIR="\$HOME/slides"
+export SLIDES_DIR="\$HOME/.agent-studio/data/slides"
 echo "📂 Working directory: \$(pwd)"
 echo "🌐 Backend port: 4936"
-echo "📑 Slides directory: \$HOME/slides"
+echo "📑 Slides directory: \$HOME/.agent-studio/data/slides"
 echo "🖥️  Distribution: $DISTRO_NAME"
 echo "🏗️  Architecture: $ARCH_NAME"
 echo ""
 echo "✨ Access the application at:"
-echo "   https://agentstudio-frontend.vercel.app/"
+echo "   http://localhost:4936/ (Full application with frontend)"
+echo "   https://agentstudio-frontend.vercel.app/ (External frontend alternative)"
 echo ""
-echo "💡 Configure the backend URL in the web interface:"
-echo "   Settings → API Configuration → http://localhost:4936"
+echo "💡 Local installation provides complete application with:"
+echo "   • Frontend interface at http://localhost:4936/"
+echo "   • Backend API at http://localhost:4936/api/*"
+echo "   • Slides static files at http://localhost:4936/slides/*"
 echo ""
 node backend/dist/index.js
 EOF

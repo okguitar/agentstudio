@@ -347,9 +347,39 @@ run_installation() {
     # Build the application
     macos_log "Building Agent Studio..."
     if command -v pnpm >/dev/null 2>&1; then
-        pnpm run build:backend
+        # Build backend
+        macos_log "Building backend..."
+        if pnpm run build:backend 2>/dev/null; then
+            macos_log "Backend build successful"
+
+            # Build frontend
+            macos_log "Building frontend..."
+            if pnpm run build:frontend 2>/dev/null; then
+                success "Full build successful - both backend and frontend ready"
+            else
+                warn "Frontend build failed - only backend will be available"
+            fi
+        else
+            error "Backend build failed"
+            exit 1
+        fi
     else
-        npm run build:backend
+        # Build backend
+        macos_log "Building backend..."
+        if npm run build:backend 2>/dev/null; then
+            macos_log "Backend build successful"
+
+            # Build frontend
+            macos_log "Building frontend..."
+            if npm run build:frontend 2>/dev/null; then
+                success "Full build successful - both backend and frontend ready"
+            else
+                warn "Frontend build failed - only backend will be available"
+            fi
+        else
+            error "Backend build failed"
+            exit 1
+        fi
     fi
 
     # Create launchd service
@@ -486,6 +516,21 @@ if [[ "$ARCH" == "arm64" ]]; then
 else
     export NODE_OPTIONS="--max-old-space-size=2048"
 fi
+
+echo "🍎 Starting Agent Studio Backend on macOS (Production Mode)..."
+echo "📂 Working directory: $(pwd)"
+echo "🌐 Backend port: 4936"
+echo "📑 Slides directory: $HOME/.agent-studio/data/slides"
+echo ""
+echo "✨ Access the application at:"
+echo "   http://localhost:4936/ (Full application with frontend)"
+echo "   https://agentstudio-frontend.vercel.app/ (External frontend alternative)"
+echo ""
+echo "💡 Local installation provides complete application with:"
+echo "   • Frontend interface at http://localhost:4936/"
+echo "   • Backend API at http://localhost:4936/api/*"
+echo "   • Slides static files at http://localhost:4936/slides/*"
+echo ""
 
 # Start the application
 if command -v pnpm >/dev/null 2>&1; then
