@@ -261,6 +261,28 @@ stop_service() {
     success "Service stopped"
 }
 
+# Stop service for restart (quiet version)
+stop_service_for_restart() {
+    log "Stopping service for restart..."
+
+    # Try to stop systemd service first
+    if command -v systemctl >/dev/null 2>&1; then
+        if systemctl is-active --quiet agent-studio 2>/dev/null; then
+            sudo systemctl stop agent-studio 2>/dev/null || true
+        fi
+    fi
+
+    # Try to stop using stop script
+    if [ -f "$APP_DIR/stop.sh" ]; then
+        "$APP_DIR/stop.sh" 2>/dev/null || true
+    fi
+
+    # Kill any remaining processes
+    if command -v pkill >/dev/null 2>&1; then
+        pkill -f "agent-studio" 2>/dev/null || true
+    fi
+}
+
 # Update code
 update_code() {
     header_log "Updating Agent Studio code..."
@@ -312,11 +334,10 @@ update_dependencies() {
 start_service() {
     header_log "Starting Agent Studio service..."
 
-    # Check if service is already running
+    # Check if service is already running and restart it to load new code
     if curl -s http://localhost:4936/api/health >/dev/null 2>&1; then
-        success "Agent Studio is already running (port 4936)"
-        log "No restart needed"
-        return 0
+        log "Service is running, restarting to load updated code..."
+        stop_service_for_restart
     fi
 
     # Check if port is in use by other processes
