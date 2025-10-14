@@ -2,8 +2,8 @@ import express from 'express';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
-import { AgentStorage } from '@agentstudio/shared/utils/agentStorage';
-import { ClaudeHistoryMessage, ClaudeHistorySession } from '@agentstudio/shared/types/claude-history';
+import { AgentStorage } from 'agentstudio-shared/utils/agentStorage';
+import { ClaudeHistoryMessage, ClaudeHistorySession } from 'agentstudio-shared/types/claude-history';
 import { sessionManager } from '../services/sessionManager.js';
 
 const router: express.Router = express.Router();

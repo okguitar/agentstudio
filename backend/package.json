@@ -1,6 +1,6 @@
 {
-  "name": "@agentstudio/backend",
-  "version": "0.1.0",
+  "name": "agentstudio-backend",
+  "version": "0.1.9",
   "description": "Backend API for AgentStudio",
   "type": "module",
   "main": "dist/index.js",
@@ -12,8 +12,9 @@
     "migrate-projects": "node scripts/migrate-projects.js"
   },
   "dependencies": {
-    "@agentstudio/shared": "workspace:*",
+    "agentstudio-shared": "^0.1.0",
     "@ai-sdk/anthropic": "^1.0.5",
+    "commander": "^11.1.0",
     "@ai-sdk/openai": "^1.0.7",
     "@anthropic-ai/claude-code": "^2.0.10",
     "ai": "^5.0.22",
