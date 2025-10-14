@@ -26,7 +26,7 @@ let cachedConfig: AgentStudioConfig | null = null;
 
 /**
  * Load configuration from config file and environment variables
- * Priority: Environment variables > Config file > Defaults
+ * Priority: Config file > Environment variables > Defaults
  */
 export async function loadConfig(): Promise<AgentStudioConfig> {
   if (cachedConfig) {
@@ -75,13 +75,14 @@ export async function loadConfig(): Promise<AgentStudioConfig> {
     }
   }
 
-  // Create final configuration with environment variable overrides
+  // Create final configuration with config.json taking priority over environment variables
+  // Priority: Config file > Environment variables > Defaults
   const finalConfig: AgentStudioConfig = {
-    port: parseInt(process.env.PORT || configData.port?.toString() || '4936'),
-    host: process.env.HOST || configData.host || '0.0.0.0',
-    logLevel: process.env.LOG_LEVEL || configData.logLevel || 'info',
-    slidesDir: process.env.SLIDES_DIR || configData.slidesDir || join(homeDir, '.agent-studio', 'data', 'slides'),
-    maxFileSize: process.env.MAX_FILE_SIZE || configData.maxFileSize || '10MB',
+    port: parseInt(configData.port?.toString() || process.env.PORT || '4936'),
+    host: configData.host || process.env.HOST || '0.0.0.0',
+    logLevel: configData.logLevel || process.env.LOG_LEVEL || 'info',
+    slidesDir: configData.slidesDir || process.env.SLIDES_DIR || join(homeDir, '.agent-studio', 'data', 'slides'),
+    maxFileSize: configData.maxFileSize || process.env.MAX_FILE_SIZE || '10MB',
     allowedFileTypes: configData.allowedFileTypes || ['.txt', '.md', '.js', '.ts', '.json', '.html', '.css'],
     linuxOptimizations: configData.linuxOptimizations || {},
     service: configData.service || {},
