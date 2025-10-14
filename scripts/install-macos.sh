@@ -8,9 +8,16 @@ set -e
 # Configuration
 GITHUB_REPO="git-men/agentstudio"
 GITHUB_BRANCH="main"
-TEMP_DIR="/tmp/agent-studio-macos-$(date +%s)"
 SERVICE_NAME="com.agentstudio.daemon"
 SERVICE_PORT="4936"
+
+# Unified storage structure - all files in ~/.agent-studio
+BASE_DIR="$USER_HOME/.agent-studio"
+APP_DIR="$BASE_DIR/app"
+CONFIG_DIR="$BASE_DIR/config"
+LOGS_DIR="$BASE_DIR/logs"
+BACKUP_DIR="$BASE_DIR/backup"
+DATA_DIR="$BASE_DIR/data"
 
 # Detect if running via pipe (for non-interactive mode)
 if [ -p /dev/stdin ] || [ ! -t 0 ]; then
@@ -23,7 +30,8 @@ USER_HOME="$HOME"
 ACTUAL_UID=$(id -u)
 ACTUAL_GID=$(id -g)
 
-INSTALL_DIR="$USER_HOME/.agent-studio"
+# Legacy compatibility - INSTALL_DIR now points to app directory
+INSTALL_DIR="$APP_DIR"
 LAUNCHD_DIR="$USER_HOME/Library/LaunchAgents"
 
 # Colors for output
@@ -88,8 +96,12 @@ detect_system_info() {
 
     macos_log "Architecture: $ARCH_NAME ($ARCH)"
     macos_log "macOS Version: $MACOS_VERSION"
-    macos_log "Installing Agent Studio to user directory: $INSTALL_DIR"
+    macos_log "Installing Agent Studio to unified directory: $BASE_DIR"
     macos_log "Target user: $ACTUAL_USER (UID: $ACTUAL_UID)"
+    macos_log "App directory: $APP_DIR"
+    macos_log "Config directory: $CONFIG_DIR"
+    macos_log "Logs directory: $LOGS_DIR"
+    macos_log "Backup directory: $BACKUP_DIR"
 }
 
 # Check if Xcode Command Line Tools are installed
@@ -255,50 +267,52 @@ cleanup() {
     fi
 }
 
-# Download Agent Studio
+# Download Agent Studio directly to app directory
 download_agent_studio() {
-    macos_log "Downloading Agent Studio..."
+    macos_log "Downloading Agent Studio directly to $APP_DIR..."
 
-    # Clean up any existing temp directory
-    rm -rf "$TEMP_DIR"
-    mkdir -p "$TEMP_DIR"
-    cd "$TEMP_DIR"
+    # Create app directory
+    mkdir -p "$APP_DIR"
+    cd "$APP_DIR"
 
-    # Download the repository
+    # Download the repository directly to app directory
     if command -v git >/dev/null 2>&1; then
         git clone "https://github.com/$GITHUB_REPO.git" .
-        success "Repository cloned via Git"
+        git checkout "$GITHUB_BRANCH"
+        success "Repository cloned via Git to $APP_DIR"
     else
         # Fallback to downloading zip file
         macos_log "Git not found, downloading zip file..."
+        TEMP_DOWNLOAD="/tmp/agent-studio-download-$(date +%s)"
+        mkdir -p "$TEMP_DOWNLOAD"
+        cd "$TEMP_DOWNLOAD"
         curl -L "https://github.com/$GITHUB_REPO/archive/refs/heads/$GITHUB_BRANCH.zip" -o agentstudio.zip
         unzip -q agentstudio.zip
         mv "agentstudio-$GITHUB_BRANCH"/* .
-        rm -rf "agentstudio-$GITHUB_BRANCH" agentstudio.zip
-        success "Repository downloaded via curl"
+        cp -r ./* "$APP_DIR/"
+        cd "$APP_DIR"
+        rm -rf "$TEMP_DOWNLOAD" agentstudio.zip
+        success "Repository downloaded via curl to $APP_DIR"
     fi
 }
 
 # Run installation
 run_installation() {
-    macos_log "Installing Agent Studio to user directory..."
+    macos_log "Installing Agent Studio with unified structure..."
 
-    # Create directories
-    macos_log "Creating directories..."
-    mkdir -p "$INSTALL_DIR"
-    mkdir -p "$USER_HOME/.agent-studio-logs"
-    mkdir -p "$USER_HOME/.agent-studio-config"
-    mkdir -p "$USER_HOME/slides"
+    # Create unified directory structure
+    macos_log "Creating unified directory structure..."
+    mkdir -p "$CONFIG_DIR"
+    mkdir -p "$LOGS_DIR"
+    mkdir -p "$BACKUP_DIR"
+    mkdir -p "$DATA_DIR/slides"
     mkdir -p "$LAUNCHD_DIR"
 
-    # Copy files
-    macos_log "Copying application files..."
-    cd "$TEMP_DIR"
-    cp -r ./* "$INSTALL_DIR/"
+    # Change to app directory
+    cd "$APP_DIR"
 
     # Install dependencies
     macos_log "Installing dependencies..."
-    cd "$INSTALL_DIR"
 
     # Use appropriate package manager
     if command -v pnpm >/dev/null 2>&1; then
@@ -313,9 +327,9 @@ run_installation() {
     # Build the application
     macos_log "Building Agent Studio..."
     if command -v pnpm >/dev/null 2>&1; then
-        pnpm run build
+        pnpm run build:backend
     else
-        npm run build
+        npm run build:backend
     fi
 
     # Create launchd service
@@ -345,11 +359,11 @@ create_launchd_service() {
 
     <key>ProgramArguments</key>
     <array>
-        <string>$INSTALL_DIR/start.sh</string>
+        <string>$APP_DIR/start.sh</string>
     </array>
 
     <key>WorkingDirectory</key>
-    <string>$INSTALL_DIR</string>
+    <string>$APP_DIR</string>
 
     <key>RunAtLoad</key>
     <true/>
@@ -358,10 +372,10 @@ create_launchd_service() {
     <true/>
 
     <key>StandardOutPath</key>
-    <string>$USER_HOME/.agent-studio-logs/agent-studio-out.log</string>
+    <string>$LOGS_DIR/agent-studio-out.log</string>
 
     <key>StandardErrorPath</key>
-    <string>$USER_HOME/.agent-studio-logs/agent-studio-err.log</string>
+    <string>$LOGS_DIR/agent-studio-err.log</string>
 
     <key>EnvironmentVariables</key>
     <dict>
@@ -399,6 +413,7 @@ cd "$SCRIPT_DIR"
 # Load environment
 export NODE_ENV=production
 export PORT=${PORT:-4936}
+export SLIDES_DIR="$HOME/.agent-studio/data/slides"
 
 # Add common paths
 export PATH="$PATH:/usr/local/bin:/usr/bin:/bin"
@@ -454,16 +469,24 @@ fi
 
 # Start the application
 if command -v pnpm >/dev/null 2>&1; then
-    exec pnpm start
+    if [ -f "backend/dist/index.js" ]; then
+        exec pnpm start
+    else
+        exec pnpm run dev:backend
+    fi
 elif command -v npm >/dev/null 2>&1; then
-    exec npm start
+    if [ -f "backend/dist/index.js" ]; then
+        exec npm start
+    else
+        exec npm run dev:backend
+    fi
 else
     echo "Error: Neither pnpm nor npm found in PATH" >&2
     exit 1
 fi
 EOF
 
-    chmod +x "$INSTALL_DIR/start.sh"
+    chmod +x "$APP_DIR/start.sh"
 
     success "launchd service configuration created"
 }
@@ -599,16 +622,13 @@ EOF
 create_config() {
     macos_log "Creating configuration files..."
 
-    # Create config directory
-    mkdir -p "$USER_HOME/.agent-studio-config"
-
     # Create default configuration
-    cat > "$USER_HOME/.agent-studio-config/config.json" << EOF
+    cat > "$CONFIG_DIR/config.json" << EOF
 {
     "port": $SERVICE_PORT,
     "host": "0.0.0.0",
     "logLevel": "info",
-    "slidesDir": "$USER_HOME/slides",
+    "slidesDir": "$DATA_DIR/slides",
     "maxFileSize": "10MB",
     "allowedFileTypes": [".txt", ".md", ".js", ".ts", ".json", ".html", ".css"],
     "macosOptimizations": {
@@ -658,13 +678,14 @@ display_summary() {
     success "🎉 Agent Studio installation completed successfully!"
     echo
     info "Installation Details:"
-    info "  • Installed to: $INSTALL_DIR"
+    info "  • Base directory: $BASE_DIR"
     info "  • User: $ACTUAL_USER"
     info "  • Architecture: $ARCH_NAME"
     info "  • Service: $SERVICE_NAME"
-    info "  • Configuration: $USER_HOME/.agent-studio-config/config.json"
-    info "  • Logs: $USER_HOME/.agent-studio-logs/"
-    info "  • Slides directory: $USER_HOME/slides"
+    info "  • App directory: $APP_DIR"
+    info "  • Configuration: $CONFIG_DIR/config.json"
+    info "  • Logs: $LOGS_DIR/"
+    info "  • Slides directory: $DATA_DIR/slides"
     info "  • Launch agent: $LAUNCHD_DIR/$SERVICE_NAME.plist"
     echo
     info "🔧 Service Management:"
@@ -672,11 +693,11 @@ display_summary() {
     info "  • Stop service:      launchctl stop $SERVICE_NAME"
     info "  • Restart service:   launchctl kickstart -k gui/$(id -u)/$SERVICE_NAME"
     info "  • Check status:      launchctl list | grep $SERVICE_NAME"
-    info "  • View logs:         tail -f ~/.agent-studio-logs/agent-studio-out.log"
-    info "  • View errors:       tail -f ~/.agent-studio-logs/agent-studio-err.log"
+    info "  • View logs:         tail -f $LOGS_DIR/agent-studio-out.log"
+    info "  • View errors:       tail -f $LOGS_DIR/agent-studio-err.log"
     echo
     info "🛠️  Management Script:"
-    info "  • Quick management:  $INSTALL_DIR/agent-studio {start|stop|restart|status|logs}"
+    info "  • Quick management:  $APP_DIR/agent-studio {start|stop|restart|status|logs}"
     info "  • Or symlink:        $USER_HOME/.local/bin/agent-studio"
     echo
     info "🌐 Web Interface:"
@@ -685,7 +706,7 @@ display_summary() {
     warn "Notes:"
     warn "  • Service will auto-start at login"
     warn "  • Service runs in user space (no sudo required)"
-    warn "  • Logs are stored in ~/.agent-studio-logs/"
+    warn "  • Logs are stored in $LOGS_DIR/"
     warn "  • Make sure port $SERVICE_PORT is available"
     echo
 
@@ -693,10 +714,10 @@ display_summary() {
     if [ -z "$PIPED_INSTALL" ]; then
         info "Checking service status..."
         sleep 2
-        "$INSTALL_DIR/status.sh"
+        "$APP_DIR/status.sh"
     else
         info "To check service status, run:"
-        info "  $INSTALL_DIR/agent-studio status"
+        info "  $APP_DIR/agent-studio status"
     fi
 }
 

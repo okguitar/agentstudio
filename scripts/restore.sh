@@ -23,10 +23,16 @@ success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
 header_log() { echo -e "${PURPLE}[RESTORE]${NC} $1"; }
 
 # Configuration
-INSTALL_DIR="$HOME/.agent-studio"
-CONFIG_DIR="$HOME/.agent-studio-config"
-LOG_DIR="$HOME/.agent-studio-logs"
-SLIDES_DIR="$HOME/slides"
+BASE_DIR="$HOME/.agent-studio"
+APP_DIR="$BASE_DIR/app"
+CONFIG_DIR="$BASE_DIR/config"
+LOGS_DIR="$BASE_DIR/logs"
+BACKUP_DIR="$BASE_DIR/backup"
+DATA_DIR="$BASE_DIR/data"
+SLIDES_DIR="$DATA_DIR/slides"
+
+# Legacy compatibility
+INSTALL_DIR="$APP_DIR"
 
 # Parse command line arguments
 if [ $# -eq 0 ]; then
@@ -35,11 +41,11 @@ if [ $# -eq 0 ]; then
     echo "Usage: $0 <backup_directory>"
     echo ""
     echo "Example:"
-    echo "  $0 ~/.agent-studio-backup-20231010_143022"
+    echo "  $0 ~/.agent-studio/backup/backup-20231010_143022"
     echo "  $0 /tmp/agent-studio-backup"
     echo ""
     echo "To find available backups:"
-    echo "  ls -la $HOME/.agent-studio-backup-*"
+    echo "  ls -la $BASE_DIR/backup/"
     exit 1
 fi
 
@@ -94,9 +100,14 @@ check_current_installation() {
     local has_installation=false
     local components=()
 
-    if [ -d "$INSTALL_DIR" ]; then
+    if [ -d "$BASE_DIR" ]; then
         has_installation=true
-        components+=("installation directory: $INSTALL_DIR")
+        components+=("base directory: $BASE_DIR")
+    fi
+
+    if [ -d "$APP_DIR" ]; then
+        has_installation=true
+        components+=("application directory: $APP_DIR")
     fi
 
     if [ -d "$CONFIG_DIR" ]; then
@@ -183,38 +194,30 @@ restore_slides() {
     fi
 }
 
-# Restore package files (if Agent Studio is installed)
-restore_package_files() {
-    header_log "Restoring package files..."
+# Restore application files (if Agent Studio is installed)
+restore_application_files() {
+    header_log "Restoring application files..."
 
-    if [ -d "$INSTALL_DIR" ]; then
-        # Restore package.json if exists
-        if [ -f "$BACKUP_DIR/package.json" ]; then
-            log "Restoring package.json..."
-            cp "$BACKUP_DIR/package.json" "$INSTALL_DIR/"
+    if [ -d "$APP_DIR" ]; then
+        # Restore app directory if exists in backup
+        if [ -d "$BACKUP_DIR/app" ]; then
+            log "Restoring application directory..."
+            # Backup existing app directory
+            if [ -d "$APP_DIR" ] && [ "$(ls -A $APP_DIR 2>/dev/null)" ]; then
+                local app_backup="$APP_DIR.backup.$(date +%Y%m%d_%H%M%S)"
+                log "Backing up existing app directory to: $app_backup"
+                cp -r "$APP_DIR" "$app_backup"
+            fi
+            cp -r "$BACKUP_DIR/app/"* "$APP_DIR/"
         fi
 
-        # Restore package-lock.json if exists
-        if [ -f "$BACKUP_DIR/package-lock.json" ]; then
-            log "Restoring package-lock.json..."
-            cp "$BACKUP_DIR/package-lock.json" "$INSTALL_DIR/"
-        fi
-
-        # Restore pnpm-lock.yaml if exists
-        if [ -f "$BACKUP_DIR/pnpm-lock.yaml" ]; then
-            log "Restoring pnpm-lock.yaml..."
-            cp "$BACKUP_DIR/pnpm-lock.yaml" "$INSTALL_DIR/"
-        fi
-
-        # Restore .env if exists
-        if [ -f "$BACKUP_DIR/.env" ]; then
-            log "Restoring environment file..."
-            cp "$BACKUP_DIR/.env" "$INSTALL_DIR/"
-        fi
-
-        success "Package files restored"
+        success "Application files restored"
     else
-        warn "Agent Studio installation not found, skipping package files"
+        warn "Agent Studio application directory not found, creating it..."
+        mkdir -p "$APP_DIR"
+        if [ -d "$BACKUP_DIR/app" ]; then
+            cp -r "$BACKUP_DIR/app/"* "$APP_DIR/"
+        fi
     fi
 }
 
@@ -231,12 +234,12 @@ restart_service() {
         else
             log "Service is not running"
         fi
-    elif [ -f "$INSTALL_DIR/start.sh" ] && [ -f "$INSTALL_DIR/stop.sh" ]; then
+    elif [ -f "$APP_DIR/start.sh" ] && [ -f "$APP_DIR/stop.sh" ]; then
         # Try to restart using scripts
         log "Restarting using start/stop scripts..."
-        "$INSTALL_DIR/stop.sh" 2>/dev/null || true
+        "$APP_DIR/stop.sh" 2>/dev/null || true
         sleep 2
-        "$INSTALL_DIR/start.sh" 2>/dev/null || warn "Failed to start service"
+        "$APP_DIR/start.sh" 2>/dev/null || warn "Failed to start service"
         success "Service restart attempted"
     else
         log "No service management found, you may need to restart manually"
@@ -295,8 +298,8 @@ show_next_steps() {
     echo "  • Local API: http://localhost:4936"
     echo ""
     echo "💡 If the service is not running, start it with:"
-    if [ -f "$INSTALL_DIR/start.sh" ]; then
-        echo "  $INSTALL_DIR/start.sh"
+    if [ -f "$APP_DIR/start.sh" ]; then
+        echo "  $APP_DIR/start.sh"
     fi
     if command -v systemctl >/dev/null 2>&1 && systemctl list-unit-files | grep -q "agent-studio.service"; then
         echo "  sudo systemctl start agent-studio"
@@ -318,7 +321,7 @@ main() {
     check_current_installation
     restore_configurations
     restore_slides
-    restore_package_files
+    restore_application_files
     restart_service
     verify_restore
     show_next_steps

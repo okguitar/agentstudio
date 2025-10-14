@@ -7,12 +7,17 @@
 set -e
 
 # Configuration
-INSTALL_DIR="$HOME/.agent-studio"
-CONFIG_DIR="$HOME/.agent-studio-config"
-LOG_DIR="$HOME/.agent-studio-logs"
-SLIDES_DIR="$HOME/slides"
+BASE_DIR="$HOME/.agent-studio"
+APP_DIR="$BASE_DIR/app"
+CONFIG_DIR="$BASE_DIR/config"
+LOGS_DIR="$BASE_DIR/logs"
+BACKUP_DIR="$BASE_DIR/backup"
+DATA_DIR="$BASE_DIR/data"
+SLIDES_DIR="$DATA_DIR/slides"
 SERVICE_NAME="agent-studio"
-BACKUP_DIR="$HOME/.agent-studio-backup-$(date +%Y%m%d_%H%M%S)"
+
+# Legacy compatibility
+INSTALL_DIR="$APP_DIR"
 
 # Colors for output
 RED='\033[0;31m'
@@ -68,13 +73,23 @@ check_installation() {
 
     local found=false
 
-    if [ -d "$INSTALL_DIR" ]; then
-        log "Found installation directory: $INSTALL_DIR"
+    if [ -d "$BASE_DIR" ]; then
+        log "Found base directory: $BASE_DIR"
+        found=true
+    fi
+
+    if [ -d "$APP_DIR" ]; then
+        log "Found application directory: $APP_DIR"
         found=true
     fi
 
     if [ -d "$CONFIG_DIR" ]; then
         log "Found configuration directory: $CONFIG_DIR"
+        found=true
+    fi
+
+    if [ -d "$DATA_DIR" ]; then
+        log "Found data directory: $DATA_DIR"
         found=true
     fi
 
@@ -98,22 +113,15 @@ show_removal_plan() {
     echo "The following will be removed:"
     echo ""
 
-    # Installation directory
-    if [ -d "$INSTALL_DIR" ]; then
-        local size=$(du -sh "$INSTALL_DIR" 2>/dev/null | cut -f1 || echo "unknown")
-        echo "  📁 Installation directory: $INSTALL_DIR ($size)"
-    fi
-
-    # Configuration directory
-    if [ -d "$CONFIG_DIR" ]; then
-        local size=$(du -sh "$CONFIG_DIR" 2>/dev/null | cut -f1 || echo "unknown")
-        echo "  ⚙️  Configuration directory: $CONFIG_DIR ($size)"
-    fi
-
-    # Log directory
-    if [ -d "$LOG_DIR" ]; then
-        local size=$(du -sh "$LOG_DIR" 2>/dev/null | cut -f1 || echo "unknown")
-        echo "  📋 Log directory: $LOG_DIR ($size)"
+    # Base directory
+    if [ -d "$BASE_DIR" ]; then
+        local size=$(du -sh "$BASE_DIR" 2>/dev/null | cut -f1 || echo "unknown")
+        echo "  📁 Base directory: $BASE_DIR ($size)"
+        echo "     ├─ app/          (Application files)"
+        echo "     ├─ config/       (Configuration files)"
+        echo "     ├─ logs/         (Log files)"
+        echo "     ├─ backup/       (Backup files)"
+        echo "     └─ data/         (User data including slides)"
     fi
 
     # Systemd service
@@ -129,17 +137,15 @@ show_removal_plan() {
     echo ""
     if [ "$KEEP_DATA" = "true" ]; then
         echo "The following will be PRESERVED:"
-        if [ -d "$SLIDES_DIR" ] && [ "$(ls -A $SLIDES_DIR 2>/dev/null)" ]; then
-            local slide_count=$(find "$SLIDES_DIR" -name "*.html" 2>/dev/null | wc -l)
-            echo "  📊 Slides directory: $SLIDES_DIR ($slide_count slides)"
-        fi
-        echo "  💾 All backups in $HOME/.agent-studio-backup-*"
+        echo "  📊 All user data and backups in $BASE_DIR"
+        echo "  ⚙️  Configuration files in $CONFIG_DIR"
+        echo "  📋 Log files in $LOGS_DIR"
     else
         echo "The following will be REMOVED (unless --keep-data is used):"
-        if [ -d "$SLIDES_DIR" ] && [ "$(ls -A $SLIDES_DIR 2>/dev/null)" ]; then
-            local slide_count=$(find "$SLIDES_DIR" -name "*.html" 2>/dev/null | wc -l)
-            echo "  📊 Slides directory: $SLIDES_DIR ($slide_count slides)"
-        fi
+        echo "  📊 All data including slides in $DATA_DIR"
+        echo "  ⚙️  All configurations in $CONFIG_DIR"
+        echo "  📋 All logs in $LOGS_DIR"
+        echo "  💾 All backups in $BACKUP_DIR"
     fi
 }
 
@@ -158,8 +164,8 @@ ask_confirmation() {
         exit 0
     fi
 
-    if [ "$KEEP_DATA" = "false" ] && [ -d "$SLIDES_DIR" ] && [ "$(ls -A $SLIDES_DIR 2>/dev/null)" ]; then
-        warn "This will also remove all your slides!"
+    if [ "$KEEP_DATA" = "false" ] && [ -d "$DATA_DIR" ] && [ "$(ls -A $DATA_DIR 2>/dev/null)" ]; then
+        warn "This will also remove all your slides and data!"
         read -p "Are you absolutely sure? [y/N]: " -n 1 -r
         echo ""
 
@@ -179,29 +185,29 @@ create_backup() {
     header_log "Creating final backup..."
 
     mkdir -p "$BACKUP_DIR"
+    FINAL_BACKUP_DIR="$BACKUP_DIR/uninstall-backup-$(date +%Y%m%d_%H%M%S)"
 
     # Backup configurations
     if [ -d "$CONFIG_DIR" ]; then
         log "Backing up configurations..."
-        cp -r "$CONFIG_DIR" "$BACKUP_DIR/config"
+        cp -r "$CONFIG_DIR" "$FINAL_BACKUP_DIR/config"
     fi
 
-    # Backup slides
-    if [ -d "$SLIDES_DIR" ] && [ "$(ls -A $SLIDES_DIR 2>/dev/null)" ]; then
-        log "Backing up slides..."
-        cp -r "$SLIDES_DIR" "$BACKUP_DIR/slides"
+    # Backup data directory (includes slides)
+    if [ -d "$DATA_DIR" ] && [ "$(ls -A $DATA_DIR 2>/dev/null)" ]; then
+        log "Backing up data..."
+        cp -r "$DATA_DIR" "$FINAL_BACKUP_DIR/data"
     fi
 
     # Create backup info
-    cat > "$BACKUP_DIR/uninstall_backup.txt" << EOF
+    cat > "$FINAL_BACKUP_DIR/uninstall_backup.txt" << EOF
 Backup created during Agent Studio removal: $(date)
-This backup contains your configurations and slides.
-To restore these files, manually copy them back:
-  cp -r $BACKUP_DIR/config/* $CONFIG_DIR/
-  cp -r $BACKUP_DIR/slides/* $SLIDES_DIR/
+This backup contains your configurations and data.
+To restore these files, use the restore script:
+  ./restore.sh $FINAL_BACKUP_DIR
 EOF
 
-    success "Final backup created at $BACKUP_DIR"
+    success "Final backup created at $FINAL_BACKUP_DIR"
 }
 
 # Stop running service
@@ -225,9 +231,9 @@ stop_service() {
     fi
 
     # Try stop script
-    if [ -f "$INSTALL_DIR/stop.sh" ]; then
+    if [ -f "$APP_DIR/stop.sh" ]; then
         log "Running stop script..."
-        "$INSTALL_DIR/stop.sh" || warn "Stop script encountered an error"
+        "$APP_DIR/stop.sh" || warn "Stop script encountered an error"
     fi
 
     # Kill any remaining processes
@@ -242,28 +248,18 @@ stop_service() {
 remove_installation() {
     header_log "Removing installation files..."
 
-    # Remove installation directory
-    if [ -d "$INSTALL_DIR" ]; then
-        log "Removing installation directory..."
-        rm -rf "$INSTALL_DIR"
-    fi
-
-    # Remove configuration directory (unless keeping data)
-    if [ -d "$CONFIG_DIR" ] && [ "$KEEP_DATA" = "false" ]; then
-        log "Removing configuration directory..."
-        rm -rf "$CONFIG_DIR"
-    fi
-
-    # Remove log directory
-    if [ -d "$LOG_DIR" ]; then
-        log "Removing log directory..."
-        rm -rf "$LOG_DIR"
-    fi
-
-    # Remove slides directory (unless keeping data)
-    if [ -d "$SLIDES_DIR" ] && [ "$KEEP_DATA" = "false" ]; then
-        log "Removing slides directory..."
-        rm -rf "$SLIDES_DIR"
+    if [ "$KEEP_DATA" = "true" ]; then
+        # Only remove app directory, keep everything else
+        if [ -d "$APP_DIR" ]; then
+            log "Removing application directory only (keeping data)..."
+            rm -rf "$APP_DIR"
+        fi
+    else
+        # Remove entire base directory
+        if [ -d "$BASE_DIR" ]; then
+            log "Removing entire Agent Studio directory..."
+            rm -rf "$BASE_DIR"
+        fi
     fi
 
     success "Installation files removed"
@@ -304,14 +300,22 @@ verify_removal() {
 
     local remaining=false
 
-    if [ -d "$INSTALL_DIR" ]; then
-        warn "Installation directory still exists: $INSTALL_DIR"
-        remaining=true
-    fi
-
-    if [ -d "$CONFIG_DIR" ] && [ "$KEEP_DATA" = "false" ]; then
-        warn "Configuration directory still exists: $CONFIG_DIR"
-        remaining=true
+    if [ "$KEEP_DATA" = "true" ]; then
+        # Check if only app directory was removed
+        if [ -d "$APP_DIR" ]; then
+            warn "Application directory still exists: $APP_DIR"
+            remaining=true
+        fi
+        # Base directory should still exist with data
+        if [ ! -d "$BASE_DIR" ]; then
+            warn "Base directory was unexpectedly removed"
+        fi
+    else
+        # Check if entire base directory was removed
+        if [ -d "$BASE_DIR" ]; then
+            warn "Agent Studio directory still exists: $BASE_DIR"
+            remaining=true
+        fi
     fi
 
     if command -v systemctl >/dev/null 2>&1 && systemctl list-unit-files | grep -q "$SERVICE_NAME.service"; then
@@ -337,22 +341,21 @@ show_summary() {
     if [ "$KEEP_DATA" = "true" ]; then
         success "Agent Studio removed while preserving user data"
         echo ""
-        echo "📁 Preserved data:"
-        if [ -d "$SLIDES_DIR" ]; then
-            echo "  • Slides: $SLIDES_DIR"
-        fi
-        if [ -d "$CONFIG_DIR" ]; then
-            echo "  • Configuration: $CONFIG_DIR"
-        fi
+        echo "📁 Preserved data in $BASE_DIR:"
+        echo "  • Configuration: $CONFIG_DIR"
+        echo "  • Logs: $LOGS_DIR"
+        echo "  • Data (including slides): $DATA_DIR"
+        echo "  • Backups: $BACKUP_DIR"
         echo ""
         echo "To completely remove everything, run:"
         echo "  $0 --force"
     else
         success "Agent Studio has been completely removed"
-        if [ -n "$BACKUP_DIR" ]; then
+        if [ -n "$FINAL_BACKUP_DIR" ]; then
             echo ""
-            echo "📦 Final backup created at: $BACKUP_DIR"
-            echo "   This contains your slides and configurations"
+            echo "📦 Final backup created at: $FINAL_BACKUP_DIR"
+            echo "   This contains your configurations and data"
+            echo "   To restore: ./restore.sh $FINAL_BACKUP_DIR"
         fi
     fi
 

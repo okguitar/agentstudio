@@ -7,13 +7,18 @@
 set -e
 
 # Configuration
-INSTALL_DIR="$HOME/.agent-studio"
-CONFIG_DIR="$HOME/.agent-studio-config"
-LOG_DIR="$HOME/.agent-studio-logs"
-SLIDES_DIR="$HOME/slides"
-BACKUP_DIR="$HOME/.agent-studio-backup-$(date +%Y%m%d_%H%M%S)"
+BASE_DIR="$HOME/.agent-studio"
+APP_DIR="$BASE_DIR/app"
+CONFIG_DIR="$BASE_DIR/config"
+LOGS_DIR="$BASE_DIR/logs"
+BACKUP_DIR="$BASE_DIR/backup/backup-$(date +%Y%m%d_%H%M%S)"
+DATA_DIR="$BASE_DIR/data"
+SLIDES_DIR="$DATA_DIR/slides"
 GITHUB_REPO="git-men/agentstudio"
 GITHUB_BRANCH="main"
+
+# Legacy compatibility
+INSTALL_DIR="$APP_DIR"
 
 # Colors for output
 RED='\033[0;31m'
@@ -67,19 +72,20 @@ done
 check_installation() {
     header_log "Checking Agent Studio installation..."
 
-    if [ ! -d "$INSTALL_DIR" ]; then
-        error "Agent Studio is not installed in $INSTALL_DIR"
+    if [ ! -d "$BASE_DIR" ]; then
+        error "Agent Studio is not installed in $BASE_DIR"
         error "Please run the installation script first:"
         echo "  curl -fsSL https://raw.githubusercontent.com/$GITHUB_REPO/$GITHUB_BRANCH/scripts/remote-install.sh | bash"
         exit 1
     fi
 
-    if [ ! -f "$INSTALL_DIR/package.json" ]; then
-        error "Invalid Agent Studio installation detected"
+    if [ ! -f "$APP_DIR/package.json" ]; then
+        error "Invalid Agent Studio installation detected - missing package.json in app directory"
         exit 1
     fi
 
-    success "Agent Studio installation found in $INSTALL_DIR"
+    success "Agent Studio installation found in $BASE_DIR"
+    log "App directory: $APP_DIR"
 }
 
 # Create backup of important files
@@ -88,6 +94,13 @@ create_backup() {
 
     mkdir -p "$BACKUP_DIR"
 
+    # Backup app directory
+    if [ -d "$APP_DIR" ]; then
+        log "Backing up application..."
+        cp -r "$APP_DIR" "$BACKUP_DIR/app"
+        success "Application backed up"
+    fi
+
     # Backup configuration files
     if [ -d "$CONFIG_DIR" ]; then
         log "Backing up configuration..."
@@ -95,45 +108,22 @@ create_backup() {
         success "Configuration backed up"
     fi
 
-    # Backup slides directory if it exists and is not empty
-    if [ -d "$SLIDES_DIR" ] && [ "$(ls -A $SLIDES_DIR 2>/dev/null)" ]; then
-        log "Backing up slides..."
-        cp -r "$SLIDES_DIR" "$BACKUP_DIR/slides"
-        success "Slides backed up"
-    fi
-
-    # Backup package.json and lock files
-    if [ -f "$INSTALL_DIR/package.json" ]; then
-        cp "$INSTALL_DIR/package.json" "$BACKUP_DIR/"
-        log "Package.json backed up"
-    fi
-
-    if [ -f "$INSTALL_DIR/package-lock.json" ]; then
-        cp "$INSTALL_DIR/package-lock.json" "$BACKUP_DIR/"
-        log "Package-lock.json backed up"
-    fi
-
-    if [ -f "$INSTALL_DIR/pnpm-lock.yaml" ]; then
-        cp "$INSTALL_DIR/pnpm-lock.yaml" "$BACKUP_DIR/"
-        log "pnpm-lock.yaml backed up"
-    fi
-
-    # Backup environment file if it exists
-    if [ -f "$INSTALL_DIR/.env" ]; then
-        cp "$INSTALL_DIR/.env" "$BACKUP_DIR/"
-        log "Environment file backed up"
+    # Backup data directory if it exists and is not empty
+    if [ -d "$DATA_DIR" ] && [ "$(ls -A $DATA_DIR 2>/dev/null)" ]; then
+        log "Backing up data..."
+        cp -r "$DATA_DIR" "$BACKUP_DIR/data"
+        success "Data backed up"
     fi
 
     # Create backup info file
     cat > "$BACKUP_DIR/backup_info.txt" << EOF
 Backup created: $(date)
-Agent Studio version: $(cd "$INSTALL_DIR" && git describe --tags --always 2>/dev/null || echo "unknown")
+Agent Studio version: $(cd "$APP_DIR" && git describe --tags --always 2>/dev/null || echo "unknown")
 Backup location: $BACKUP_DIR
 Contents:
+- App directory (source code)
 - Configuration files
-- Slides directory (if exists)
-- Package files
-- Environment file (if exists)
+- Data directory (slides, etc.)
 
 To restore: ./restore.sh $BACKUP_DIR
 EOF
@@ -145,7 +135,7 @@ EOF
 check_for_updates() {
     header_log "Checking for updates..."
 
-    cd "$INSTALL_DIR"
+    cd "$APP_DIR"
 
     # Fetch latest changes
     git fetch origin
@@ -197,14 +187,14 @@ stop_service() {
 update_code() {
     header_log "Updating Agent Studio code..."
 
-    cd "$INSTALL_DIR"
+    cd "$APP_DIR"
 
     # Stash any local changes
     if [ -n "$(git status --porcelain)" ]; then
         log "Stashing local changes..."
         git stash push -m "Auto-stash before update $(date)"
         log "Local changes stashed. You can restore them later with:"
-        echo "  cd $INSTALL_DIR && git stash pop"
+        echo "  cd $APP_DIR && git stash pop"
     fi
 
     # Pull latest changes
@@ -219,7 +209,7 @@ update_code() {
 update_dependencies() {
     header_log "Updating dependencies..."
 
-    cd "$INSTALL_DIR"
+    cd "$APP_DIR"
 
     # Check which package manager is available
     if [ -f "pnpm-lock.yaml" ] && command -v pnpm >/dev/null 2>&1; then
@@ -244,9 +234,9 @@ update_dependencies() {
 start_service() {
     header_log "Starting Agent Studio service..."
 
-    if [ -f "$INSTALL_DIR/start.sh" ]; then
+    if [ -f "$APP_DIR/start.sh" ]; then
         log "Running start script..."
-        "$INSTALL_DIR/start.sh"
+        "$APP_DIR/start.sh"
     else
         error "Start script not found"
         exit 1
@@ -266,11 +256,11 @@ verify_update() {
         success "Agent Studio is running and accessible"
     else
         warn "Agent Studio might not be running properly"
-        warn "Please check the logs: $INSTALL_DIR/logs/ or journalctl -u agent-studio"
+        warn "Please check the logs: $LOGS_DIR/ or journalctl -u agent-studio"
     fi
 
     # Show new version
-    cd "$INSTALL_DIR"
+    cd "$APP_DIR"
     NEW_VERSION=$(git describe --tags --always 2>/dev/null || echo "unknown")
     success "Updated to version: $NEW_VERSION"
 }
@@ -280,7 +270,7 @@ cleanup_old_backups() {
     header_log "Cleaning up old backups..."
 
     # Keep only the last 5 backups
-    find "$HOME" -maxdepth 1 -name ".agent-studio-backup-*" -type d | sort -r | tail -n +6 | while read -r old_backup; do
+    find "$BACKUP_DIR" -maxdepth 1 -name "backup-*" -type d | sort -r | tail -n +6 | while read -r old_backup; do
         log "Removing old backup: $old_backup"
         rm -rf "$old_backup"
     done

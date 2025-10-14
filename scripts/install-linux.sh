@@ -8,9 +8,16 @@ set -e
 # Configuration
 GITHUB_REPO="git-men/agentstudio"
 GITHUB_BRANCH="main"
-TEMP_DIR="/tmp/agent-studio-linux-$(date +%s)"
 SERVICE_NAME="agent-studio"
 SERVICE_PORT="4936"
+
+# Unified storage structure - all files in ~/.agent-studio
+BASE_DIR="$USER_HOME/.agent-studio"
+APP_DIR="$BASE_DIR/app"
+CONFIG_DIR="$BASE_DIR/config"
+LOGS_DIR="$BASE_DIR/logs"
+BACKUP_DIR="$BASE_DIR/backup"
+DATA_DIR="$BASE_DIR/data"
 
 # Detect if running via pipe (for non-interactive mode)
 if [ -p /dev/stdin ] || [ ! -t 0 ]; then
@@ -38,7 +45,8 @@ else
     ACTUAL_GID=$(id -g)
 fi
 
-INSTALL_DIR="$USER_HOME/.agent-studio"
+# Legacy compatibility - INSTALL_DIR now points to app directory
+INSTALL_DIR="$APP_DIR"
 
 # Colors for output
 RED='\033[0;31m'
@@ -592,67 +600,74 @@ check_git() {
 
 # Check installation environment
 check_environment() {
-    linux_log "Installing Agent Studio to user directory: $INSTALL_DIR"
+    linux_log "Installing Agent Studio to unified directory: $BASE_DIR"
     linux_log "Target user: $ACTUAL_USER (UID: $ACTUAL_UID)"
+    linux_log "App directory: $APP_DIR"
+    linux_log "Config directory: $CONFIG_DIR"
+    linux_log "Logs directory: $LOGS_DIR"
+    linux_log "Backup directory: $BACKUP_DIR"
 
-    # Check if previous installation exists and is writable
-    if [ -d "$INSTALL_DIR" ]; then
-        linux_log "Found existing installation directory..."
-        linux_log "Cleaning existing installation..."
-        rm -rf "$INSTALL_DIR"
-        success "Cleanup completed"
+    # Create unified directory structure
+    mkdir -p "$BASE_DIR"
+
+    # Check if previous installation exists and clean up
+    if [ -d "$APP_DIR" ]; then
+        linux_log "Found existing app directory, cleaning up..."
+        rm -rf "$APP_DIR"
     fi
 
     # Ensure parent directory exists and has correct permissions
     mkdir -p "$USER_HOME"
     if [ "$ACTUAL_USER" != "root" ] && [ "$EUID" -eq 0 ]; then
-        chown -R "$ACTUAL_UID:$ACTUAL_GID" "$USER_HOME"
+        chown -R "$ACTUAL_UID:$ACTUAL_GID" "$BASE_DIR"
     fi
 }
 
-# Download and extract Agent Studio
+# Download and extract Agent Studio directly to app directory
 download_agent_studio() {
-    linux_log "Downloading Agent Studio..."
+    linux_log "Downloading Agent Studio directly to $APP_DIR..."
 
-    # Clean up any existing temp directory
-    rm -rf "$TEMP_DIR"
-    mkdir -p "$TEMP_DIR"
-    cd "$TEMP_DIR"
+    # Create app directory
+    mkdir -p "$APP_DIR"
+    cd "$APP_DIR"
 
-    # Download the repository
+    # Download the repository directly to app directory
     if command -v git >/dev/null 2>&1; then
         git clone "https://github.com/$GITHUB_REPO.git" .
         git checkout "$GITHUB_BRANCH"
+        success "Agent Studio cloned via Git to $APP_DIR"
     else
         # Fallback to downloading tarball
+        linux_log "Git not found, downloading tarball..."
+        TEMP_DOWNLOAD="/tmp/agent-studio-download-$(date +%s)"
+        mkdir -p "$TEMP_DOWNLOAD"
+        cd "$TEMP_DOWNLOAD"
         curl -fsSL "https://github.com/$GITHUB_REPO/archive/$GITHUB_BRANCH.tar.gz" | tar -xz --strip-components=1
+        cp -r ./* "$APP_DIR/"
+        cd "$APP_DIR"
+        rm -rf "$TEMP_DOWNLOAD"
+        success "Agent Studio downloaded via curl to $APP_DIR"
     fi
 
-    success "Agent Studio downloaded successfully"
+    # Set correct ownership if running as root
+    if [ "$ACTUAL_USER" != "root" ] && [ "$EUID" -eq 0 ]; then
+        chown -R "$ACTUAL_UID:$ACTUAL_GID" "$APP_DIR"
+    fi
 }
 
 # Run the main installation
 run_installation() {
-    linux_log "Installing Agent Studio to user directory..."
+    linux_log "Installing Agent Studio with unified structure..."
 
-    # Create directories
-    linux_log "Creating directories..."
-    mkdir -p "$INSTALL_DIR"
-    mkdir -p "$USER_HOME/.agent-studio-logs"
-    mkdir -p "$USER_HOME/.agent-studio-config"
-    mkdir -p "$USER_HOME/slides"
+    # Create unified directory structure
+    linux_log "Creating unified directory structure..."
+    mkdir -p "$CONFIG_DIR"
+    mkdir -p "$LOGS_DIR"
+    mkdir -p "$BACKUP_DIR"
+    mkdir -p "$DATA_DIR/slides"
 
-    # Copy files
-    linux_log "Copying application files..."
-    cd "$TEMP_DIR"
-    cp -r ./* "$INSTALL_DIR/"
-
-    # Set correct ownership if running as root
-    if [ "$ACTUAL_USER" != "root" ] && [ "$EUID" -eq 0 ]; then
-        chown -R "$ACTUAL_UID:$ACTUAL_GID" "$INSTALL_DIR"
-    fi
-
-    cd "$INSTALL_DIR"
+    # Change to app directory
+    cd "$APP_DIR"
 
     # Install dependencies and try to build
     linux_log "Installing dependencies..."
@@ -787,11 +802,11 @@ EOF
 
     # Create Linux-specific config file
     linux_log "Creating Linux configuration file..."
-    cat > "$USER_HOME/.agent-studio-config/config.env" << EOF
+    cat > "$CONFIG_DIR/config.env" << EOF
 # Agent Studio Configuration for Linux
 NODE_ENV=production
 PORT=$SERVICE_PORT
-SLIDES_DIR=$USER_HOME/slides
+SLIDES_DIR=$DATA_DIR/slides
 
 # Linux-specific settings
 LINUX_DISTRO=$DISTRO
@@ -815,7 +830,8 @@ EOF
 # Cleanup temp files
 cleanup() {
     linux_log "Cleaning up temporary files..."
-    rm -rf "$TEMP_DIR"
+    # Only clean up temporary downloads, not the main installation
+    rm -rf /tmp/agent-studio-download-* 2>/dev/null || true
     success "Cleanup completed"
 }
 
@@ -853,11 +869,11 @@ After=network.target
 [Service]
 Type=simple
 User=$ACTUAL_USER
-WorkingDirectory=$INSTALL_DIR
+WorkingDirectory=$APP_DIR
 Environment=NODE_ENV=production
 Environment=PORT=$SERVICE_PORT
-Environment=SLIDES_DIR=$USER_HOME/slides
-ExecStart=/bin/bash $INSTALL_DIR/start.sh
+Environment=SLIDES_DIR=$DATA_DIR/slides
+ExecStart=/bin/bash $APP_DIR/start.sh
 Restart=always
 RestartSec=10
 StandardOutput=journal
@@ -915,7 +931,7 @@ configure_service() {
     echo ""
     echo "The service can run without additional configuration."
     echo "API keys can be added later if needed by editing:"
-    echo "  $USER_HOME/.agent-studio-config/config.env"
+    echo "  $CONFIG_DIR/config.env"
     echo ""
     echo "🐧 Linux-specific features:"
     echo "  ✅ Optimized for $DISTRO_NAME"
@@ -958,9 +974,9 @@ start_service() {
     if [ "$START_SERVICE" = true ]; then
         linux_log "Starting Agent Studio backend on Linux..."
 
-        if [ -f "$INSTALL_DIR/start.sh" ]; then
+        if [ -f "$APP_DIR/start.sh" ]; then
             linux_log "Running start script..."
-            "$INSTALL_DIR/start.sh" &
+            "$APP_DIR/start.sh" &
 
             # Wait a moment and check if service started
             sleep 5
@@ -984,7 +1000,7 @@ start_service() {
     else
         echo ""
         echo "To start the backend later, run:"
-        echo "  $INSTALL_DIR/start.sh"
+        echo "  $APP_DIR/start.sh"
     fi
 }
 
@@ -1024,7 +1040,13 @@ main() {
     echo ""
     echo "🎉 Linux Installation Complete!"
     echo ""
-    echo "Agent Studio Backend is now installed in: $INSTALL_DIR"
+    echo "Agent Studio is now installed with unified structure in: $BASE_DIR"
+    echo "├── app/          - Application source code"
+    echo "├── config/       - Configuration files"
+    echo "├── logs/         - Log files"
+    echo "├── backup/       - Backup files"
+    echo "└── data/         - User data (slides, etc.)"
+    echo ""
     echo "Target user: $ACTUAL_USER"
     echo "Distribution: $DISTRO_NAME ($DISTRO $DISTRO_VERSION)"
     echo "Architecture: $ARCH_NAME"
@@ -1055,11 +1077,11 @@ main() {
     fi
 
     echo "🚀 Manual Startup Commands:"
-    echo "  $INSTALL_DIR/start.sh    # Start the backend"
-    echo "  $INSTALL_DIR/stop.sh     # Stop the backend"
+    echo "  $APP_DIR/start.sh    # Start the backend"
+    echo "  $APP_DIR/stop.sh     # Stop the backend"
     echo ""
     echo "⚙️  Configuration file:"
-    echo "  $USER_HOME/.agent-studio-config/config.env"
+    echo "  $CONFIG_DIR/config.env"
     echo ""
     echo "✨ Access the application at:"
     echo "   https://agentstudio-frontend.vercel.app/"
@@ -1067,7 +1089,7 @@ main() {
     echo "💡 After starting the backend, configure the backend URL in the web interface:"
     echo "   Settings → API Configuration → http://localhost:4936"
     echo ""
-    echo "📁 Slides directory: $USER_HOME/slides"
+    echo "📁 Slides directory: $DATA_DIR/slides"
     echo ""
     echo "🐧 Linux-specific notes:"
     echo "  • Uses system package manager when available"

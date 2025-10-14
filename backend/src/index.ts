@@ -15,7 +15,9 @@ import commandsRouter from './routes/commands.js';
 import subagentsRouter from './routes/subagents.js';
 import projectsRouter from './routes/projects.js';
 import authRouter from './routes/auth.js';
+import configRouter from './routes/config.js';
 import { authMiddleware } from './middleware/auth.js';
+import { loadConfig, getSlidesDir } from './config/index.js';
 
 dotenv.config();
 
@@ -23,7 +25,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const app = express();
-const PORT = process.env.PORT || 4936;
+
+// Load configuration (including port)
+const config = await loadConfig();
+const PORT = config.port || 4936;
 
 // Middleware
 app.use(helmet({
@@ -115,7 +120,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Static files - serve slides directory
-const slidesDir = join(__dirname, '../..', process.env.SLIDES_DIR || 'slides');
+const slidesDir = await getSlidesDir();
 app.use('/slides', express.static(slidesDir));
 
 // Routes - Public routes
@@ -127,6 +132,7 @@ app.use('/api/agents', authMiddleware, agentsRouter);
 app.use('/api/mcp', authMiddleware, mcpRouter);
 app.use('/api/sessions', authMiddleware, sessionsRouter);
 app.use('/api/settings', authMiddleware, settingsRouter);
+app.use('/api/config', authMiddleware, configRouter);
 app.use('/api/commands', authMiddleware, commandsRouter);
 app.use('/api/subagents', authMiddleware, subagentsRouter);
 app.use('/api/projects', authMiddleware, projectsRouter);
