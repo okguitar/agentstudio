@@ -615,7 +615,7 @@ SERVICE_NAME="com.agentstudio.daemon"
 case "$1" in
     start)
         echo "Starting Agent Studio service..."
-        launchctl load ~/Library/LaunchAgents/com.agent_name.daemon.plist
+        launchctl load ~/Library/LaunchAgents/com.agentstudio.daemon.plist
         launchctl start "$SERVICE_NAME"
         echo "Service started"
         ;;
@@ -641,12 +641,12 @@ case "$1" in
     logs)
         echo "Agent Studio logs:"
         echo "Standard output:"
-        tail -f ~/.agent-studio-logs/agent-studio-out.log
+        tail -f ~/.agent-studio/logs/agent-studio-out.log
         ;;
     errors)
         echo "Agent Studio error logs:"
         echo "Standard error:"
-        tail -f ~/.agent-studio-logs/agent-studio-err.log
+        tail -f ~/.agent-studio/logs/agent-studio-err.log
         ;;
     uninstall)
         echo "Uninstalling Agent Studio service..."

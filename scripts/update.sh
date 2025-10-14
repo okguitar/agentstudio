@@ -7,6 +7,7 @@
 set -e
 
 # Configuration
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BASE_DIR="$HOME/.agent-studio"
 APP_DIR="$BASE_DIR/app"
 CONFIG_DIR="$BASE_DIR/config"
@@ -239,7 +240,15 @@ check_for_updates() {
 stop_service() {
     header_log "Stopping Agent Studio service..."
 
-    # Try to stop systemd service first
+    # Try to stop launchctl service first (macOS)
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        if [ -f "$SCRIPT_DIR/service.sh" ]; then
+            log "Stopping launchctl service..."
+            "$SCRIPT_DIR/service.sh" stop 2>/dev/null || warn "Could not stop launchctl service"
+        fi
+    fi
+
+    # Try to stop systemd service first (Linux)
     if command -v systemctl >/dev/null 2>&1; then
         if systemctl is-active --quiet agent-studio 2>/dev/null; then
             log "Stopping systemd service..."
@@ -265,7 +274,14 @@ stop_service() {
 stop_service_for_restart() {
     log "Stopping service for restart..."
 
-    # Try to stop systemd service first
+    # Try to stop launchctl service first (macOS)
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        if [ -f "$SCRIPT_DIR/service.sh" ]; then
+            "$SCRIPT_DIR/service.sh" stop 2>/dev/null || true
+        fi
+    fi
+
+    # Try to stop systemd service first (Linux)
     if command -v systemctl >/dev/null 2>&1; then
         if systemctl is-active --quiet agent-studio 2>/dev/null; then
             sudo systemctl stop agent-studio 2>/dev/null || true
@@ -390,6 +406,33 @@ start_service() {
         sleep 2
     fi
 
+    # Try to start using launchctl service first (macOS)
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        if [ -f "$SCRIPT_DIR/service.sh" ]; then
+            log "Starting launchctl service..."
+            if "$SCRIPT_DIR/service.sh" start; then
+                success "Service started via launchctl"
+                return 0
+            else
+                warn "Launchctl service failed to start, trying alternative method..."
+            fi
+        fi
+    fi
+
+    # Try to start using systemd service (Linux)
+    if command -v systemctl >/dev/null 2>&1; then
+        if systemctl is-enabled --quiet agent-studio 2>/dev/null; then
+            log "Starting systemd service..."
+            if sudo systemctl start agent-studio; then
+                success "Service started via systemd"
+                return 0
+            else
+                warn "Systemd service failed to start, trying alternative method..."
+            fi
+        fi
+    fi
+
+    # Fallback to start script
     if [ -f "$APP_DIR/start.sh" ]; then
         log "Running start script..."
         "$APP_DIR/start.sh" &
@@ -487,6 +530,10 @@ main() {
     echo "💡 Service Management:"
     echo "  • To restart service later: $0 --restart"
     echo "  • To check service status: curl http://localhost:4936/api/health"
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        echo "  • macOS service management: $APP_DIR/agent-studio [start|stop|restart|status|logs]"
+        echo "  • Service is managed by launchctl: com.agentstudio.daemon"
+    fi
     echo ""
     echo "If you encounter any issues, you can restore from backup:"
     echo "  $BACKUP_DIR/restore.sh"
