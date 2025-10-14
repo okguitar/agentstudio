@@ -78,7 +78,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
     setIsCreatingProject(true);
     try {
       // Create project in selected directory or default location
-      let finalProjectName = projectName;
+      const finalProjectName = projectName;
       
       const result = await createProject.mutateAsync({
         agentId: agent.id,

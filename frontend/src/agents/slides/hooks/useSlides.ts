@@ -8,7 +8,7 @@ const parseSlidesConfig = (configContent: string): { slides: string[], title: st
   
   // Format 1: window.presentationConfig
   let slidesMatch = configContent.match(/window\.presentationConfig\s*=\s*\{[\s\S]*?slides:\s*\[([\s\S]*?)\]/);
-  let titleMatch = configContent.match(/title:\s*["']([^"']+)["']/);
+  const titleMatch = configContent.match(/title:\s*["']([^"']+)["']/);
   
   // Format 2: presentationConfig (without window)
   if (!slidesMatch) {

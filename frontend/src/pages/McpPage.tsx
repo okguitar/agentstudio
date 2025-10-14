@@ -168,7 +168,7 @@ export const McpPage: React.FC = () => {
 
   const handleEditServer = (server: McpServerConfig) => {
     setEditingServer(server);
-    let config: any = {
+    const config: any = {
       type: server.type,
       ...(server.timeout && { timeout: server.timeout }),
       ...(server.autoApprove && { autoApprove: server.autoApprove })
