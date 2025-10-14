@@ -39,6 +39,7 @@ header_log() { echo -e "${PURPLE}[UPDATE]${NC} $1"; }
 # Parse command line arguments
 FORCE_UPDATE=false
 BACKUP_ONLY=false
+RESTART_SERVICE=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -50,13 +51,18 @@ while [[ $# -gt 0 ]]; do
             BACKUP_ONLY=true
             shift
             ;;
+        --restart)
+            RESTART_SERVICE=true
+            shift
+            ;;
         --help|-h)
             echo "Agent Studio Update Script"
-            echo "Usage: $0 [--force] [--backup-only] [--help]"
+            echo "Usage: $0 [--force] [--backup-only] [--restart] [--help]"
             echo ""
             echo "Options:"
             echo "  --force       Force update even if no changes detected"
             echo "  --backup-only Only create backup, don't update"
+            echo "  --restart     Restart service after update/check"
             echo "  --help, -h    Show this help message"
             exit 0
             ;;
@@ -149,6 +155,30 @@ check_for_updates() {
         log "Current version: $(git describe --tags --always 2>/dev/null || echo $CURRENT_COMMIT)"
         echo ""
         log "To force update, run: $0 --force"
+
+        # Check if restart is requested
+        if [ "$RESTART_SERVICE" = "true" ]; then
+            log "Restart requested, checking service status..."
+            if curl -s http://localhost:4936/api/health >/dev/null 2>&1; then
+                log "Service is running, restarting..."
+                stop_service
+                start_service
+                verify_update
+            else
+                log "Service is not running, starting..."
+                start_service
+                verify_update
+            fi
+        else
+            # Check if service is running
+            if curl -s http://localhost:4936/api/health >/dev/null 2>&1; then
+                success "Agent Studio is running and accessible"
+                log "Use '$0 --restart' to restart the service"
+            else
+                warn "Agent Studio is not running"
+                log "Use '$0 --restart' to start the service"
+            fi
+        fi
         exit 0
     fi
 
@@ -236,13 +266,23 @@ start_service() {
 
     if [ -f "$APP_DIR/start.sh" ]; then
         log "Running start script..."
-        "$APP_DIR/start.sh"
+        "$APP_DIR/start.sh" &
+        START_PID=$!
+
+        # Give the service time to start
+        sleep 5
+
+        # Check if it started successfully
+        if kill -0 $START_PID 2>/dev/null; then
+            success "Service started (PID: $START_PID)"
+        else
+            error "Service failed to start"
+            return 1
+        fi
     else
         error "Start script not found"
-        exit 1
+        return 1
     fi
-
-    success "Service started"
 }
 
 # Verify update
@@ -314,8 +354,13 @@ main() {
     success "Agent Studio has been updated successfully!"
     echo ""
     echo "📁 Backup location: $BACKUP_DIR"
-    echo "🌐 Application: https://agentstudio-frontend.vercel.app/"
-    echo "🔧 Local API: http://localhost:4936"
+    echo "🌐 Application: http://localhost:4936/"
+    echo "🔧 Local API: http://localhost:4936/api/*"
+    echo "📑 Slides: http://localhost:4936/slides/*"
+    echo ""
+    echo "💡 Service Management:"
+    echo "  • To restart service later: $0 --restart"
+    echo "  • To check service status: curl http://localhost:4936/api/health"
     echo ""
     echo "If you encounter any issues, you can restore from backup:"
     echo "  $BACKUP_DIR/restore.sh"
