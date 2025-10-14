@@ -45,7 +45,10 @@ app.use(helmet({
       workerSrc: ["'self'", "blob:"],
       childSrc: ["'self'", "blob:"]
     }
-  }
+  },
+  // Disable problematic headers for non-HTTPS access
+  crossOriginOpenerPolicy: false,
+  originAgentCluster: false
 }));
 // Configure CORS origins
 const getAllowedOrigins = () => {
