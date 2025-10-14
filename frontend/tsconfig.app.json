@@ -19,8 +19,8 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
-      "@agentstudio/shared": ["../shared/src"],
-      "@agentstudio/shared/*": ["../shared/src/*"]
+      "agentstudio-shared": ["../shared/src"],
+      "agentstudio-shared/*": ["../shared/src/*"]
     },
 
     /* Linting */

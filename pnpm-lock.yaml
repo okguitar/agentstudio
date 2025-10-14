@@ -17,9 +17,6 @@ importers:
 
   backend:
     dependencies:
-      '@agentstudio/shared':
-        specifier: workspace:*
-        version: link:../shared
       '@ai-sdk/anthropic':
         specifier: ^1.0.5
         version: 1.2.12(zod@3.25.76)
@@ -29,9 +26,15 @@ importers:
       '@anthropic-ai/claude-code':
         specifier: ^2.0.10
         version: 2.0.10
+      agentstudio-shared:
+        specifier: ^0.1.0
+        version: 0.1.0
       ai:
         specifier: ^5.0.22
         version: 5.0.56(zod@3.25.76)
+      commander:
+        specifier: ^11.1.0
+        version: 11.1.0
       cors:
         specifier: ^2.8.5
         version: 2.8.5
@@ -87,9 +90,6 @@ importers:
 
   frontend:
     dependencies:
-      '@agentstudio/shared':
-        specifier: workspace:*
-        version: link:../shared
       '@monaco-editor/react':
         specifier: ^4.7.0
         version: 4.7.0(monaco-editor@0.53.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
@@ -102,6 +102,9 @@ importers:
       '@types/prismjs':
         specifier: ^1.26.5
         version: 1.26.5
+      agentstudio-shared:
+        specifier: workspace:*
+        version: link:../shared
       ai:
         specifier: ^5.0.22
         version: 5.0.56(zod@3.25.76)
@@ -1370,6 +1373,9 @@ packages:
     resolution: {integrity: sha512-MnA+YT8fwfJPgBx3m60MNqakm30XOkyIoH1y6huTQvC0PwZG7ki8NacLBcrPbNoo8vEZy7Jpuk7+jMO+CUovTQ==}
     engines: {node: '>= 14'}
 
+  agentstudio-shared@0.1.0:
+    resolution: {integrity: sha512-wK52Bd9uQXOeaPRa3k2oWKrwNz9+d5tJO0kc0quyrb2o4EN2+0EbbsLDgtikhBsw4Dg3wJkT9sxXOkq13Hjh2w==}
+
   ai@5.0.56:
     resolution: {integrity: sha512-Rl++Ogg6DxzFkVHAOJZzhqcqvqtBLGOP9mMxJOGr2EJWj5HH5zjqDcnRh6x5vBoca5kj/Gd0rvUZFMnyI+sRiw==}
     engines: {node: '>=18'}
@@ -1593,6 +1599,10 @@ packages:
 
   comma-separated-tokens@2.0.3:
     resolution: {integrity: sha512-Fu4hJdvzeylCfQPp9SGWidpzrMs7tTrlu6Vb8XGaRGck8QSNZJJp538Wrb60Lax4fPwR64ViY468OIUTbRlGZg==}
+
+  commander@11.1.0:
+    resolution: {integrity: sha512-yPVavfyCcRhmorC7rWlkHn15b4wDVgVmBA7kV4QVBsF7kv/9TKJAbAXVTxvTnwP8HHKjRCJDClKbciiYS7p0DQ==}
+    engines: {node: '>=16'}
 
   commander@4.1.1:
     resolution: {integrity: sha512-NOKm8xhkzAjzFx8B2v5OAHT+u5pRQc2UCa2Vq9jYL/31o2wi9mxBA7LIFs3sV5VSC49z6pEhfbMULvShKj26WA==}
@@ -4689,6 +4699,10 @@ snapshots:
 
   agent-base@7.1.4: {}
 
+  agentstudio-shared@0.1.0:
+    dependencies:
+      '@anthropic-ai/claude-code': 2.0.10
+
   ai@5.0.56(zod@3.25.76):
     dependencies:
       '@ai-sdk/gateway': 1.0.30(zod@3.25.76)
@@ -4910,6 +4924,8 @@ snapshots:
   comma-separated-tokens@1.0.8: {}
 
   comma-separated-tokens@2.0.3: {}
+
+  commander@11.1.0: {}
 
   commander@4.1.1: {}
 

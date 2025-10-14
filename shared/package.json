@@ -1,5 +1,5 @@
 {
-  "name": "@agentstudio/shared",
+  "name": "agentstudio-shared",
   "version": "0.1.0",
   "description": "Shared types and utilities for AgentStudio",
   "type": "module",

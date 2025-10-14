@@ -10,7 +10,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
-      '@agentstudio/shared': path.resolve(__dirname, '../shared/src'),
+      'agentstudio-shared': path.resolve(__dirname, '../shared/src'),
     },
   },
   build: {
