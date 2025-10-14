@@ -1,14 +1,17 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { useBackendServices } from './useBackendServices';
 import { API_BASE } from '../lib/config.js';
-import { isTokenExpired, extractToken } from '../utils/authHelpers';
+import { isTokenExpired, extractToken, shouldRefreshToken as shouldRefreshTokenUtil } from '../utils/authHelpers';
 
 export function useAuth() {
   const { token, setToken, removeToken, getToken } = useAuthStore();
   const { currentService } = useBackendServices();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const refreshTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastRefreshCheckRef = useRef<number>(0);
 
   // Use only the service ID to avoid unnecessary re-renders
   const currentServiceId = currentService?.id;
@@ -146,7 +149,80 @@ export function useAuth() {
         return false;
       }
 
+      // Add timeout to prevent hanging requests
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
       const response = await fetch(`${API_BASE}/auth/verify`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token: actualToken }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      const data = await response.json();
+
+      if (!response.ok || !data.valid) {
+        // Only remove token if it's actually invalid (401)
+        if (response.status === 401) {
+          removeToken(currentService.id);
+        }
+        return false;
+      }
+
+      return true;
+    } catch (err: any) {
+      console.error('Token verification error:', err);
+
+      // Don't remove token for network errors, only for authentication errors
+      if (err.name === 'AbortError') {
+        // Request timed out - this is a network issue, not auth issue
+        console.warn('Token verification request timed out');
+        return false; // Don't remove token
+      }
+
+      if (err instanceof TypeError && (
+        err.message.includes('fetch') ||
+        err.message.includes('network') ||
+        err.message.includes('Failed to fetch')
+      )) {
+        // Network error - don't remove token
+        console.warn('Network error during token verification, keeping token');
+        return false; // Don't remove token
+      }
+
+      // For other errors, remove token to be safe
+      removeToken(currentService.id);
+      return false;
+    }
+  }, [currentService, getToken, removeToken]);
+
+  // Auto refresh token function
+  const refreshToken = useCallback(async (): Promise<boolean> => {
+    if (!currentService || isRefreshing) return false;
+
+    const currentToken = getToken(currentService.id);
+    if (!currentToken || isTokenExpired(currentToken)) {
+      return false;
+    }
+
+    // Check if token needs refresh
+    if (!shouldRefreshTokenUtil(currentToken)) {
+      return true; // Token is still valid
+    }
+
+    setIsRefreshing(true);
+    try {
+      const actualToken = extractToken(currentToken);
+      if (!actualToken) {
+        return false;
+      }
+
+      const response = await fetch(`${API_BASE}/auth/refresh`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -154,28 +230,97 @@ export function useAuth() {
         body: JSON.stringify({ token: actualToken }),
       });
 
-      const data = await response.json();
-
-      if (!response.ok || !data.valid) {
-        removeToken(currentService.id);
+      if (!response.ok) {
+        console.error('Token refresh failed:', response.status);
         return false;
       }
 
-      return true;
-    } catch (err) {
-      console.error('Token verification error:', err);
-      removeToken(currentService.id);
+      const data = await response.json();
+
+      if (data.success && data.token) {
+        if (data.refreshed) {
+          // Update the stored token with the new one
+          const newTokenData = {
+            ...currentToken,
+            token: data.token,
+            timestamp: Date.now(),
+          };
+          setToken(newTokenData);
+          console.log('Token refreshed successfully');
+        }
+        return true;
+      }
+
       return false;
+    } catch (err) {
+      console.error('Token refresh error:', err);
+      return false;
+    } finally {
+      setIsRefreshing(false);
     }
-  }, [currentService, getToken, removeToken]);
+  }, [currentService, getToken, isRefreshing, setToken]);
+
+  // Setup automatic token refresh
+  useEffect(() => {
+    if (!currentService || !isAuthenticated) {
+      // Clear timer if no service or not authenticated
+      if (refreshTimerRef.current) {
+        clearInterval(refreshTimerRef.current);
+        refreshTimerRef.current = null;
+      }
+      return;
+    }
+
+    // Check for token refresh every 5 minutes
+    refreshTimerRef.current = setInterval(async () => {
+      const now = Date.now();
+
+      // Don't check too frequently (at least 2 minutes between checks)
+      if (now - lastRefreshCheckRef.current < 2 * 60 * 1000) {
+        return;
+      }
+
+      lastRefreshCheckRef.current = now;
+
+      const currentToken = getToken(currentService.id);
+      if (currentToken && shouldRefreshTokenUtil(currentToken)) {
+        console.log('Auto-refreshing token...');
+        await refreshToken();
+      }
+    }, 5 * 60 * 1000); // Check every 5 minutes
+
+    return () => {
+      if (refreshTimerRef.current) {
+        clearInterval(refreshTimerRef.current);
+        refreshTimerRef.current = null;
+      }
+    };
+  }, [currentService, isAuthenticated, getToken, refreshToken]);
+
+  // Check for refresh on initial load and when service changes
+  useEffect(() => {
+    if (!currentService || !isAuthenticated) return;
+
+    const checkAndRefresh = async () => {
+      const currentToken = getToken(currentService.id);
+      if (currentToken && shouldRefreshTokenUtil(currentToken)) {
+        console.log('Token needs refresh on service change...');
+        await refreshToken();
+      }
+    };
+
+    checkAndRefresh();
+  }, [currentService?.id]); // Only depend on service ID
 
   return {
     token,
     isAuthenticated,
     isLoading,
     error,
+    isRefreshing,
     login,
     logout,
     verifyToken,
+    refreshToken,
   };
 }
