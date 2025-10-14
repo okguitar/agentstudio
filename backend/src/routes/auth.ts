@@ -1,5 +1,5 @@
 import express, { Request, Response, Router } from 'express';
-import { generateToken, verifyToken } from '../utils/jwt.js';
+import { generateToken, verifyToken, shouldRefreshToken } from '../utils/jwt.js';
 
 const router: Router = express.Router();
 
@@ -54,6 +54,48 @@ router.post('/verify', (req: Request, res: Response) => {
   res.json({
     valid: true,
     payload,
+  });
+});
+
+/**
+ * POST /api/auth/refresh
+ * Refresh an existing token if it's within refresh threshold
+ */
+router.post('/refresh', (req: Request, res: Response) => {
+  const { token } = req.body;
+
+  if (!token) {
+    res.status(400).json({ error: 'Token is required' });
+    return;
+  }
+
+  const payload = verifyToken(token);
+
+  if (!payload) {
+    res.status(401).json({ error: 'Invalid or expired token' });
+    return;
+  }
+
+  // Check if token should be refreshed
+  if (!shouldRefreshToken(payload)) {
+    // Token is still valid and doesn't need refresh
+    res.json({
+      success: true,
+      token: token, // Return existing token
+      refreshed: false,
+      message: 'Token is still valid',
+    });
+    return;
+  }
+
+  // Generate new token
+  const newToken = generateToken();
+
+  res.json({
+    success: true,
+    token: newToken,
+    refreshed: true,
+    message: 'Token refreshed successfully',
   });
 });
 
