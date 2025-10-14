@@ -16,17 +16,59 @@ export const isTokenForDifferentService = (
   return token.serviceId !== currentService.id;
 };
 
-// Check if token is expired (older than 24 hours)
+// Parse JWT token to extract expiration time
+function parseJWT(token: string): { exp?: number } | null {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(window.atob(base64));
+  } catch {
+    return null;
+  }
+}
+
+// Check if token is expired based on JWT expiration time
 export const isTokenExpired = (token: string | TokenData | null): boolean => {
   if (!token) return true;
 
-  // If token is a simple string, we can't determine expiration
-  if (typeof token === 'string') return false;
+  // If token is a simple string, parse JWT
+  if (typeof token === 'string') {
+    const decoded = parseJWT(token);
+    if (!decoded || !decoded.exp) return true;
 
+    const now = Math.floor(Date.now() / 1000);
+    return decoded.exp <= now;
+  }
+
+  // For TokenData, use the timestamp as fallback
+  // But prioritize JWT expiration if we can parse it
+  const decoded = parseJWT(token.token);
+  if (decoded && decoded.exp) {
+    const now = Math.floor(Date.now() / 1000);
+    return decoded.exp <= now;
+  }
+
+  // Fallback: check if token is very old (7 days)
   const tokenAge = Date.now() - token.timestamp;
-  const twentyFourHours = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+  const sevenDays = 7 * 24 * 60 * 60 * 1000;
+  return tokenAge > sevenDays;
+};
 
-  return tokenAge > twentyFourHours;
+// Check if token should be refreshed (within refresh threshold)
+export const shouldRefreshToken = (token: string | TokenData | null, thresholdHours: number = 24): boolean => {
+  if (!token) return true;
+
+  // Parse JWT to get expiration
+  const jwtString = typeof token === 'string' ? token : token.token;
+  const decoded = parseJWT(jwtString);
+
+  if (!decoded || !decoded.exp) return true;
+
+  const now = Math.floor(Date.now() / 1000);
+  const thresholdSeconds = thresholdHours * 60 * 60;
+
+  // Refresh if token expires within threshold hours
+  return decoded.exp - now <= thresholdSeconds;
 };
 
 // Extract the actual JWT token from token data
