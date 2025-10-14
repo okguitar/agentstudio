@@ -307,27 +307,48 @@ update_code() {
 
 # Update dependencies
 update_dependencies() {
-    header_log "Updating dependencies..."
+    header_log "Updating dependencies and building application..."
 
     cd "$APP_DIR"
 
     # Check which package manager is available
     if [ -f "pnpm-lock.yaml" ] && command -v pnpm >/dev/null 2>&1; then
         log "Using pnpm..."
+        log "Installing dependencies..."
         pnpm install
-        log "Building backend with pnpm..."
-        pnpm run build:backend
+
+        log "Building shared packages..."
+        pnpm --filter shared run build
+
+        log "Building backend..."
+        pnpm --filter backend run build
+
+        log "Building frontend for production..."
+        NODE_ENV=production pnpm --filter frontend run build
+
     elif command -v npm >/dev/null 2>&1; then
         log "Using npm..."
+        log "Installing dependencies..."
         npm install
-        log "Building backend with npm..."
-        npm run build:backend
+
+        log "Building shared packages..."
+        npm --filter shared run build
+
+        log "Building backend..."
+        npm --filter backend run build
+
+        log "Building frontend for production..."
+        NODE_ENV=production npm --filter frontend run build
+
     else
         error "No package manager found. Please install npm or pnpm."
         exit 1
     fi
 
-    success "Dependencies updated and build completed"
+    success "Dependencies updated and full build completed"
+    log "✅ Backend built for production"
+    log "✅ Frontend built for production"
+    log "✅ Application ready for production deployment"
 }
 
 # Start service
