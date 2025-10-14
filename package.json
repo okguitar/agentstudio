@@ -1,12 +1,12 @@
 {
   "name": "agentstudio",
-  "version": "0.1.0",
+  "version": "0.1.19",
   "description": "Claude-powered AgentStudio with React frontend and Node.js backend, built on top of Claude Code SDK",
   "type": "module",
   "private": true,
   "packageManager": "pnpm@10.18.1",
   "scripts": {
-    "dev": "concurrently \"pnpm --filter frontend run dev\" \"pnpm --filter backend run dev\"",
+    "dev": "concurrently \"pnpm --filter @agentstudio/frontend run dev\" \"pnpm --filter agentstudio-backend run dev\"",
     "dev:frontend": "pnpm --filter frontend run dev",
     "dev:backend": "pnpm --filter backend run dev",
     "build": "pnpm --filter shared run build && pnpm --filter frontend run build && pnpm --filter backend run build",
