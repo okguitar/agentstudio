@@ -124,7 +124,7 @@ const SimpleImagePreview: React.FC<{ imageUrl: string; fileName: string }> = ({ 
           <img
             src={imageUrl}
             alt={fileName}
-            className="max-w-full max-h-full object-contain bg-white rounded shadow-lg"
+            className="max-w-full max-h-full object-contain bg-white dark:bg-gray-900 rounded shadow-lg"
             onLoad={() => setIsLoading(false)}
             onError={() => {
               setIsLoading(false);
@@ -245,7 +245,12 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
   const treeApiRef = useRef<TreeApi<FileTreeItem> | null>(null);
   const [lastClickTime, setLastClickTime] = useState<number>(0);
   const [lastClickedPath, setLastClickedPath] = useState<string>('');
-  
+
+  // 暗色模式检测
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(
+    document.documentElement.classList.contains('dark')
+  );
+
   // 懒加载相关状态
   const [loadedDirectories, setLoadedDirectories] = useState<Set<string>>(new Set());
   const [dynamicTreeData, setDynamicTreeData] = useState<FileTreeItem[]>([]);
@@ -277,6 +282,23 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
     projectPath
   );
 
+  // 监听暗色模式变化
+  useEffect(() => {
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === 'class') {
+          setIsDarkMode(document.documentElement.classList.contains('dark'));
+        }
+      });
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+
+    return () => observer.disconnect();
+  }, []);
 
   // 初始化动态树数据
   useEffect(() => {
@@ -762,7 +784,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
           }>
             <Editor
               height="100%"
-              theme="vs-light"
+              theme={isDarkMode ? 'vs-dark' : 'vs-light'}
               language={getLanguageForFile(activeTab.name)}
               value={fileContentData.content}
               options={{
