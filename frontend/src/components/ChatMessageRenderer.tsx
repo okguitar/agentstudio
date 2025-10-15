@@ -59,7 +59,7 @@ const ChatMessageRendererComponent: React.FC<ChatMessageRendererProps> = ({ mess
         {sortedParts.map((part) => {
           if (part.type === 'command' && part.content) {
             return (
-              <div key={part.id} className="inline-flex items-center px-2.5 py-1.5 bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30 dark:border-blue-500/50 rounded-md text-sm font-mono font-medium">
+              <div key={part.id} className="inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-purple-500/15 to-blue-500/15 dark:from-purple-500/25 dark:to-blue-500/25 text-purple-700 dark:text-purple-300 border border-purple-400/40 dark:border-purple-400/50 rounded-lg text-sm font-mono font-semibold shadow-sm">
                 {part.content}
               </div>
             );
@@ -215,7 +215,7 @@ const ChatMessageRendererComponent: React.FC<ChatMessageRendererProps> = ({ mess
               if (commandMatch) {
                 // Render as command block
                 return (
-                  <div className="inline-flex items-center px-2.5 py-1.5 bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30 dark:border-blue-500/50 rounded-md text-sm font-mono font-medium">
+                  <div className="inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-purple-500/15 to-blue-500/15 dark:from-purple-500/25 dark:to-blue-500/25 text-purple-700 dark:text-purple-300 border border-purple-400/40 dark:border-purple-400/50 rounded-lg text-sm font-mono font-semibold shadow-sm">
                     {commandMatch[1]}
                   </div>
                 );
