@@ -61,7 +61,7 @@ export const useSlides = (projectPath?: string) => {
     queryKey: ['slides', projectPath],
     queryFn: async () => {
       // First, read the slides configuration file
-      const configUrl = new URL(`${API_BASE}/files/read`, window.location.origin);
+      const configUrl = new URL(`${API_BASE}/files/read`);
       configUrl.searchParams.set('path', 'slides.js');
       if (projectPath) {
         configUrl.searchParams.set('projectPath', projectPath);
@@ -84,7 +84,7 @@ export const useSlides = (projectPath?: string) => {
       const { slides: slidePaths, title } = parseSlidesConfig(configData.content);
 
       // Then, read all slide files to get metadata
-      const slidesUrl = new URL(`${API_BASE}/files/read-multiple`, window.location.origin);
+      const slidesUrl = new URL(`${API_BASE}/files/read-multiple`);
       if (projectPath) {
         slidesUrl.searchParams.set('projectPath', projectPath);
       }
@@ -143,7 +143,7 @@ export const useSlideContent = (slideIndex: number, projectPath?: string) => {
     queryKey: ['slide-content', slideIndex, projectPath],
     queryFn: async () => {
       // First get the slides configuration to find the path
-      const configUrl = new URL(`${API_BASE}/files/read`, window.location.origin);
+      const configUrl = new URL(`${API_BASE}/files/read`);
       configUrl.searchParams.set('path', 'slides.js');
       if (projectPath) {
         configUrl.searchParams.set('projectPath', projectPath);
@@ -155,7 +155,7 @@ export const useSlideContent = (slideIndex: number, projectPath?: string) => {
         }
         throw new Error('Failed to fetch slides configuration');
       }
-      
+
       const configData = await configResponse.json();
       const { slides: slidePaths } = parseSlidesConfig(configData.content);
 
@@ -166,7 +166,7 @@ export const useSlideContent = (slideIndex: number, projectPath?: string) => {
       const slidePath = slidePaths[slideIndex];
 
       // Then read the specific slide file
-      const slideUrl = new URL(`${API_BASE}/files/read`, window.location.origin);
+      const slideUrl = new URL(`${API_BASE}/files/read`);
       slideUrl.searchParams.set('path', slidePath);
       if (projectPath) {
         slideUrl.searchParams.set('projectPath', projectPath);
@@ -195,7 +195,7 @@ export const useUpdateSlide = () => {
   return useMutation({
     mutationFn: async ({ slideIndex, content, projectPath }: { slideIndex: number; content: string; projectPath?: string }) => {
       // First get the slides configuration to find the path
-      const configUrl = new URL(`${API_BASE}/files/read`, window.location.origin);
+      const configUrl = new URL(`${API_BASE}/files/read`);
       configUrl.searchParams.set('path', 'slides.js');
       if (projectPath) {
         configUrl.searchParams.set('projectPath', projectPath);
@@ -207,7 +207,7 @@ export const useUpdateSlide = () => {
         }
         throw new Error('Failed to fetch slides configuration');
       }
-      
+
       const configData = await configResponse.json();
       const { slides: slidePaths } = parseSlidesConfig(configData.content);
 
@@ -218,7 +218,7 @@ export const useUpdateSlide = () => {
       const slidePath = slidePaths[slideIndex];
 
       // Then write the slide content
-      const writeUrl = new URL(`${API_BASE}/files/write`, window.location.origin);
+      const writeUrl = new URL(`${API_BASE}/files/write`);
       if (projectPath) {
         writeUrl.searchParams.set('projectPath', projectPath);
       }

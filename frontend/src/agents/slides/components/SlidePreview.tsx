@@ -49,7 +49,7 @@ export const SlidePreview = forwardRef<SlidePreviewRef, SlidePreviewProps>(({ sl
     
     const fetchProjectId = async () => {
       try {
-        const url = new URL(`${API_BASE}/files/project-id`, window.location.origin);
+        const url = new URL(`${API_BASE}/files/project-id`);
         url.searchParams.set('projectPath', projectPath);
         const response = await fetch(url);
         
