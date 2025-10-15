@@ -1,8 +1,23 @@
 import jwt from 'jsonwebtoken';
+import { loadConfig } from '../config/index.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this-in-production';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
-const TOKEN_REFRESH_THRESHOLD = process.env.TOKEN_REFRESH_THRESHOLD || '24h';
+// Cache config values to avoid repeated loading
+let cachedJwtConfig: { secret: string; expiresIn: string; refreshThreshold: string } | null = null;
+
+async function getJwtConfig() {
+  if (cachedJwtConfig) {
+    return cachedJwtConfig;
+  }
+  
+  const config = await loadConfig();
+  cachedJwtConfig = {
+    secret: config.jwtSecret || 'your-secret-key-change-this-in-production',
+    expiresIn: config.jwtExpiresIn || '7d',
+    refreshThreshold: config.tokenRefreshThreshold || '24h'
+  };
+  
+  return cachedJwtConfig;
+}
 
 export interface JWTPayload {
   authenticated: true;
@@ -15,9 +30,10 @@ export interface JWTPayload {
 /**
  * Generate a JWT token for authentication
  */
-export function generateToken(): string {
+export async function generateToken(): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
-  const expiresIn = getExpirationSeconds(JWT_EXPIRES_IN);
+  const jwtConfig = await getJwtConfig();
+  const expiresIn = getExpirationSeconds(jwtConfig.expiresIn);
 
   const payload: JWTPayload = {
     authenticated: true,
@@ -25,8 +41,8 @@ export function generateToken(): string {
     expiresAt: now + expiresIn,
   };
 
-  return jwt.sign(payload, JWT_SECRET, {
-    expiresIn: JWT_EXPIRES_IN,
+  return jwt.sign(payload, jwtConfig.secret, {
+    expiresIn: jwtConfig.expiresIn,
   } as jwt.SignOptions);
 }
 
@@ -53,11 +69,12 @@ function getExpirationSeconds(expireStr: string): number {
 /**
  * Check if token should be refreshed (within threshold of expiration)
  */
-export function shouldRefreshToken(payload: JWTPayload): boolean {
+export async function shouldRefreshToken(payload: JWTPayload): Promise<boolean> {
   if (!payload.expiresAt) return true;
 
   const now = Math.floor(Date.now() / 1000);
-  const threshold = getExpirationSeconds(TOKEN_REFRESH_THRESHOLD);
+  const jwtConfig = await getJwtConfig();
+  const threshold = getExpirationSeconds(jwtConfig.refreshThreshold);
 
   return payload.expiresAt - now <= threshold;
 }
@@ -76,9 +93,10 @@ export function getTokenRemainingTime(payload: JWTPayload): number {
  * Verify and decode a JWT token
  * @returns Decoded payload if valid, null if invalid
  */
-export function verifyToken(token: string): JWTPayload | null {
+export async function verifyToken(token: string): Promise<JWTPayload | null> {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
+    const jwtConfig = await getJwtConfig();
+    const decoded = jwt.verify(token, jwtConfig.secret) as JWTPayload;
     return decoded;
   } catch (error) {
     return null;
