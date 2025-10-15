@@ -15,12 +15,12 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
       config: {
         port: config.port,
         host: config.host,
-        logLevel: config.logLevel,
-        slidesDir: config.slidesDir,
-        maxFileSize: config.maxFileSize,
-        allowedFileTypes: config.allowedFileTypes,
-        linuxOptimizations: config.linuxOptimizations,
-        service: config.service,
+        adminPassword: config.adminPassword ? '***' : undefined,
+        jwtSecret: config.jwtSecret ? '***' : undefined,
+        jwtExpiresIn: config.jwtExpiresIn,
+        tokenRefreshThreshold: config.tokenRefreshThreshold,
+        corsOrigins: config.corsOrigins,
+        corsAllowedDomains: config.corsAllowedDomains,
       }
     });
   } catch (error) {
@@ -75,6 +75,55 @@ router.post('/port', authMiddleware, async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to update port configuration'
+    });
+  }
+});
+
+// Update configuration (requires restart to take effect for some settings)
+router.post('/', authMiddleware, async (req, res) => {
+  try {
+    const updates = req.body;
+    const homeDir = process.env.HOME || process.env.USERPROFILE || '';
+    const configPath = join(homeDir, '.agent-studio', 'config', 'config.json');
+
+    // Read current config
+    let currentConfig = {};
+    try {
+      const content = await readFile(configPath, 'utf-8');
+      currentConfig = JSON.parse(content);
+    } catch (error) {
+      // Config file doesn't exist, start with empty object
+    }
+
+    // Filter sensitive fields and only allow certain updates
+    const allowedUpdates = ['port', 'host', 'adminPassword', 'jwtSecret', 'jwtExpiresIn', 'tokenRefreshThreshold', 'corsOrigins', 'corsAllowedDomains'];
+    const filteredUpdates: any = {};
+    
+    for (const key of allowedUpdates) {
+      if (updates[key] !== undefined) {
+        filteredUpdates[key] = updates[key];
+      }
+    }
+
+    // Update config
+    const updatedConfig = {
+      ...currentConfig,
+      ...filteredUpdates
+    };
+
+    // Write updated config
+    await writeFile(configPath, JSON.stringify(updatedConfig, null, 2), 'utf-8');
+
+    res.json({
+      success: true,
+      message: 'Configuration updated. Restart the service to apply changes.',
+      config: updatedConfig
+    });
+  } catch (error) {
+    console.error('Failed to update configuration:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update configuration'
     });
   }
 });
