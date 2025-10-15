@@ -68,8 +68,13 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({
           {/* Expandable Details */}
           {hasDetails && (
             <button
-              onClick={() => setIsExpanded(!isExpanded)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsExpanded(!isExpanded);
+              }}
               className="flex items-center space-x-1 mt-2 text-xs text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors"
+              type="button"
             >
               {isExpanded ? (
                 <>
@@ -86,8 +91,12 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({
           )}
 
           {/* Detailed Error Information */}
-          {isExpanded && hasDetails && (
-            <div className="mt-3 space-y-2">
+          <div 
+            className={`overflow-hidden transition-all duration-200 ease-in-out ${
+              isExpanded && hasDetails ? 'max-h-96 opacity-100 mt-3' : 'max-h-0 opacity-0'
+            }`}
+          >
+            <div className="space-y-2">
               {/* Raw Error Object */}
               <div className="p-2 bg-red-100 dark:bg-red-900/40 rounded border border-red-200 dark:border-red-700">
                 <div className="flex items-center justify-between mb-1">
@@ -95,9 +104,14 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({
                     Technical Details:
                   </span>
                   <button
-                    onClick={handleCopy}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleCopy();
+                    }}
                     className="flex items-center space-x-1 px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
                     title="Copy error details"
+                    type="button"
                   >
                     {copied ? (
                       <>
@@ -127,7 +141,7 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({
                 Browser: {navigator.userAgent.split(' ')[0]} | URL: {window.location.href}
               </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>
