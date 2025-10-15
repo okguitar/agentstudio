@@ -26,9 +26,10 @@ const __dirname = dirname(__filename);
 
 const app = express();
 
-// Load configuration (including port)
+// Load configuration (including port and host)
 const config = await loadConfig();
 const PORT = config.port || 4936;
+const HOST = config.host || '0.0.0.0';
 
 // Middleware
 app.use(helmet({
@@ -56,9 +57,9 @@ const getAllowedOrigins = () => {
     'https://localhost:3001'
   ];
   
-  // Add custom origins from environment variable
-  const customOrigins = process.env.CORS_ORIGINS ? 
-    process.env.CORS_ORIGINS.split(',').map(origin => origin.trim()) : [];
+  // Add custom origins from configuration
+  const customOrigins = config.corsOrigins ? 
+    config.corsOrigins.split(',').map(origin => origin.trim()) : [];
   
   return [...defaultOrigins, ...customOrigins];
 };
@@ -85,9 +86,9 @@ app.use(cors({
       return callback(null, true);
     }
 
-    // Allow custom domains from environment variable (CORS_ALLOWED_DOMAINS)
-    const customDomains = process.env.CORS_ALLOWED_DOMAINS ?
-      process.env.CORS_ALLOWED_DOMAINS.split(',').map(domain => domain.trim()) : [];
+    // Allow custom domains from configuration (CORS_ALLOWED_DOMAINS)
+    const customDomains = config.corsAllowedDomains ?
+      config.corsAllowedDomains.split(',').map(domain => domain.trim()) : [];
 
     for (const domain of customDomains) {
       // Match exact domain (https://example.com)
@@ -187,7 +188,7 @@ app.use('*', (req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-app.listen(PORT, () => {
-  console.log(`AI PPT Editor backend running on http://localhost:${PORT}`);
+app.listen(PORT, HOST, () => {
+  console.log(`AI PPT Editor backend running on http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}`);
   console.log(`Serving slides from: ${slidesDir}`);
 });
