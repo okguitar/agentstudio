@@ -77,6 +77,7 @@ interface BaseToolProps {
 }
 
 export const BaseToolComponent: React.FC<BaseToolProps> = ({ execution, children, subtitle, showResult = true, isMcpTool = false, hideToolName = true }) => {
+  const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   
   // 为MCP工具使用不同的图标和颜色
