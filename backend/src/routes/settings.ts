@@ -57,7 +57,16 @@ const detectPackageManagers = async () => {
 const detectClaudeCodeInstallationSource = async () => {
   try {
     // Get Claude Code executable path
-    const { stdout: claudePath } = await execAsync('which claude');
+    let claudePath: string;
+    try {
+      const { stdout } = await execAsync('which claude');
+      claudePath = stdout;
+    } catch (error) {
+      // Claude not found in PATH, this is expected when running as npm package
+      console.log('Claude CLI not found in PATH, checking node_modules');
+      return null;
+    }
+
     if (!claudePath) return null;
     
     const cleanPath = claudePath.trim();
@@ -427,11 +436,34 @@ router.get('/claude-versions', async (req, res) => {
     // 首先确保系统版本存在
     try {
       const { stdout: claudePath } = await execAsync('which claude');
-      if (claudePath) {
+      if (claudePath && claudePath.trim()) {
         await initializeSystemVersion(claudePath.trim());
       }
     } catch (error) {
-      console.warn('No system claude found:', error);
+      // Claude not found in PATH, try project node_modules
+      try {
+        const projectRoot = process.cwd();
+        const paths = [
+          join(projectRoot, 'node_modules', '.bin', 'claude'),
+          join(projectRoot, 'backend', 'node_modules', '.bin', 'claude'),
+          join(projectRoot, '..', 'node_modules', '.bin', 'claude')
+        ];
+
+        for (const claudePath of paths) {
+          try {
+            const { stdout } = await execAsync(`test -e "${claudePath}" && echo "exists"`);
+            if (stdout.trim() === 'exists') {
+              await initializeSystemVersion(claudePath);
+              console.log('Initialized system version from:', claudePath);
+              break;
+            }
+          } catch {
+            // Try next path
+          }
+        }
+      } catch (nodeModulesError) {
+        console.warn('No claude found in PATH or node_modules');
+      }
     }
     
     const versions = await getAllVersions();
@@ -549,7 +581,7 @@ router.post('/claude-versions/detect', async (req, res) => {
     // 检测用户自己安装的 Claude CLI (全局安装)
     try {
       const { stdout: claudePath } = await execAsync('which claude');
-      if (claudePath) {
+      if (claudePath && claudePath.trim()) {
         const cleanPath = claudePath.trim();
 
         // 检测是否是系统 npm 包自带的 (在项目 node_modules 中)
@@ -578,34 +610,48 @@ router.post('/claude-versions/detect', async (req, res) => {
         }
       }
     } catch (error) {
-      console.log('No Claude CLI found in PATH');
+      // Claude not in PATH, this is normal when running as npm package
+      console.log('Claude CLI not found in PATH, checking node_modules');
     }
 
-    // 如果没有找到全局安装的，检查系统 npm 包（在 backend/node_modules 中）
+    // 如果没有找到全局安装的，检查系统 npm 包（在多个可能的 node_modules 位置）
     if (!result.systemInstalled) {
-      try {
-        const projectRoot = process.cwd();
-        // 在 workspace 项目中，backend 的依赖在 backend/node_modules
-        const systemClaudePath = join(projectRoot, 'backend', 'node_modules', '.bin', 'claude');
+      const projectRoot = process.cwd();
+      const possiblePaths = [
+        join(projectRoot, 'node_modules', '.bin', 'claude'),
+        join(projectRoot, 'backend', 'node_modules', '.bin', 'claude'),
+        join(projectRoot, '..', 'node_modules', '.bin', 'claude')
+      ];
 
-        // 检查文件是否存在（.bin/claude 是符号链接，用 -e 而不是 -f）
-        const { stdout } = await execAsync(`test -e "${systemClaudePath}" && echo "exists"`);
-        if (stdout.trim() === 'exists') {
-          result.systemInstalled = true;
-          result.systemPath = systemClaudePath;
+      for (const systemClaudePath of possiblePaths) {
+        try {
+          // 检查文件是否存在（.bin/claude 是符号链接，用 -e 而不是 -f）
+          const { stdout } = await execAsync(`test -e "${systemClaudePath}" && echo "exists"`);
+          if (stdout.trim() === 'exists') {
+            result.systemInstalled = true;
+            result.systemPath = systemClaudePath;
 
-          // 尝试获取版本
-          if (!result.version) {
-            try {
-              const { stdout: version } = await execAsync(`"${systemClaudePath}" --version`);
-              result.version = version.trim();
-            } catch (error) {
-              console.error('Failed to get system package version:', error);
+            // 尝试获取版本
+            if (!result.version) {
+              try {
+                const { stdout: version } = await execAsync(`"${systemClaudePath}" --version`);
+                result.version = version.trim();
+              } catch (error) {
+                console.error('Failed to get system package version:', error);
+              }
             }
+
+            console.log('Found Claude in node_modules:', systemClaudePath);
+            break; // Found it, stop searching
           }
+        } catch (error) {
+          // Try next path
+          continue;
         }
-      } catch (error) {
-        console.log('System package not found:', error);
+      }
+
+      if (!result.systemInstalled) {
+        console.log('Claude not found in any node_modules location');
       }
     }
 
