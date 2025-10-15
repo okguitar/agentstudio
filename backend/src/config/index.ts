@@ -5,28 +5,20 @@ import { config } from 'dotenv';
 export interface AgentStudioConfig {
   port?: number;
   host?: string;
-  logLevel?: string;
-  slidesDir?: string;
-  maxFileSize?: string;
-  allowedFileTypes?: string[];
-  linuxOptimizations?: {
-    appleSilicon?: boolean;
-    memoryLimit?: string;
-    cpuOptimization?: boolean;
-    launchdManaged?: boolean;
-  };
-  service?: {
-    name?: string;
-    autoStart?: boolean;
-    keepAlive?: boolean;
-  };
+  adminPassword?: string;
+  jwtSecret?: string;
+  jwtExpiresIn?: string;
+  tokenRefreshThreshold?: string;
+  corsOrigins?: string;
+  corsAllowedDomains?: string;
 }
 
 let cachedConfig: AgentStudioConfig | null = null;
 
 /**
  * Load configuration from config file and environment variables
- * Priority: Config file > Environment variables > Defaults
+ * Priority: Environment variables > Config file > Defaults
+ * (Except port where config file takes priority)
  */
 export async function loadConfig(): Promise<AgentStudioConfig> {
   if (cachedConfig) {
@@ -40,52 +32,27 @@ export async function loadConfig(): Promise<AgentStudioConfig> {
 
   // Try to load from config file
   const homeDir = process.env.HOME || process.env.USERPROFILE || '';
-  const configPaths = [
-    join(homeDir, '.agent-studio', 'config', 'config.json'),
-    join(homeDir, '.agent-studio', 'config', 'config.env'),
-    join(process.cwd(), 'config.json'),
-    join(process.cwd(), '.env'),
-  ];
+  const configPath = join(homeDir, '.agent-studio', 'config', 'config.json');
 
-  for (const configPath of configPaths) {
-    try {
-      const content = await readFile(configPath, 'utf-8');
-
-      if (configPath.endsWith('.json')) {
-        configData = JSON.parse(content);
-        break;
-      } else if (configPath.endsWith('.env')) {
-        // Parse .env file manually to avoid dotenv loading only once
-        const envLines = content.split('\n');
-        for (const line of envLines) {
-          const trimmed = line.trim();
-          if (trimmed && !trimmed.startsWith('#')) {
-            const [key, ...valueParts] = trimmed.split('=');
-            if (key && valueParts.length > 0) {
-              const value = valueParts.join('=').replace(/^["']|["']$/g, '');
-              process.env[key.trim()] = value;
-            }
-          }
-        }
-        continue;
-      }
-    } catch (error) {
-      // Config file doesn't exist or can't be read, continue to next path
-      continue;
-    }
+  try {
+    const content = await readFile(configPath, 'utf-8');
+    configData = JSON.parse(content);
+  } catch (error) {
+    // Config file doesn't exist or can't be read, use empty object
   }
 
-  // Create final configuration with config.json taking priority over environment variables
-  // Priority: Config file > Environment variables > Defaults
+  // Create final configuration
+  // For port: config file > environment variables > defaults  
+  // For others: environment variables > config file > defaults
   const finalConfig: AgentStudioConfig = {
     port: parseInt(configData.port?.toString() || process.env.PORT || '4936'),
-    host: configData.host || process.env.HOST || '0.0.0.0',
-    logLevel: configData.logLevel || process.env.LOG_LEVEL || 'info',
-    slidesDir: configData.slidesDir || process.env.SLIDES_DIR || join(homeDir, '.agent-studio', 'data', 'slides'),
-    maxFileSize: configData.maxFileSize || process.env.MAX_FILE_SIZE || '10MB',
-    allowedFileTypes: configData.allowedFileTypes || ['.txt', '.md', '.js', '.ts', '.json', '.html', '.css'],
-    linuxOptimizations: configData.linuxOptimizations || {},
-    service: configData.service || {},
+    host: process.env.HOST || configData.host || '0.0.0.0',
+    adminPassword: process.env.ADMIN_PASSWORD || configData.adminPassword || 'admin123',
+    jwtSecret: process.env.JWT_SECRET || configData.jwtSecret || 'your-secret-key-change-this-in-production',
+    jwtExpiresIn: process.env.JWT_EXPIRES_IN || configData.jwtExpiresIn || '7d',
+    tokenRefreshThreshold: process.env.TOKEN_REFRESH_THRESHOLD || configData.tokenRefreshThreshold || '24h',
+    corsOrigins: process.env.CORS_ORIGINS || configData.corsOrigins || '',
+    corsAllowedDomains: process.env.CORS_ALLOWED_DOMAINS || configData.corsAllowedDomains || '',
   };
 
   cachedConfig = finalConfig;
@@ -109,9 +76,9 @@ export async function getServerPort(): Promise<number> {
 }
 
 /**
- * Get the slides directory from configuration
+ * Get the slides directory (simplified - always use default location)
  */
 export async function getSlidesDir(): Promise<string> {
-  const config = await loadConfig();
-  return config.slidesDir || join(process.env.HOME || process.env.USERPROFILE || '', '.agent-studio', 'data', 'slides');
+  const homeDir = process.env.HOME || process.env.USERPROFILE || '';
+  return join(homeDir, '.agent-studio', 'data', 'slides');
 }
