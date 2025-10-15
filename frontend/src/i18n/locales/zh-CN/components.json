@@ -659,7 +659,8 @@
     "unknownToolType": "未知工具类型"
   },
   "baseToolComponent": {
-    "executionResult": "执行结果:"
+    "executionResult": "执行结果:",
+    "interrupted": "已中断"
   },
   "bashOutputTool": {
     "shellPrefix": "Shell",

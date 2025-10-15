@@ -6,7 +6,7 @@
     "mcp": "MCP服务",
     "settings": "系统设置",
     "settingsSubmenu": {
-      "general": "通用设置",
+      "general": "外观设置",
       "versions": "版本管理",
       "memory": "全局记忆",
       "commands": "自定义命令",
@@ -305,9 +305,9 @@
   "settings": {
     "title": "设置",
     "general": {
-      "title": "通用设置",
-      "description": "配置界面主题和基本设置",
-      "interfaceSettings": "界面设置",
+      "title": "外观设置",
+      "description": "配置界面主题和语言",
+      "interfaceSettings": "外观设置",
       "theme": {
         "label": "主题",
         "description": "选择界面主题模式",
@@ -318,14 +318,7 @@
       "language": {
         "label": "语言",
         "description": "选择界面语言"
-      },
-      "appInfo": {
-        "title": "应用信息",
-        "name": "AgentStudio",
-        "buildDate": "构建日期",
-        "versionNote": "查看详细版本信息和更新请转至【版本管理】页面"
-      },
-      "settingsSaved": "设置已保存"
+      }
     },
     "api": "API服务器设置",
     "memory": "全局记忆",

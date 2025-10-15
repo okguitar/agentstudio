@@ -6,7 +6,7 @@
     "mcp": "MCP Services",
     "settings": "Settings",
     "settingsSubmenu": {
-      "general": "General",
+      "general": "Look & Feel",
       "versions": "Versions",
       "memory": "Memory",
       "commands": "Commands",
@@ -305,9 +305,9 @@
   "settings": {
     "title": "Settings",
     "general": {
-      "title": "General Settings",
-      "description": "Configure interface theme and basic settings",
-      "interfaceSettings": "Interface Settings",
+      "title": "Look and Feel",
+      "description": "Configure interface theme and language",
+      "interfaceSettings": "Look and Feel",
       "theme": {
         "label": "Theme",
         "description": "Select interface theme mode",
@@ -318,14 +318,7 @@
       "language": {
         "label": "Language",
         "description": "Select interface language"
-      },
-      "appInfo": {
-        "title": "Application Info",
-        "name": "AgentStudio",
-        "buildDate": "Build Date",
-        "versionNote": "Go to Version Management page for detailed version info and updates"
-      },
-      "settingsSaved": "Settings saved"
+      }
     },
     "api": "API Server Settings",
     "memory": "Global Memory",

@@ -659,7 +659,8 @@
     "unknownToolType": "Unknown tool type"
   },
   "baseToolComponent": {
-    "executionResult": "Execution result:"
+    "executionResult": "Execution result:",
+    "interrupted": "Interrupted"
   },
   "bashOutputTool": {
     "shellPrefix": "Shell",
