@@ -160,5 +160,6 @@ export interface ToolExecution {
   toolUseResult?: EditToolResult | any; // 包含 structuredPatch 等详细信息
   isExecuting: boolean;
   isError?: boolean;
+  isInterrupted?: boolean; // 标记工具是否被用户中断
   timestamp: Date;
 }

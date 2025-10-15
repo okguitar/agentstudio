@@ -24,6 +24,7 @@ interface AgentState {
   addCommandPartToMessage: (messageId: string, command: string) => void;
   addToolPartToMessage: (messageId: string, tool: Omit<ToolUsageData, 'id'>) => void;
   updateToolPartInMessage: (messageId: string, toolId: string, updates: Partial<ToolUsageData>) => void;
+  interruptAllExecutingTools: () => void;
   setAiTyping: (typing: boolean) => void;
   setCurrentSessionId: (sessionId: string | null) => void;
   clearMessages: () => void;
@@ -169,8 +170,8 @@ export const useAgentStore = create<AgentState>((set) => ({
   })),
   
   updateToolPartInMessage: (messageId, toolId, updates) => set((state) => ({
-    messages: state.messages.map((msg) => 
-      msg.id === messageId 
+    messages: state.messages.map((msg) =>
+      msg.id === messageId
         ? {
             ...msg,
             messageParts: msg.messageParts?.map((part: any) =>
@@ -185,7 +186,25 @@ export const useAgentStore = create<AgentState>((set) => ({
         : msg
     )
   })),
-  
+
+  interruptAllExecutingTools: () => set((state) => ({
+    messages: state.messages.map((msg) => ({
+      ...msg,
+      messageParts: msg.messageParts?.map((part: any) =>
+        part.type === 'tool' && part.toolData?.isExecuting
+          ? {
+              ...part,
+              toolData: {
+                ...part.toolData,
+                isExecuting: false,
+                isInterrupted: true
+              }
+            }
+          : part
+      )
+    }))
+  })),
+
   setAiTyping: (typing) => set({ isAiTyping: typing }),
   
   setCurrentSessionId: (sessionId) => set({ currentSessionId: sessionId }),

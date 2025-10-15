@@ -20,7 +20,8 @@ import {
   ChevronRight,
   Activity,  // 用于BashOutput，表示活动/输出监控
   Square,  // 用于KillBash，表示终止/停止操作
-  Plug  // 用于MCP工具
+  Plug,  // 用于MCP工具
+  AlertCircle  // 用于中断状态
 } from 'lucide-react';
 import type { ToolExecution } from './types';
 
@@ -105,9 +106,15 @@ export const BaseToolComponent: React.FC<BaseToolProps> = ({ execution, children
           onClick={() => setIsExpanded(!isExpanded)}
         >
           <div className={`flex space-x-2 flex-1 min-w-0 ${hideToolName ? 'items-center' : 'items-start'}`}>
-            <div className={`${hideToolName ? 'p-1.5' : 'p-2'} rounded-full ${colorClass} ${hideToolName ? '' : 'mt-0.5'}`}>
+            <div className={`${hideToolName ? 'p-1.5' : 'p-2'} rounded-full ${
+              execution.isInterrupted
+                ? 'text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/30'
+                : colorClass
+            } ${hideToolName ? '' : 'mt-0.5'}`}>
               {execution.isExecuting ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
+              ) : execution.isInterrupted ? (
+                <AlertCircle className="w-4 h-4" />
               ) : (
                 <Icon className="w-4 h-4" />
               )}
@@ -117,8 +124,12 @@ export const BaseToolComponent: React.FC<BaseToolProps> = ({ execution, children
                 <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200">{execution.toolName}</h4>
               )}
               {subtitle && (
-                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                  {subtitle}
+                <p className={`text-xs truncate ${
+                  execution.isInterrupted
+                    ? 'text-orange-600 dark:text-orange-400'
+                    : 'text-gray-500 dark:text-gray-400'
+                }`}>
+                  {execution.isInterrupted ? t('baseToolComponent.interrupted') : subtitle}
                 </p>
               )}
             </div>

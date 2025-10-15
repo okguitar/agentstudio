@@ -97,6 +97,7 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
     addCommandPartToMessage,
     addToolPartToMessage,
     updateToolPartInMessage,
+    interruptAllExecutingTools,
     setAiTyping,
     setCurrentSessionId,
     clearMessages,
@@ -1174,6 +1175,9 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
         setIsStopping(false);
         return; // 不继续执行 abort，按照用户要求不强制断开
       }
+
+      // 中断所有正在执行的工具
+      interruptAllExecutingTools();
 
       // interrupt 成功后，断开 SSE 连接
       abortControllerRef.current.abort();
