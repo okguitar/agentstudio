@@ -1138,6 +1138,10 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
     }
     // Clear search term
     setSearchTerm('');
+    // Focus on textarea after state updates
+    setTimeout(() => {
+      textareaRef.current?.focus();
+    }, 0);
   };
 
   const handleRefreshMessages = () => {
