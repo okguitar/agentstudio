@@ -1,15 +1,14 @@
 import express, { Request, Response, Router } from 'express';
 import { generateToken, verifyToken, shouldRefreshToken } from '../utils/jwt.js';
+import { loadConfig } from '../config/index.js';
 
 const router: Router = express.Router();
-
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 
 /**
  * POST /api/auth/login
  * Authenticate with password and return JWT token
  */
-router.post('/login', (req: Request, res: Response) => {
+router.post('/login', async (req: Request, res: Response) => {
   const { password } = req.body;
 
   if (!password) {
@@ -17,13 +16,14 @@ router.post('/login', (req: Request, res: Response) => {
     return;
   }
 
-  if (password !== ADMIN_PASSWORD) {
+  const config = await loadConfig();
+  if (password !== config.adminPassword) {
     res.status(401).json({ error: 'Invalid password' });
     return;
   }
 
   // Generate JWT token
-  const token = generateToken();
+  const token = await generateToken();
 
   res.json({
     success: true,
@@ -36,7 +36,7 @@ router.post('/login', (req: Request, res: Response) => {
  * POST /api/auth/verify
  * Verify if a token is valid
  */
-router.post('/verify', (req: Request, res: Response) => {
+router.post('/verify', async (req: Request, res: Response) => {
   const { token } = req.body;
 
   if (!token) {
@@ -44,7 +44,7 @@ router.post('/verify', (req: Request, res: Response) => {
     return;
   }
 
-  const payload = verifyToken(token);
+  const payload = await verifyToken(token);
 
   if (!payload) {
     res.status(401).json({ valid: false, error: 'Invalid or expired token' });
@@ -61,7 +61,7 @@ router.post('/verify', (req: Request, res: Response) => {
  * POST /api/auth/refresh
  * Refresh an existing token if it's within refresh threshold
  */
-router.post('/refresh', (req: Request, res: Response) => {
+router.post('/refresh', async (req: Request, res: Response) => {
   const { token } = req.body;
 
   if (!token) {
@@ -69,7 +69,7 @@ router.post('/refresh', (req: Request, res: Response) => {
     return;
   }
 
-  const payload = verifyToken(token);
+  const payload = await verifyToken(token);
 
   if (!payload) {
     res.status(401).json({ error: 'Invalid or expired token' });
@@ -77,7 +77,7 @@ router.post('/refresh', (req: Request, res: Response) => {
   }
 
   // Check if token should be refreshed
-  if (!shouldRefreshToken(payload)) {
+  if (!(await shouldRefreshToken(payload))) {
     // Token is still valid and doesn't need refresh
     res.json({
       success: true,
@@ -89,7 +89,7 @@ router.post('/refresh', (req: Request, res: Response) => {
   }
 
   // Generate new token
-  const newToken = generateToken();
+  const newToken = await generateToken();
 
   res.json({
     success: true,
