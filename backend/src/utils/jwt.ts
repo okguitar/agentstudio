@@ -4,7 +4,7 @@ import { loadConfig } from '../config/index.js';
 // Cache config values to avoid repeated loading
 let cachedJwtConfig: { secret: string; expiresIn: string; refreshThreshold: string } | null = null;
 
-async function getJwtConfig() {
+export async function getJwtConfig() {
   if (cachedJwtConfig) {
     return cachedJwtConfig;
   }
