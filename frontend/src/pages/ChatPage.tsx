@@ -22,20 +22,51 @@ export const ChatPage: React.FC = () => {
   const [showProjectSelector, setShowProjectSelector] = useState(false);
   const [hideRightPanel, setHideRightPanel] = useState(false);
   const [lastError, setLastError] = useState<Error | null>(null);
+  const [hasSeenCompletion, setHasSeenCompletion] = useState(false);
+  const wasAiTypingRef = React.useRef(false);
 
   const agent = agentData?.agent;
+
+  // Track AI typing state changes
+  useEffect(() => {
+    if (isAiTyping) {
+      wasAiTypingRef.current = true;
+      setHasSeenCompletion(false); // Reset when AI starts working
+    } else if (wasAiTypingRef.current) {
+      // AI just finished typing
+      // If page is currently visible, mark as seen immediately
+      if (!document.hidden) {
+        setHasSeenCompletion(true);
+        wasAiTypingRef.current = false;
+      }
+      // If page is hidden, wasAiTypingRef stays true until user comes back
+    }
+  }, [isAiTyping]);
+
+  // Reset completion flag when user views the page
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && !isAiTyping && wasAiTypingRef.current) {
+        // User came back to the page and AI is done
+        setHasSeenCompletion(true);
+        wasAiTypingRef.current = false;
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [isAiTyping]);
 
   // Determine tab notification status based on AI state
   const tabStatus: TabNotificationStatus = useMemo(() => {
     if (lastError) return 'error';
     if (isAiTyping) return 'working';
-    // Show completed status if there are messages and AI just stopped typing
-    if (messages.length > 0 && !isAiTyping) {
-      // Only show completed for a brief moment after AI finishes
+    // Only show completed if AI just finished AND user hasn't seen it yet
+    if (!isAiTyping && wasAiTypingRef.current && !hasSeenCompletion) {
       return 'completed';
     }
     return 'idle';
-  }, [isAiTyping, lastError, messages.length]);
+  }, [isAiTyping, lastError, hasSeenCompletion]);
 
   // Use tab notification
   useTabNotification({
