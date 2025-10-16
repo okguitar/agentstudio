@@ -5,12 +5,14 @@ interface FloatingToggleProps {
   currentView: 'files' | 'custom';
   onViewChange: (view: 'files' | 'custom') => void;
   hasCustomComponent: boolean;
+  className?: string;
 }
 
 export const FloatingToggle: React.FC<FloatingToggleProps> = ({
   currentView,
   onViewChange,
-  hasCustomComponent
+  hasCustomComponent,
+  className = ''
 }) => {
   // 如果没有自定义组件，不显示切换按钮
   if (!hasCustomComponent) {
@@ -41,6 +43,7 @@ export const FloatingToggle: React.FC<FloatingToggleProps> = ({
         flex items-center justify-center
         group
         backdrop-blur-sm
+        ${className}
       `}
       title={`切换到${nextViewText}`}
     >

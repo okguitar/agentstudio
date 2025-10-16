@@ -35,6 +35,23 @@ export const SessionsDropdown: React.FC<SessionsDropdownProps> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
+  // Debug logging for session changes
+  useEffect(() => {
+    console.log(`🎯 [DROPDOWN DEBUG] SessionsDropdown sessions updated:`, {
+      sessionCount: sessions.length,
+      currentSessionId,
+      searchTerm,
+      sessions: sessions.map((s, i) => ({
+        index: i + 1,
+        id: s.id,
+        title: s.title,
+        lastUpdated: s.lastUpdated,
+        messageCount: s.messageCount,
+        isCurrent: s.id === currentSessionId
+      }))
+    });
+  }, [sessions, currentSessionId, searchTerm]);
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -100,16 +117,23 @@ export const SessionsDropdown: React.FC<SessionsDropdownProps> = ({
           </div>
         ) : filteredSessions.length > 0 ? (
           <div className="py-2">
-            {filteredSessions.map((session) => (
+            {filteredSessions.map((session, index) => (
               <div
                 key={session.id}
-                onClick={() => onSwitchSession(session.id)}
+                onClick={() => {
+                  console.log(`🖱️ [DROPDOWN DEBUG] Clicking session ${index + 1}:`, {
+                    id: session.id,
+                    title: session.title,
+                    isCurrent: session.id === currentSessionId
+                  });
+                  onSwitchSession(session.id);
+                }}
                 className={`mx-2 px-3 py-2 rounded cursor-pointer hover:bg-gray-50 transition-colors ${
                   currentSessionId === session.id ? 'bg-blue-50 border border-blue-200' : 'border border-transparent'
                 }`}
               >
-                <div className="text-sm font-medium text-gray-900 truncate">
-                  {session.title}
+                <div className="text-sm font-medium text-gray-900 truncate" title={`ID: ${session.id}`}>
+                  {index + 1}. {session.title}
                 </div>
                 <div className="text-xs text-gray-500 mt-0.5">
                   {t('sessionDropdown.messageCount', { count: session.messageCount })} • {new Date(session.lastUpdated).toLocaleString('zh-CN', {

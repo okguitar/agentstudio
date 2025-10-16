@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { AgentChatPanel } from '../components/AgentChatPanel';
 import { SplitLayout } from '../components/SplitLayout';
 import { RightPanelWrapper } from '../components/RightPanelWrapper';
+import { ChatGuide } from '../components/ChatGuide';
 import { getAgentPlugin } from '../agents/registry';
 import { useAgentStore } from '../stores/useAgentStore';
 import { useAgent } from '../hooks/useAgents';
@@ -24,6 +25,7 @@ export const ChatPage: React.FC = () => {
   const [hideRightPanel, setHideRightPanel] = useState(false);
   const [lastError, setLastError] = useState<Error | null>(null);
   const [hasSeenCompletion, setHasSeenCompletion] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
   const wasAiTypingRef = React.useRef(false);
 
   const agent = agentData?.agent;
@@ -161,6 +163,23 @@ export const ChatPage: React.FC = () => {
     };
   }, [agent, agentPlugin]);
 
+  // Handle guide display - show after agent is loaded and project is selected
+  useEffect(() => {
+    if (agent && !showProjectSelector) {
+      // Delay showing guide to let the UI settle
+      const timer = setTimeout(() => {
+        setShowGuide(true);
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [agent, showProjectSelector]);
+
+  // Handle guide completion
+  const handleGuideComplete = () => {
+    setShowGuide(false);
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
@@ -270,6 +289,9 @@ export const ChatPage: React.FC = () => {
           onClose={handleProjectSelectorClose}
         />
       )}
+
+      {/* Chat Guide - Show once for first-time users */}
+      <ChatGuide isOpen={showGuide} onComplete={handleGuideComplete} />
     </div>
   );
 };

@@ -53,30 +53,30 @@ export const GrepTool: React.FC<GrepToolProps> = ({ execution }) => {
         {/* 显示搜索选项 */}
         <div className="flex flex-wrap gap-2 mt-2">
           {input['-i'] && (
-            <span className="px-2 py-1 bg-gray-200 text-xs rounded">{t('grepTool.ignoreCase')}</span>
+            <span className="px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded">{t('grepTool.ignoreCase')}</span>
           )}
           {input['-n'] && (
-            <span className="px-2 py-1 bg-gray-200 text-xs rounded">{t('grepTool.showLineNumbers')}</span>
+            <span className="px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded">{t('grepTool.showLineNumbers')}</span>
           )}
           {input['-A'] && (
-            <span className="px-2 py-1 bg-gray-200 text-xs rounded">{t('grepTool.afterLines', { count: input['-A'] })}</span>
+            <span className="px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded">{t('grepTool.afterLines', { count: input['-A'] })}</span>
           )}
           {input['-B'] && (
-            <span className="px-2 py-1 bg-gray-200 text-xs rounded">{t('grepTool.beforeLines', { count: input['-B'] })}</span>
+            <span className="px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded">{t('grepTool.beforeLines', { count: input['-B'] })}</span>
           )}
           {input['-C'] && (
-            <span className="px-2 py-1 bg-gray-200 text-xs rounded">{t('grepTool.contextLines', { count: input['-C'] })}</span>
+            <span className="px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded">{t('grepTool.contextLines', { count: input['-C'] })}</span>
           )}
           {input.multiline && (
-            <span className="px-2 py-1 bg-gray-200 text-xs rounded">{t('grepTool.multilineMode')}</span>
+            <span className="px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded">{t('grepTool.multilineMode')}</span>
           )}
         </div>
       </div>
       
       {execution.toolResult && !execution.isError && (
         <div className="mt-3">
-          <p className="text-xs font-medium text-gray-600 mb-2">{t('grepTool.searchResults')}</p>
-          <div className="p-3 rounded-md border bg-green-50 border-green-200 text-sm font-mono whitespace-pre-wrap break-words text-green-700">
+          <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">{t('grepTool.searchResults')}</p>
+          <div className="p-3 rounded-md border bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700 text-sm font-mono whitespace-pre-wrap break-words text-green-700 dark:text-green-300">
             {formatGrepResult(execution.toolResult)}
           </div>
         </div>

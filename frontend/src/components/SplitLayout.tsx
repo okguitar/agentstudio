@@ -205,13 +205,14 @@ export const SplitLayout: React.FC<SplitLayoutProps> = ({
             isPanelVisible={!hideLeftPanel}
             onToggle={onToggleLeftPanel}
             position="left"
+            className="panel-toggle-left"
           />
         )}
       </div>
 
       {/* 分隔条 - 始终显示，可拖拽调整左右比例 */}
       <div
-        className={`w-1 bg-gray-300 hover:bg-blue-400 cursor-col-resize transition-colors relative z-10 ${
+        className={`resize-separator w-1 bg-gray-300 hover:bg-blue-400 cursor-col-resize transition-colors relative z-10 ${
           isDragging ? 'bg-blue-500' : ''
         }`}
         onMouseDown={handleMouseDown}
@@ -240,6 +241,7 @@ export const SplitLayout: React.FC<SplitLayoutProps> = ({
             isPanelVisible={!hideRightPanel}
             onToggle={onToggleRightPanel}
             position="right"
+            className="panel-toggle-right"
           />
         )}
       </div>

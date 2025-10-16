@@ -68,6 +68,7 @@ export const RightPanelWrapper: React.FC<RightPanelWrapperProps> = ({
         currentView={currentView}
         onViewChange={setCurrentView}
         hasCustomComponent={hasCustomComponent}
+        className="floating-toggle"
       />
     </>
   );
