@@ -147,6 +147,7 @@
     "noContent": "无内容可发送",
     "unknownCommand": "未知命令",
     "sendMessage": "发送消息",
+    "newMessages": "条新消息",
     "permissionMode": {
       "default": "默认",
       "acceptEdits": "接受编辑",

@@ -147,6 +147,7 @@
     "noContent": "No content to send",
     "unknownCommand": "Unknown command",
     "sendMessage": "Send message",
+    "newMessages": "new messages",
     "permissionMode": {
       "default": "Default",
       "acceptEdits": "Accept Edits",
