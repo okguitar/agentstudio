@@ -18,8 +18,9 @@ export const ChatPage: React.FC = () => {
   const projectPath = searchParams.get('project');
   const sessionId = searchParams.get('session');
   const { data: agentData, isLoading, error } = useAgent(agentId!);
-  const { setCurrentAgent, setCurrentSessionId, isAiTyping, messages } = useAgentStore();
+  const { setCurrentAgent, setCurrentSessionId, isAiTyping } = useAgentStore();
   const [showProjectSelector, setShowProjectSelector] = useState(false);
+  const [hideLeftPanel, setHideLeftPanel] = useState(false);
   const [hideRightPanel, setHideRightPanel] = useState(false);
   const [lastError, setLastError] = useState<Error | null>(null);
   const [hasSeenCompletion, setHasSeenCompletion] = useState(false);
@@ -214,14 +215,26 @@ export const ChatPage: React.FC = () => {
     );
   }
 
-  // 处理面板隐藏/显示
-  const handleTogglePanel = (hidden: boolean) => {
-    setHideRightPanel(hidden);
+  // 处理左侧面板切换
+  const handleToggleLeftPanel = () => {
+    const newHideLeft = !hideLeftPanel;
+    setHideLeftPanel(newHideLeft);
+    
+    // 如果左面板要隐藏，但右面板也是隐藏的，则显示右面板
+    if (newHideLeft && hideRightPanel) {
+      setHideRightPanel(false);
+    }
   };
 
-  // 处理显示右侧面板
-  const handleShowRightPanel = () => {
-    setHideRightPanel(false);
+  // 处理右侧面板切换
+  const handleToggleRightPanel = () => {
+    const newHideRight = !hideRightPanel;
+    setHideRightPanel(newHideRight);
+    
+    // 如果右面板要隐藏，但左面板也是隐藏的，则显示左面板
+    if (newHideRight && hideLeftPanel) {
+      setHideLeftPanel(false);
+    }
   };
 
   // Render layout based on plugin configuration
@@ -229,8 +242,10 @@ export const ChatPage: React.FC = () => {
     // 始终使用分栏布局，右侧根据是否有自定义组件来决定显示内容
     return (
       <SplitLayout
+        hideLeftPanel={hideLeftPanel}
         hideRightPanel={hideRightPanel}
-        onShowRightPanel={handleShowRightPanel}
+        onToggleLeftPanel={handleToggleLeftPanel}
+        onToggleRightPanel={handleToggleRightPanel}
         mobileLayout="tabs"
       >
         <AgentChatPanel agent={agent} projectPath={projectPath || undefined} onSessionChange={handleSessionChange} />
@@ -238,7 +253,6 @@ export const ChatPage: React.FC = () => {
           agent={agent}
           projectPath={projectPath || undefined}
           CustomComponent={RightPanelComponent}
-          onTogglePanel={handleTogglePanel}
         />
       </SplitLayout>
     );
