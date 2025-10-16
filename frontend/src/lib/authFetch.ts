@@ -36,6 +36,27 @@ export async function authFetch(
       return response;
     } catch (error) {
       if (attempt >= maxRetries) {
+        // Enhance the error with more context before throwing
+        if (error instanceof Error) {
+          const enhancedError = error as Error & {
+            requestUrl?: string;
+            requestMethod?: string;
+            isRetryable?: boolean;
+            retryAttempt?: number;
+            maxRetries?: number;
+          };
+          
+          enhancedError.requestUrl = url;
+          enhancedError.requestMethod = options.method || 'GET';
+          enhancedError.isRetryable = true;
+          enhancedError.retryAttempt = attempt;
+          enhancedError.maxRetries = maxRetries;
+          
+          // Add more descriptive message for network errors
+          if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            enhancedError.message = `Network request failed: ${options.method || 'GET'} ${url}`;
+          }
+        }
         throw error;
       }
       attempt++;
@@ -55,11 +76,12 @@ async function makeAuthRequest(
   const headers = new Headers(options.headers || {});
 
   // Add Authorization header if token exists and auth is not skipped
+  let actualToken: string | undefined;
   if (!skipAuth) {
     const currentServiceId = getCurrentServiceId();
     const { getToken } = useAuthStore.getState();
     const token = currentServiceId ? getToken(currentServiceId) : useAuthStore.getState().token;
-    const actualToken = extractToken(token);
+    actualToken = extractToken(token) || undefined;
 
     if (actualToken) {
       headers.set('Authorization', `Bearer ${actualToken}`);
@@ -78,7 +100,28 @@ async function makeAuthRequest(
     headers,
   };
 
-  return fetch(url, authOptions);
+  return fetch(url, authOptions).catch(error => {
+    // Enhance fetch errors with more context
+    if (error instanceof Error) {
+      const enhancedError = error as Error & {
+        requestUrl?: string;
+        requestMethod?: string;
+        hasAuth?: boolean;
+        tokenPresent?: boolean;
+      };
+      
+      enhancedError.requestUrl = url;
+      enhancedError.requestMethod = authOptions.method || 'GET';
+      enhancedError.hasAuth = !skipAuth;
+      enhancedError.tokenPresent = !!actualToken;
+      
+      // Add more descriptive message for common network errors
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        enhancedError.message = `Failed to connect to server: ${authOptions.method || 'GET'} ${url}`;
+      }
+    }
+    throw error;
+  });
 }
 
 function getCurrentServiceId(): string | null {

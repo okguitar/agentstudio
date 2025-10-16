@@ -73,12 +73,22 @@ export function useAuth() {
       return true;
     } catch (err) {
       // Create detailed error object for network/other errors
-      const networkError = new Error('Network error occurred during login') as Error & {
+      const networkError = new Error(`Network error occurred during login`) as Error & {
         originalError?: any;
         type?: string;
         url?: string;
         timestamp?: number;
+        requestUrl?: string;
+        requestMethod?: string;
+        requestBody?: any;
+        statusCode?: number;
+        statusText?: string;
+        isNetworkError?: boolean;
+        isTimeout?: boolean;
+        isAbortError?: boolean;
       };
+
+      const loginUrl = `${API_BASE}/auth/login`;
 
       if (err instanceof Error) {
         networkError.originalError = {
@@ -87,11 +97,27 @@ export function useAuth() {
           name: err.name
         };
         networkError.type = err.name;
+        
+        // Detect specific error types
+        if (err.name === 'TypeError') {
+          networkError.isNetworkError = true;
+          if (err.message.includes('fetch')) {
+            networkError.message = `Failed to connect to server at ${API_BASE}`;
+          } else if (err.message.includes('network')) {
+            networkError.message = `Network connection error while contacting ${API_BASE}`;
+          }
+        } else if (err.name === 'AbortError') {
+          networkError.isAbortError = true;
+          networkError.message = `Login request timed out for ${loginUrl}`;
+        }
       } else {
         networkError.originalError = err;
         networkError.type = typeof err;
       }
 
+      networkError.requestUrl = loginUrl;
+      networkError.requestMethod = 'POST';
+      networkError.requestBody = { password: '[REDACTED]' };
       networkError.url = API_BASE;
       networkError.timestamp = Date.now();
 
