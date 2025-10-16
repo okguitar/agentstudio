@@ -15,7 +15,7 @@ LOGS_DIR="$BASE_DIR/logs"
 BACKUP_DIR="$BASE_DIR/backup/backup-$(date +%Y%m%d_%H%M%S)"
 DATA_DIR="$BASE_DIR/data"
 SLIDES_DIR="$DATA_DIR/slides"
-GITHUB_REPO="git-men/agentstudio"
+GITHUB_REPO="okguitar/agentstudio"
 GITHUB_BRANCH="main"
 
 # Legacy compatibility

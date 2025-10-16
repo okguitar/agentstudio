@@ -41,15 +41,15 @@
     "tsx": "^4.20.6",
     "typescript": "^5.1.6"
   },
-  "author": "jeffkit <bbmyth@gmail.com>",
+  "author": "okguitar <okguitar@gmail.com>",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/git-men/agentstudio.git"
+    "url": "https://github.com/okguitar/agentstudio.git"
   },
-  "homepage": "https://github.com/git-men/agentstudio#readme",
+  "homepage": "https://github.com/okguitar/agentstudio#readme",
   "bugs": {
-    "url": "https://github.com/git-men/agentstudio/issues"
+    "url": "https://github.com/okguitar/agentstudio/issues"
   },
   "keywords": [
     "ai",

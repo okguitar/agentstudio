@@ -60,7 +60,7 @@ const LandingPage: React.FC = () => {
               <ChevronRight className="ml-2 w-5 h-5" />
             </Link>
             <a
-              href="https://github.com/git-men/agentstudio"
+              href="https://github.com/okguitar/agentstudio"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center px-8 py-4 bg-white hover:bg-gray-50 text-gray-700 font-semibold rounded-xl border border-gray-300 transition-all duration-200"
@@ -166,7 +166,7 @@ const LandingPage: React.FC = () => {
             <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-8 rounded-2xl border border-blue-100">
               <h3 className="text-xl font-semibold text-gray-900 mb-4">{t('landing.quickStart.endUserTitle')}</h3>
               <div className="bg-gray-900 rounded-lg p-4 text-left text-sm text-green-400 font-mono mb-4">
-                <div>curl -fsSL https://raw.githubusercontent.com/git-men/agentstudio/main/scripts/remote-install.sh | bash</div>
+                <div>curl -fsSL https://raw.githubusercontent.com/okguitar/agentstudio/main/scripts/remote-install.sh | bash</div>
               </div>
               <p className="text-gray-600 text-sm">
                 {t('landing.quickStart.endUserDescription')}
@@ -177,7 +177,7 @@ const LandingPage: React.FC = () => {
             <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-8 rounded-2xl border border-purple-100">
               <h3 className="text-xl font-semibold text-gray-900 mb-4">{t('landing.quickStart.developerTitle')}</h3>
               <div className="bg-gray-900 rounded-lg p-4 text-left text-sm text-green-400 font-mono mb-4">
-                <div>git clone https://github.com/git-men/agentstudio.git</div>
+                <div>git clone https://github.com/okguitar/agentstudio.git</div>
                 <div>cd agentstudio</div>
                 <div>pnpm install && pnpm run dev</div>
               </div>
@@ -207,7 +207,7 @@ const LandingPage: React.FC = () => {
               <ArrowRight className="ml-2 w-5 h-5" />
             </Link>
             <a
-              href="https://github.com/git-men/agentstudio"
+              href="https://github.com/okguitar/agentstudio"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center px-8 py-4 bg-blue-500 hover:bg-blue-400 text-white font-semibold rounded-xl border border-blue-400 transition-all duration-200"
@@ -240,17 +240,17 @@ const LandingPage: React.FC = () => {
               <h3 className="text-white font-semibold mb-4">{t('landing.footer.product')}</h3>
               <ul className="space-y-2 text-sm">
                 <li><Link to="/dashboard" className="hover:text-white transition-colors">{t('landing.footer.workspace')}</Link></li>
-                <li><a href="https://github.com/git-men/agentstudio" className="hover:text-white transition-colors">{t('landing.footer.sourceCode')}</a></li>
-                <li><a href="https://github.com/git-men/agentstudio/releases" className="hover:text-white transition-colors">{t('landing.footer.releases')}</a></li>
+                <li><a href="https://github.com/okguitar/agentstudio" className="hover:text-white transition-colors">{t('landing.footer.sourceCode')}</a></li>
+                <li><a href="https://github.com/okguitar/agentstudio/releases" className="hover:text-white transition-colors">{t('landing.footer.releases')}</a></li>
               </ul>
             </div>
 
             <div>
               <h3 className="text-white font-semibold mb-4">{t('landing.footer.support')}</h3>
               <ul className="space-y-2 text-sm">
-                <li><a href="https://github.com/git-men/agentstudio/wiki" className="hover:text-white transition-colors">{t('landing.footer.documentation')}</a></li>
-                <li><a href="https://github.com/git-men/agentstudio/issues" className="hover:text-white transition-colors">{t('landing.footer.issues')}</a></li>
-                <li><a href="https://github.com/git-men/agentstudio/discussions" className="hover:text-white transition-colors">{t('landing.footer.discussions')}</a></li>
+                <li><a href="https://github.com/okguitar/agentstudio/wiki" className="hover:text-white transition-colors">{t('landing.footer.documentation')}</a></li>
+                <li><a href="https://github.com/okguitar/agentstudio/issues" className="hover:text-white transition-colors">{t('landing.footer.issues')}</a></li>
+                <li><a href="https://github.com/okguitar/agentstudio/discussions" className="hover:text-white transition-colors">{t('landing.footer.discussions')}</a></li>
               </ul>
             </div>
           </div>

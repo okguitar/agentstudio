@@ -34,15 +34,15 @@
     "react",
     "typescript"
   ],
-  "author": "jeffkit <bbmyth@gmail.com>",
+  "author": "okguitar <okguitar@gmail.com>",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/git-men/agentstudio.git"
+    "url": "https://github.com/okguitar/agentstudio.git"
   },
-  "homepage": "https://github.com/git-men/agentstudio#readme",
+  "homepage": "https://github.com/okguitar/agentstudio#readme",
   "bugs": {
-    "url": "https://github.com/git-men/agentstudio/issues"
+    "url": "https://github.com/okguitar/agentstudio/issues"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",

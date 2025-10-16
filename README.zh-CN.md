@@ -7,8 +7,8 @@
 **基于 Claude Code 的个人智能体工作平台**
 
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
-[![GitHub stars](https://img.shields.io/github/stars/git-men/agentstudio.svg)](https://github.com/git-men/agentstudio/stargazers)
-[![GitHub issues](https://img.shields.io/github/issues/git-men/agentstudio.svg)](https://github.com/git-men/agentstudio/issues)
+[![GitHub stars](https://img.shields.io/github/stars/okguitar/agentstudio.svg)](https://github.com/okguitar/agentstudio/stargazers)
+[![GitHub issues](https://img.shields.io/github/issues/okguitar/agentstudio.svg)](https://github.com/okguitar/agentstudio/issues)
 
 [English](README.md) | [中文](README.zh-CN.md)
 
@@ -98,7 +98,7 @@ docker-compose up -d
 
 ```bash
 # 在用户空间安装 Agent Studio 后端
-curl -fsSL https://raw.githubusercontent.com/git-men/agentstudio/main/scripts/remote-install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/okguitar/agentstudio/main/scripts/remote-install.sh | bash
 ```
 
 安装程序会：
@@ -122,7 +122,7 @@ curl -fsSL https://raw.githubusercontent.com/git-men/agentstudio/main/scripts/re
 
 ```powershell
 # 以管理员身份在 PowerShell 中运行
-PowerShell -ExecutionPolicy Bypass -Command "iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/git-men/agentstudio/main/scripts/windows-install.ps1'))"
+PowerShell -ExecutionPolicy Bypass -Command "iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/okguitar/agentstudio/main/scripts/windows-install.ps1'))"
 ```
 
 Windows 安装程序会：
@@ -136,7 +136,7 @@ Windows 安装程序会：
 
 ```batch
 # 下载并运行简化安装程序
-curl -o windows-install-simple.bat https://raw.githubusercontent.com/git-men/agentstudio/main/scripts/windows-install-simple.bat
+curl -o windows-install-simple.bat https://raw.githubusercontent.com/okguitar/agentstudio/main/scripts/windows-install-simple.bat
 windows-install-simple.bat
 ```
 
@@ -152,7 +152,7 @@ windows-install-simple.bat
 
 ```bash
 # 安装为系统服务，支持开机自启
-curl -fsSL https://raw.githubusercontent.com/git-men/agentstudio/main/scripts/remote-install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/okguitar/agentstudio/main/scripts/remote-install.sh | sudo bash
 ```
 
 安装完成后，管理服务：
@@ -177,7 +177,7 @@ agent-studio config   # 编辑配置
 **安装步骤：**
 ```bash
 # 克隆仓库
-git clone https://github.com/git-men/agentstudio.git
+git clone https://github.com/okguitar/agentstudio.git
 cd agentstudio
 
 # 安装依赖
@@ -513,9 +513,9 @@ cd frontend && pnpm run test:ui
 
 ## 📞 支持
 
-- 📖 [文档](https://github.com/git-men/agentstudio/wiki)
-- 🐛 [问题报告](https://github.com/git-men/agentstudio/issues)
-- 💬 [讨论区](https://github.com/git-men/agentstudio/discussions)
+- 📖 [文档](https://github.com/okguitar/agentstudio/wiki)
+- 🐛 [问题报告](https://github.com/okguitar/agentstudio/issues)
+- 💬 [讨论区](https://github.com/okguitar/agentstudio/discussions)
 
 
 ## Links

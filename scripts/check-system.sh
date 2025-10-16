@@ -148,6 +148,6 @@ else
     success "Your system is compatible with Agent Studio!"
     echo ""
     echo "To install Agent Studio, run:"
-    echo "  curl -fsSL https://raw.githubusercontent.com/git-men/agentstudio/main/scripts/remote-install.sh | bash"
+    echo "  curl -fsSL https://raw.githubusercontent.com/okguitar/agentstudio/main/scripts/remote-install.sh | bash"
     echo ""
 fi

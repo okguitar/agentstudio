@@ -62,7 +62,7 @@
     "@types/node": "^20.5.0",
     "typescript": "^5.9.2"
   },
-  "author": "jeffkit <bbmyth@gmail.com>",
+  "author": "okguitar <okguitar@gmail.com>",
   "license": "MIT",
   "private": true
 }

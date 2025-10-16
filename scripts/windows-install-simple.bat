@@ -72,7 +72,7 @@ mkdir "%TEMP_DIR%"
 REM Download Agent Studio
 echo [INFO] Downloading Agent Studio...
 cd /d "%TEMP_DIR%"
-git clone https://github.com/git-men/agentstudio.git .
+git clone https://github.com/okguitar/agentstudio.git .
 if %errorlevel% neq 0 (
     echo [ERROR] Failed to download Agent Studio
     pause
@@ -272,6 +272,6 @@ echo.
 echo 📁 Slides directory: %SLIDES_DIR%
 echo.
 echo For more information, visit:
-echo   https://github.com/git-men/agentstudio
+echo   https://github.com/okguitar/agentstudio
 echo.
 pause

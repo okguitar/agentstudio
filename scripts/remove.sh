@@ -361,7 +361,7 @@ show_summary() {
 
     echo ""
     echo "To reinstall Agent Studio in the future:"
-    echo "  curl -fsSL https://raw.githubusercontent.com/git-men/agentstudio/main/scripts/remote-install.sh | bash"
+    echo "  curl -fsSL https://raw.githubusercontent.com/okguitar/agentstudio/main/scripts/remote-install.sh | bash"
 }
 
 # Main removal function

@@ -137,7 +137,7 @@ ls -la ~/.agent-studio-backup-*
 ### 首次安装
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/git-men/agentstudio/main/scripts/remote-install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/okguitar/agentstudio/main/scripts/remote-install.sh | bash
 ```
 
 ### 更新已安装版本

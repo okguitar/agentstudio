@@ -6,7 +6,7 @@
 set -e
 
 # Configuration
-GITHUB_REPO="git-men/agentstudio"
+GITHUB_REPO="okguitar/agentstudio"
 GITHUB_BRANCH="main"
 SERVICE_NAME="com.agentstudio.daemon"
 SERVICE_PORT="4936"

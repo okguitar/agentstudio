@@ -1,12 +1,12 @@
 # Agent Studio Windows Installation Script
 # This script downloads and installs Agent Studio backend with all dependencies on Windows
 # Usage: 
-#   PowerShell -ExecutionPolicy Bypass -Command "iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/git-men/agentstudio/main/scripts/windows-install.ps1'))"
+#   PowerShell -ExecutionPolicy Bypass -Command "iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/okguitar/agentstudio/main/scripts/windows-install.ps1'))"
 
 param(
     [string]$InstallDir = "$env:USERPROFILE\.agent-studio",
     [string]$SlidesDir = "$env:USERPROFILE\slides",
-    [string]$GitHubRepo = "git-men/agentstudio",
+    [string]$GitHubRepo = "okguitar/agentstudio",
     [string]$GitHubBranch = "main"
 )
 
