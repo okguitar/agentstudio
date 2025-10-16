@@ -78,7 +78,7 @@ const getMimeType = (filePath: string): string => {
   return mimeTypes[ext] || 'application/octet-stream';
 };
 
-// GET /media/{project-id}/{relative-path} - Serve static files from project directory
+// GET /media/{project-id}/{relative-path} - Serve static files from project directory (PUBLIC)
 router.get('/:projectId/*', async (req, res) => {
   try {
     const { projectId } = req.params;

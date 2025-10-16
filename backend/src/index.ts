@@ -10,6 +10,7 @@ import agentsRouter from './routes/agents.js';
 import mcpRouter from './routes/mcp.js';
 import sessionsRouter from './routes/sessions.js';
 import mediaRouter from './routes/media.js';
+import mediaAuthRouter from './routes/mediaAuth.js';
 import settingsRouter from './routes/settings.js';
 import commandsRouter from './routes/commands.js';
 import subagentsRouter from './routes/subagents.js';
@@ -170,7 +171,8 @@ app.use('/api/config', authMiddleware, configRouter);
 app.use('/api/commands', authMiddleware, commandsRouter);
 app.use('/api/subagents', authMiddleware, subagentsRouter);
 app.use('/api/projects', authMiddleware, projectsRouter);
-app.use('/media', authMiddleware, mediaRouter);
+app.use('/api/media', mediaAuthRouter); // Media auth endpoints
+app.use('/media', mediaRouter); // Remove authMiddleware - media files are now public
 
 // Health check
 app.get('/api/health', (req, res) => {
