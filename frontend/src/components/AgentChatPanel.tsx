@@ -72,6 +72,11 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
   const [isInitializingSession, setIsInitializingSession] = useState(false);
 const [isLoadingMessages, setIsLoadingMessages] = useState(false);
 
+  // Scroll management states
+  const [isUserScrolling, setIsUserScrolling] = useState(false);
+  const [newMessagesCount, setNewMessagesCount] = useState(0);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+
   // Get current backend service name
   const [currentServiceName, setCurrentServiceName] = useState<string>('默认服务');
   useEffect(() => {
@@ -444,13 +449,45 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
     });
   };
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  // Check if scroll position is near bottom
+  const isNearBottom = useCallback((threshold = 100) => {
+    if (!messagesContainerRef.current) return false;
+    const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+    return scrollHeight - scrollTop - clientHeight < threshold;
+  }, []);
 
+  // Scroll to bottom
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
+    messagesEndRef.current?.scrollIntoView({ behavior });
+  }, []);
+
+  // Handle scroll event
+  const handleScroll = useCallback(() => {
+    const nearBottom = isNearBottom();
+    setIsUserScrolling(!nearBottom);
+    if (nearBottom) {
+      setNewMessagesCount(0);
+    }
+  }, [isNearBottom]);
+
+  // Add scroll event listener
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, isAiTyping]);
+    const container = messagesContainerRef.current;
+    if (container) {
+      container.addEventListener('scroll', handleScroll);
+      return () => container.removeEventListener('scroll', handleScroll);
+    }
+  }, [handleScroll]);
+
+  // Conditional auto-scroll when messages update
+  useEffect(() => {
+    if (!isUserScrolling) {
+      scrollToBottom();
+    } else {
+      // User is scrolling, increment new messages count
+      setNewMessagesCount(prev => prev + 1);
+    }
+  }, [messages, isAiTyping, isUserScrolling, scrollToBottom]);
 
   const handleSendMessage = async () => {
     if ((!inputMessage.trim() && selectedImages.length === 0) || isAiTyping) return;
@@ -785,6 +822,10 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
                   // Add tool usage as a separate part
                   if (block.name) {
                     console.log('📝 Adding tool part:', block.name, 'id:', block.id);
+                    // Special logging for BashOutput
+                    if (block.name === 'BashOutput') {
+                      console.log('🐚 [BashOutput] Tool use detected, claudeId:', block.id, 'input:', block.input);
+                    }
                     const toolData = {
                       toolName: block.name,
                       toolInput: (block.input as Record<string, unknown>) || {},
@@ -810,12 +851,12 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
             if (eventData.message && typeof eventData.message === 'object' && 'content' in eventData.message && eventData.message.content && aiMessageId) {
               for (const block of eventData.message.content as Array<{ type: string; content?: unknown; is_error?: boolean; tool_use_id?: string }>) {
                 if (block.type === 'tool_result' && block.tool_use_id) {
-                  console.log('🔧 Processing tool_result for tool_use_id:', block.tool_use_id);
+                  console.log('🔧 Processing tool_result for tool_use_id:', block.tool_use_id, 'content:', block.content);
                   // Find the tool by tool_use_id - search across ALL messages, not just current
                   const state = useAgentStore.getState();
                   let targetTool: any = null;
                   let targetMessageId: string | null = null;
-                  
+
                   // Search through all messages to find the tool with matching claudeId
                   for (const message of state.messages) {
                     if (message.messageParts) {
@@ -838,13 +879,22 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
                   
                   if (targetTool?.toolData && targetMessageId) {
                     // Update the corresponding tool with results
-                    const toolResult = typeof block.content === 'string' 
-                      ? block.content 
+                    const toolResult = typeof block.content === 'string'
+                      ? block.content
                       : Array.isArray(block.content)
                         ? block.content.map((c: { text?: string }) => c.text || String(c)).join('')
                         : JSON.stringify(block.content);
-                    
+
                     console.log('🔧 Updating tool with result, setting isExecuting: false');
+                    // Special logging for BashOutput
+                    if (targetTool.toolData.toolName === 'BashOutput') {
+                      console.log('🐚 [BashOutput] Updating tool result:', {
+                        toolId: targetTool.toolData.id,
+                        messageId: targetMessageId,
+                        toolResult: toolResult?.substring(0, 200),
+                        rawContent: block.content
+                      });
+                    }
                     updateToolPartInMessage(targetMessageId, targetTool.toolData.id, {
                       toolResult,
                       isError: block.is_error || false,
@@ -1502,7 +1552,7 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
       </div>
 
       {/* 主内容区域 - 聊天视图 - Scrollable */}
-      <div className="flex-1 px-5 py-5 overflow-y-auto space-y-4 min-h-0">
+      <div ref={messagesContainerRef} className="flex-1 px-5 py-5 overflow-y-auto space-y-4 min-h-0 relative">
         {/* Welcome message */}
         <div className="px-4">
           <div className="text-sm leading-relaxed break-words overflow-hidden text-gray-600 dark:text-gray-400">
@@ -1556,6 +1606,23 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
         )}
 
         <div ref={messagesEndRef} />
+
+        {/* Scroll to bottom button */}
+        {isUserScrolling && newMessagesCount > 0 && (
+          <button
+            onClick={() => {
+              scrollToBottom();
+              setIsUserScrolling(false);
+              setNewMessagesCount(0);
+            }}
+            className="fixed bottom-24 right-8 bg-blue-500 hover:bg-blue-600 text-white rounded-full px-4 py-2 shadow-lg flex items-center space-x-2 transition-all duration-200 z-10"
+          >
+            <ChevronDown className="w-4 h-4" />
+            <span className="text-sm font-medium">
+              {newMessagesCount} {t('agentChat.newMessages')}
+            </span>
+          </button>
+        )}
       </div>
 
       {/* Mobile vs Desktop Input Area */}
