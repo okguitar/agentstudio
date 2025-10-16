@@ -1,14 +1,36 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { MermaidDiagram } from './MermaidDiagram';
 
 interface MarkdownMessageProps {
   content: string;
 }
 
 export const MarkdownMessage: React.FC<MarkdownMessageProps> = ({ content }) => {
+  // 检测暗色模式
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    // 检查初始主题
+    const checkDarkMode = () => {
+      setIsDark(document.documentElement.classList.contains('dark'));
+    };
+
+    checkDarkMode();
+
+    // 监听主题变化
+    const observer = new MutationObserver(checkDarkMode);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div className="break-words overflow-wrap-anywhere word-break-break-all">
       <ReactMarkdown
@@ -16,10 +38,17 @@ export const MarkdownMessage: React.FC<MarkdownMessageProps> = ({ content }) => 
       components={{
         code({ inline, className, children, ...props }: { inline?: boolean; className?: string; children?: React.ReactNode }) {
           const match = /language-(\w+)/.exec(className || '');
+          const language = match ? match[1] : '';
+
+          // 检测 Mermaid 代码块
+          if (!inline && language === 'mermaid') {
+            return <MermaidDiagram code={String(children).replace(/\n$/, '')} isDark={isDark} />;
+          }
+
           return !inline && match ? (
             <SyntaxHighlighter
               style={tomorrow}
-              language={match[1]}
+              language={language}
               PreTag="div"
               className="rounded-md text-sm overflow-auto"
               wrapLines={true}
