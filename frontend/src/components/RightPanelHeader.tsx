@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileText, Folder, X, ChevronDown } from 'lucide-react';
+import { FileText, Folder, X } from 'lucide-react';
 import type { AgentConfig } from '../types/index.js';
 
 interface RightPanelHeaderProps {

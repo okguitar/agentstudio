@@ -171,7 +171,7 @@ export const SplitLayout: React.FC<SplitLayoutProps> = ({
         )}
 
         {/* Floating Action Button to open right panel */}
-        {!hideRightPanel && !rightPanelOpen && onShowRightPanel && (
+        {!hideRightPanel && !rightPanelOpen && onToggleRightPanel && (
           <button
             onClick={() => setRightPanelOpen(true)}
             className="fixed bottom-6 right-6 z-40 bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition-colors lg:hidden"

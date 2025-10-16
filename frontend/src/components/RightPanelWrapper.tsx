@@ -13,8 +13,7 @@ interface RightPanelWrapperProps {
 export const RightPanelWrapper: React.FC<RightPanelWrapperProps> = ({ 
   agent, 
   projectPath, 
-  CustomComponent,
-  onTogglePanel
+  CustomComponent
 }) => {
   // 如果有自定义组件，默认显示自定义视图，否则显示文件视图
   const [currentView, setCurrentView] = useState<'files' | 'custom'>(
