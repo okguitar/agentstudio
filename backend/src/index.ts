@@ -25,7 +25,7 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const app = express();
+const app: express.Express = express();
 
 // Load configuration (including port and host)
 const config = await loadConfig();
