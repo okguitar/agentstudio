@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AgentChatPanel } from '../components/AgentChatPanel';
@@ -8,6 +8,7 @@ import { getAgentPlugin } from '../agents/registry';
 import { useAgentStore } from '../stores/useAgentStore';
 import { useAgent } from '../hooks/useAgents';
 import { ProjectSelector } from '../components/ProjectSelector';
+import { useTabNotification, type TabNotificationStatus } from '../hooks/useTabNotification';
 
 export const ChatPage: React.FC = () => {
   const { t } = useTranslation('pages');
@@ -17,11 +18,43 @@ export const ChatPage: React.FC = () => {
   const projectPath = searchParams.get('project');
   const sessionId = searchParams.get('session');
   const { data: agentData, isLoading, error } = useAgent(agentId!);
-  const { setCurrentAgent, setCurrentSessionId } = useAgentStore();
+  const { setCurrentAgent, setCurrentSessionId, isAiTyping, messages } = useAgentStore();
   const [showProjectSelector, setShowProjectSelector] = useState(false);
   const [hideRightPanel, setHideRightPanel] = useState(false);
+  const [lastError, setLastError] = useState<Error | null>(null);
 
   const agent = agentData?.agent;
+
+  // Determine tab notification status based on AI state
+  const tabStatus: TabNotificationStatus = useMemo(() => {
+    if (lastError) return 'error';
+    if (isAiTyping) return 'working';
+    // Show completed status if there are messages and AI just stopped typing
+    if (messages.length > 0 && !isAiTyping) {
+      // Only show completed for a brief moment after AI finishes
+      return 'completed';
+    }
+    return 'idle';
+  }, [isAiTyping, lastError, messages.length]);
+
+  // Use tab notification
+  useTabNotification({
+    status: tabStatus,
+    originalTitle: agent ? `${agent.ui.icon} ${agent.name} - AgentStudio` : 'AgentStudio',
+    workingText: t('chat.tabNotification.working'),
+    completedText: t('chat.tabNotification.completed'),
+    errorText: t('chat.tabNotification.error'),
+  });
+
+  // Track errors
+  useEffect(() => {
+    if (error) {
+      setLastError(error as Error);
+      // Clear error after 5 seconds
+      const timer = setTimeout(() => setLastError(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
 
   // Set current agent when data loads, then set session ID
   useEffect(() => {

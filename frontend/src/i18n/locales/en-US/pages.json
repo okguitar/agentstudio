@@ -257,7 +257,12 @@
     "agentNotFoundDesc": "Unable to find the specified AI assistant, it may have been deleted or disabled.",
     "agentDisabled": "Assistant Disabled",
     "agentDisabledDesc": "AI assistant \"{{name}}\" is currently disabled and cannot be used.",
-    "closePage": "Close Page"
+    "closePage": "Close Page",
+    "tabNotification": {
+      "working": "🤖 Working",
+      "completed": "✅ Completed",
+      "error": "❌ Error"
+    }
   },
   "dashboard": {
     "title": "Dashboard",
