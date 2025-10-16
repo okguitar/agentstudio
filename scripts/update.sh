@@ -21,6 +21,40 @@ GITHUB_BRANCH="main"
 # Legacy compatibility
 INSTALL_DIR="$APP_DIR"
 
+# Get configured port from user config
+get_configured_port() {
+    # Default port
+    local DEFAULT_PORT=4936
+
+    # Try to read from config.json
+    if [ -f "$CONFIG_DIR/config.json" ]; then
+        local PORT="$DEFAULT_PORT"
+
+        # Try Python3 first
+        if command -v python3 >/dev/null 2>&1; then
+            PORT=$(python3 -c "import json; print(json.load(open('$CONFIG_DIR/config.json')).get('port', $DEFAULT_PORT))" 2>/dev/null || echo "$DEFAULT_PORT")
+        # Try Python as fallback
+        elif command -v python >/dev/null 2>&1; then
+            PORT=$(python -c "import json; print(json.load(open('$CONFIG_DIR/config.json')).get('port', $DEFAULT_PORT))" 2>/dev/null || echo "$DEFAULT_PORT")
+        # Fallback to grep/sed for systems without Python
+        else
+            PORT=$(grep -o '"port":[[:space:]]*[0-9]*' "$CONFIG_DIR/config.json" | sed 's/.*://; s/[[:space:]]*//' 2>/dev/null || echo "$DEFAULT_PORT")
+        fi
+
+        # Validate port number
+        if [[ "$PORT" =~ ^[0-9]+$ ]] && [ "$PORT" -gt 0 ] && [ "$PORT" -le 65535 ]; then
+            echo "$PORT"
+            return 0
+        fi
+    fi
+
+    # Fallback to environment variable or default
+    echo "${PORT:-$DEFAULT_PORT}"
+}
+
+# Get the configured port
+CONFIGURED_PORT=$(get_configured_port)
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -207,8 +241,8 @@ check_for_updates() {
 
         # Check if restart is requested
         if [ "$RESTART_SERVICE" = "true" ]; then
-            log "Restart requested, checking service status..."
-            if curl -s http://localhost:4936/api/health >/dev/null 2>&1; then
+            log "Restart requested, checking service status on port $CONFIGURED_PORT..."
+            if curl -s "http://localhost:$CONFIGURED_PORT/api/health" >/dev/null 2>&1; then
                 log "Service is running, restarting..."
                 stop_service
                 start_service
@@ -220,8 +254,8 @@ check_for_updates() {
             fi
         else
             # Check if service is running
-            if curl -s http://localhost:4936/api/health >/dev/null 2>&1; then
-                success "Agent Studio is running and accessible"
+            if curl -s "http://localhost:$CONFIGURED_PORT/api/health" >/dev/null 2>&1; then
+                success "Agent Studio is running and accessible on port $CONFIGURED_PORT"
                 log "Use '$0 --restart' to restart the service"
             else
                 warn "Agent Studio is not running"
@@ -240,63 +274,165 @@ check_for_updates() {
 stop_service() {
     header_log "Stopping Agent Studio service..."
 
-    # Try to stop launchctl service first (macOS)
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        if [ -f "$SCRIPT_DIR/service.sh" ]; then
-            log "Stopping launchctl service..."
-            "$SCRIPT_DIR/service.sh" stop 2>/dev/null || warn "Could not stop launchctl service"
+    local SERVICE_STOPPED=false
+
+    # Try to stop using agent-studio management script first (preferred method)
+    if [ -f "$APP_DIR/agent-studio" ]; then
+        log "Stopping service using agent-studio management script..."
+        if "$APP_DIR/agent-studio" stop >/dev/null 2>&1; then
+            log "Service stopped via agent-studio script"
+            SERVICE_STOPPED=true
+        else
+            warn "agent-studio script failed to stop service"
         fi
     fi
 
-    # Try to stop systemd service first (Linux)
-    if command -v systemctl >/dev/null 2>&1; then
+    # Try launchctl service management (macOS)
+    if [[ "$OSTYPE" == "darwin"* ]] && [ "$SERVICE_STOPPED" = "false" ]; then
+        if launchctl list | grep -q "com.agentstudio.daemon"; then
+            log "Stopping launchctl service..."
+            if launchctl stop "com.agentstudio.daemon" 2>/dev/null; then
+                log "Service stopped via launchctl"
+                SERVICE_STOPPED=true
+            else
+                warn "Could not stop launchctl service"
+            fi
+        else
+            log "No launchctl service found"
+        fi
+    fi
+
+    # Try systemd service management (Linux)
+    if command -v systemctl >/dev/null 2>&1 && [ "$SERVICE_STOPPED" = "false" ]; then
         if systemctl is-active --quiet agent-studio 2>/dev/null; then
             log "Stopping systemd service..."
-            sudo systemctl stop agent-studio || warn "Could not stop systemd service"
+            if sudo systemctl stop agent-studio 2>/dev/null; then
+                log "Service stopped via systemd"
+                SERVICE_STOPPED=true
+            else
+                warn "Could not stop systemd service"
+            fi
         fi
     fi
 
-    # Try to stop using stop script
-    if [ -f "$APP_DIR/stop.sh" ]; then
-        log "Running stop script..."
-        "$APP_DIR/stop.sh" || warn "Stop script encountered an error"
+    # Try legacy service script
+    if [ -f "$SCRIPT_DIR/service.sh" ] && [ "$SERVICE_STOPPED" = "false" ]; then
+        log "Trying legacy service script..."
+        if "$SCRIPT_DIR/service.sh" stop 2>/dev/null; then
+            log "Service stopped via legacy script"
+            SERVICE_STOPPED=true
+        fi
     fi
 
-    # Kill any remaining processes
-    if command -v pkill >/dev/null 2>&1; then
-        pkill -f "agent-studio" 2>/dev/null || true
+    # Try stop.sh script
+    if [ -f "$APP_DIR/stop.sh" ] && [ "$SERVICE_STOPPED" = "false" ]; then
+        log "Trying stop.sh script..."
+        if "$APP_DIR/stop.sh" 2>/dev/null; then
+            log "Service stopped via stop.sh"
+            SERVICE_STOPPED=true
+        fi
     fi
 
-    success "Service stopped"
+    # Only use kill as last resort
+    if [ "$SERVICE_STOPPED" = "false" ]; then
+        log "No service management succeeded, using process termination as last resort..."
+        if command -v pkill >/dev/null 2>&1; then
+            pkill -f "agent-studio" 2>/dev/null || true
+        fi
+    fi
+
+    # Wait for service to stop and verify port is released
+    log "Waiting for service to fully stop on port $CONFIGURED_PORT..."
+    local WAIT_COUNT=0
+    local MAX_WAIT=20
+
+    while [ $WAIT_COUNT -lt $MAX_WAIT ]; do
+        if ! curl -s "http://localhost:$CONFIGURED_PORT/api/health" >/dev/null 2>&1 && ! lsof -i :$CONFIGURED_PORT >/dev/null 2>&1; then
+            success "Service stopped successfully on port $CONFIGURED_PORT"
+            return 0
+        fi
+
+        # Force kill if still responding after 15 seconds
+        if [ $WAIT_COUNT -eq 15 ] && [ "$SERVICE_STOPPED" = "false" ]; then
+            warn "Service still responding after 15 seconds, force killing processes on port $CONFIGURED_PORT..."
+            if command -v lsof >/dev/null 2>&1; then
+                PIDS=$(lsof -ti :$CONFIGURED_PORT 2>/dev/null)
+                if [ -n "$PIDS" ]; then
+                    echo "$PIDS" | xargs kill -9 2>/dev/null || true
+                fi
+            fi
+        fi
+
+        sleep 1
+        WAIT_COUNT=$((WAIT_COUNT + 1))
+    done
+
+    warn "Service may not have fully stopped on port $CONFIGURED_PORT after $MAX_WAIT seconds"
 }
 
 # Stop service for restart (quiet version)
 stop_service_for_restart() {
-    log "Stopping service for restart..."
+    log "Stopping service for restart on port $CONFIGURED_PORT..."
 
-    # Try to stop launchctl service first (macOS)
+    # Try to stop using agent-studio management script first (preferred method)
+    if [ -f "$APP_DIR/agent-studio" ]; then
+        "$APP_DIR/agent-studio" stop >/dev/null 2>&1 || true
+    fi
+
+    # Try launchctl service management (macOS)
     if [[ "$OSTYPE" == "darwin"* ]]; then
-        if [ -f "$SCRIPT_DIR/service.sh" ]; then
-            "$SCRIPT_DIR/service.sh" stop 2>/dev/null || true
+        if launchctl list | grep -q "com.agentstudio.daemon"; then
+            launchctl stop "com.agentstudio.daemon" 2>/dev/null || true
         fi
     fi
 
-    # Try to stop systemd service first (Linux)
+    # Try systemd service management (Linux)
     if command -v systemctl >/dev/null 2>&1; then
         if systemctl is-active --quiet agent-studio 2>/dev/null; then
             sudo systemctl stop agent-studio 2>/dev/null || true
         fi
     fi
 
-    # Try to stop using stop script
+    # Try legacy methods as fallback
+    if [ -f "$SCRIPT_DIR/service.sh" ]; then
+        "$SCRIPT_DIR/service.sh" stop 2>/dev/null || true
+    fi
+
     if [ -f "$APP_DIR/stop.sh" ]; then
         "$APP_DIR/stop.sh" 2>/dev/null || true
     fi
 
-    # Kill any remaining processes
+    # Kill any remaining processes only as last resort
     if command -v pkill >/dev/null 2>&1; then
         pkill -f "agent-studio" 2>/dev/null || true
     fi
+
+    # Wait for service to stop and verify port is released
+    local WAIT_COUNT=0
+    local MAX_WAIT=15
+
+    while [ $WAIT_COUNT -lt $MAX_WAIT ]; do
+        if ! lsof -i :$CONFIGURED_PORT >/dev/null 2>&1; then
+            log "Port $CONFIGURED_PORT is now free"
+            return 0
+        fi
+
+        # Force kill if still in use after 10 seconds
+        if [ $WAIT_COUNT -eq 10 ]; then
+            log "Force killing processes on port $CONFIGURED_PORT..."
+            if command -v lsof >/dev/null 2>&1; then
+                PIDS=$(lsof -ti :$CONFIGURED_PORT 2>/dev/null)
+                if [ -n "$PIDS" ]; then
+                    echo "$PIDS" | xargs kill -9 2>/dev/null || true
+                fi
+            fi
+        fi
+
+        sleep 1
+        WAIT_COUNT=$((WAIT_COUNT + 1))
+    done
+
+    warn "Port $CONFIGURED_PORT may still be in use after stopping service"
 }
 
 # Update code
@@ -372,86 +508,134 @@ start_service() {
     header_log "Starting Agent Studio service..."
 
     # Check if service is already running and restart it to load new code
-    if curl -s http://localhost:4936/api/health >/dev/null 2>&1; then
-        log "Service is running, restarting to load updated code..."
+    if curl -s "http://localhost:$CONFIGURED_PORT/api/health" >/dev/null 2>&1; then
+        log "Service is running on port $CONFIGURED_PORT, restarting to load updated code..."
         stop_service_for_restart
     fi
 
-    # Check if port is in use by other processes
-    if lsof -i :4936 >/dev/null 2>&1; then
-        warn "Port 4936 is in use by another process"
-        log "Attempting to stop any existing processes..."
-
-        # Try to stop using stop script
-        if [ -f "$APP_DIR/stop.sh" ]; then
-            log "Running stop script to clear port..."
-            "$APP_DIR/stop.sh" || warn "Stop script encountered errors"
-        fi
-
-        # Kill any remaining agent-studio processes
-        if command -v pkill >/dev/null 2>&1; then
-            pkill -f "agent-studio" 2>/dev/null || true
-        fi
-
-        # Kill processes using port 4936
+    # Ensure port is completely free before starting
+    if lsof -i :$CONFIGURED_PORT >/dev/null 2>&1; then
+        warn "Port $CONFIGURED_PORT is still in use, performing final cleanup..."
         if command -v lsof >/dev/null 2>&1; then
-            PIDS=$(lsof -ti :4936 2>/dev/null)
+            PIDS=$(lsof -ti :$CONFIGURED_PORT 2>/dev/null)
             if [ -n "$PIDS" ]; then
-                log "Terminating processes using port 4936: $PIDS"
+                log "Force terminating remaining processes: $PIDS"
                 echo "$PIDS" | xargs kill -9 2>/dev/null || true
+                sleep 2
             fi
         fi
-
-        # Wait a moment for cleanup
-        sleep 2
     fi
 
-    # Try to start using launchctl service first (macOS)
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        if [ -f "$SCRIPT_DIR/service.sh" ]; then
+    local SERVICE_STARTED=false
+
+    # Try to start using agent-studio management script first (preferred method)
+    if [ -f "$APP_DIR/agent-studio" ]; then
+        log "Starting service using agent-studio management script..."
+        if "$APP_DIR/agent-studio" start >/dev/null 2>&1; then
+            log "Service started via agent-studio script"
+            SERVICE_STARTED=true
+        else
+            warn "agent-studio script failed to start service"
+        fi
+    fi
+
+    # Try launchctl service management (macOS)
+    if [[ "$OSTYPE" == "darwin"* ]] && [ "$SERVICE_STARTED" = "false" ]; then
+        if [ -f "$HOME/Library/LaunchAgents/com.agentstudio.daemon.plist" ]; then
             log "Starting launchctl service..."
-            if "$SCRIPT_DIR/service.sh" start; then
-                success "Service started via launchctl"
-                return 0
+            if launchctl load "$HOME/Library/LaunchAgents/com.agentstudio.daemon.plist" 2>/dev/null; then
+                if launchctl start "com.agentstudio.daemon" 2>/dev/null; then
+                    log "Service started via launchctl"
+                    SERVICE_STARTED=true
+                else
+                    launchctl unload "$HOME/Library/LaunchAgents/com.agentstudio.daemon.plist" 2>/dev/null || true
+                    warn "Could not start launchctl service"
+                fi
             else
-                warn "Launchctl service failed to start, trying alternative method..."
+                warn "Could not load launchctl service"
             fi
         fi
     fi
 
-    # Try to start using systemd service (Linux)
-    if command -v systemctl >/dev/null 2>&1; then
+    # Try systemd service management (Linux)
+    if command -v systemctl >/dev/null 2>&1 && [ "$SERVICE_STARTED" = "false" ]; then
         if systemctl is-enabled --quiet agent-studio 2>/dev/null; then
             log "Starting systemd service..."
-            if sudo systemctl start agent-studio; then
-                success "Service started via systemd"
-                return 0
+            if sudo systemctl start agent-studio 2>/dev/null; then
+                log "Service started via systemd"
+                SERVICE_STARTED=true
             else
-                warn "Systemd service failed to start, trying alternative method..."
+                warn "Could not start systemd service"
             fi
         fi
     fi
 
-    # Fallback to start script
-    if [ -f "$APP_DIR/start.sh" ]; then
-        log "Running start script..."
-        "$APP_DIR/start.sh" &
-        START_PID=$!
-
-        # Give the service time to start
-        sleep 5
-
-        # Check if it started successfully
-        if kill -0 $START_PID 2>/dev/null; then
-            success "Service started (PID: $START_PID)"
-        else
-            error "Service failed to start"
-            return 1
+    # Try legacy service script
+    if [ -f "$SCRIPT_DIR/service.sh" ] && [ "$SERVICE_STARTED" = "false" ]; then
+        log "Trying legacy service script..."
+        if "$SCRIPT_DIR/service.sh" start 2>/dev/null; then
+            log "Service started via legacy script"
+            SERVICE_STARTED=true
         fi
-    else
-        error "Start script not found"
+    fi
+
+    # Fallback to start.sh script
+    if [ -f "$APP_DIR/start.sh" ] && [ "$SERVICE_STARTED" = "false" ]; then
+        log "Running start.sh script..."
+        "$APP_DIR/start.sh" &
+        local START_PID=$!
+        sleep 2
+
+        if kill -0 $START_PID 2>/dev/null; then
+            log "Service started via start.sh script (PID: $START_PID)"
+            SERVICE_STARTED=true
+        fi
+    fi
+
+    # If nothing worked, report error
+    if [ "$SERVICE_STARTED" = "false" ]; then
+        error "All service start methods failed"
         return 1
     fi
+
+    # Wait for service to be fully responsive
+    log "Waiting for service to become responsive on port $CONFIGURED_PORT..."
+    local START_WAIT_COUNT=0
+    local MAX_START_WAIT=45
+
+    while [ $START_WAIT_COUNT -lt $MAX_START_WAIT ]; do
+        if curl -s "http://localhost:$CONFIGURED_PORT/api/health" >/dev/null 2>&1; then
+            success "Agent Studio service is running and accessible on port $CONFIGURED_PORT"
+            return 0
+        fi
+
+        sleep 1
+        START_WAIT_COUNT=$((START_WAIT_COUNT + 1))
+
+        # Show progress every 5 seconds
+        if [ $((START_WAIT_COUNT % 5)) -eq 0 ]; then
+            log "Still waiting for service to respond... (${START_WAIT_COUNT}s/${MAX_START_WAIT}s)"
+        fi
+
+        # If service management script was used, check status
+        if [ $START_WAIT_COUNT -eq 20 ] && [ -f "$APP_DIR/agent-studio" ]; then
+            log "Checking service status..."
+            "$APP_DIR/agent-studio" status >/dev/null 2>&1 || true
+        fi
+    done
+
+    error "Service failed to respond to health checks within $MAX_START_WAIT seconds"
+    error "Service may have started but is not accessible on port $CONFIGURED_PORT"
+
+    # Show troubleshooting information
+    echo ""
+    echo "Troubleshooting steps:"
+    echo "1. Check service status: $APP_DIR/agent-studio status"
+    echo "2. Check logs: $APP_DIR/agent-studio logs"
+    echo "3. Check port: lsof -i :$CONFIGURED_PORT"
+    echo "4. Manual restart: $APP_DIR/agent-studio restart"
+
+    return 1
 }
 
 # Verify update
@@ -461,10 +645,10 @@ verify_update() {
     # Check if service is running
     sleep 3
 
-    if curl -s http://localhost:4936/api/health >/dev/null 2>&1; then
-        success "Agent Studio is running and accessible"
+    if curl -s "http://localhost:$CONFIGURED_PORT/api/health" >/dev/null 2>&1; then
+        success "Agent Studio is running and accessible on port $CONFIGURED_PORT"
     else
-        warn "Agent Studio might not be running properly"
+        warn "Agent Studio might not be running properly on port $CONFIGURED_PORT"
         warn "Please check the logs: $LOGS_DIR/ or journalctl -u agent-studio"
     fi
 
@@ -523,13 +707,13 @@ main() {
     success "Agent Studio has been updated successfully!"
     echo ""
     echo "📁 Backup location: $BACKUP_DIR"
-    echo "🌐 Application: http://localhost:4936/"
-    echo "🔧 Local API: http://localhost:4936/api/*"
-    echo "📑 Slides: http://localhost:4936/slides/*"
+    echo "🌐 Application: http://localhost:$CONFIGURED_PORT/"
+    echo "🔧 Local API: http://localhost:$CONFIGURED_PORT/api/*"
+    echo "📑 Slides: http://localhost:$CONFIGURED_PORT/slides/*"
     echo ""
     echo "💡 Service Management:"
     echo "  • To restart service later: $0 --restart"
-    echo "  • To check service status: curl http://localhost:4936/api/health"
+    echo "  • To check service status: curl http://localhost:$CONFIGURED_PORT/api/health"
     if [[ "$OSTYPE" == "darwin"* ]]; then
         echo "  • macOS service management: $APP_DIR/agent-studio [start|stop|restart|status|logs]"
         echo "  • Service is managed by launchctl: com.agentstudio.daemon"
