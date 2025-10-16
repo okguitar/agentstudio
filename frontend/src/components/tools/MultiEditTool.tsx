@@ -12,8 +12,11 @@ export const MultiEditTool: React.FC<MultiEditToolProps> = ({ execution }) => {
   const { t } = useTranslation('components');
   const input = execution.toolInput as MultiEditToolInput;
 
+  // 构建副标题：文件路径 + 操作数量
+  const subtitle = `${input.file_path} - ${t('multiEditTool.batchEdit', { count: input.edits.length })}`;
+
   return (
-    <BaseToolComponent execution={execution} showResult={false}>
+    <BaseToolComponent execution={execution} showResult={false} subtitle={subtitle}>
       <div>
         <ToolInput label={t('multiEditTool.filePath')} value={input.file_path} />
 
