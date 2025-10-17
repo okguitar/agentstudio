@@ -707,8 +707,9 @@ run_installation() {
         if pnpm run build:backend 2>/dev/null; then
             linux_log "Backend build successful"
 
-            # Try to build frontend
+            # Try to build frontend with increased memory
             linux_log "Attempting to build frontend..."
+            export NODE_OPTIONS="--max-old-space-size=4096"
             if pnpm run build:frontend 2>/dev/null; then
                 BUILD_SUCCESS=true
                 success "Full build successful - will run in production mode"
@@ -731,8 +732,9 @@ run_installation() {
         if npm run build:backend 2>/dev/null; then
             linux_log "Backend build successful"
 
-            # Try to build frontend
+            # Try to build frontend with increased memory
             linux_log "Attempting to build frontend..."
+            export NODE_OPTIONS="--max-old-space-size=4096"
             if npm run build:frontend 2>/dev/null; then
                 BUILD_SUCCESS=true
                 success "Full build successful - will run in production mode"
@@ -748,70 +750,111 @@ run_installation() {
 
     # Create start script optimized for Linux
     linux_log "Creating Linux-optimized start script..."
-    if [ "$BUILD_SUCCESS" = true ]; then
-        # Production mode
-        cat > "$INSTALL_DIR/start.sh" << EOF
-#!/bin/bash
+    
+    # Common function definitions for start script
+    local COMMON_FUNCTIONS='
+# Function to get port from config.json
+get_config_port() {
+    local config_file="$HOME/.agent-studio/config/config.json"
+    if [ -f "$config_file" ]; then
+        # Try to extract port from config.json using common tools
+        if command -v python3 >/dev/null 2>&1; then
+            python3 -c "import json; print(json.load(open('"'"'$config_file'"'"')).get('"'"'port'"'"', 4936))" 2>/dev/null
+        elif command -v python >/dev/null 2>&1; then
+            python -c "import json; print(json.load(open('"'"'$config_file'"'"')).get('"'"'port'"'"', 4936))" 2>/dev/null
+        elif command -v jq >/dev/null 2>&1; then
+            jq -r ".port // 4936" "$config_file" 2>/dev/null
+        else
+            # Fallback to grep/sed
+            grep -o "\"port\":[[:space:]]*[0-9]*" "$config_file" 2>/dev/null | sed "s/.*://; s/[[:space:]]*//" || echo "4936"
+        fi
+    else
+        echo "4936"
+    fi
+}
+
+# Get port - use environment variable if set, otherwise get from config
+get_actual_port() {
+    if [ -n "$PORT" ]; then
+        echo "$PORT"
+    else
+        get_config_port
+    fi
+}
+'
+
+    # Common header for both modes
+    local COMMON_HEADER='#!/bin/bash
 
 # Linux Agent Studio Startup Script
 # Load NVM if available
-export NVM_DIR="\$HOME/.nvm"
-[ -s "\$NVM_DIR/nvm.sh" ] && \. "\$NVM_DIR/nvm.sh"
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 
 # Add Node.js paths
 if command -v nvm >/dev/null 2>&1; then
-    export PATH="\$HOME/.nvm/versions/node/\$(nvm current 2>/dev/null || echo 'system')/bin:\$PATH" 2>/dev/null || true
+    export PATH="$HOME/.nvm/versions/node/$(nvm current 2>/dev/null || echo '"'"'system'"'"')/bin:$PATH" 2>/dev/null || true
 fi
-export PATH="/usr/local/bin:/usr/bin:\$PATH"
-export PATH="\$HOME/.local/bin:\$PATH"
+export PATH="/usr/local/bin:/usr/bin:$PATH"
+export PATH="$HOME/.local/bin:$PATH"
+'
+
+    if [ "$BUILD_SUCCESS" = true ]; then
+        # Production mode
+        cat > "$INSTALL_DIR/start.sh" << EOF
+$COMMON_HEADER
+$COMMON_FUNCTIONS
 
 echo "🐧 Starting Agent Studio Backend on Linux (Production Mode)..."
 cd "\$HOME/.agent-studio/app"
 export NODE_ENV=production
-export PORT=4936
 export SLIDES_DIR="\$HOME/.agent-studio/data/slides"
+
+# Set port from config if not already set
+if [ -z "\$PORT" ]; then
+    export PORT=\$(get_config_port)
+fi
+
+ACTUAL_PORT=\$(get_actual_port)
+
 echo "📂 Working directory: \$(pwd)"
-echo "🌐 Backend port: 4936"
+echo "🌐 Backend port: \$ACTUAL_PORT"
 echo "📑 Slides directory: \$HOME/.agent-studio/data/slides"
 echo "🖥️  Distribution: $DISTRO_NAME"
 echo "🏗️  Architecture: $ARCH_NAME"
 echo ""
 echo "✨ Access the application at:"
-echo "   http://localhost:4936/ (Full application with frontend)"
+echo "   http://localhost:\$ACTUAL_PORT/ (Full application with frontend)"
 echo "   https://agentstudio-frontend.vercel.app/ (External frontend alternative)"
 echo ""
 echo "💡 Local installation provides complete application with:"
-echo "   • Frontend interface at http://localhost:4936/"
-echo "   • Backend API at http://localhost:4936/api/*"
-echo "   • Slides static files at http://localhost:4936/slides/*"
+echo "   • Frontend interface at http://localhost:\$ACTUAL_PORT/"
+echo "   • Backend API at http://localhost:\$ACTUAL_PORT/api/*"
+echo "   • Slides static files at http://localhost:\$ACTUAL_PORT/slides/*"
 echo ""
 node backend/dist/index.js
 EOF
     else
         # Development mode
         cat > "$INSTALL_DIR/start.sh" << EOF
-#!/bin/bash
-
-# Linux Agent Studio Startup Script
-# Load NVM if available
-export NVM_DIR="\$HOME/.nvm"
-[ -s "\$NVM_DIR/nvm.sh" ] && \. "\$NVM_DIR/nvm.sh"
-
-# Add Node.js paths
-if command -v nvm >/dev/null 2>&1; then
-    export PATH="\$HOME/.nvm/versions/node/\$(nvm current 2>/dev/null || echo 'system')/bin:\$PATH" 2>/dev/null || true
-fi
-export PATH="/usr/local/bin:/usr/bin:\$PATH"
-export PATH="\$HOME/.local/bin:\$PATH"
+$COMMON_HEADER
+$COMMON_FUNCTIONS
 
 echo "🐧 Starting Agent Studio Backend on Linux (Development Mode)..."
-cd "\$HOME/.agent-studio"
+cd "\$HOME/.agent-studio/app"
 export NODE_ENV=development
-export PORT=4936
-export SLIDES_DIR="\$HOME/slides"
+export SLIDES_DIR="\$HOME/.agent-studio/data/slides"
+
+# Set port from config if not already set
+if [ -z "\$PORT" ]; then
+    export PORT=\$(get_config_port)
+fi
+
+ACTUAL_PORT=\$(get_actual_port)
+
 echo "📂 Working directory: \$(pwd)"
-echo "🌐 Backend port: 4936"
-echo "📑 Slides directory: \$HOME/slides"
+echo "🌐 Backend port: \$ACTUAL_PORT"
+echo "📑 Slides directory: \$HOME/.agent-studio/data/slides"
 echo "🖥️  Distribution: $DISTRO_NAME"
 echo "🏗️  Architecture: $ARCH_NAME"
 echo ""
@@ -819,7 +862,7 @@ echo "✨ Access the application at:"
 echo "   https://agentstudio-frontend.vercel.app/"
 echo ""
 echo "💡 Configure the backend URL in the web interface:"
-echo "   Settings → API Configuration → http://localhost:4936"
+echo "   Settings → API Configuration → http://localhost:\$ACTUAL_PORT"
 echo ""
 if command -v pnpm >/dev/null 2>&1; then
     pnpm run dev:backend
@@ -879,6 +922,12 @@ cleanup() {
 # Install systemd service (Linux only)
 install_systemd_service() {
     if [ "$EUID" -ne 0 ]; then
+        return 0
+    fi
+
+    # Check if systemd is available
+    if ! command -v systemctl >/dev/null 2>&1; then
+        linux_log "systemd is not available on this system, skipping service installation"
         return 0
     fi
 
@@ -988,6 +1037,212 @@ configure_service() {
     fi
 }
 
+# ========== 更新功能：开始 ==========
+
+# 检测是否已安装
+is_already_installed() {
+    if [ -d "$APP_DIR" ] && [ -d "$APP_DIR/.git" ] && [ -f "$APP_DIR/package.json" ]; then
+        return 0  # 已安装
+    else
+        return 1  # 未安装
+    fi
+}
+
+# 获取配置的端口
+get_configured_port() {
+    local CONFIG_FILE="$CONFIG_DIR/config.json"
+    if [ -f "$CONFIG_FILE" ]; then
+        if command -v python3 >/dev/null 2>&1; then
+            python3 -c "import json; print(json.load(open('$CONFIG_FILE')).get('port', 4936))" 2>/dev/null || echo "4936"
+        elif command -v python >/dev/null 2>&1; then
+            python -c "import json; print(json.load(open('$CONFIG_FILE')).get('port', 4936))" 2>/dev/null || echo "4936"
+        elif command -v jq >/dev/null 2>&1; then
+            jq -r '.port // 4936' "$CONFIG_FILE" 2>/dev/null || echo "4936"
+        else
+            grep -o '"port":[[:space:]]*[0-9]*' "$CONFIG_FILE" 2>/dev/null | sed 's/.*://; s/[[:space:]]*//' || echo "4936"
+        fi
+    else
+        echo "4936"
+    fi
+}
+
+# 创建更新备份
+create_update_backup() {
+    linux_log "创建更新备份..."
+    
+    local BACKUP_TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+    local UPDATE_BACKUP="$BACKUP_DIR/backup-$BACKUP_TIMESTAMP"
+    
+    mkdir -p "$UPDATE_BACKUP"
+    
+    # 备份配置
+    if [ -d "$CONFIG_DIR" ] && [ "$(ls -A $CONFIG_DIR 2>/dev/null)" ]; then
+        cp -r "$CONFIG_DIR" "$UPDATE_BACKUP/config"
+    fi
+    
+    # 备份数据
+    if [ -d "$DATA_DIR" ] && [ "$(ls -A $DATA_DIR 2>/dev/null)" ]; then
+        cp -r "$DATA_DIR" "$UPDATE_BACKUP/data"
+    fi
+    
+    # 记录版本信息
+    cd "$APP_DIR"
+    cat > "$UPDATE_BACKUP/version_info.txt" << EOF
+更新时间: $(date)
+更新前版本: $(git describe --tags --always 2>/dev/null || echo "unknown")
+更新前提交: $(git rev-parse HEAD 2>/dev/null || echo "unknown")
+备份位置: $UPDATE_BACKUP
+EOF
+    
+    success "备份已创建: $UPDATE_BACKUP"
+}
+
+# 停止运行的服务
+stop_running_service() {
+    linux_log "停止现有服务..."
+    
+    local SERVICE_STOPPED=false
+    
+    # 尝试 systemd
+    if command -v systemctl >/dev/null 2>&1; then
+        if systemctl is-active --quiet agent-studio 2>/dev/null; then
+            linux_log "通过 systemd 停止服务..."
+            if [ "$EUID" -eq 0 ]; then
+                systemctl stop agent-studio 2>/dev/null && SERVICE_STOPPED=true
+            else
+                sudo systemctl stop agent-studio 2>/dev/null && SERVICE_STOPPED=true
+            fi
+        fi
+    fi
+    
+    # 尝试 stop.sh
+    if [ "$SERVICE_STOPPED" = "false" ] && [ -f "$APP_DIR/stop.sh" ]; then
+        linux_log "通过 stop.sh 停止服务..."
+        "$APP_DIR/stop.sh" 2>/dev/null && SERVICE_STOPPED=true
+    fi
+    
+    # 最后手段：pkill
+    if [ "$SERVICE_STOPPED" = "false" ]; then
+        linux_log "使用进程终止..."
+        pkill -f "agent-studio" 2>/dev/null || true
+    fi
+    
+    # 检查端口是否释放
+    local PORT=$(get_configured_port)
+    if command -v lsof >/dev/null 2>&1; then
+        if lsof -i :$PORT >/dev/null 2>&1; then
+            warn "端口 $PORT 仍在使用，等待释放..."
+            sleep 3
+            
+            # 如果还在使用，强制终止
+            if lsof -i :$PORT >/dev/null 2>&1; then
+                warn "强制终止端口 $PORT 上的进程..."
+                lsof -ti :$PORT | xargs kill -15 2>/dev/null || true
+                sleep 2
+            fi
+        fi
+    fi
+    
+    success "服务已停止"
+}
+
+# 从 Git 更新代码
+update_code_from_git() {
+    linux_log "更新代码..."
+    
+    cd "$APP_DIR"
+    
+    # 保存本地修改
+    if [ -n "$(git status --porcelain)" ]; then
+        warn "检测到本地修改，正在保存..."
+        if ! git stash push -m "Auto-stash before update $(date)"; then
+            error "无法保存本地修改"
+            error "请手动处理: cd $APP_DIR && git status"
+            exit 1
+        fi
+        log "本地修改已保存，更新后可用 'git stash pop' 恢复"
+    fi
+    
+    # 更新代码
+    if ! git fetch origin; then
+        error "无法从远程仓库获取更新"
+        exit 1
+    fi
+    
+    if ! git checkout "$GITHUB_BRANCH"; then
+        error "无法切换到分支 $GITHUB_BRANCH"
+        exit 1
+    fi
+    
+    if ! git pull origin "$GITHUB_BRANCH"; then
+        error "无法拉取最新代码"
+        exit 1
+    fi
+    
+    local NEW_VERSION=$(git describe --tags --always 2>/dev/null || echo "unknown")
+    success "代码已更新到: $NEW_VERSION"
+}
+
+# 执行更新
+perform_update() {
+    echo ""
+    echo "╔══════════════════════════════════════════╗"
+    echo "║      开始更新 Agent Studio               ║"
+    echo "╚══════════════════════════════════════════╝"
+    echo ""
+    
+    # 1. 创建备份
+    create_update_backup
+    
+    # 2. 停止服务
+    stop_running_service
+    
+    # 3. 更新代码
+    update_code_from_git
+    
+    # 4. 更新依赖和构建
+    run_installation
+    
+    # 5. 配置服务（如果需要）
+    configure_service
+    
+    # 6. 启动服务
+    start_service
+    
+    # 7. 显示成功信息
+    display_update_success
+}
+
+# 显示更新成功信息
+display_update_success() {
+    echo ""
+    echo "╔══════════════════════════════════════════╗"
+    echo "║        更新成功完成！                     ║"
+    echo "╚══════════════════════════════════════════╝"
+    echo ""
+    
+    cd "$APP_DIR"
+    local NEW_VERSION=$(git describe --tags --always 2>/dev/null || echo "unknown")
+    local PORT=$(get_configured_port)
+    
+    success "Agent Studio 已更新到版本: $NEW_VERSION"
+    echo ""
+    log "🌐 访问应用: http://localhost:$PORT"
+    log "📁 安装位置: $APP_DIR"
+    log "⚙️  配置文件: $CONFIG_DIR/config.json"
+    log "📋 日志目录: $LOGS_DIR/"
+    echo ""
+    log "服务管理命令:"
+    if [ "$EUID" -eq 0 ] && [ -f "/etc/systemd/system/agent-studio.service" ]; then
+        log "  sudo systemctl {start|stop|restart|status} agent-studio"
+    fi
+    log "  $APP_DIR/start.sh    # 启动服务"
+    log "  $APP_DIR/stop.sh     # 停止服务"
+    echo ""
+}
+
+# ========== 更新功能：结束 ==========
+
 # Start the service
 start_service() {
     # Skip if systemd service was already started
@@ -1021,14 +1276,20 @@ start_service() {
 
             # Wait a moment and check if service started
             sleep 5
-            if curl -s http://localhost:4936/api/health >/dev/null 2>&1; then
+            # Try to get port from config, fallback to default
+            if [ -f "$CONFIG_DIR/config.json" ]; then
+                ACTUAL_PORT=$(grep -o '"port":[[:space:]]*[0-9]*' "$CONFIG_DIR/config.json" 2>/dev/null | sed 's/.*://; s/[[:space:]]*//' || echo "4936")
+            else
+                ACTUAL_PORT="$SERVICE_PORT"
+            fi
+            if curl -s http://localhost:$ACTUAL_PORT/api/health >/dev/null 2>&1; then
                 success "Backend started successfully!"
                 echo ""
                 echo "✨ Access the application at:"
                 echo "   https://agentstudio-frontend.vercel.app/"
                 echo ""
                 echo "💡 Configure the backend URL in the web interface:"
-                echo "   Settings → API Configuration → http://localhost:4936"
+                echo "   Settings → API Configuration → http://localhost:$ACTUAL_PORT"
                 echo ""
                 echo "🐧 Running on $DISTRO_NAME ($ARCH_NAME)"
             else
@@ -1066,7 +1327,61 @@ main() {
         warn "Running as root - installing for root user"
         echo ""
     fi
-
+    
+    # ========== 检测更新模式 ==========
+    if is_already_installed; then
+        echo ""
+        echo "╔══════════════════════════════════════════╗"
+        echo "║    检测到已安装的 Agent Studio           ║"
+        echo "╚══════════════════════════════════════════╝"
+        echo ""
+        
+        cd "$APP_DIR"
+        CURRENT_VERSION=$(git describe --tags --always 2>/dev/null || echo "unknown")
+        CURRENT_COMMIT=$(git rev-parse HEAD 2>/dev/null || echo "unknown")
+        
+        log "安装位置: $APP_DIR"
+        log "当前版本: $CURRENT_VERSION"
+        echo ""
+        
+        # 检查是否有更新
+        linux_log "检查更新..."
+        if git fetch origin --quiet 2>/dev/null; then
+            LATEST_COMMIT=$(git rev-parse origin/$GITHUB_BRANCH 2>/dev/null || echo "unknown")
+            
+            if [ "$LATEST_COMMIT" = "$CURRENT_COMMIT" ]; then
+                success "✅ 已是最新版本！"
+            else
+                warn "🔔 发现新版本可用"
+                local COMMITS_BEHIND=$(git rev-list --count HEAD..origin/$GITHUB_BRANCH 2>/dev/null || echo "0")
+                if [ "$COMMITS_BEHIND" != "0" ]; then
+                    log "落后 $COMMITS_BEHIND 个提交"
+                fi
+            fi
+        else
+            warn "⚠️  无法检查更新（网络问题或仓库问题）"
+        fi
+        
+        echo ""
+        if [ ! -t 0 ] || [ -n "$PIPED_INSTALL" ]; then
+            linux_log "非交互模式，自动执行更新..."
+        else
+            read -p "是否继续执行更新？(Y/n): " -n 1 -r
+            echo ""
+            if [[ $REPLY =~ ^[Nn]$ ]]; then
+                log "取消更新"
+                exit 0
+            fi
+        fi
+        
+        # 执行更新
+        perform_update
+        exit 0
+    fi
+    # ========== 更新模式检测结束 ==========
+    
+    # 全新安装流程
+    log "执行全新安装..."
     validate_paths
     detect_linux_info
     check_environment
@@ -1126,10 +1441,10 @@ main() {
     echo "  $CONFIG_DIR/config.env"
     echo ""
     echo "✨ Access the application at:"
-    echo "   https://agentstudio-frontend.vercel.app/"
+    echo "   https://agentstudio.cc/dashboard"
     echo ""
     echo "💡 After starting the backend, configure the backend URL in the web interface:"
-    echo "   Settings → API Configuration → http://localhost:4936"
+    echo "   Settings → API Configuration → http://localhost:$ACTUAL_PORT"
     echo ""
     echo "📁 Slides directory: $DATA_DIR/slides"
     echo ""
