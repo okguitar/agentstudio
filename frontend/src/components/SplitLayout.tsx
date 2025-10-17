@@ -199,32 +199,32 @@ export const SplitLayout: React.FC<SplitLayoutProps> = ({
         style={{ width: hideRightPanel ? '100%' : `${leftPanelWidth}%` }}
       >
         {children[0]}
-        {/* 左侧面板切换按钮 - 位于面板左边缘 */}
-        {onToggleLeftPanel && (
-          <PanelToggle
-            isPanelVisible={!hideLeftPanel}
-            onToggle={onToggleLeftPanel}
-            position="left"
-            className="panel-toggle-left"
-          />
-        )}
       </div>
 
-      {/* 分隔条 - 始终显示，可拖拽调整左右比例 */}
-      <div
-        className={`resize-separator w-1 bg-gray-300 hover:bg-blue-400 cursor-col-resize transition-colors relative z-10 ${
-          isDragging ? 'bg-blue-500' : ''
-        }`}
-        onMouseDown={handleMouseDown}
-        style={{ 
-          // 当一侧面板隐藏时，分隔条移到屏幕边缘
-          left: hideLeftPanel ? '0' : 'auto',
-          right: hideRightPanel ? '0' : 'auto'
-        }}
-      >
-        {/* 视觉指示器 */}
-        <div className="absolute inset-y-0 left-1/2 transform -translate-x-1/2 w-1 bg-gray-400 opacity-50 hover:opacity-100" />
-      </div>
+      {/* 分隔条 - 仅当两个面板都显示时才显示 */}
+      {!hideLeftPanel && !hideRightPanel && (
+        <div
+          className={`
+            resize-separator relative z-10
+            ${isDragging ? 'w-2 bg-blue-500' : 'w-1.5 bg-gray-300 hover:bg-blue-400'}
+            cursor-col-resize transition-all duration-200
+            flex items-center justify-center
+            group
+          `}
+          onMouseDown={handleMouseDown}
+        >
+          {/* 拖拽把手 - 三条竖线 */}
+          <div className="absolute inset-y-0 flex items-center justify-center">
+            <div className="flex flex-col items-center justify-center gap-1 py-2">
+              {/* 中间拖拽图标 */}
+              <div className="flex gap-0.5 opacity-40 group-hover:opacity-70 transition-opacity">
+                <div className="w-0.5 h-4 bg-gray-600 dark:bg-gray-400 rounded-full" />
+                <div className="w-0.5 h-4 bg-gray-600 dark:bg-gray-400 rounded-full" />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 右侧面板 - 使用CSS隐藏而不是条件渲染 */}
       <div
@@ -235,39 +235,26 @@ export const SplitLayout: React.FC<SplitLayoutProps> = ({
         style={{ width: hideLeftPanel ? '100%' : `${100 - leftPanelWidth}%` }}
       >
         {children[1]}
-        {/* 右侧面板切换按钮 - 位于面板右边缘 */}
-        {onToggleRightPanel && (
-          <PanelToggle
-            isPanelVisible={!hideRightPanel}
-            onToggle={onToggleRightPanel}
-            position="right"
-            className="panel-toggle-right"
-          />
-        )}
       </div>
 
-      {/* 左侧面板隐藏时的边缘指示条 */}
-      {hideLeftPanel && onToggleLeftPanel && (
-        <div
-          className="fixed top-0 left-0 h-full w-6 bg-gray-300 dark:bg-gray-600 opacity-70 hover:opacity-90 hover:w-8 transition-all duration-300 cursor-pointer z-50 group"
-          onClick={onToggleLeftPanel}
-          title="打开聊天界面"
-        >
-          {/* 呼吸动画效果 */}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse" />
-        </div>
+      {/* 左侧面板切换按钮 - 独立于面板容器，固定定位 */}
+      {onToggleLeftPanel && (
+        <PanelToggle
+          isPanelVisible={!hideLeftPanel}
+          onToggle={onToggleLeftPanel}
+          position="left"
+          className="panel-toggle-left"
+        />
       )}
 
-      {/* 右侧面板隐藏时的边缘指示条 */}
-      {hideRightPanel && onToggleRightPanel && (
-        <div
-          className="fixed top-0 right-0 h-full w-6 bg-gray-300 dark:bg-gray-600 opacity-70 hover:opacity-90 hover:w-8 transition-all duration-300 cursor-pointer z-50 group"
-          onClick={onToggleRightPanel}
-          title="打开可视化界面"
-        >
-          {/* 呼吸动画效果 */}
-          <div className="absolute inset-0 bg-gradient-to-l from-transparent via-white/20 to-transparent animate-pulse" />
-        </div>
+      {/* 右侧面板切换按钮 - 独立于面板容器，固定定位 */}
+      {onToggleRightPanel && (
+        <PanelToggle
+          isPanelVisible={!hideRightPanel}
+          onToggle={onToggleRightPanel}
+          position="right"
+          className="panel-toggle-right"
+        />
       )}
     </div>
   );

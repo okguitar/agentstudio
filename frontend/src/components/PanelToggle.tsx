@@ -26,15 +26,16 @@ export const PanelToggle: React.FC<PanelToggleProps> = ({
   const arrowDirection = getArrowDirection();
   const ArrowIcon = arrowDirection === 'left' ? ChevronLeft : ChevronRight;
 
-  // 根据位置确定样式
+  // 根据位置和面板状态确定按钮位置
+  // 按钮始终使用固定定位,根据面板状态调整位置
   const getPositionClasses = () => {
-    const baseClasses = 'absolute top-1/2 transform -translate-y-1/2 z-20';
-    
+    const baseClasses = 'fixed top-1/2 transform -translate-y-1/2 z-20';
+
     if (position === 'left') {
-      // 左侧面板的按钮：位于面板左边缘
+      // 左侧面板的按钮：始终在屏幕左侧边缘
       return `${baseClasses} left-2`;
     } else {
-      // 右侧面板的按钮：位于面板右边缘
+      // 右侧面板的按钮：始终在屏幕右侧边缘
       return `${baseClasses} right-2`;
     }
   };
