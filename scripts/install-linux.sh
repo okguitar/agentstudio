@@ -1305,7 +1305,11 @@ start_service() {
 
         if [ -f "$APP_DIR/start.sh" ]; then
             linux_log "Running start script..."
-            "$APP_DIR/start.sh" &
+            # Use nohup to detach from terminal and redirect output to logs
+            nohup bash "$APP_DIR/start.sh" > "$LOGS_DIR/agent-studio.log" 2>&1 </dev/null &
+            
+            # Disown the process to prevent it from being killed when shell exits
+            disown
 
             # Wait a moment and check if service started
             sleep 5
