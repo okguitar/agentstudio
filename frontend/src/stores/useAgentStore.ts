@@ -1,6 +1,15 @@
 import { create } from 'zustand';
 import type { AgentConfig, AgentMessage, ToolUsageData } from '../types/index.js';
 
+interface McpStatusData {
+  hasError: boolean;
+  connectedServers?: Array<{ name: string; status: string }>;
+  connectionErrors?: Array<{ name: string; status: string; error?: string }>;
+  lastError?: string | null;
+  lastErrorDetails?: string;
+  lastUpdated?: number;
+}
+
 interface AgentState {
   // Current agent (框架层)
   currentAgent: AgentConfig | null;
@@ -9,6 +18,9 @@ interface AgentState {
   messages: AgentMessage[];
   isAiTyping: boolean;
   currentSessionId: string | null;
+  
+  // MCP status (MCP工具状态)
+  mcpStatus: McpStatusData;
   
   // UI state (框架层通用UI)
   sidebarCollapsed: boolean;
@@ -30,6 +42,9 @@ interface AgentState {
   clearMessages: () => void;
   loadSessionMessages: (messages: AgentMessage[]) => void;
   
+  updateMcpStatus: (status: Partial<McpStatusData>) => void;
+  clearMcpStatus: () => void;
+  
   setSidebarCollapsed: (collapsed: boolean) => void;
 }
 
@@ -39,6 +54,14 @@ export const useAgentStore = create<AgentState>((set) => ({
   messages: [],
   isAiTyping: false,
   currentSessionId: null,
+  mcpStatus: {
+    hasError: false,
+    connectedServers: [],
+    connectionErrors: [],
+    lastError: null,
+    lastErrorDetails: undefined,
+    lastUpdated: undefined
+  },
   sidebarCollapsed: false,
   
   // Actions
@@ -212,6 +235,25 @@ export const useAgentStore = create<AgentState>((set) => ({
   clearMessages: () => set({ messages: [] }),
   
   loadSessionMessages: (messages) => set({ messages }),
+  
+  updateMcpStatus: (status) => set((state) => ({
+    mcpStatus: {
+      ...state.mcpStatus,
+      ...status,
+      lastUpdated: Date.now()
+    }
+  })),
+  
+  clearMcpStatus: () => set({
+    mcpStatus: {
+      hasError: false,
+      connectedServers: [],
+      connectionErrors: [],
+      lastError: null,
+      lastErrorDetails: undefined,
+      lastUpdated: undefined
+    }
+  }),
   
   setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
 }));

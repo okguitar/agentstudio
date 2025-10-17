@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { Send, Clock, Square, Image, Wrench, X, Plus, Zap, Cpu, ChevronDown, Terminal, RefreshCw } from 'lucide-react';
+import { Send, Clock, Square, Image, Wrench, X, Plus, Zap, Cpu, ChevronDown, Terminal, RefreshCw, Wifi, WifiOff } from 'lucide-react';
 import { ImagePreview } from './ImagePreview';
 import { CommandSelector } from './CommandSelector';
 import { ConfirmDialog } from './ConfirmDialog';
@@ -18,6 +18,7 @@ import { SessionsDropdown } from './SessionsDropdown';
 import { UnifiedToolSelector } from './UnifiedToolSelector';
 import { MobileChatToolbar } from './MobileChatToolbar';
 import { useMobileContext } from '../contexts/MobileContext';
+import { McpStatusModal } from './McpStatusModal';
 import type { AgentConfig } from '../types/index.js';
 import {
   isCommandTrigger,
@@ -71,6 +72,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
   const [isStopping, setIsStopping] = useState(false);
   const [isInitializingSession, setIsInitializingSession] = useState(false);
 const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  const [showMcpStatusModal, setShowMcpStatusModal] = useState(false);
 
   // Scroll management states
   const [isUserScrolling, setIsUserScrolling] = useState(false);
@@ -95,6 +97,7 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
     messages,
     isAiTyping,
     currentSessionId,
+    mcpStatus,
     addMessage,
     addTextPartToMessage,
     addThinkingPartToMessage,
@@ -107,6 +110,7 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
     setCurrentSessionId,
     clearMessages,
     loadSessionMessages,
+    updateMcpStatus,
 
   } = useAgentStore();
   
@@ -286,7 +290,7 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
               ? 'text-white p-3 rounded-lg'
               : 'text-gray-800 dark:text-gray-200'
           }`}
-          style={message.role === 'user' ? { backgroundColor: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))' } : {}}
+          style={message.role === 'user' ? { backgroundColor: 'hsl(var(--primary))', color: 'white' } : {}}
         >
           <ChatMessageRenderer message={message as any} />
         </div>
@@ -716,6 +720,53 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
               queryClient.invalidateQueries({ queryKey: ['agent-sessions', agent.id] });
             }
           } 
+          // 🔧 处理 MCP 状态事件
+          else if (eventData.type === 'mcp_status') {
+            console.log('📡 MCP Status Event:', eventData);
+            
+            if (eventData.subtype === 'connection_failed') {
+              const failedServers = (eventData as any).failedServers || [];
+              console.warn('🚨 MCP服务器连接失败:', failedServers);
+              
+              // 更新 MCP 状态到 store
+              updateMcpStatus({
+                hasError: true,
+                connectionErrors: failedServers,
+                lastError: `连接失败: ${failedServers.map((s: any) => s.name).join(', ')}`
+              });
+            } else if (eventData.subtype === 'connection_success') {
+              const connectedServers = (eventData as any).connectedServers || [];
+              console.log('✅ MCP服务器连接成功:', connectedServers.map((s: any) => s.name));
+              
+              // 更新 MCP 状态到 store
+              updateMcpStatus({
+                hasError: false,
+                connectedServers: connectedServers,
+                connectionErrors: [],
+                lastError: null
+              });
+            }
+          }
+          // 🚨 处理 MCP 执行错误事件
+          else if (eventData.type === 'mcp_error') {
+            console.log('❌ MCP Error Event:', eventData);
+            
+            if (eventData.subtype === 'execution_failed') {
+              const errorData = eventData as any;
+              const toolName = errorData.tool || '未知工具';
+              const errorMessage = errorData.error || '执行失败';
+              const details = errorData.details || '';
+              
+              console.error('❌ MCP工具执行失败:', { tool: toolName, error: errorMessage, details });
+              
+              // 更新 MCP 状态到 store
+              updateMcpStatus({
+                hasError: true,
+                lastError: `工具执行失败: ${toolName} - ${errorMessage}`,
+                lastErrorDetails: details
+              });
+            }
+          }
           else if (eventData.type === 'session_resumed' && eventData.subtype === 'new_branch') {
             // Handle session resume notification from backend
             const resumeData = eventData as any as {
@@ -1874,6 +1925,38 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
                   </span>
                 )}
               </div>
+
+              {/* MCP 状态指示器 */}
+              {mcpToolsEnabled && (
+                <div className="relative">
+                  <button
+                    onClick={() => setShowMcpStatusModal(true)}
+                    className={`p-2 transition-colors rounded-lg ${
+                      mcpStatus.hasError
+                        ? 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50'
+                        : 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-900/50'
+                    }`}
+                    title={
+                      mcpStatus.hasError 
+                        ? `MCP 工具状态异常: ${mcpStatus.lastError || '连接失败'}`
+                        : 'MCP 工具运行正常'
+                    }
+                  >
+                    {mcpStatus.hasError ? (
+                      <WifiOff className="w-4 h-4" />
+                    ) : (
+                      <Wifi className="w-4 h-4" />
+                    )}
+                  </button>
+                  
+                  {/* 错误指示器 */}
+                  {mcpStatus.hasError && (
+                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full flex items-center justify-center">
+                      <span className="w-1.5 h-1.5 bg-white rounded-full"></span>
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="flex items-center space-x-2">
@@ -2116,6 +2199,13 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
       <ImagePreview
         images={previewImage ? [previewImage] : []}
         onClose={() => setPreviewImage(null)}
+      />
+
+      {/* MCP 状态弹窗 */}
+      <McpStatusModal
+        isOpen={showMcpStatusModal}
+        onClose={() => setShowMcpStatusModal(false)}
+        mcpStatus={mcpStatus}
       />
     </div>
   );

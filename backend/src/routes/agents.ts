@@ -739,6 +739,96 @@ router.post('/chat', async (req, res) => {
       let compactMessageBuffer: any[] = []; // 缓存 compact 相关消息
 
       const currentRequestId = await claudeSession.sendMessage(userMessage, (sdkMessage: any) => {
+        // 🔧 MCP 工具日志观察 - 检查 MCP 服务器状态
+        if (sdkMessage.type === "system" && sdkMessage.subtype === "init") {
+          // 检查 MCP 服务器连接状态
+          if (sdkMessage.mcp_servers && Array.isArray(sdkMessage.mcp_servers)) {
+            const failedServers = sdkMessage.mcp_servers.filter(
+              (s: any) => s.status !== "connected"
+            );
+            
+            if (failedServers.length > 0) {
+              console.warn("🚨 [MCP] Failed to connect MCP servers:", failedServers.map((s: any) => ({
+                name: s.name,
+                status: s.status,
+                error: s.error
+              })));
+              
+              // 发送 MCP 状态通知给前端
+              const mcpStatusEvent = {
+                type: 'mcp_status',
+                subtype: 'connection_failed',
+                failedServers: failedServers,
+                timestamp: Date.now(),
+                agentId: agentId,
+                sessionId: actualSessionId || currentSessionId
+              };
+              
+              try {
+                if (!res.destroyed && !connectionManager.isConnectionClosed()) {
+                  res.write(`data: ${JSON.stringify(mcpStatusEvent)}\n\n`);
+                }
+              } catch (writeError: unknown) {
+                console.error('Failed to write MCP status event:', writeError);
+              }
+            } else {
+              // 所有 MCP 服务器连接成功
+              const connectedServers = sdkMessage.mcp_servers.filter((s: any) => s.status === "connected");
+              if (connectedServers.length > 0) {
+                console.log("✅ [MCP] Successfully connected MCP servers:", connectedServers.map((s: any) => s.name));
+                
+                // 发送成功连接通知给前端
+                const mcpStatusEvent = {
+                  type: 'mcp_status',
+                  subtype: 'connection_success',
+                  connectedServers: connectedServers,
+                  timestamp: Date.now(),
+                  agentId: agentId,
+                  sessionId: actualSessionId || currentSessionId
+                };
+                
+                try {
+                  if (!res.destroyed && !connectionManager.isConnectionClosed()) {
+                    res.write(`data: ${JSON.stringify(mcpStatusEvent)}\n\n`);
+                  }
+                } catch (writeError: unknown) {
+                  console.error('Failed to write MCP success event:', writeError);
+                }
+              }
+            }
+          }
+        }
+        
+        // 🚨 MCP 工具日志观察 - 检查执行错误
+        if (sdkMessage.type === "result" && sdkMessage.subtype === "error_during_execution") {
+          console.error("❌ [MCP] Execution failed:", {
+            error: sdkMessage.error,
+            details: sdkMessage.details,
+            tool: sdkMessage.tool,
+            timestamp: Date.now()
+          });
+          
+          // 发送执行错误通知给前端
+          const mcpErrorEvent = {
+            type: 'mcp_error',
+            subtype: 'execution_failed',
+            error: sdkMessage.error,
+            details: sdkMessage.details,
+            tool: sdkMessage.tool,
+            timestamp: Date.now(),
+            agentId: agentId,
+            sessionId: actualSessionId || currentSessionId
+          };
+          
+          try {
+            if (!res.destroyed && !connectionManager.isConnectionClosed()) {
+              res.write(`data: ${JSON.stringify(mcpErrorEvent)}\n\n`);
+            }
+          } catch (writeError: unknown) {
+            console.error('Failed to write MCP error event:', writeError);
+          }
+        }
+
         // 🔍 添加详细日志来观察消息结构
         if (message === '/compact') {
           console.log('📦 [COMPACT] Received SDK message:', {
