@@ -1485,9 +1485,9 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
     <div className="flex flex-col h-full bg-white dark:bg-gray-900">
       {/* Header - Fixed */}
       <div
-        className="flex-shrink-0 px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800"
+        className="flex-shrink-0 h-12 px-4 border-b border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 flex items-center"
       >
-        <div className="flex items-center justify-between min-h-[36px]">
+        <div className="flex items-center justify-between w-full">
           {/* Title */}
           <div className="flex-1 min-w-0">
             <h1 className="text-base font-semibold flex items-center space-x-2 text-gray-900 dark:text-white">

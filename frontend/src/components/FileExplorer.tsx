@@ -189,7 +189,7 @@ const Node: React.FC<{
     <div
       style={style}
       ref={dragHandle}
-      className={`flex items-center cursor-pointer px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700 ${
+      className={`flex items-center cursor-pointer px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 ${
         node.isSelected ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'
       }`}
       onClick={handleClick}
@@ -851,7 +851,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
         </div>
 
         {/* 文件树 */}
-        <div ref={treeContainerRef} className="flex-1 min-h-0">
+        <div ref={treeContainerRef} className="flex-1 min-h-0 pl-2">
           {isTreeLoading ? (
             <div className="flex items-center justify-center h-32">
               <div className="flex items-center space-x-2 text-gray-500 dark:text-gray-400">
@@ -868,8 +868,8 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
               data={treeData}
               width={320}
               height={containerHeight}
-              indent={16}
-              rowHeight={32}
+              indent={20}
+              rowHeight={36}
               initialOpenState={initialOpenState}
               ref={treeApiRef}
             >
