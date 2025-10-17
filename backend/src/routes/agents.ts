@@ -657,9 +657,13 @@ function buildUserMessageContent(message: string, images?: any[]) {
 
 // POST /api/agents/chat - Agent-based AI chat using Claude Code SDK with session management
 router.post('/chat', async (req, res) => {
+  // 重试逻辑：最多重试1次
+  let retryCount = 0;
+  const MAX_RETRIES = 1;
+
   try {
     console.log('Chat request received:', req.body);
-    
+
     // 输出当前Session Manager的状态
     console.log('📊 SessionManager状态 - 收到/chat消息时:');
     console.log(`   活跃会话总数: ${sessionManager.getActiveSessionCount()}`);
@@ -673,7 +677,7 @@ router.post('/chat', async (req, res) => {
       console.log(`       空闲时间: ${Math.round(session.idleTimeMs / 1000)}秒`);
       console.log(`       最后活动: ${new Date(session.lastActivity).toISOString()}`);
     });
-    
+
     // 验证请求数据
     const validation = ChatRequestSchema.safeParse(req.body);
     if (!validation.success) {
@@ -681,7 +685,7 @@ router.post('/chat', async (req, res) => {
       return res.status(400).json({ error: 'Invalid request body', details: validation.error });
     }
 
-    const { message, images, agentId, sessionId, projectPath, mcpTools, permissionMode, model, claudeVersion } = validation.data;
+    let { message, images, agentId, sessionId, projectPath, mcpTools, permissionMode, model, claudeVersion } = validation.data;
 
     // 获取 agent 配置
     const agent = globalAgentStorage.getAgent(agentId);
@@ -703,7 +707,11 @@ router.post('/chat', async (req, res) => {
     // 设置连接管理
     const connectionManager = setupSSEConnectionManagement(req, res, agentId);
 
-    try {
+    // 重试循环：处理会话失败的情况
+    while (retryCount <= MAX_RETRIES) {
+      try {
+        console.log(`🔄 Attempt ${retryCount + 1}/${MAX_RETRIES + 1} for session: ${sessionId || 'new'}`);
+        const originalSessionId = sessionId; // 保存原始sessionId用于日志
       // 构建查询选项
       const queryOptions = await buildQueryOptions(agent, projectPath, mcpTools, permissionMode, model, claudeVersion);
 
@@ -889,27 +897,65 @@ router.post('/chat', async (req, res) => {
       // 设置当前请求ID到连接管理器
       connectionManager.setCurrentRequestId(currentRequestId);
       
-      console.log(`📨 Started Claude request for agent: ${agentId}, sessionId: ${currentSessionId || 'new'}, requestId: ${currentRequestId}`);
-      
-    } catch (sessionError) {
-      console.error('Claude session error:', sessionError);
-      
-      const errorMessage = sessionError instanceof Error ? sessionError.message : 'Unknown error';
-      
-      if (!connectionManager.isConnectionClosed()) {
-        try {
-          res.write(`data: ${JSON.stringify({ 
-            type: 'error', 
-            error: 'Claude session failed', 
-            message: errorMessage,
-            timestamp: Date.now()
-          })}\n\n`);
-        } catch (writeError) {
-          console.error('Failed to write error message:', writeError);
+        console.log(`📨 Started Claude request for agent: ${agentId}, sessionId: ${currentSessionId || 'new'}, requestId: ${currentRequestId}`);
+
+        // 如果成功发送消息，跳出重试循环
+        break;
+
+      } catch (sessionError) {
+        console.error(`❌ Claude session error (attempt ${retryCount + 1}/${MAX_RETRIES + 1}):`, sessionError);
+
+        const errorMessage = sessionError instanceof Error ? sessionError.message : 'Unknown error';
+        const originalSessionId = sessionId; // 使用外部作用域的sessionId
+
+        // 检查是否应该重试
+        const shouldRetry = retryCount < MAX_RETRIES && originalSessionId !== null;
+
+        if (shouldRetry && originalSessionId) {
+          // 尝试重试：从SessionManager中移除失败的会话
+          console.log(`🔄 Attempting to recover from session failure for session: ${originalSessionId}`);
+          console.log(`   Error details: ${errorMessage}`);
+
+          try {
+            // 从SessionManager中移除失败的会话
+            const removed = await sessionManager.removeSession(originalSessionId);
+            if (removed) {
+              console.log(`✅ Removed failed session ${originalSessionId} from SessionManager`);
+            } else {
+              console.log(`⚠️  Session ${originalSessionId} was not found in SessionManager (may have been cleaned up already)`);
+            }
+          } catch (removeError) {
+            console.error(`⚠️  Failed to remove session ${originalSessionId}:`, removeError);
+          }
+
+          // 将sessionId设为null，下次循环将创建新会话
+          sessionId = null;
+          retryCount++;
+
+          console.log(`🔄 Retrying with new session (attempt ${retryCount + 1}/${MAX_RETRIES + 1})...`);
+          continue; // 继续下一次循环
         }
-        connectionManager.safeCloseConnection(`session error: ${errorMessage}`);
+
+        // 不再重试，发送错误给前端
+        console.log(`❌ Maximum retries reached or no sessionId to retry. Sending error to frontend.`);
+
+        if (!connectionManager.isConnectionClosed()) {
+          try {
+            res.write(`data: ${JSON.stringify({
+              type: 'error',
+              error: 'Claude session failed',
+              message: errorMessage,
+              timestamp: Date.now(),
+              retriesExhausted: retryCount >= MAX_RETRIES
+            })}\n\n`);
+          } catch (writeError) {
+            console.error('Failed to write error message:', writeError);
+          }
+          connectionManager.safeCloseConnection(`session error: ${errorMessage}`);
+        }
+        break; // 跳出重试循环
       }
-    }
+    } // End of while loop
     
   } catch (error) {
     console.error('Error in AI chat:', error);
