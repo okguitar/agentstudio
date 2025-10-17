@@ -647,18 +647,51 @@ check_environment() {
 download_agent_studio() {
     linux_log "Downloading Agent Studio directly to $APP_DIR..."
 
-    # Create app directory
-    mkdir -p "$APP_DIR"
-    cd "$APP_DIR"
-
-    # Download the repository directly to app directory
-    if command -v git >/dev/null 2>&1; then
-        git clone "https://github.com/$GITHUB_REPO.git" .
-        git checkout "$GITHUB_BRANCH"
-        success "Agent Studio cloned via Git to $APP_DIR"
+    # Check if app directory exists and handle accordingly
+    if [ -d "$APP_DIR" ] && [ "$(ls -A "$APP_DIR" 2>/dev/null)" ]; then
+        linux_log "App directory already exists. Checking if it's a git repository..."
+        
+        if [ -d "$APP_DIR/.git" ]; then
+            linux_log "Existing git repository found. Updating..."
+            cd "$APP_DIR"
+            git fetch origin
+            git checkout "$GITHUB_BRANCH"
+            git pull origin "$GITHUB_BRANCH"
+            success "Repository updated via Git"
+        else
+            warn "App directory exists but is not a git repository. Backing up..."
+            mkdir -p "$BACKUP_DIR"
+            BACKUP_NAME="app-backup-$(date +%Y%m%d-%H%M%S)"
+            mv "$APP_DIR" "$BACKUP_DIR/$BACKUP_NAME"
+            success "Existing app backed up to $BACKUP_DIR/$BACKUP_NAME"
+            
+            # Create fresh app directory
+            mkdir -p "$APP_DIR"
+            cd "$APP_DIR"
+            
+            if command -v git >/dev/null 2>&1; then
+                git clone "https://github.com/$GITHUB_REPO.git" .
+                git checkout "$GITHUB_BRANCH"
+                success "Agent Studio cloned via Git to $APP_DIR"
+            fi
+        fi
     else
+        # Create app directory
+        mkdir -p "$APP_DIR"
+        cd "$APP_DIR"
+
+        # Download the repository directly to app directory
+        if command -v git >/dev/null 2>&1; then
+            git clone "https://github.com/$GITHUB_REPO.git" .
+            git checkout "$GITHUB_BRANCH"
+            success "Agent Studio cloned via Git to $APP_DIR"
+        fi
+    fi
+    
+    # Fallback to tarball download if git clone failed or git is not available
+    if [ ! -f "$APP_DIR/package.json" ]; then
         # Fallback to downloading tarball
-        linux_log "Git not found, downloading tarball..."
+        linux_log "Git clone failed or git not available, downloading tarball..."
         TEMP_DOWNLOAD="/tmp/agent-studio-download-$(date +%s)"
         mkdir -p "$TEMP_DOWNLOAD"
         cd "$TEMP_DOWNLOAD"
