@@ -326,6 +326,31 @@ export const useCreateProject = () => {
   });
 };
 
+// Import existing project
+export const useImportProject = () => {
+  return useMutation({
+    mutationFn: async ({ agentId, projectPath }: {
+      agentId: string;
+      projectPath: string;
+    }) => {
+      const response = await authFetch(`${API_BASE}/projects/import`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ agentId, projectPath })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to import project');
+      }
+
+      return response.json();
+    }
+  });
+};
+
 // Get projects for a specific agent
 export const useAgentProjects = (agentId: string) => {
   return useQuery({
