@@ -245,7 +245,7 @@ router.get('/:dirName/claude-md', async (req, res) => {
     }
 
     // Try to find CLAUDE.md in project directory first, then parent directory
-    let claudeFilePath = path.join(project.path, 'CLAUDE.md');
+    const claudeFilePath = path.join(project.path, 'CLAUDE.md');
     console.log('Looking for CLAUDE.md at:', claudeFilePath);
 
     try {

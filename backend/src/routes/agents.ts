@@ -576,7 +576,7 @@ async function buildQueryOptions(agent: any, projectPath: string | undefined, mc
  */
 async function handleSessionManagement(agentId: string, sessionId: string | null, projectPath: string | undefined, queryOptions: any, claudeVersionId?: string) {
   let claudeSession: any;
-  let actualSessionId: string | null = sessionId || null;
+  const actualSessionId: string | null = sessionId || null;
 
   if (sessionId) {
     // 尝试复用现有会话

@@ -214,7 +214,7 @@ router.post('/:name/validate', async (req, res) => {
       return res.status(404).json({ error: 'MCP configuration not found' });
     }
 
-    let serverConfig = config.mcpServers[name];
+    const serverConfig = config.mcpServers[name];
 
     // Auto-detect type if not specified
     if (!serverConfig.type) {
