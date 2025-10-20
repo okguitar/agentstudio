@@ -13,7 +13,6 @@ import {
   Edit,
   Trash2,
   Star,
-  StarOff,
   Settings,
   Save,
   X,
@@ -697,7 +696,7 @@ export const VersionSettingsPage: React.FC = () => {
                           className="p-2 text-gray-500 dark:text-gray-400 hover:text-yellow-600 rounded-lg hover:bg-yellow-50 dark:hover:bg-yellow-900/20 transition-colors"
                           title={t('settings.version.setAsDefault')}
                         >
-                          <StarOff className="w-4 h-4" />
+                          <Star className="w-4 h-4" />
                         </button>
                       )}
                       <button
