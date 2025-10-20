@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -14,9 +14,8 @@ import {
   Palette
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { ApiSettingsModal } from './ApiSettingsModal';
-import { BackendServiceSwitcher } from './BackendServiceSwitcher';
-import { getCurrentHost } from '../lib/config';
+import { ServiceStatusIndicator } from './ServiceStatusIndicator';
+import { ServiceManagementModal } from './ServiceManagementModal';
 import { useMobileContext } from '../contexts/MobileContext';
 
 const getNavigationItems = (t: (key: string) => string) => [
@@ -87,55 +86,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
     // Auto-expand the settings menu if we're on a settings page
     return location.pathname.startsWith('/settings') ? [t('nav.settings')] : [];
   });
-  const [showApiModal, setShowApiModal] = useState(false);
-  const [apiStatus, setApiStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking');
+  const [showServiceManagement, setShowServiceManagement] = useState(false);
 
   const navigationItems = getNavigationItems(t);
-
-  // Check API health status
-  const checkApiHealth = async () => {
-    try {
-      const currentHost = getCurrentHost();
-      if (!currentHost) {
-        setApiStatus('disconnected');
-        return;
-      }
-
-      const healthUrl = `${currentHost}/api/health`;
-      const response = await fetch(healthUrl, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        signal: AbortSignal.timeout(3000) // 3 second timeout
-      });
-
-      if (response.ok) {
-        setApiStatus('connected');
-      } else {
-        setApiStatus('disconnected');
-      }
-    } catch (error) {
-      setApiStatus('disconnected');
-    }
-  };
-
-  // Initial health check and periodic checks
-  useEffect(() => {
-    checkApiHealth(); // Initial check
-
-    // Check every 30 seconds
-    const interval = setInterval(checkApiHealth, 30000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  // Also check when modal closes (in case settings were changed)
-  useEffect(() => {
-    if (!showApiModal && apiStatus !== 'checking') {
-      setTimeout(checkApiHealth, 1000); // Check 1 second after modal closes
-    }
-  }, [showApiModal, apiStatus]);
 
   const toggleMenu = (itemKey: string) => {
     setExpandedMenus(prev =>
@@ -154,31 +107,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
     return location.pathname === href;
   };
 
-  // Get API status button styles
-  const getApiButtonStyles = () => {
-    switch (apiStatus) {
-      case 'connected':
-        return {
-          iconClass: 'w-4 h-4 text-green-500',
-          buttonClass: 'p-1.5 text-green-500 hover:text-green-600 hover:bg-green-50 rounded-md transition-colors',
-          title: t('footer.apiServerStatus.connected')
-        };
-      case 'disconnected':
-        return {
-          iconClass: 'w-4 h-4 text-red-500',
-          buttonClass: 'p-1.5 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors',
-          title: t('footer.apiServerStatus.disconnected')
-        };
-      case 'checking':
-      default:
-        return {
-          iconClass: 'w-4 h-4 text-gray-400',
-          buttonClass: 'p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors',
-          title: t('footer.apiServerStatus.checking')
-        };
-    }
-  };
-
+  
   const renderNavItem = (item: any) => {
     const hasSubmenu = item.submenu && item.submenu.length > 0;
     const isExpanded = isMenuExpanded(item.name);
@@ -292,43 +221,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
       {/* Footer */}
       <div className="flex-shrink-0 p-4 border-t border-gray-200 dark:border-gray-700">
         <div className="space-y-3">
-          {/* Backend Service Switcher */}
-          <div className="flex items-center justify-between">
-            <BackendServiceSwitcher />
-
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={() => setShowApiModal(true)}
-                className={getApiButtonStyles().buttonClass}
-                title={getApiButtonStyles().title}
-              >
-                <Server className={getApiButtonStyles().iconClass} />
-              </button>
-              {apiStatus === 'disconnected' && (
-                <span className="text-xs text-red-500 api-text-breathing cursor-pointer"
-                      onClick={() => setShowApiModal(true)}>
-                  {t('footer.serviceStatus.unavailable')}
-                </span>
-              )}
-              {apiStatus === 'connected' && (
-                <span className="text-xs text-green-600">
-                  {t('footer.serviceStatus.normal')}
-                </span>
-              )}
-              {apiStatus === 'checking' && (
-                <span className="text-xs text-gray-500">
-                  {t('footer.serviceStatus.checking')}
-                </span>
-              )}
-            </div>
-          </div>
+          {/* Service Status Indicator */}
+          <ServiceStatusIndicator onManageServices={() => setShowServiceManagement(true)} />
         </div>
       </div>
 
-      {/* API Settings Modal */}
-      <ApiSettingsModal 
-        isOpen={showApiModal}
-        onClose={() => setShowApiModal(false)}
+      {/* Service Management Modal */}
+      <ServiceManagementModal 
+        isOpen={showServiceManagement}
+        onClose={() => setShowServiceManagement(false)}
       />
     </div>
   );

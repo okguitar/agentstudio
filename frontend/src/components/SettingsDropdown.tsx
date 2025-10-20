@@ -122,7 +122,12 @@ export const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
               >
                 <div className="flex items-center space-x-2">
                   <Terminal className="w-4 h-4" />
-                  <span>{t('agentChat.claudeVersion.default')}</span>
+                  <span>
+                    {claudeVersionsData?.defaultVersionId 
+                      ? claudeVersionsData.versions.find(v => v.id === claudeVersionsData.defaultVersionId)?.name || t('agentChat.claudeVersion.default')
+                      : t('agentChat.claudeVersion.default')
+                    }
+                  </span>
                 </div>
               </button>
               {claudeVersionsData.versions
@@ -142,9 +147,6 @@ export const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
                       <Terminal className="w-4 h-4" />
                       <div className="flex-1">
                         <span>{version.name}</span>
-                        {version.isSystem && (
-                          <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">({t('agentChat.claudeVersion.system')})</span>
-                        )}
                       </div>
                     </div>
                   </button>

@@ -1,8 +1,6 @@
 import React from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { tomorrow, vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 interface FileContentViewerProps {
   content: string;
@@ -117,57 +115,21 @@ export const FileContentViewer: React.FC<FileContentViewerProps> = ({
 }) => {
   const language = getLanguageFromFilePath(filePath);
   
-  // 如果是 Markdown 文件，使用 ReactMarkdown 渲染
-  if (language === 'markdown') {
-    return (
-      <div className={`bg-white border border-gray-200 rounded-md p-4 ${className}`}>
-        <div className="text-xs font-medium text-gray-600 mb-3">
-          文件内容 ({language})
-        </div>
-        <div className="prose prose-sm max-w-none">
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
-            components={{
-              code({ inline, className, children }: any) {
-                const match = /language-(\w+)/.exec(className || '');
-                return !inline && match ? (
-                  <SyntaxHighlighter
-                    style={tomorrow as any}
-                    language={match[1]}
-                    PreTag="div"
-                    className="rounded-md text-sm overflow-auto"
-                    wrapLines={true}
-                    wrapLongLines={true}
-                  >
-                    {String(children).replace(/\n$/, '')}
-                  </SyntaxHighlighter>
-                ) : (
-                  <code className="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono">
-                    {children}
-                  </code>
-                );
-              },
-            }}
-          >
-            {content}
-          </ReactMarkdown>
-        </div>
-      </div>
-    );
-  }
+  // 检测当前是否为暗色模式
+  const isDarkMode = document.documentElement.classList.contains('dark');
   
-  // 对于其他文件类型，使用语法高亮
+  // 对于所有文件类型，使用语法高亮显示源代码
   return (
-    <div className={`bg-white border border-gray-200 rounded-md ${className}`}>
-      <div className="px-4 py-2 bg-gray-50 border-b border-gray-200 rounded-t-md">
-        <div className="text-xs font-medium text-gray-600">
+    <div className={`bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md ${className}`}>
+      <div className="px-4 py-2 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 rounded-t-md">
+        <div className="text-xs font-medium text-gray-600 dark:text-gray-400">
           文件内容 ({language})
         </div>
       </div>
       <div className="p-4">
         <SyntaxHighlighter
           language={language}
-          style={tomorrow}
+          style={isDarkMode ? vscDarkPlus : tomorrow}
           customStyle={{
             margin: 0,
             background: 'transparent',
@@ -179,8 +141,8 @@ export const FileContentViewer: React.FC<FileContentViewerProps> = ({
           lineNumberStyle={{
             minWidth: '3em',
             paddingRight: '1em',
-            color: '#666',
-            borderRight: '1px solid #ddd',
+            color: isDarkMode ? '#9ca3af' : '#666',
+            borderRight: isDarkMode ? '1px solid #4b5563' : '1px solid #ddd',
             marginRight: '1em',
           }}
         >
