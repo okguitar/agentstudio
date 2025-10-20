@@ -1,12 +1,28 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
+import { readFileSync } from 'fs'
 
 const target = 'http://127.0.0.1:4936';
+
+// Get package version
+const getPackageVersion = () => {
+  try {
+    const packagePath = path.resolve(__dirname, 'package.json');
+    const packageJson = JSON.parse(readFileSync(packagePath, 'utf8'));
+    return packageJson.version;
+  } catch (error) {
+    console.warn('Could not read version from package.json:', error);
+    return 'unknown';
+  }
+};
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  define: {
+    __APP_VERSION__: JSON.stringify(getPackageVersion()),
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
