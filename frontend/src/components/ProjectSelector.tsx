@@ -243,7 +243,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
           <div className="flex items-center space-x-3">
             <div className="text-2xl">{agent.ui.icon}</div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{agent.name}</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{agent.name}</h3>
               <p className="text-sm text-gray-500 dark:text-gray-400">{t('projectSelector.selectProjectDirectory')}</p>
             </div>
           </div>
@@ -259,18 +259,18 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
         <div className="flex flex-1 min-h-0 flex-col md:flex-row">
           {/* Left Panel - Action Buttons */}
           <div className="w-full md:w-1/2 p-6 md:border-r border-gray-200 dark:border-gray-700">
-            <h4 className="text-base font-medium text-gray-900 dark:text-gray-100 mb-4">{t('projectSelector.projectActions')}</h4>
+            <h4 className="text-base font-medium text-gray-900 dark:text-white mb-4">{t('projectSelector.projectActions')}</h4>
             <div className="space-y-3">
               <button
                 onClick={handleNewProject}
                 disabled={isCreatingProject}
-                className="w-full flex items-center space-x-4 p-4 border border-primary/40 dark:border-primary/50 rounded-lg hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full flex items-center space-x-4 p-4 border border-primary/40 dark:border-primary/60 rounded-lg hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <div className="flex-shrink-0">
                   <FolderPlus className={`w-6 h-6 ${isCreatingProject ? 'text-gray-400 dark:text-gray-500' : 'text-primary'}`} />
                 </div>
                 <div className="text-left flex-1">
-                  <div className="font-medium text-gray-900 dark:text-gray-100">
+                  <div className="font-medium text-gray-900 dark:text-white">
                     {isCreatingProject ? t('projectSelector.creatingProject') : t('projectSelector.quickCreateProject')}
                   </div>
                   <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -282,40 +282,29 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
               <button
                 onClick={handleNewProjectWithCustomLocation}
                 disabled={isCreatingProject}
-                className="w-full flex items-center space-x-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full flex items-center space-x-4 p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <div className="flex-shrink-0">
                   <FolderPlus className="w-6 h-6 text-gray-600 dark:text-gray-400" />
                 </div>
                 <div className="text-left flex-1">
-                  <div className="font-medium text-gray-900 dark:text-gray-100">{t('projectSelector.customLocationCreate')}</div>
+                  <div className="font-medium text-gray-900 dark:text-white">{t('projectSelector.customLocationCreate')}</div>
                   <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('projectSelector.customLocationDescription')}</div>
                 </div>
               </button>
 
               <button
                 onClick={handleBrowseProject}
-                className="w-full flex items-center space-x-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                className="w-full flex items-center space-x-4 p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               >
                 <div className="flex-shrink-0">
                   <Search className="w-6 h-6 text-gray-600 dark:text-gray-400" />
                 </div>
                 <div className="text-left flex-1">
-                  <div className="font-medium text-gray-900 dark:text-gray-100">{t('projectSelector.browseProject')}</div>
+                  <div className="font-medium text-gray-900 dark:text-white">{t('projectSelector.browseProject')}</div>
                   <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('projectSelector.browseDescription')}</div>
                 </div>
               </button>
-
-              <button
-                onClick={handleImportProject}
-                className="w-full flex items-center space-x-4 p-4 border border-primary/40 dark:border-primary/50 rounded-lg hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors"
-              >
-                <div className="flex-shrink-0">
-                  <FolderOpen className="w-6 h-6 text-primary" />
-                </div>
-                <div className="text-left flex-1">
-                  <div className="font-medium text-gray-900 dark:text-gray-100">{t('projectSelector.importProject')}</div>
-                  <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('projectSelector.importDescription')}</div>
                 </div>
               </button>
             </div>
@@ -323,7 +312,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
 
           {/* Right Panel - Recent Projects */}
           <div className="w-full md:w-1/2 p-6 flex flex-col min-h-[300px] md:min-h-0">
-            <h4 className="text-base font-medium text-gray-900 dark:text-gray-100 mb-4">{t('projectSelector.recentProjects')}</h4>
+            <h4 className="text-base font-medium text-gray-900 dark:text-white mb-4">{t('projectSelector.recentProjects')}</h4>
 
             {projectsLoading ? (
               <div className="flex-1 flex items-center justify-center">
@@ -347,7 +336,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
                         {project.defaultAgentIcon || '📁'}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium text-gray-900 dark:text-gray-100 truncate">
+                        <div className="font-medium text-gray-900 dark:text-white truncate">
                           {project.name}
                         </div>
                         <div className="text-sm text-gray-500 dark:text-gray-400 truncate mt-1">
@@ -379,7 +368,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
         <div className="flex justify-end p-6 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
           <button
             onClick={onClose}
-            className="px-6 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
+            className="px-6 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
           >
             {t('projectSelector.cancel')}
           </button>
@@ -456,7 +445,7 @@ const ProjectNameDialog: React.FC<ProjectNameDialogProps> = ({ parentDirectory, 
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
       <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('projectSelector.dialog.createNewProject')}</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('projectSelector.dialog.createNewProject')}</h3>
           <button
             onClick={onCancel}
             className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
@@ -495,7 +484,7 @@ const ProjectNameDialog: React.FC<ProjectNameDialogProps> = ({ parentDirectory, 
             <button
               type="button"
               onClick={onCancel}
-              className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
+              className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
             >
               {t('projectSelector.dialog.cancel')}
             </button>
