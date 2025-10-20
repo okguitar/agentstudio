@@ -257,8 +257,16 @@ router.get('/browse', (req, res) => {
     
     const stats = fs.statSync(browsePath);
     
+    // If it's not a directory, return info about the item itself
     if (!stats.isDirectory()) {
-      return res.status(400).json({ error: 'Path is not a directory' });
+      return res.json({
+        currentPath: browsePath,
+        isDirectory: false,
+        size: stats.size,
+        modified: stats.mtime.toISOString(),
+        parentPath: path.dirname(browsePath),
+        items: null
+      });
     }
     
     const items = fs.readdirSync(browsePath)
@@ -294,6 +302,7 @@ router.get('/browse', (req, res) => {
     
     res.json({
       currentPath: browsePath,
+      isDirectory: true,
       parentPath: canGoUp ? parentPath : null,
       items
     });
