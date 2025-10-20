@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { readFileSync } from 'fs';
 
 import filesRouter from './routes/files.js';
 import agentsRouter from './routes/agents.js';
@@ -24,6 +25,20 @@ dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+// Get version from package.json
+const getVersion = () => {
+  try {
+    const packagePath = join(__dirname, '../package.json');
+    const packageJson = JSON.parse(readFileSync(packagePath, 'utf8'));
+    return packageJson.version;
+  } catch (error) {
+    console.warn('Could not read version from package.json:', error);
+    return 'unknown';
+  }
+};
+
+const VERSION = getVersion();
 
 const app: express.Express = express();
 
@@ -176,7 +191,12 @@ app.use('/media', mediaRouter); // Remove authMiddleware - media files are now p
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    version: VERSION,
+    name: 'agentstudio-backend'
+  });
 });
 
 // Error handling
