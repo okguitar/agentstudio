@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Folder, FolderPlus, X, Search, FolderOpen } from 'lucide-react';
+import { Folder, FolderPlus, X, Search } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import type { AgentConfig } from '../types/index.js';
@@ -109,10 +109,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
     setShowFileBrowser(true);
   };
 
-  const handleImportProject = () => {
-    setShowImportBrowser(true);
-  };
-
+  
   const handleImportFileSelect = async (path: string, isDirectory: boolean) => {
     if (isDirectory) {
       // Normalize paths for comparison
@@ -303,8 +300,6 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({
                 <div className="text-left flex-1">
                   <div className="font-medium text-gray-900 dark:text-white">{t('projectSelector.browseProject')}</div>
                   <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('projectSelector.browseDescription')}</div>
-                </div>
-              </button>
                 </div>
               </button>
             </div>
