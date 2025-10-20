@@ -96,7 +96,9 @@
     "moreTabsCount": "{{count}} more tabs",
     "pinnedTab": "pinned",
     "temporaryTab": "temporary",
-    "closeTab": "Close tab"
+    "closeTab": "Close tab",
+    "noProject": "No Project Selected",
+    "selectProjectFirst": "Please select a project first to browse files"
   },
   "sessionDropdown": {
     "title": "Session Management",

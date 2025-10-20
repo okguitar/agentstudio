@@ -96,7 +96,9 @@
     "moreTabsCount": "还有 {{count}} 个标签",
     "pinnedTab": "固定",
     "temporaryTab": "临时",
-    "closeTab": "关闭标签"
+    "closeTab": "关闭标签",
+    "noProject": "未选择项目",
+    "selectProjectFirst": "请先选择一个项目以浏览文件"
   },
   "sessionDropdown": {
     "title": "会话管理",

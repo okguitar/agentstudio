@@ -1,5 +1,5 @@
-import React from 'react';
-import { X, AlertTriangle, CheckCircle, Clock, Wifi, WifiOff } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, AlertTriangle, CheckCircle, Clock, Wifi, WifiOff, ChevronDown, ChevronRight, Copy } from 'lucide-react';
 
 interface McpServer {
   name: string;
@@ -27,6 +27,9 @@ export const McpStatusModal: React.FC<McpStatusModalProps> = ({
   onClose,
   mcpStatus
 }) => {
+  const [expandedErrors, setExpandedErrors] = useState<Set<number>>(new Set());
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+
   if (!isOpen) return null;
 
   const formatTimestamp = (timestamp?: number) => {
@@ -36,9 +39,29 @@ export const McpStatusModal: React.FC<McpStatusModalProps> = ({
 
   const hasAnyServers = (mcpStatus.connectedServers?.length || 0) > 0 || (mcpStatus.connectionErrors?.length || 0) > 0;
 
+  const toggleErrorExpansion = (index: number) => {
+    const newExpanded = new Set(expandedErrors);
+    if (newExpanded.has(index)) {
+      newExpanded.delete(index);
+    } else {
+      newExpanded.add(index);
+    }
+    setExpandedErrors(newExpanded);
+  };
+
+  const copyErrorToClipboard = async (errorText: string, index: number) => {
+    try {
+      await navigator.clipboard.writeText(errorText);
+      setCopiedIndex(index);
+      setTimeout(() => setCopiedIndex(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy error text:', err);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4 max-h-[90vh] overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center space-x-2">
@@ -121,27 +144,68 @@ export const McpStatusModal: React.FC<McpStatusModalProps> = ({
                 ❌ 连接失败的服务器 ({mcpStatus.connectionErrors.length})
               </h4>
               <div className="space-y-2">
-                {mcpStatus.connectionErrors.map((server, index) => (
-                  <div
-                    key={index}
-                    className="p-2 bg-red-50 dark:bg-red-900/20 rounded border border-red-200 dark:border-red-800"
-                  >
-                    <div className="flex items-center space-x-2 mb-1">
-                      <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0" />
-                      <span className="text-sm text-red-700 dark:text-red-300 font-medium">
-                        {server.name}
-                      </span>
-                      <span className="text-xs text-red-600 dark:text-red-400">
-                        ({server.status})
-                      </span>
+                {mcpStatus.connectionErrors.map((server, index) => {
+                  const isExpanded = expandedErrors.has(index);
+                  const hasDetailedError = server.error && server.error.length > 50;
+                  const isCopied = copiedIndex === index;
+                  
+                  return (
+                    <div
+                      key={index}
+                      className="p-2 bg-red-50 dark:bg-red-900/20 rounded border border-red-200 dark:border-red-800"
+                    >
+                      <div className="flex items-center space-x-2 mb-1">
+                        <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                        <span className="text-sm text-red-700 dark:text-red-300 font-medium">
+                          {server.name}
+                        </span>
+                        <span className="text-xs text-red-600 dark:text-red-400">
+                          ({server.status})
+                        </span>
+                        {hasDetailedError && (
+                          <button
+                            onClick={() => toggleErrorExpansion(index)}
+                            className="ml-auto p-1 hover:bg-red-100 dark:hover:bg-red-800/30 rounded"
+                            title={isExpanded ? "收起详细错误" : "展开详细错误"}
+                          >
+                            {isExpanded ? (
+                              <ChevronDown className="w-3 h-3 text-red-500" />
+                            ) : (
+                              <ChevronRight className="w-3 h-3 text-red-500" />
+                            )}
+                          </button>
+                        )}
+                      </div>
+                      {server.error && (
+                        <div className="ml-6">
+                          {hasDetailedError ? (
+                            <div>
+                              <p className="text-xs text-red-600 dark:text-red-400 mb-1">
+                                {isExpanded ? server.error : `${server.error.substring(0, 50)}...`}
+                              </p>
+                              {isExpanded && (
+                                <div className="flex items-center justify-between mt-2">
+                                  <button
+                                    onClick={() => copyErrorToClipboard(server.error!, index)}
+                                    className="flex items-center space-x-1 px-2 py-1 text-xs bg-red-100 dark:bg-red-800/30 hover:bg-red-200 dark:hover:bg-red-800/50 rounded transition-colors"
+                                    title="复制错误信息"
+                                  >
+                                    <Copy className="w-3 h-3" />
+                                    <span>{isCopied ? '已复制' : '复制错误'}</span>
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-red-600 dark:text-red-400">
+                              {server.error}
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
-                    {server.error && (
-                      <p className="text-xs text-red-600 dark:text-red-400 ml-6">
-                        {server.error}
-                      </p>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -149,17 +213,33 @@ export const McpStatusModal: React.FC<McpStatusModalProps> = ({
           {/* Last Error */}
           {mcpStatus.lastError && (
             <div>
-              <h4 className="font-medium text-gray-900 dark:text-white mb-2">
-                🚨 最近的错误
-              </h4>
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="font-medium text-gray-900 dark:text-white">
+                  🚨 最近的错误
+                </h4>
+                <button
+                  onClick={() => copyErrorToClipboard(
+                    `${mcpStatus.lastError}${mcpStatus.lastErrorDetails ? '\n详情: ' + mcpStatus.lastErrorDetails : ''}`, 
+                    -1
+                  )}
+                  className="flex items-center space-x-1 px-2 py-1 text-xs bg-red-100 dark:bg-red-800/30 hover:bg-red-200 dark:hover:bg-red-800/50 rounded transition-colors"
+                  title="复制错误信息"
+                >
+                  <Copy className="w-3 h-3" />
+                  <span>{copiedIndex === -1 ? '已复制' : '复制'}</span>
+                </button>
+              </div>
               <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded border border-red-200 dark:border-red-800">
-                <p className="text-sm text-red-700 dark:text-red-300 mb-1">
+                <p className="text-sm text-red-700 dark:text-red-300 mb-1 font-mono">
                   {mcpStatus.lastError}
                 </p>
                 {mcpStatus.lastErrorDetails && (
-                  <p className="text-xs text-red-600 dark:text-red-400">
-                    详情: {mcpStatus.lastErrorDetails}
-                  </p>
+                  <div className="mt-2 pt-2 border-t border-red-200 dark:border-red-700">
+                    <p className="text-xs text-red-600 dark:text-red-400 font-mono whitespace-pre-wrap">
+                      <span className="font-semibold">详情:</span><br />
+                      {mcpStatus.lastErrorDetails}
+                    </p>
+                  </div>
                 )}
               </div>
             </div>
