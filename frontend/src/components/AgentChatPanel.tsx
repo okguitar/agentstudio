@@ -17,6 +17,7 @@ import { ChatMessageRenderer } from './ChatMessageRenderer';
 import { SessionsDropdown } from './SessionsDropdown';
 import { UnifiedToolSelector } from './UnifiedToolSelector';
 import { MobileChatToolbar } from './MobileChatToolbar';
+import { MobileSettingsModal } from './MobileSettingsModal';
 import { useMobileContext } from '../contexts/MobileContext';
 import { McpStatusModal } from './McpStatusModal';
 import type { AgentConfig } from '../types/index.js';
@@ -65,6 +66,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
   const [showModelDropdown, setShowModelDropdown] = useState(false);
   const [selectedClaudeVersion, setSelectedClaudeVersion] = useState<string | undefined>(undefined);
   const [showVersionDropdown, setShowVersionDropdown] = useState(false);
+  const [showMobileSettings, setShowMobileSettings] = useState(false);
   const [commandWarning, setCommandWarning] = useState<string | null>(null);
   const [hasSuccessfulResponse, setHasSuccessfulResponse] = useState(false);
   const [isNewSession, setIsNewSession] = useState(false);
@@ -1521,12 +1523,14 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
         setIsVersionLocked(true);
         console.log(`🔒 Locked to Claude version: ${activeSession.claudeVersionId}`);
       } else {
-        // 会话没有指定版本，使用默认版本但不锁定
+        // 会话没有指定版本，清除选择状态以显示默认版本
+        setSelectedClaudeVersion(undefined);
         setIsVersionLocked(false);
         console.log(`🔓 Session has no specific version, unlocked`);
       }
     } else {
-      // 会话不在活跃列表中，不锁定
+      // 会话不在活跃列表中，清除选择状态以显示默认版本
+      setSelectedClaudeVersion(undefined);
       setIsVersionLocked(false);
       console.log(`🔓 Session ${currentSessionId} not in active sessions, unlocked`);
     }
@@ -1722,41 +1726,10 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
           showToolSelector={showToolSelector}
           onToolSelectorToggle={() => setShowToolSelector(!showToolSelector)}
           hasSelectedTools={selectedRegularTools.length > 0 || (mcpToolsEnabled && selectedMcpTools.length > 0)}
+          onStopAi={() => abortControllerRef.current?.abort()}
+          onSettingsOpen={() => setShowMobileSettings(true)}
         />
 
-        {/* Mobile Settings */}
-        <div className="px-3 pb-2 border-t border-gray-100 dark:border-gray-700">
-          <div className="flex items-center justify-between py-2">
-            <SettingsDropdown
-              permissionMode={permissionMode}
-              onPermissionModeChange={setPermissionMode}
-              selectedClaudeVersion={selectedClaudeVersion}
-              onClaudeVersionChange={setSelectedClaudeVersion}
-              selectedModel={selectedModel}
-              onModelChange={setSelectedModel}
-              availableModels={availableModels}
-              claudeVersionsData={claudeVersionsData}
-              isVersionLocked={isVersionLocked}
-              isAiTyping={isAiTyping}
-            />
-
-            {isAiTyping || isStopping ? (
-              <button
-                onClick={handleStopGeneration}
-                disabled={isStopping}
-                className={`flex items-center space-x-1 px-3 py-1.5 text-white rounded-lg transition-colors text-xs font-medium ${
-                  isStopping
-                    ? 'bg-red-400 cursor-not-allowed'
-                    : 'bg-red-600 hover:bg-red-700'
-                }`}
-                title={isStopping ? t('agentChatPanel.stopping') : t('agentChatPanel.stopGeneration')}
-              >
-                <Square className="w-3 h-3" />
-                <span>{isStopping ? t('agentChatPanel.stopping') : t('agentChatPanel.stop')}</span>
-              </button>
-            ) : null}
-          </div>
-        </div>
 
         {/* Tool Selector */}
         <UnifiedToolSelector
@@ -2038,10 +2011,43 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
                       >
                         <Terminal className="w-4 h-4" />
                         <span className="text-xs">
-                          {selectedClaudeVersion
-                            ? claudeVersionsData.versions.find(v => v.id === selectedClaudeVersion)?.name || t('agentChat.claudeVersion.custom')
-                            : t('agentChat.claudeVersion.default')
-                          }
+                          {(() => {
+                            // 如果用户选择了特定版本，显示该版本名称
+                            if (selectedClaudeVersion && claudeVersionsData?.versions) {
+                              return claudeVersionsData.versions.find(v => v.id === selectedClaudeVersion)?.name || t('agentChat.claudeVersion.custom');
+                            }
+                            
+                            // 如果没有选择特定版本，尝试显示默认版本名称
+                            if (claudeVersionsData?.versions && claudeVersionsData.versions.length > 0) {
+                              // 首先尝试通过defaultVersionId查找
+                              if (claudeVersionsData.defaultVersionId) {
+                                const defaultVersion = claudeVersionsData.versions.find(v => v.id === claudeVersionsData.defaultVersionId);
+                                if (defaultVersion?.name) {
+                                  return defaultVersion.name;
+                                }
+                              }
+                              
+                              // 如果找不到，则查找标记为默认的版本
+                              const defaultByFlag = claudeVersionsData.versions.find(v => v.isDefault);
+                              if (defaultByFlag?.name) {
+                                return defaultByFlag.name;
+                              }
+                              
+                              // 再次fallback：显示第一个非系统版本
+                              const firstNonSystem = claudeVersionsData.versions.find(v => !v.isSystem);
+                              if (firstNonSystem?.name) {
+                                return firstNonSystem.name;
+                              }
+                              
+                              // 最后显示第一个版本
+                              if (claudeVersionsData.versions[0]?.name) {
+                                return claudeVersionsData.versions[0].name;
+                              }
+                            }
+                            
+                            // 最后回退到翻译文本
+                            return t('agentChat.claudeVersion.default');
+                          })()}
                         </span>
                         <ChevronDown className="w-3 h-3" />
                       </button>
@@ -2058,7 +2064,38 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
                               !selectedClaudeVersion ? 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300' : 'text-gray-700 dark:text-gray-300'
                             }`}
                           >
-                            {t('agentChat.claudeVersion.default')}
+                            {(() => {
+                              // 尝试显示实际的默认版本名称
+                              if (claudeVersionsData?.versions && claudeVersionsData.versions.length > 0) {
+                                // 首先尝试通过defaultVersionId查找
+                                if (claudeVersionsData.defaultVersionId) {
+                                  const defaultVersion = claudeVersionsData.versions.find(v => v.id === claudeVersionsData.defaultVersionId);
+                                  if (defaultVersion?.name) {
+                                    return defaultVersion.name;
+                                  }
+                                }
+                                
+                                // 如果找不到，则查找标记为默认的版本
+                                const defaultByFlag = claudeVersionsData.versions.find(v => v.isDefault);
+                                if (defaultByFlag?.name) {
+                                  return defaultByFlag.name;
+                                }
+                                
+                                // 再次fallback：显示第一个非系统版本
+                                const firstNonSystem = claudeVersionsData.versions.find(v => !v.isSystem);
+                                if (firstNonSystem?.name) {
+                                  return firstNonSystem.name;
+                                }
+                                
+                                // 最后显示第一个版本
+                                if (claudeVersionsData.versions[0]?.name) {
+                                  return claudeVersionsData.versions[0].name;
+                                }
+                              }
+                              
+                              // 最后回退到翻译文本
+                              return t('agentChat.claudeVersion.default');
+                            })()}
                           </button>
 
                           {/* 其他版本选项 */}
@@ -2079,9 +2116,6 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
                               >
                                 <div className="flex items-center space-x-2">
                                   <span>{version.name}</span>
-                                  {version.isSystem && (
-                                    <span className="text-xs text-gray-500 dark:text-gray-400">({t('agentChat.claudeVersion.system')})</span>
-                                  )}
                                 </div>
                               </button>
                             ))
@@ -2201,11 +2235,27 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
         onClose={() => setPreviewImage(null)}
       />
 
-      {/* MCP 状态弹窗 */}
+    {/* MCP 状态弹窗 */}
       <McpStatusModal
         isOpen={showMcpStatusModal}
         onClose={() => setShowMcpStatusModal(false)}
         mcpStatus={mcpStatus}
+      />
+
+      {/* Mobile Settings Modal */}
+      <MobileSettingsModal
+        isOpen={showMobileSettings}
+        onClose={() => setShowMobileSettings(false)}
+        permissionMode={permissionMode}
+        onPermissionModeChange={setPermissionMode}
+        selectedClaudeVersion={selectedClaudeVersion}
+        onClaudeVersionChange={setSelectedClaudeVersion}
+        selectedModel={selectedModel}
+        onModelChange={setSelectedModel}
+        availableModels={availableModels}
+        claudeVersionsData={claudeVersionsData}
+        isVersionLocked={isVersionLocked}
+        isAiTyping={isAiTyping}
       />
     </div>
   );
