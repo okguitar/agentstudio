@@ -1438,7 +1438,6 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
-    const cursorPosition = e.target.selectionStart || 0;
     setInputMessage(value);
     
     // Clear command warning when input changes
@@ -1446,13 +1445,16 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
       setCommandWarning(null);
     }
     
-    // Check for @ symbol trigger
-    if (value.length > cursorPosition && value[cursorPosition - 1] === '@') {
+    // Check for @ symbol trigger immediately
+    if (value.length > 0 && value[value.length - 1] === '@') {
       // Check if @ is at start of line or preceded by whitespace
-      const textBeforeAt = value.substring(0, cursorPosition - 1);
+      const textBeforeAt = value.substring(0, value.length - 1);
+      
       if (textBeforeAt.length === 0 || /\s$/.test(textBeforeAt)) {
-        setAtSymbolPosition(cursorPosition - 1);
+        setAtSymbolPosition(value.length - 1);
         setShowFileBrowser(true);
+        // Blur the textarea to prevent further input
+        textareaRef.current?.blur();
         return;
       }
     }
@@ -1475,7 +1477,7 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
         setSelectedCommandIndex(0);
       }
     }
-  }, [commandWarning, commandSearch, showCommandSelector]);
+  }, [commandWarning, commandSearch, showCommandSelector, showFileBrowser]);
   
   const handleCommandSelect = (command: CommandType) => {
     // 命令选择器只是帮助填入命令名称，不立即执行
@@ -1507,19 +1509,19 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
       }
     }
     
-    // Replace @ symbol with selected file path
+    // Replace @ symbol with @ + selected file path + space
     const beforeAt = inputMessage.substring(0, atSymbolPosition);
     const afterAt = inputMessage.substring(atSymbolPosition + 1);
-    const newValue = beforeAt + relativePath + afterAt;
+    const newValue = beforeAt + '@' + relativePath + ' ' + afterAt;
     
     setInputMessage(newValue);
     setShowFileBrowser(false);
     setAtSymbolPosition(null);
     
-    // Set cursor position after the inserted file path
+    // Set cursor position after the inserted file path and space
     setTimeout(() => {
       if (textareaRef.current) {
-        const newCursorPosition = atSymbolPosition + relativePath.length;
+        const newCursorPosition = atSymbolPosition + 1 + relativePath.length + 1; // +1 for @ symbol, +1 for space
         textareaRef.current.selectionStart = textareaRef.current.selectionEnd = newCursorPosition;
         textareaRef.current.focus();
       }
@@ -1529,6 +1531,10 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const handleFileBrowserClose = () => {
     setShowFileBrowser(false);
     setAtSymbolPosition(null);
+    // Re-focus the textarea when file browser is closed
+    setTimeout(() => {
+      textareaRef.current?.focus();
+    }, 0);
   };
   
   const handleConfirmDialog = () => {
@@ -2356,6 +2362,7 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
         mcpStatus={mcpStatus}
       />
 
+        
       {/* File Browser for @ symbol */}
       {showFileBrowser && (
         <FileBrowser
@@ -2363,6 +2370,7 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
           initialPath={projectPath}
           allowFiles={true}
           allowDirectories={false}
+          restrictToProject={true}
           onSelect={handleFileSelect}
           onClose={handleFileBrowserClose}
         />

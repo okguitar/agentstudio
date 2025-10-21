@@ -36,6 +36,7 @@ interface FileBrowserProps {
   allowFiles?: boolean;
   allowDirectories?: boolean;
   allowNewDirectory?: boolean;
+  restrictToProject?: boolean; // 限制在项目目录内
   onSelect: (path: string, isDirectory: boolean) => void;
   onClose: () => void;
 }
@@ -46,6 +47,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
   allowFiles = true,
   allowDirectories = true,
   allowNewDirectory = false,
+  restrictToProject = false,
   onSelect,
   onClose
 }) => {
@@ -105,13 +107,17 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
   };
 
   const goToParent = () => {
-    if (data?.parentPath) {
+    if (data?.parentPath && (!restrictToProject || data.parentPath.startsWith(initialPath || ''))) {
       fetchDirectory(data.parentPath);
     }
   };
 
   const goToHome = () => {
-    fetchDirectory();
+    if (!restrictToProject) {
+      fetchDirectory();
+    } else if (initialPath) {
+      fetchDirectory(initialPath);
+    }
   };
 
   const handleCreateNewFolder = async () => {
@@ -177,15 +183,18 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
         <div className="flex items-center space-x-2 p-4 border-b border-gray-100 dark:border-gray-700">
           <button
             onClick={goToHome}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            title={t('fileBrowser.toolbar.homeDirectory')}
+            className={`p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors ${
+              restrictToProject ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+            title={restrictToProject ? t('fileBrowser.toolbar.restrictedToProject') : t('fileBrowser.toolbar.homeDirectory')}
+            disabled={restrictToProject}
           >
             <Home className="w-4 h-4 text-gray-600 dark:text-gray-400" />
           </button>
 
           <button
             onClick={goToParent}
-            disabled={!data?.parentPath}
+            disabled={!data?.parentPath || (restrictToProject && data?.currentPath === initialPath)}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             title={t('fileBrowser.toolbar.parentDirectory')}
           >
@@ -258,9 +267,18 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
                             <File className="w-4 h-4 text-gray-600 dark:text-gray-400 flex-shrink-0" />
                           )}
                           <button
-                            onClick={() => handleItemClick(item)}
+                            onClick={() => {
+                              // For files when allowFiles is true, directly select the file
+                              if (!item.isDirectory && allowFiles) {
+                                handleItemSelect(item);
+                              } else {
+                                handleItemClick(item);
+                              }
+                            }}
                             className={`text-left truncate hover:text-blue-600 dark:hover:text-blue-400 ${
                               item.isHidden ? 'text-gray-400' : 'text-gray-900 dark:text-white'
+                            } ${
+                              !item.isDirectory && allowFiles ? 'cursor-pointer font-medium' : ''
                             }`}
                           >
                             {item.name}
