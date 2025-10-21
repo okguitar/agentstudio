@@ -41,6 +41,7 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, isDark = f
         theme: isDark ? 'dark' : 'default',
         securityLevel: 'strict', // 安全模式，防止XSS攻击
         fontFamily: 'ui-sans-serif, system-ui, sans-serif',
+        suppressErrorRendering: true, // 禁止 Mermaid 自动渲染错误到页面
         themeVariables: {
           darkMode: isDark,
         },
@@ -126,6 +127,12 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, isDark = f
     } catch (err) {
       console.error('Mermaid 渲染错误:', err);
       setError(err instanceof Error ? err.message : '渲染图表时发生错误');
+
+      // 清理 Mermaid 可能自动插入的错误元素
+      setTimeout(() => {
+        const errorElements = document.querySelectorAll('[id^="dmermaid"], .error-icon, .error-text');
+        errorElements.forEach(el => el.remove());
+      }, 100);
     }
   };
 
@@ -189,32 +196,47 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code, isDark = f
 
   if (error) {
     return (
-      <div className="border border-red-300 dark:border-red-700 rounded-md p-4 my-2 bg-red-50 dark:bg-red-900/20">
-        <div className="flex items-start">
-          <div className="flex-shrink-0">
-            <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+      <div className="my-2 border border-red-300 dark:border-red-700 rounded-lg overflow-hidden bg-white dark:bg-gray-800">
+        {/* 紧凑的错误头部 */}
+        <details className="group">
+          <summary className="flex items-center gap-2 px-3 py-2 cursor-pointer bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors list-none">
+            <svg className="w-4 h-4 text-red-500 dark:text-red-400 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
             </svg>
-          </div>
-          <div className="ml-3">
-            <h3 className="text-sm font-medium text-red-800 dark:text-red-200">
-              Mermaid 图表渲染失败
-            </h3>
-            <div className="mt-2 text-sm text-red-700 dark:text-red-300">
-              <p>{error}</p>
-            </div>
-            <div className="mt-3">
-              <details className="text-xs">
-                <summary className="cursor-pointer text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200">
-                  查看原始代码
-                </summary>
-                <pre className="mt-2 bg-red-100 dark:bg-red-950 p-2 rounded overflow-x-auto">
-                  <code className="text-red-900 dark:text-red-100">{code}</code>
+            <span className="text-sm font-medium text-red-800 dark:text-red-200 flex-1">
+              Mermaid 图表语法错误
+            </span>
+            <svg
+              className="w-4 h-4 text-red-600 dark:text-red-400 transition-transform group-open:rotate-180"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </summary>
+
+          {/* 详细错误信息（默认收起） */}
+          <div className="border-t border-red-200 dark:border-red-800">
+            <div className="p-3 bg-red-50 dark:bg-red-900/10">
+              {/* 错误消息 */}
+              <div className="mb-3">
+                <div className="text-xs font-medium text-red-700 dark:text-red-300 mb-1">错误信息:</div>
+                <div className="text-xs text-red-600 dark:text-red-400 bg-white dark:bg-gray-900 p-2 rounded border border-red-200 dark:border-red-800 font-mono">
+                  {error}
+                </div>
+              </div>
+
+              {/* 原始代码 */}
+              <div>
+                <div className="text-xs font-medium text-red-700 dark:text-red-300 mb-1">原始代码:</div>
+                <pre className="text-xs bg-white dark:bg-gray-900 p-2 rounded border border-red-200 dark:border-red-800 overflow-x-auto max-h-40 overflow-y-auto">
+                  <code className="text-red-800 dark:text-red-200 font-mono">{code}</code>
                 </pre>
-              </details>
+              </div>
             </div>
           </div>
-        </div>
+        </details>
       </div>
     );
   }

@@ -95,3 +95,18 @@ body {
 .api-breathing {
   animation: breathing 2s ease-in-out infinite;
 }
+
+/* 隐藏 Mermaid 自动生成的错误提示 */
+#dmermaid-error,
+[id^="dmermaid-error"],
+.mermaid-error,
+.error-icon,
+.error-text {
+  display: none !important;
+}
+
+/* 隐藏所有 Mermaid 在 body 底部自动插入的错误元素 */
+body > div[id^="dmermaid"],
+body > div[id*="error"] {
+  display: none !important;
+}
