@@ -15,6 +15,7 @@ interface McpServerConfig {
   // For stdio type
   command?: string;
   args?: string[];
+  env?: Record<string, string>;
   // For http type
   url?: string;
   // Common fields
@@ -24,6 +25,8 @@ interface McpServerConfig {
   error?: string;
   tools?: string[];
   lastValidated?: string;
+  // Allow any additional fields
+  [key: string]: any;
 }
 
 interface McpConfigFile {
@@ -80,8 +83,8 @@ router.get('/', (req, res) => {
     const servers: McpServerConfig[] = Object.entries(config.mcpServers).map(([name, serverConfig]) => ({
       name,
       ...serverConfig
-    }));
-    
+    } as McpServerConfig));
+
     res.json({ servers });
   } catch (error) {
     console.error('Failed to get MCP configs:', error);
@@ -92,7 +95,7 @@ router.get('/', (req, res) => {
 // Add or update MCP configuration
 router.post('/', (req, res) => {
   try {
-    const { name, type, command, args, url, timeout, autoApprove } = req.body;
+    const { name, type, ...restConfig } = req.body;
 
     if (!name || !type) {
       return res.status(400).json({ error: 'Missing required fields: name, type' });
@@ -100,11 +103,11 @@ router.post('/', (req, res) => {
 
     // Validate based on type
     if (type === 'stdio') {
-      if (!command || !Array.isArray(args)) {
+      if (!restConfig.command || !Array.isArray(restConfig.args)) {
         return res.status(400).json({ error: 'For stdio type: command and args are required' });
       }
     } else if (type === 'http') {
-      if (!url) {
+      if (!restConfig.url) {
         return res.status(400).json({ error: 'For http type: url is required' });
       }
     } else {
@@ -113,20 +116,16 @@ router.post('/', (req, res) => {
 
     const config = readMcpConfig();
 
-    // Create server config without name field
+    // Create server config without name field, preserving all parameters
     const serverConfig: Omit<McpServerConfig, 'name'> = {
       type,
-      ...(command && { command }),
-      ...(args && { args }),
-      ...(url && { url }),
-      ...(timeout && { timeout }),
-      ...(autoApprove && Array.isArray(autoApprove) && { autoApprove })
+      ...restConfig
     };
 
     config.mcpServers[name] = serverConfig;
     writeMcpConfig(config);
 
-    const responseServer: McpServerConfig = { name, ...serverConfig };
+    const responseServer: McpServerConfig = { name, ...serverConfig } as McpServerConfig;
     res.json({ server: responseServer, message: 'MCP configuration saved successfully' });
   } catch (error) {
     console.error('Failed to save MCP config:', error);
@@ -138,7 +137,7 @@ router.post('/', (req, res) => {
 router.put('/:name', (req, res) => {
   try {
     const { name } = req.params;
-    const { type, command, args, url, timeout, autoApprove } = req.body;
+    const { type, ...restConfig } = req.body;
 
     if (!type) {
       return res.status(400).json({ error: 'Missing required field: type' });
@@ -146,11 +145,11 @@ router.put('/:name', (req, res) => {
 
     // Validate based on type
     if (type === 'stdio') {
-      if (!command || !Array.isArray(args)) {
+      if (!restConfig.command || !Array.isArray(restConfig.args)) {
         return res.status(400).json({ error: 'For stdio type: command and args are required' });
       }
     } else if (type === 'http') {
-      if (!url) {
+      if (!restConfig.url) {
         return res.status(400).json({ error: 'For http type: url is required' });
       }
     } else {
@@ -163,20 +162,16 @@ router.put('/:name', (req, res) => {
       return res.status(404).json({ error: 'MCP configuration not found' });
     }
 
-    // Update server config
+    // Update server config, preserving all parameters
     const serverConfig: Omit<McpServerConfig, 'name'> = {
       type,
-      ...(command && { command }),
-      ...(args && { args }),
-      ...(url && { url }),
-      ...(timeout && { timeout }),
-      ...(autoApprove && Array.isArray(autoApprove) && { autoApprove })
+      ...restConfig
     };
 
     config.mcpServers[name] = serverConfig;
     writeMcpConfig(config);
 
-    const responseServer: McpServerConfig = { name, ...serverConfig };
+    const responseServer: McpServerConfig = { name, ...serverConfig } as McpServerConfig;
     res.json({ server: responseServer, message: 'MCP configuration updated successfully' });
   } catch (error) {
     console.error('Failed to update MCP config:', error);
@@ -252,52 +247,61 @@ router.post('/:name/validate', async (req, res) => {
 
 
 
-// Get MCP configurations from Claude Code CLI
+// Get MCP configurations from Claude Code's ~/.claude.json file
 router.get('/claude-code', async (req, res) => {
   try {
-    // Try to get MCP servers from Claude Code CLI
-    const { stdout } = await execAsync('claude mcp list');
+    // Read ~/.claude.json file
+    const claudeJsonPath = path.join(os.homedir(), '.claude.json');
 
-    // Parse the output to extract MCP server information
-    const lines = stdout.split('\n').filter(line => line.trim());
+    if (!fs.existsSync(claudeJsonPath)) {
+      return res.json({ servers: [] });
+    }
+
+    const claudeJsonContent = fs.readFileSync(claudeJsonPath, 'utf-8');
+    const claudeJson = JSON.parse(claudeJsonContent);
+
+    // Extract MCP servers from all projects
     const servers: any[] = [];
+    const seenServers = new Set<string>(); // To avoid duplicates
 
-    for (const line of lines) {
-      // Look for lines that contain MCP server information
-      // Format: "server-name: url (TYPE) - ✓ Connected" or "server-name: url (TYPE) - ✗ Error"
-      const match = line.match(/^(.+?):\s+(.+?)\s+\((\w+)\)\s+-\s+(✓|✗)\s+(.+)$/);
-      if (match) {
-        const [, name, urlOrCommand, type, status, statusText] = match;
+    if (claudeJson.projects) {
+      for (const [projectPath, projectConfig] of Object.entries<any>(claudeJson.projects)) {
+        if (projectConfig.mcpServers && typeof projectConfig.mcpServers === 'object') {
+          for (const [serverName, serverConfig] of Object.entries<any>(projectConfig.mcpServers)) {
+            // Skip if we've already added this server
+            if (seenServers.has(serverName)) {
+              continue;
+            }
+            seenServers.add(serverName);
 
-        const server: any = {
-          name: name.trim(),
-          type: type.toLowerCase() === 'http' ? 'http' : 'stdio',
-          status: status === '✓' ? 'active' : 'error'
-        };
+            // Normalize the server configuration
+            const server: any = {
+              name: serverName,
+              type: serverConfig.type || 'stdio',
+              ...serverConfig
+            };
 
-        if (server.type === 'http') {
-          server.url = urlOrCommand.trim();
-        } else {
-          // For stdio, we might need to parse command and args
-          // This is a simplified approach
-          const parts = urlOrCommand.trim().split(' ');
-          server.command = parts[0];
-          server.args = parts.slice(1);
+            // Auto-detect type if not specified
+            if (!server.type) {
+              if (server.url) {
+                server.type = 'http';
+              } else if (server.command) {
+                server.type = 'stdio';
+              }
+            }
+
+            servers.push(server);
+          }
         }
-
-        if (status === '✗') {
-          server.error = statusText;
-        }
-
-        servers.push(server);
       }
     }
 
+    console.log(`Found ${servers.length} MCP server(s) from Claude Code configuration`);
     res.json({ servers });
   } catch (error) {
-    console.error('Failed to get Claude Code MCP configurations:', error);
+    console.error('Failed to read Claude Code MCP configurations:', error);
     res.status(500).json({
-      error: 'Failed to get Claude Code MCP configurations',
+      error: 'Failed to read Claude Code MCP configurations',
       details: error instanceof Error ? error.message : String(error)
     });
   }
@@ -424,10 +428,22 @@ async function validateStdioMcpServer(name: string, serverConfig: any, config: a
 
   // Start MCP server process to test connection
   console.log('Starting stdio MCP server:', serverConfig.command, serverConfig.args);
-  const child = spawn(serverConfig.command, serverConfig.args, {
+  console.log('Environment variables:', serverConfig.env);
+
+  const spawnOptions: any = {
     stdio: ['pipe', 'pipe', 'pipe'],
     timeout: serverConfig.timeout || 15000
-  });
+  };
+
+  // Merge environment variables if provided
+  if (serverConfig.env && Object.keys(serverConfig.env).length > 0) {
+    spawnOptions.env = {
+      ...process.env,
+      ...serverConfig.env
+    };
+  }
+
+  const child = spawn(serverConfig.command, serverConfig.args, spawnOptions);
 
   let stdout = '';
   let stderr = '';

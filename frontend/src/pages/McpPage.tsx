@@ -12,7 +12,10 @@ import {
   Loader2,
   AlertTriangle,
   Edit,
-  Tag
+  Tag,
+  ChevronDown,
+  ChevronUp,
+  Copy
 } from 'lucide-react';
 import {
   Table,
@@ -31,6 +34,7 @@ interface McpServerConfig {
   // For stdio type
   command?: string;
   args?: string[];
+  env?: Record<string, string>;
   // For http type
   url?: string;
   // Common fields
@@ -39,6 +43,8 @@ interface McpServerConfig {
   status?: 'active' | 'error' | 'validating';
   error?: string;
   tools?: string[];
+  // Allow any additional fields
+  [key: string]: any;
 }
 
 
@@ -58,6 +64,8 @@ export const McpPage: React.FC = () => {
     config: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [expandedTools, setExpandedTools] = useState<Record<string, boolean>>({});
 
   // Load MCP configurations from backend
   const loadMcpConfigs = async () => {
@@ -168,18 +176,8 @@ export const McpPage: React.FC = () => {
 
   const handleEditServer = (server: McpServerConfig) => {
     setEditingServer(server);
-    const config: any = {
-      type: server.type,
-      ...(server.timeout && { timeout: server.timeout }),
-      ...(server.autoApprove && { autoApprove: server.autoApprove })
-    };
-
-    if (server.type === 'stdio') {
-      config.command = server.command;
-      config.args = server.args;
-    } else if (server.type === 'http') {
-      config.url = server.url;
-    }
+    // Create config object excluding name and UI-only fields (status, error, tools, lastValidated)
+    const { name, status, error, tools, lastValidated, ...config } = server;
 
     setFormData({
       name: server.name,
@@ -187,6 +185,21 @@ export const McpPage: React.FC = () => {
       config: JSON.stringify(config, null, 2)
     });
     setShowAddModal(true);
+  };
+
+  const handleCopyCommand = (server: McpServerConfig) => {
+    let commandText = '';
+    if (server.type === 'stdio') {
+      commandText = `${server.command} ${server.args?.join(' ') || ''}`.trim();
+    } else {
+      commandText = server.url || '';
+    }
+
+    navigator.clipboard.writeText(commandText).then(() => {
+      showSuccess(t('mcp.commandCopied'));
+    }).catch(() => {
+      showError(t('mcp.errors.copyFailed'));
+    });
   };
 
   const handleDeleteServer = async (serverName: string) => {
@@ -220,7 +233,7 @@ export const McpPage: React.FC = () => {
 
   const handleImportFromClaudeCode = async () => {
     try {
-      setLoading(true);
+      setIsImporting(true);
       const response = await authFetch(`${API_BASE}/mcp/claude-code`);
 
       if (response.ok) {
@@ -244,20 +257,10 @@ export const McpPage: React.FC = () => {
             continue;
           }
 
-          // Import the server
+          // Import the server, preserving all fields
           const importData: any = {
-            name: claudeServer.name,
-            type: claudeServer.type,
-            ...(claudeServer.timeout && { timeout: claudeServer.timeout }),
-            ...(claudeServer.autoApprove && { autoApprove: claudeServer.autoApprove })
+            ...claudeServer
           };
-
-          if (claudeServer.type === 'stdio') {
-            importData.command = claudeServer.command;
-            importData.args = claudeServer.args;
-          } else if (claudeServer.type === 'http') {
-            importData.url = claudeServer.url;
-          }
 
           const importResponse = await authFetch(`${API_BASE}/mcp`, {
             method: 'POST',
@@ -287,7 +290,7 @@ export const McpPage: React.FC = () => {
       console.error('Failed to import from Claude Code:', error);
       showError(t('mcp.errors.importFailed'), error instanceof Error ? error.message : t('errors:common.unknownError'));
     } finally {
-      setLoading(false);
+      setIsImporting(false);
     }
   };
 
@@ -437,30 +440,30 @@ export const McpPage: React.FC = () => {
         {/* Search and Add Button */}
         <div className={`${isMobile ? 'space-y-3' : 'flex items-center space-x-4'}`}>
           {/* Search */}
-          <div className={`${isMobile ? '' : 'flex-1'} bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 ${isMobile ? 'p-3' : 'p-4'}`}>
-            <div className="relative">
-              <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 ${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
-              <input
-                type="text"
-                placeholder={t('mcp.searchPlaceholder')}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className={`pl-10 pr-4 py-2 w-full border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white ${isMobile ? 'text-sm' : ''}`}
-              />
-            </div>
+          <div className={`${isMobile ? '' : 'flex-1'} relative`}>
+            <Search className={`absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 ${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
+            <input
+              type="text"
+              placeholder={t('mcp.searchPlaceholder')}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className={`pl-11 pr-4 py-3 w-full border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white dark:border-gray-600 transition-all ${isMobile ? 'text-sm' : ''}`}
+            />
           </div>
 
           {/* Action Buttons */}
-          <div className={`${isMobile ? 'flex space-x-2' : 'flex items-center space-x-4'}`}>
+          <div className={`${isMobile ? 'flex space-x-2' : 'flex items-center space-x-3'}`}>
             <button
               onClick={handleImportFromClaudeCode}
-              className={`${isMobile ? 'flex-1 px-3 py-2 text-sm' : 'px-4 py-3'} bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors whitespace-nowrap`}
+              disabled={isImporting}
+              className={`${isMobile ? 'flex-1 px-3 py-2 text-sm' : 'px-5 py-3'} bg-green-600 text-white rounded-lg hover:bg-green-700 hover:shadow-md active:scale-95 transition-all whitespace-nowrap font-medium flex items-center ${isMobile ? 'justify-center' : 'space-x-2'} disabled:opacity-50 disabled:cursor-not-allowed`}
             >
-              <span>{t('mcp.import.button')}</span>
+              {isImporting && <Loader2 className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} animate-spin`} />}
+              <span>{isImporting ? t('mcp.import.importing') : t('mcp.import.button')}</span>
             </button>
             <button
               onClick={() => setShowAddModal(true)}
-              className={`${isMobile ? 'flex-1 px-3 py-2 text-sm' : 'px-6 py-3'} bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap flex items-center ${isMobile ? 'justify-center' : 'space-x-2'}`}
+              className={`${isMobile ? 'flex-1 px-3 py-2 text-sm' : 'px-6 py-3'} bg-blue-600 text-white rounded-lg hover:bg-blue-700 hover:shadow-md active:scale-95 transition-all whitespace-nowrap flex items-center ${isMobile ? 'justify-center' : 'space-x-2'} font-medium`}
             >
               <Plus className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
               <span>{t('mcp.addServer')}</span>
@@ -495,7 +498,7 @@ export const McpPage: React.FC = () => {
             {filteredServers.map((server, index) => (
               <div
                 key={server.name + '-' + index}
-                className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow"
+                className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:shadow-lg hover:border-gray-300 dark:hover:border-gray-600 transition-all overflow-hidden"
               >
                 <div className="p-4">
                   {/* Server Header */}
@@ -564,22 +567,49 @@ export const McpPage: React.FC = () => {
                   {/* Tools Section */}
                   {server.status === 'active' && server.tools && server.tools.length > 0 && (
                     <div className="mb-3">
-                      <div className="flex items-center space-x-1 text-sm text-gray-500 dark:text-gray-400 mb-2">
-                        <Tag className="w-3 h-3" />
-                        <span>{t('mcp.table.toolsCount', { count: server.tools.length })}</span>
-                      </div>
-                      <div className="flex flex-wrap gap-1">
-                        {server.tools.slice(0, 3).map((tool, idx) => (
-                          <code key={idx} className="bg-green-50 dark:bg-green-900/50 text-green-700 dark:text-green-400 px-1.5 py-0.5 rounded text-xs">
-                            {tool}
-                          </code>
-                        ))}
-                        {server.tools.length > 3 && (
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            +{server.tools.length - 3} {t('common:more')}
-                          </span>
+                      <button
+                        onClick={() => setExpandedTools(prev => ({ ...prev, [server.name]: !prev[server.name] }))}
+                        className="flex items-center space-x-2 text-sm text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors mb-2 w-full"
+                      >
+                        <Tag className="w-4 h-4" />
+                        <span className="font-medium">{server.tools.length} {t('mcp.table.tools')}</span>
+                        {expandedTools[server.name] ? (
+                          <ChevronUp className="w-4 h-4 ml-auto text-gray-400" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4 ml-auto text-gray-400" />
                         )}
-                      </div>
+                      </button>
+                      {expandedTools[server.name] && (
+                        <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto">
+                          {server.tools.map((tool, idx) => (
+                            <code
+                              key={idx}
+                              className="inline-block bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-1 rounded text-xs font-mono border border-green-200 dark:border-green-800"
+                              title={tool}
+                            >
+                              {tool}
+                            </code>
+                          ))}
+                        </div>
+                      )}
+                      {!expandedTools[server.name] && (
+                        <div className="flex flex-wrap gap-1">
+                          {server.tools.slice(0, 3).map((tool, idx) => (
+                            <code
+                              key={idx}
+                              className="inline-block bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-0.5 rounded text-xs font-mono"
+                              title={tool}
+                            >
+                              {tool}
+                            </code>
+                          ))}
+                          {server.tools.length > 3 && (
+                            <span className="inline-flex items-center px-2 py-0.5 text-xs text-gray-500 dark:text-gray-400">
+                              +{server.tools.length - 3}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -609,6 +639,13 @@ export const McpPage: React.FC = () => {
                         )}
                       </button>
                       <button
+                        onClick={() => handleCopyCommand(server)}
+                        className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/50 rounded-md transition-colors"
+                        title={t('mcp.actions.copyCommand')}
+                      >
+                        <Copy className="w-4 h-4" />
+                      </button>
+                      <button
                         onClick={() => handleEditServer(server)}
                         className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/50 rounded-md transition-colors"
                         title={t('mcp.actions.edit')}
@@ -630,23 +667,23 @@ export const McpPage: React.FC = () => {
           </div>
 
           {/* Desktop Table View */}
-          <div className="hidden md:block bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="hidden md:block bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <TableRow className="bg-gray-50 dark:bg-gray-900/50">
+                  <TableHead className="px-6 py-4 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
                     {t('mcp.table.server')}
                   </TableHead>
-                  <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <TableHead className="px-6 py-4 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
                     {t('mcp.table.type')}
                   </TableHead>
-                  <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <TableHead className="px-6 py-4 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
                     {t('mcp.table.status')}
                   </TableHead>
-                  <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <TableHead className="px-6 py-4 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
                     {t('mcp.table.tools')}
                   </TableHead>
-                  <TableHead className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <TableHead className="px-6 py-4 text-right text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
                     {t('mcp.table.actions')}
                   </TableHead>
                 </TableRow>
@@ -655,7 +692,7 @@ export const McpPage: React.FC = () => {
                 {filteredServers.map((server, index) => (
                   <TableRow
                     key={server.name + '-' + index}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                    className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
                   >
                     <TableCell className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
@@ -664,14 +701,8 @@ export const McpPage: React.FC = () => {
                           <div className="text-sm font-medium text-gray-900 dark:text-white">
                             {server.name}
                           </div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400">
-                            {server.type === 'stdio'
-                              ? `${server.command} ${server.args?.join(' ') || ''}`.trim()
-                              : server.url
-                            }
-                          </div>
                           {server.status === 'error' && server.error && (
-                            <div className="text-sm text-red-600 dark:text-red-400 truncate max-w-xs">
+                            <div className="text-xs text-red-600 dark:text-red-400 truncate max-w-xs mt-1">
                               {server.error}
                             </div>
                           )}
@@ -716,17 +747,49 @@ export const McpPage: React.FC = () => {
                     <TableCell className="px-6 py-4">
                       {server.status === 'active' && server.tools && server.tools.length > 0 ? (
                         <div>
-                          <div className="flex items-center space-x-1 text-sm text-gray-500 dark:text-gray-400 mb-1">
-                            <Tag className="w-3 h-3" />
-                            <span>{t('mcp.table.toolsCount', { count: server.tools.length })}</span>
-                          </div>
-                          <div className="flex flex-wrap gap-1">
-                            {server.tools.map((tool, idx) => (
-                              <code key={idx} className="bg-green-50 dark:bg-green-900/50 text-green-700 dark:text-green-400 px-1.5 py-0.5 rounded text-xs">
-                                {tool}
-                              </code>
-                            ))}
-                          </div>
+                          <button
+                            onClick={() => setExpandedTools(prev => ({ ...prev, [server.name]: !prev[server.name] }))}
+                            className="flex items-center space-x-2 text-sm text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors mb-2 group"
+                          >
+                            <Tag className="w-4 h-4" />
+                            <span className="font-medium">{server.tools.length} {t('mcp.table.tools')}</span>
+                            {expandedTools[server.name] ? (
+                              <ChevronUp className="w-4 h-4 text-gray-400 group-hover:text-blue-600" />
+                            ) : (
+                              <ChevronDown className="w-4 h-4 text-gray-400 group-hover:text-blue-600" />
+                            )}
+                          </button>
+                          {expandedTools[server.name] && (
+                            <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto pr-2">
+                              {server.tools.map((tool, idx) => (
+                                <code
+                                  key={idx}
+                                  className="inline-block bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-1 rounded text-xs font-mono border border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors"
+                                  title={tool}
+                                >
+                                  {tool}
+                                </code>
+                              ))}
+                            </div>
+                          )}
+                          {!expandedTools[server.name] && (
+                            <div className="flex flex-wrap gap-1">
+                              {server.tools.slice(0, 5).map((tool, idx) => (
+                                <code
+                                  key={idx}
+                                  className="inline-block bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-0.5 rounded text-xs font-mono"
+                                  title={tool}
+                                >
+                                  {tool}
+                                </code>
+                              ))}
+                              {server.tools.length > 5 && (
+                                <span className="inline-flex items-center px-2 py-0.5 text-xs text-gray-500 dark:text-gray-400">
+                                  +{server.tools.length - 5}
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <span className="text-sm text-gray-400">
@@ -747,6 +810,13 @@ export const McpPage: React.FC = () => {
                           ) : (
                             <CheckCircle className="w-3 h-3" />
                           )}
+                        </button>
+                        <button
+                          onClick={() => handleCopyCommand(server)}
+                          className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-600 bg-gray-50 dark:bg-gray-900/50 rounded-md hover:bg-gray-100 dark:hover:bg-gray-900/70 transition-colors"
+                          title={t('mcp.actions.copyCommand')}
+                        >
+                          <Copy className="w-3 h-3" />
                         </button>
                         <button
                           onClick={() => handleEditServer(server)}

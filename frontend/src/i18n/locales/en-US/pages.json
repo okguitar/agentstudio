@@ -532,7 +532,8 @@
     "confirmDelete": "Are you sure you want to delete configuration \"{{name}}\"?",
     "import": {
       "button": "Import from Claude Code",
-      "noConfigFound": "No MCP configurations found in Claude Code",
+      "importing": "Importing...",
+      "noConfigFound": "No MCP configurations found in Claude Code (reading from ~/.claude.json)",
       "success": "Successfully imported {{imported}} MCP server configuration(s){{skipped, select, 0{} other{, skipped {{skipped}} existing configuration(s)}}",
       "allExist": "All configurations already exist, no new imports"
     },
@@ -553,6 +554,7 @@
     },
     "actions": {
       "validate": "Re-validate",
+      "copyCommand": "Copy Command",
       "edit": "Edit",
       "delete": "Delete configuration"
     },
@@ -591,8 +593,10 @@
       "networkError": "Network error or service unavailable",
       "deleteFailed": "Failed to delete configuration",
       "importFailed": "Import failed",
-      "saveFailed": "Failed to save configuration"
-    }
+      "saveFailed": "Failed to save configuration",
+      "copyFailed": "Failed to copy"
+    },
+    "commandCopied": "Command copied to clipboard"
   },
   "commands": {
     "title": "Custom Commands",

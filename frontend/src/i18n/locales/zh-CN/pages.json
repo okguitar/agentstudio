@@ -532,7 +532,8 @@
     "confirmDelete": "确定要删除 \"{{name}}\" 配置吗？",
     "import": {
       "button": "从Claude Code导入",
-      "noConfigFound": "没有找到Claude Code的MCP配置",
+      "importing": "导入中...",
+      "noConfigFound": "没有找到Claude Code的MCP配置(从 ~/.claude.json 读取)",
       "success": "成功导入 {{imported}} 个MCP服务器配置{{skipped, select, 0{} other{，跳过 {{skipped}} 个已存在的配置}}",
       "allExist": "所有配置都已存在，没有导入新的配置"
     },
@@ -553,6 +554,7 @@
     },
     "actions": {
       "validate": "重新验证",
+      "copyCommand": "复制命令",
       "edit": "编辑",
       "delete": "删除配置"
     },
@@ -591,8 +593,10 @@
       "networkError": "网络错误或服务不可用",
       "deleteFailed": "删除配置失败",
       "importFailed": "导入失败",
-      "saveFailed": "保存配置失败"
-    }
+      "saveFailed": "保存配置失败",
+      "copyFailed": "复制失败"
+    },
+    "commandCopied": "命令已复制到剪贴板"
   },
   "commands": {
     "title": "自定义命令",
