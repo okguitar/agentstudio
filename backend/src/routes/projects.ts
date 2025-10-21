@@ -391,20 +391,21 @@ router.post('/import', (req, res) => {
     
     // Extract project name from path
     const projectName = path.basename(normalizedPath);
-    
+
     // Return project info that matches frontend interface
     const projectId = `${agentId}-${Buffer.from(normalizedPath).toString('base64').replace(/[+/=]/g, '').slice(-8)}`;
-    
+
     res.json({
       success: true,
       project: {
         id: projectId,
         name: projectName,
+        dirName: projectName,
         path: normalizedPath,
-        agentId,
-        agentName: agent.name,
-        agentIcon: agent.ui.icon,
-        agentColor: '#3B82F6', // 默认蓝色
+        agents: [agentId],
+        defaultAgent: agentId,
+        defaultAgentName: agent.name,
+        defaultAgentIcon: agent.ui.icon,
         createdAt: stats.birthtime.toISOString(),
         lastAccessed: new Date().toISOString(),
         description: ''
@@ -505,17 +506,18 @@ The conversation history will be saved in \`.cc-sessions/${agentId}/\` within th
       
       // Return project info that matches frontend interface
       const projectId = `${agentId}-${Buffer.from(normalizedPath).toString('base64').replace(/[+/=]/g, '').slice(-8)}`;
-      
+
       res.json({
         success: true,
         project: {
           id: projectId,
           name: projectName,
+          dirName: projectName,
           path: normalizedPath,
-          agentId,
-          agentName: agent.name,
-          agentIcon: agent.ui.icon,
-          agentColor: '#3B82F6', // 默认蓝色
+          agents: [agentId],
+          defaultAgent: agentId,
+          defaultAgentName: agent.name,
+          defaultAgentIcon: agent.ui.icon,
           createdAt: new Date().toISOString(),
           lastAccessed: new Date().toISOString(),
           description: description || ''

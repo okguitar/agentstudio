@@ -447,7 +447,7 @@ export const ProjectsPage: React.FC = () => {
       if (!checkResponse.ok) {
         throw new Error('目录不存在或无法访问');
       }
-      
+
       const dirData = await checkResponse.json();
       if (!dirData.isDirectory) {
         throw new Error('请选择一个目录');
@@ -472,22 +472,28 @@ export const ProjectsPage: React.FC = () => {
 
       if (response.ok) {
         const result = await response.json();
-        
+
         // Add the imported project to the list
         setProjects(prev => [result.project, ...prev]);
         setShowImportModal(false);
         setImportProjectPath('');
-        
+
         // Show success message and ask if user wants to open the project
         const shouldOpen = window.confirm(
           `项目 "${result.project.name}" 导入成功！\n\n是否立即打开该项目？`
         );
-        
+
         if (shouldOpen) {
-          const params = new URLSearchParams();
-          params.set('project', result.project.path);
-          const url = `/chat/${firstAgent.id}?${params.toString()}`;
-          window.open(url, '_blank');
+          // If there are multiple agents, show agent selection dialog
+          if (enabledAgents.length > 1) {
+            setAgentSelectProject(result.project);
+          } else {
+            // Only one agent available, open directly with that agent
+            const params = new URLSearchParams();
+            params.set('project', result.project.path);
+            const url = `/chat/${firstAgent.id}?${params.toString()}`;
+            window.open(url, '_blank');
+          }
         }
       } else {
         const error = await response.json();
