@@ -3,10 +3,9 @@ import { z } from 'zod';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
-import { spawn } from 'child_process';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { query, Options } from '@anthropic-ai/claude-code';
+import { query } from '@anthropic-ai/claude-code';
 import { AgentStorage } from 'agentstudio-shared/utils/agentStorage';
 import { AgentConfig } from 'agentstudio-shared/types/agents';
 import { ProjectMetadataStorage } from 'agentstudio-shared/utils/projectMetadataStorage';
@@ -18,7 +17,6 @@ const execAsync = promisify(exec);
 
 // Storage instances
 const globalAgentStorage = new AgentStorage();
-const projectStorage = new ProjectMetadataStorage();
 
 
 
@@ -304,7 +302,7 @@ async function getClaudeExecutablePath(): Promise<string | null> {
             return claudePathOption.trim();
           }
         }
-      } catch (error) {
+      } catch {
         // Fallback to the first path found
       }
     }
@@ -612,20 +610,88 @@ async function handleSessionManagement(agentId: string, sessionId: string | null
 }
 
 /**
+ * 检测模型是否支持视觉功能
+ * 从版本配置中获取模型的 isVision 字段
+ */
+async function isVisionModel(model: string, claudeVersionId?: string): Promise<boolean> {
+  try {
+    // 获取版本配置
+    let versionId = claudeVersionId;
+    if (!versionId) {
+      versionId = await getDefaultVersionId() || 'system';
+    }
+
+    const versions = await getAllVersions();
+    const version = versions.find(v => v.id === versionId);
+
+    if (!version || !version.models) {
+      // 如果找不到版本或模型配置,默认假设支持视觉
+      console.warn(`⚠️ Version ${versionId} not found or has no model config, assuming vision support`);
+      return true;
+    }
+
+    // 在版本的模型列表中查找匹配的模型
+    const modelConfig = version.models.find(m => m.id === model);
+    if (modelConfig) {
+      console.log(`✅ Found model config for ${model}: isVision=${modelConfig.isVision}`);
+      return modelConfig.isVision;
+    }
+
+    // 如果找不到精确匹配,默认假设支持视觉
+    console.warn(`⚠️ Model ${model} not found in version ${versionId} config, assuming vision support`);
+    return true;
+  } catch (error) {
+    console.error('Failed to check vision support:', error);
+    // 出错时默认假设支持视觉
+    return true;
+  }
+}
+
+/**
+ * 保存图片到隐藏目录并返回相对路径
+ */
+function saveImageToHiddenDir(imageData: string, mediaType: string, imageIndex: number, projectPath?: string): string {
+  const cwd = projectPath || process.cwd();
+  const hiddenDir = path.join(cwd, '.agentstudio-images');
+
+  // 确保隐藏目录存在
+  if (!fs.existsSync(hiddenDir)) {
+    fs.mkdirSync(hiddenDir, { recursive: true });
+  }
+
+  // 根据 mediaType 确定文件扩展名
+  const extMap: Record<string, string> = {
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+    'image/gif': 'gif',
+    'image/webp': 'webp'
+  };
+  const ext = extMap[mediaType] || 'jpg';
+
+  // 生成唯一文件名
+  const timestamp = Date.now();
+  const filename = `image${imageIndex}_${timestamp}.${ext}`;
+  const filepath = path.join(hiddenDir, filename);
+
+  // 将 base64 数据写入文件
+  const buffer = Buffer.from(imageData, 'base64');
+  fs.writeFileSync(filepath, buffer);
+
+  // 返回相对于项目根目录的路径
+  return path.relative(cwd, filepath);
+}
+
+/**
  * 构建用户消息内容
  */
-function buildUserMessageContent(message: string, images?: any[]) {
+async function buildUserMessageContent(message: string, images?: any[], model?: string, projectPath?: string, claudeVersionId?: string) {
   const messageContent: any[] = [];
-  
-  // Add text content if provided
-  if (message && message.trim()) {
-    messageContent.push({
-      type: "text",
-      text: message
-    });
-  }
-  
-  // Add image content
+  let processedMessage = message;
+
+  // 检测模型是否支持视觉(从版本配置中获取)
+  const supportsVision = model ? await isVisionModel(model, claudeVersionId) : true;
+
+  // 处理图片
   if (images && images.length > 0) {
     console.log('📸 Processing images:', images.map(img => ({
       id: img.id,
@@ -634,16 +700,48 @@ function buildUserMessageContent(message: string, images?: any[]) {
       size: img.data.length
     })));
 
-    for (const image of images) {
-      messageContent.push({
-        type: "image",
-        source: {
-          type: "base64",
-          media_type: image.mediaType,
-          data: image.data
+    if (supportsVision) {
+      // 视觉模型:直接添加图片到消息内容
+      console.log('✅ Model supports vision, adding images directly to message content');
+      for (const image of images) {
+        messageContent.push({
+          type: "image",
+          source: {
+            type: "base64",
+            media_type: image.mediaType,
+            data: image.data
+          }
+        });
+      }
+    } else {
+      // 非视觉模型:保存图片到隐藏目录,替换占位符为路径
+      console.log('⚠️ Model does not support vision, saving images to hidden directory');
+      for (let i = 0; i < images.length; i++) {
+        const image = images[i];
+        const imageIndex = i + 1;
+        const placeholder = `[image${imageIndex}]`;
+
+        try {
+          // 保存图片并获取路径
+          const imagePath = saveImageToHiddenDir(image.data, image.mediaType, imageIndex, projectPath);
+          console.log(`💾 Saved image ${imageIndex} to: ${imagePath}`);
+
+          // 替换消息中的占位符为文件路径(添加@前缀)
+          processedMessage = processedMessage.replace(placeholder, `@${imagePath}`);
+        } catch (error) {
+          console.error(`Failed to save image ${imageIndex}:`, error);
+          // 如果保存失败,保留占位符
         }
-      });
+      }
     }
+  }
+
+  // Add text content if provided
+  if (processedMessage && processedMessage.trim()) {
+    messageContent.push({
+      type: "text",
+      text: processedMessage
+    });
   }
 
   return {
@@ -685,7 +783,8 @@ router.post('/chat', async (req, res) => {
       return res.status(400).json({ error: 'Invalid request body', details: validation.error });
     }
 
-    let { message, images, agentId, sessionId, projectPath, mcpTools, permissionMode, model, claudeVersion } = validation.data;
+    const { message, images, agentId, sessionId: initialSessionId, projectPath, mcpTools, permissionMode, model, claudeVersion } = validation.data;
+    let sessionId = initialSessionId;
 
     // 获取 agent 配置
     const agent = globalAgentStorage.getAgent(agentId);
@@ -711,19 +810,21 @@ router.post('/chat', async (req, res) => {
     while (retryCount <= MAX_RETRIES) {
       try {
         console.log(`🔄 Attempt ${retryCount + 1}/${MAX_RETRIES + 1} for session: ${sessionId || 'new'}`);
-        const originalSessionId = sessionId; // 保存原始sessionId用于日志
-      // 构建查询选项
+        // 构建查询选项
       const queryOptions = await buildQueryOptions(agent, projectPath, mcpTools, permissionMode, model, claudeVersion);
 
       // 处理会话管理
       const { claudeSession, actualSessionId: initialSessionId } = await handleSessionManagement(agentId, sessionId || null, projectPath, queryOptions, claudeVersion);
       let actualSessionId = initialSessionId;
-      
+
       // 设置会话到连接管理器
       connectionManager.setClaudeSession(claudeSession);
 
-      // 构建用户消息
-      const userMessage = buildUserMessageContent(message, images);
+      // 获取最终的模型名称(从queryOptions中获取,因为buildQueryOptions已经处理了优先级)
+      const finalModel = queryOptions.model || 'sonnet';
+
+      // 构建用户消息(传递claudeVersion以便查询isVision配置)
+      const userMessage = await buildUserMessageContent(message, images, finalModel, projectPath, claudeVersion);
 
       // 为这个特定请求创建一个独立的query调用，但复用session context
       const currentSessionId = claudeSession.getClaudeSessionId();
