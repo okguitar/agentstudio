@@ -57,7 +57,7 @@ app.use(helmet({
       fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdn.jsdelivr.net", "data:"],
       imgSrc: ["'self'", "data:", "https:", "http:", "blob:"],
       connectSrc: ["'self'", "ws:", "wss:", "blob:", "data:"],
-      frameAncestors: ["'self'", "http://localhost:3000", "https://localhost:3000", "http://localhost:3001"], // Allow iframe embedding
+      frameAncestors: ["'self'", "http://localhost:3000", "https://localhost:3000", "http://localhost:3001", "https://agentstudio.cc", "https://*.agentstudio.cc"], // Allow iframe embedding
       workerSrc: ["'self'", "blob:"],
       childSrc: ["'self'", "blob:"]
     }
