@@ -37,6 +37,7 @@ interface McpServerConfig {
   env?: Record<string, string>;
   // For http type
   url?: string;
+  headers?: Record<string, string>;
   // Common fields
   timeout?: number;
   autoApprove?: string[];
