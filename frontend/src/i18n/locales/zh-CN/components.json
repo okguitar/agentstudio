@@ -209,6 +209,10 @@
     "stopping": "正在停止...",
     "stopFailed": "❌ **停止失败**",
     "initializingSession": "正在启动新会话，请稍候...",
+    "fileBrowser": {
+      "title": "选择文件 - {{projectPath}}",
+      "currentProject": "当前项目"
+    },
     "maxTurnsReached": "⏱️ **达到最大轮次限制**",
     "permissionDenials": "⚠️ **权限拒绝的操作**:",
     "permissionNote": "💡 某些操作需要用户权限确认才能执行。",
@@ -298,7 +302,8 @@
       "loadingPath": "加载中...",
       "newDirectory": "新建目录",
       "showHidden": "显示隐藏文件",
-      "hideHidden": "隐藏隐藏文件"
+      "hideHidden": "隐藏隐藏文件",
+      "restrictedToProject": "限制在项目目录内"
     },
     "table": {
       "name": "名称",

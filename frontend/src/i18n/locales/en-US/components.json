@@ -209,6 +209,10 @@
     "stopping": "Stopping...",
     "stopFailed": "❌ **Stop Failed**",
     "initializingSession": "Initializing new session, please wait...",
+    "fileBrowser": {
+      "title": "Select File - {{projectPath}}",
+      "currentProject": "Current Project"
+    },
     "maxTurnsReached": "⏱️ **Maximum turns reached**",
     "permissionDenials": "⚠️ **Permission Denied Operations:**",
     "permissionNote": "💡 Some operations require user permission confirmation to execute.",
@@ -298,7 +302,8 @@
       "loadingPath": "Loading...",
       "newDirectory": "New Directory",
       "showHidden": "Show Hidden Files",
-      "hideHidden": "Hide Hidden Files"
+      "hideHidden": "Hide Hidden Files",
+      "restrictedToProject": "Restricted to project directory"
     },
     "table": {
       "name": "Name",
