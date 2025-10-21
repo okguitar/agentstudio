@@ -20,6 +20,7 @@ import { MobileChatToolbar } from './MobileChatToolbar';
 import { MobileSettingsModal } from './MobileSettingsModal';
 import { useMobileContext } from '../contexts/MobileContext';
 import { McpStatusModal } from './McpStatusModal';
+import { FileBrowser } from './FileBrowser';
 import type { AgentConfig } from '../types/index.js';
 import {
   isCommandTrigger,
@@ -75,6 +76,8 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
   const [isInitializingSession, setIsInitializingSession] = useState(false);
 const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [showMcpStatusModal, setShowMcpStatusModal] = useState(false);
+  const [showFileBrowser, setShowFileBrowser] = useState(false);
+  const [atSymbolPosition, setAtSymbolPosition] = useState<number | null>(null);
 
   // Scroll management states
   const [isUserScrolling, setIsUserScrolling] = useState(false);
@@ -352,31 +355,60 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   }, [agent?.allowedTools]);
 
 
+  // 在光标位置插入占位符
+  const insertPlaceholderAtCursor = (placeholder: string) => {
+    if (!textareaRef.current) return;
+
+    const textarea = textareaRef.current;
+    const start = textarea.selectionStart || 0;
+    const end = textarea.selectionEnd || 0;
+    const currentValue = inputMessage;
+
+    // 在光标位置插入占位符
+    const newValue = currentValue.substring(0, start) + placeholder + currentValue.substring(end);
+    setInputMessage(newValue);
+
+    // 设置光标位置到占位符之后
+    setTimeout(() => {
+      textarea.selectionStart = textarea.selectionEnd = start + placeholder.length;
+      textarea.focus();
+    }, 0);
+  };
+
   // Image handling functions
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files) return;
-    
-    const imageFiles = Array.from(files).filter(file => 
-      file.type.startsWith('image/') && 
+
+    const imageFiles = Array.from(files).filter(file =>
+      file.type.startsWith('image/') &&
       ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)
     );
-    
+
     imageFiles.forEach(file => {
       const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
       const reader = new FileReader();
       reader.onload = (e) => {
         if (e.target?.result) {
-          setSelectedImages(prev => [...prev, {
-            id,
-            file,
-            preview: e.target!.result as string
-          }]);
+          setSelectedImages(prev => {
+            const newImages = [...prev, {
+              id,
+              file,
+              preview: e.target!.result as string
+            }];
+
+            // 在光标位置插入占位符 [imageN]
+            const imageIndex = newImages.length;
+            const placeholder = `[image${imageIndex}]`;
+            insertPlaceholderAtCursor(placeholder);
+
+            return newImages;
+          });
         }
       };
       reader.readAsDataURL(file);
     });
-    
+
     // Clear the input
     if (event.target) {
       event.target.value = '';
@@ -395,25 +427,41 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
     const items = event.clipboardData?.items;
     if (!items) return;
 
+    let hasImage = false;
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
       if (item.type.startsWith('image/')) {
+        hasImage = true;
         const file = item.getAsFile();
         if (file) {
           const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
           const reader = new FileReader();
           reader.onload = (e) => {
             if (e.target?.result) {
-              setSelectedImages(prev => [...prev, {
-                id,
-                file,
-                preview: e.target!.result as string
-              }]);
+              setSelectedImages(prev => {
+                const newImages = [...prev, {
+                  id,
+                  file,
+                  preview: e.target!.result as string
+                }];
+
+                // 在光标位置插入占位符 [imageN]
+                const imageIndex = newImages.length;
+                const placeholder = `[image${imageIndex}]`;
+                insertPlaceholderAtCursor(placeholder);
+
+                return newImages;
+              });
             }
           };
           reader.readAsDataURL(file);
         }
       }
+    }
+
+    // 如果粘贴的是图片,阻止默认行为(防止插入DataURL)
+    if (hasImage) {
+      event.preventDefault();
     }
   };
 
@@ -430,25 +478,34 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const handleDrop = (event: React.DragEvent) => {
     event.preventDefault();
     setIsDragOver(false);
-    
+
     const files = event.dataTransfer?.files;
     if (!files) return;
-    
-    const imageFiles = Array.from(files).filter(file => 
-      file.type.startsWith('image/') && 
+
+    const imageFiles = Array.from(files).filter(file =>
+      file.type.startsWith('image/') &&
       ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)
     );
-    
+
     imageFiles.forEach(file => {
       const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
       const reader = new FileReader();
       reader.onload = (e) => {
         if (e.target?.result) {
-          setSelectedImages(prev => [...prev, {
-            id,
-            file,
-            preview: e.target!.result as string
-          }]);
+          setSelectedImages(prev => {
+            const newImages = [...prev, {
+              id,
+              file,
+              preview: e.target!.result as string
+            }];
+
+            // 在光标位置插入占位符 [imageN]
+            const imageIndex = newImages.length;
+            const placeholder = `[image${imageIndex}]`;
+            insertPlaceholderAtCursor(placeholder);
+
+            return newImages;
+          });
         }
       };
       reader.readAsDataURL(file);
@@ -1306,6 +1363,14 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Handle Escape key for file browser
+    if (e.key === 'Escape' && showFileBrowser) {
+      e.preventDefault();
+      setShowFileBrowser(false);
+      setAtSymbolPosition(null);
+      return;
+    }
+    
     // Handle Enter key for both command selector and regular input
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -1373,11 +1438,23 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
+    const cursorPosition = e.target.selectionStart || 0;
     setInputMessage(value);
     
     // Clear command warning when input changes
     if (commandWarning) {
       setCommandWarning(null);
+    }
+    
+    // Check for @ symbol trigger
+    if (value.length > cursorPosition && value[cursorPosition - 1] === '@') {
+      // Check if @ is at start of line or preceded by whitespace
+      const textBeforeAt = value.substring(0, cursorPosition - 1);
+      if (textBeforeAt.length === 0 || /\s$/.test(textBeforeAt)) {
+        setAtSymbolPosition(cursorPosition - 1);
+        setShowFileBrowser(true);
+        return;
+      }
     }
     
     // Check if we should show command selector
@@ -1415,6 +1492,43 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   
   const handleCommandSelectorClose = () => {
     setShowCommandSelector(false);
+  };
+  
+  const handleFileSelect = (filePath: string, _isDirectory: boolean) => {
+    if (!textareaRef.current || atSymbolPosition === null) return;
+    
+    // Convert absolute path to relative path (without leading ./)
+    let relativePath = filePath;
+    if (projectPath && filePath.startsWith(projectPath)) {
+      relativePath = filePath.slice(projectPath.length);
+      // Remove leading slash if present
+      if (relativePath.startsWith('/')) {
+        relativePath = relativePath.slice(1);
+      }
+    }
+    
+    // Replace @ symbol with selected file path
+    const beforeAt = inputMessage.substring(0, atSymbolPosition);
+    const afterAt = inputMessage.substring(atSymbolPosition + 1);
+    const newValue = beforeAt + relativePath + afterAt;
+    
+    setInputMessage(newValue);
+    setShowFileBrowser(false);
+    setAtSymbolPosition(null);
+    
+    // Set cursor position after the inserted file path
+    setTimeout(() => {
+      if (textareaRef.current) {
+        const newCursorPosition = atSymbolPosition + relativePath.length;
+        textareaRef.current.selectionStart = textareaRef.current.selectionEnd = newCursorPosition;
+        textareaRef.current.focus();
+      }
+    }, 0);
+  };
+  
+  const handleFileBrowserClose = () => {
+    setShowFileBrowser(false);
+    setAtSymbolPosition(null);
   };
   
   const handleConfirmDialog = () => {
@@ -2241,6 +2355,18 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
         onClose={() => setShowMcpStatusModal(false)}
         mcpStatus={mcpStatus}
       />
+
+      {/* File Browser for @ symbol */}
+      {showFileBrowser && (
+        <FileBrowser
+          title={t('agentChat.fileBrowser.title', { projectPath: projectPath ? projectPath.split('/').pop() : t('agentChat.fileBrowser.currentProject') })}
+          initialPath={projectPath}
+          allowFiles={true}
+          allowDirectories={false}
+          onSelect={handleFileSelect}
+          onClose={handleFileBrowserClose}
+        />
+      )}
 
       {/* Mobile Settings Modal */}
       <MobileSettingsModal
