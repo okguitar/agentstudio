@@ -10,34 +10,35 @@ const __dirname = dirname(__filename);
 
 const router: Router = express.Router();
 
-// Project ID to path mapping (in production, this should be stored in a database)
-const projectMappings = new Map<string, string>();
-
-// Helper function to generate project ID from path
-const generateProjectId = (projectPath: string): string => {
-  return crypto.createHash('md5').update(projectPath).digest('hex').substring(0, 16);
-};
-
-// Helper function to get or create project ID
+// Helper function to get or create project ID using base64url encoding (reversible)
 export const getProjectId = (projectPath: string): string => {
-  const normalizedPath = resolve(projectPath);
-  
-  // Check if we already have an ID for this path
-  for (const [id, path] of projectMappings.entries()) {
-    if (path === normalizedPath) {
-      return id;
-    }
-  }
-  
-  // Generate new ID and store mapping
-  const projectId = generateProjectId(normalizedPath);
-  projectMappings.set(projectId, normalizedPath);
-  return projectId;
+  return encodeProjectPath(projectPath);
 };
 
-// Helper function to get project path from ID
-const getProjectPath = (projectId: string): string | null => {
-  return projectMappings.get(projectId) || null;
+// Helper function to decode project ID back to path using base64 encoding
+// We'll use a reversible encoding scheme instead of hash
+const encodeProjectPath = (projectPath: string): string => {
+  const normalizedPath = resolve(projectPath);
+  // Use base64url encoding (URL-safe)
+  return Buffer.from(normalizedPath).toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=/g, '');
+};
+
+const decodeProjectPath = (encodedPath: string): string | null => {
+  try {
+    // Restore base64 padding and decode
+    const base64 = encodedPath
+      .replace(/-/g, '+')
+      .replace(/_/g, '/');
+    const padding = (4 - (base64.length % 4)) % 4;
+    const paddedBase64 = base64 + '='.repeat(padding);
+    return Buffer.from(paddedBase64, 'base64').toString('utf-8');
+  } catch (error) {
+    console.error('Failed to decode project path:', error);
+    return null;
+  }
 };
 
 // Helper function to resolve and validate file path within project
@@ -83,16 +84,19 @@ router.get('/:projectId/*', async (req, res) => {
   try {
     const { projectId } = req.params;
     const relativePath = (req.params as any)[0]; // Everything after projectId
-    
+
     if (!relativePath) {
       return res.status(400).json({ error: 'File path is required' });
     }
-    
-    // Get project path from ID
-    const projectPath = getProjectPath(projectId);
+
+    // Decode project path from ID (base64url encoded)
+    const projectPath = decodeProjectPath(projectId);
     if (!projectPath) {
+      console.error('Failed to decode project ID:', projectId);
       return res.status(404).json({ error: 'Project not found' });
     }
+
+    console.log('Media route: Decoded projectPath:', projectPath, 'from projectId:', projectId);
     
     // Resolve safe file path
     const filePath = resolveSafeMediaPath(projectPath, relativePath);
