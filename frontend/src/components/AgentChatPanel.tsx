@@ -61,7 +61,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
   const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null);
   const [showToolSelector, setShowToolSelector] = useState(false);
   const [selectedRegularTools, setSelectedRegularTools] = useState<string[]>([]);
-  const [permissionMode, setPermissionMode] = useState<'default' | 'acceptEdits' | 'bypassPermissions'>('acceptEdits');
+  const [permissionMode, setPermissionMode] = useState<'default' | 'acceptEdits' | 'bypassPermissions'>('bypassPermissions');
   const [selectedModel, setSelectedModel] = useState<string>('sonnet');
   const [showPermissionDropdown, setShowPermissionDropdown] = useState(false);
   const [showModelDropdown, setShowModelDropdown] = useState(false);
