@@ -37,9 +37,10 @@ export const SlidePreview = forwardRef<SlidePreviewRef, SlidePreviewProps>(({ sl
     try {
       const timestamp = Date.now();
       const url = `${getMediaBase()}/${projectId}/${filePath}?t=${timestamp}`;
+      console.log('SlidePreview: Loading iframe with URL:', url);
       iframe.src = url;
     } catch (error) {
-      console.error('Error loading iframe:', error);
+      console.error('SlidePreview: Error loading iframe:', error);
       setError(true);
       setIsLoading(false);
     }
@@ -57,23 +58,33 @@ export const SlidePreview = forwardRef<SlidePreviewRef, SlidePreviewProps>(({ sl
 
   // Fetch project ID using files API
   useEffect(() => {
-    if (!projectPath) return;
-    
+    if (!projectPath) {
+      console.log('SlidePreview: No projectPath provided');
+      return;
+    }
+
     const fetchProjectId = async () => {
       try {
         const searchParams = new URLSearchParams();
         searchParams.set('projectPath', projectPath);
-        const response = await authFetch(`${getApiBase()}/files/project-id?${searchParams.toString()}`);
-        
+        const url = `${getApiBase()}/files/project-id?${searchParams.toString()}`;
+        console.log('SlidePreview: Fetching project ID from:', url);
+        const response = await authFetch(url);
+
         if (response.ok) {
           const data = await response.json();
+          console.log('SlidePreview: Got project ID:', data.projectId, 'for path:', projectPath);
           setProjectId(data.projectId);
+        } else {
+          console.error('SlidePreview: Failed to fetch project ID, status:', response.status);
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          console.error('SlidePreview: Error details:', errorData);
         }
       } catch (error) {
-        console.error('Failed to fetch project ID:', error);
+        console.error('SlidePreview: Exception while fetching project ID:', error);
       }
     };
-    
+
     fetchProjectId();
   }, [projectPath]);
 
