@@ -285,9 +285,26 @@ export class ClaudeSession {
    */
   async close(): Promise<void> {
     console.log(`🔚 Closing Claude session for agent: ${this.agentId}, sessionId: ${this.claudeSessionId}`);
+
+    // 如果已经不活跃，直接返回
+    if (!this.isActive) {
+      console.log(`⚠️  Session already inactive for agent: ${this.agentId}`);
+      return;
+    }
+
     this.isActive = false;
+
+    // 清理所有待处理的回调，避免在关闭过程中继续处理响应
+    const pendingCallbacks = this.responseCallbacks.size;
+    this.responseCallbacks.clear();
+    console.log(`🧹 Cleared ${pendingCallbacks} pending response callbacks`);
 
     // 结束消息队列，这会让 async generator 完成
     this.messageQueue.end();
+
+    // 给 SDK 一些时间来优雅地处理队列结束
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    console.log(`✅ Claude session closed for agent: ${this.agentId}`);
   }
 }
