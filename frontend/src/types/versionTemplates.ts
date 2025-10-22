@@ -1,4 +1,4 @@
-import { ModelConfig } from 'agentstudio-shared/types/claude-versions';
+import { ModelConfig } from './claude-versions';
 
 export interface VersionTemplate {
   id: string;

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ClaudeVersion, ClaudeVersionCreate, ClaudeVersionUpdate, ClaudeVersionResponse } from 'agentstudio-shared/types/claude-versions';
+import { ClaudeVersion, ClaudeVersionCreate, ClaudeVersionUpdate, ClaudeVersionResponse } from '../types/claude-versions';
 import { API_BASE } from '../lib/config';
 import { authFetch } from '../lib/authFetch';
 import { useBackendServices } from './useBackendServices';

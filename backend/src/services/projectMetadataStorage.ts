@@ -1,8 +1,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { ProjectMetadata, ProjectWithAgentInfo } from '../types/projects.js';
-import { AgentStorage } from './agentStorage.js';
+import { ProjectMetadata, ProjectWithAgentInfo } from '../types/projects';
+import { AgentStorage } from './agentStorage';
 
 export class ProjectMetadataStorage {
   private projectsMetaDir: string;  // ~/.claude-agent/projects/
@@ -439,12 +439,12 @@ export class ProjectMetadataStorage {
               };
             }
           }
-        } catch (error) {
+        } catch {
           // Skip this file and try the next one
           continue;
         }
       }
-    } catch (error) {
+    } catch {
       // Directory doesn't exist or can't be read
     }
     

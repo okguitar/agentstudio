@@ -79,9 +79,9 @@ export const AgentsPage: React.FC = () => {
     setIsCreating(false);
     
     // 初始化工具选择{t('agents.table.status')} - 正确分离常规工具和MCP工具
-    const allEnabledTools = agent.allowedTools?.filter(tool => tool.enabled).map(tool => tool.name) || [];
-    const regularTools = allEnabledTools.filter(tool => !tool.startsWith('mcp__'));
-    const mcpTools = allEnabledTools.filter(tool => tool.startsWith('mcp__'));
+    const allEnabledTools = agent.allowedTools?.filter((tool: AgentTool) => tool.enabled).map((tool: AgentTool) => tool.name) || [];
+    const regularTools = allEnabledTools.filter((tool: string) => !tool.startsWith('mcp__'));
+    const mcpTools = allEnabledTools.filter((tool: string) => tool.startsWith('mcp__'));
     
     setSelectedRegularTools(regularTools);
     setSelectedMcpTools(mcpTools);
@@ -117,7 +117,7 @@ export const AgentsPage: React.FC = () => {
     setIsCreating(true);
     
     // 初始化工具选择{t('agents.table.status')}
-    const regularTools = defaultAgent.allowedTools?.filter(tool => tool.enabled).map(tool => tool.name) || [];
+    const regularTools = defaultAgent.allowedTools?.filter((tool: AgentTool) => tool.enabled).map((tool: AgentTool) => tool.name) || [];
     setSelectedRegularTools(regularTools);
     setSelectedMcpTools([]);
     setMcpToolsEnabled(false);

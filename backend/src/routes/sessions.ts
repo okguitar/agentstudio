@@ -2,8 +2,8 @@ import express from 'express';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
-import { AgentStorage } from 'agentstudio-shared/utils/agentStorage';
-import { ClaudeHistoryMessage, ClaudeHistorySession } from 'agentstudio-shared/types/claude-history';
+import { AgentStorage } from '../services/agentStorage.js';
+import { ClaudeHistoryMessage, ClaudeHistorySession } from '../types/claude-history.js';
 import { sessionManager } from '../services/sessionManager.js';
 
 const router: express.Router = express.Router();
@@ -644,7 +644,7 @@ router.get('/:agentId', (req, res) => {
           createdAt: session.createdAt,
           lastUpdated: session.lastUpdated,
           messageCount: session.messages.length,
-          hasSummary: !!session.messages.find(msg => msg.type === 'summary')
+          hasSummary: !!session.messages.find((msg: ClaudeHistoryMessage) => msg.type === 'summary')
         });
       });
       

@@ -1,4 +1,6 @@
 // Agent configuration types
+import type { PermissionMode } from '@anthropic-ai/claude-agent-sdk';
+
 export interface AgentTool {
   name: string;
   enabled: boolean;
@@ -14,11 +16,11 @@ export interface AgentConfig {
   name: string;
   description: string;
   version: string;
-  
+
   // AI configuration
   systemPrompt: string;
   maxTurns: number;
-  permissionMode: 'default' | 'acceptEdits' | 'bypassPermissions' | 'plan';
+  permissionMode: PermissionMode;  // 使用 SDK 类型
   model: string;
   
   // Available tools
@@ -69,19 +71,26 @@ export interface AgentMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp: number;
+  images?: Array<{
+    id: string;
+    data: string;
+    mediaType: string;
+    filename?: string;
+  }>;
   messageParts?: MessagePart[];
   agentId: string;
 }
 
 export interface MessagePart {
   id: string;
-  type: 'text' | 'tool' | 'command' | 'compactSummary' | 'image';
+  type: 'text' | 'tool' | 'command' | 'compactSummary' | 'image' | 'thinking';
   content?: string;
   toolData?: {
     id: string;
     toolName: string;
-    toolInput: Record<string, unknown>;
+    toolInput: any;  // 使用 any 以兼容所有工具类型
     toolResult?: string;
+    toolUseResult?: any;  // 添加 toolUseResult 字段
     isExecuting: boolean;
     isError?: boolean;
     claudeId?: string; // Claude's tool use ID for matching with results

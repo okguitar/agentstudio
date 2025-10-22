@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { API_BASE } from '../lib/config';
 import { authFetch } from '../lib/authFetch';
 import { Check, X, RefreshCw, AlertCircle, Wrench, ChevronDown, ChevronRight, Minus, Plug2, Lock } from 'lucide-react';
-import { getAllToolsInfo, getToolDisplayName } from 'agentstudio-shared/utils/toolMapping';
+import { getAllToolsInfo, getToolDisplayName } from '../utils/toolMapping';
 import type { AgentTool } from '../types/index';
 
 // 使用共享的工具信息
