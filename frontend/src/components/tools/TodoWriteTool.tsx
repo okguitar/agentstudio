@@ -18,11 +18,11 @@ export const TodoWriteTool: React.FC<TodoWriteToolProps> = ({ execution }) => {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed':
-        return <CheckCircle className="w-3 h-3 text-green-600" />;
+        return <CheckCircle className="w-3 h-3 text-green-600 dark:text-green-400" />;
       case 'in_progress':
-        return <Clock className="w-3 h-3 text-blue-600" />;
+        return <Clock className="w-3 h-3 text-blue-600 dark:text-blue-400" />;
       default:
-        return <AlertCircle className="w-3 h-3 text-gray-400" />;
+        return <AlertCircle className="w-3 h-3 text-gray-400 dark:text-gray-500" />;
     }
   };
 
@@ -52,9 +52,9 @@ export const TodoWriteTool: React.FC<TodoWriteToolProps> = ({ execution }) => {
           >
             {getStatusIcon(todo.status)}
             <span className={`flex-1 ${
-              todo.status === 'completed' ? 'text-gray-500 line-through' :
-              todo.status === 'in_progress' ? 'text-blue-700 font-medium' :
-              'text-gray-700'
+              todo.status === 'completed' ? 'text-gray-500 dark:text-gray-400 line-through' :
+              todo.status === 'in_progress' ? 'text-blue-700 dark:text-blue-300 font-medium' :
+              'text-gray-700 dark:text-gray-200'
             }`}>
               {todo.content}
             </span>
@@ -62,7 +62,7 @@ export const TodoWriteTool: React.FC<TodoWriteToolProps> = ({ execution }) => {
         ))}
 
         {/* Compact statistics */}
-        <div className="flex gap-3 text-xs text-gray-500 pt-2 border-t border-gray-200 mt-2">
+        <div className="flex gap-3 text-xs text-gray-500 dark:text-gray-400 pt-2 border-t border-gray-200 dark:border-gray-700 mt-2">
           <span>{t('todoWriteTool.completedCount', { count: todos.filter(t => t.status === 'completed').length })}</span>
           <span>{t('todoWriteTool.inProgressCount', { count: todos.filter(t => t.status === 'in_progress').length })}</span>
           <span>{t('todoWriteTool.pendingCount', { count: todos.filter(t => t.status === 'pending').length })}</span>

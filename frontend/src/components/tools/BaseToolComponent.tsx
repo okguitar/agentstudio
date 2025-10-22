@@ -101,17 +101,17 @@ export const BaseToolComponent: React.FC<BaseToolProps> = ({ execution, children
       <div className="border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 max-w-full">
         {/* 可点击的工具头部 */}
         <div
-          className={`flex items-start justify-between cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
+          className={`flex items-center justify-between cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
             hideToolName ? 'p-2' : 'p-4'
           }`}
           onClick={() => setIsExpanded(!isExpanded)}
         >
-          <div className={`flex space-x-2 flex-1 min-w-0 ${hideToolName ? 'items-center' : 'items-start'}`}>
+          <div className={`flex items-center space-x-2 flex-1 min-w-0`}>
             <div className={`${hideToolName ? 'p-1.5' : 'p-2'} rounded-full ${
               execution.isInterrupted
                 ? 'text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/30'
                 : colorClass
-            } ${hideToolName ? '' : 'mt-0.5'}`}>
+            }`}>
               {execution.isExecuting ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : execution.isInterrupted ? (
@@ -135,7 +135,7 @@ export const BaseToolComponent: React.FC<BaseToolProps> = ({ execution, children
               )}
             </div>
           </div>
-          <div className="flex items-center">
+          <div className="flex items-center shrink-0">
             {isExpanded ? (
               <ChevronDown className="w-4 h-4 text-gray-400 dark:text-gray-500" />
             ) : (
