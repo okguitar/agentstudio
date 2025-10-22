@@ -66,30 +66,25 @@ export const SlidePreviewPanel: React.FC<AgentPanelProps> = ({ projectPath }) =>
   return (
     <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-900">
       {/* Header - matching height with left panel */}
-      <div className="px-5 py-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex flex-col">
-          <div className="flex items-center justify-between mb-1">
-            <div className="flex items-center space-x-3">
-              <h2 className="text-lg font-semibold text-gray-800 dark:text-white">{t('slidePreview.title')}</h2>
-              <span className="text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded">
-                {slidesData?.title || 'Presentation'}
-              </span>
-            </div>
-            <button
-              onClick={handleRefresh}
-              disabled={isLoading}
-              className="flex items-center space-x-1 px-3 py-1.5 text-sm bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              title={t('slidePreview.refreshTitle')}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              <span>{t('slidePreview.refresh')}</span>
-            </button>
+      <div className="h-12 px-5 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <h2 className="text-lg font-semibold text-gray-800 dark:text-white">{t('slidePreview.title')}</h2>
+            <span className="text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded">
+              {slidesData?.title || 'Presentation'}
+            </span>
           </div>
-          <div className="text-sm text-gray-600 dark:text-gray-400">
-            {t('slidePreview.slideCount', { count: slides.length })}
-          </div>
+          <button
+            onClick={handleRefresh}
+            disabled={isLoading}
+            className="flex items-center space-x-1 px-3 py-1.5 text-sm bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title={t('slidePreview.refreshTitle')}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <span>{t('slidePreview.refresh')}</span>
+          </button>
         </div>
       </div>
 

@@ -172,8 +172,8 @@ export const SlidePreview = forwardRef<SlidePreviewRef, SlidePreviewProps>(({ sl
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
       {/* Header with tabs and page indicator */}
-      <div className="px-4 py-3 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-        <div className="flex items-center justify-between">
+      <div className="h-12 px-4 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center">
+        <div className="flex items-center gap-4">
           {/* Tab buttons */}
           <div className="flex space-x-1">
             <button
@@ -198,6 +198,11 @@ export const SlidePreview = forwardRef<SlidePreviewRef, SlidePreviewProps>(({ sl
               <Code className="w-4 h-4" />
               <span>{t('slidePreview.tabs.code')}</span>
             </button>
+          </div>
+
+          {/* File name */}
+          <div className="text-sm text-gray-600 dark:text-gray-300 font-medium flex-1">
+            {slide.path ? slide.path.replace(/\.html$/, '') : ''}
           </div>
 
           {/* Page indicator */}
