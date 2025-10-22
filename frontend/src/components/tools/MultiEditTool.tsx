@@ -12,8 +12,11 @@ export const MultiEditTool: React.FC<MultiEditToolProps> = ({ execution }) => {
   const { t } = useTranslation('components');
   const input = execution.toolInput as MultiEditToolInput;
 
+  // 防御性检查：确保 edits 存在且是数组
+  const edits = Array.isArray(input?.edits) ? input.edits : [];
+
   // 构建副标题：文件路径 + 操作数量
-  const subtitle = `${input.file_path} - ${t('multiEditTool.batchEdit', { count: input.edits.length })}`;
+  const subtitle = `${input.file_path} - ${t('multiEditTool.batchEdit', { count: edits.length })}`;
 
   return (
     <BaseToolComponent execution={execution} showResult={false} subtitle={subtitle}>
@@ -22,11 +25,11 @@ export const MultiEditTool: React.FC<MultiEditToolProps> = ({ execution }) => {
 
         <div className="mt-3">
           <p className="text-xs font-medium text-gray-600 mb-2">
-            {t('multiEditTool.batchEdit', { count: input.edits.length })}
+            {t('multiEditTool.batchEdit', { count: edits.length })}
           </p>
 
           <div className="space-y-4 max-h-96 overflow-y-auto">
-            {input.edits.map((edit, index) => (
+            {edits.map((edit, index) => (
               <div key={index} className="border border-gray-200 rounded-md bg-white">
                 <div className="px-3 py-2 bg-gray-50 border-b border-gray-200 rounded-t-md">
                   <div className="text-xs font-medium text-gray-600">

@@ -11,6 +11,10 @@ export const WebSearchTool: React.FC<WebSearchToolProps> = ({ execution }) => {
   const { t } = useTranslation('components');
   const input = execution.toolInput as WebSearchToolInput;
 
+  // 防御性检查：确保域名列表是数组
+  const allowedDomains = Array.isArray(input?.allowed_domains) ? input.allowed_domains : [];
+  const blockedDomains = Array.isArray(input?.blocked_domains) ? input.blocked_domains : [];
+
   // 显示搜索查询作为副标题
   const getSubtitle = () => {
     if (!input.query) return undefined;
@@ -22,23 +26,23 @@ export const WebSearchTool: React.FC<WebSearchToolProps> = ({ execution }) => {
       <div>
         <ToolInput label={t('webSearchTool.searchQueryLabel')} value={input.query} />
         
-        {(input.allowed_domains || input.blocked_domains) && (
+        {(allowedDomains.length > 0 || blockedDomains.length > 0) && (
           <div className="mt-2 space-y-1">
-            {input.allowed_domains && input.allowed_domains.length > 0 && (
+            {allowedDomains.length > 0 && (
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs font-medium text-green-600">{t('webSearchTool.allowedDomains')}</span>
-                {input.allowed_domains.map((domain, index) => (
+                {allowedDomains.map((domain, index) => (
                   <span key={index} className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded">
                     {domain}
                   </span>
                 ))}
               </div>
             )}
-            
-            {input.blocked_domains && input.blocked_domains.length > 0 && (
+
+            {blockedDomains.length > 0 && (
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs font-medium text-red-600">{t('webSearchTool.blockedDomains')}</span>
-                {input.blocked_domains.map((domain, index) => (
+                {blockedDomains.map((domain, index) => (
                   <span key={index} className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded">
                     {domain}
                   </span>
