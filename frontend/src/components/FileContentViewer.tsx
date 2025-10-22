@@ -78,6 +78,7 @@ const EXTENSION_TO_LANGUAGE: Record<string, string> = {
   '.env.local': 'bash',
   '.env.production': 'bash',
   '.env.development': 'bash',
+  '.csv': 'csv',
 };
 
 // 根据文件路径获取语言
