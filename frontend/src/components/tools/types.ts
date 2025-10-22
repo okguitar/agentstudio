@@ -14,12 +14,14 @@ export interface BaseToolResult {
 export interface TaskToolInput extends BaseToolInput {
   description: string;
   prompt: string;
+  subagent_type: string;
 }
 
 export interface BashToolInput extends BaseToolInput {
   command: string;
   description?: string;
   timeout?: number;
+  run_in_background?: boolean;
 }
 
 export interface BashOutputToolInput extends BaseToolInput {
@@ -140,8 +142,7 @@ export interface TodoWriteToolInput extends BaseToolInput {
   todos: Array<{
     content: string;
     status: 'pending' | 'in_progress' | 'completed';
-    priority: 'high' | 'medium' | 'low';
-    id: string;
+    activeForm: string;
   }>;
 }
 

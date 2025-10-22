@@ -1,6 +1,5 @@
 // Claude Code 历史记录相关类型定义
 
-
 export interface ClaudeMessageContent {
   type: string;
   text?: string;

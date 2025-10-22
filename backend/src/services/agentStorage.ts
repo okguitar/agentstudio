@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { AgentConfig, AgentSession, AgentMessage, BUILTIN_AGENTS } from '../types/agents.js';
+import { AgentConfig, AgentSession, AgentMessage, BUILTIN_AGENTS } from '../types/agents';
 import { Options, query } from '@anthropic-ai/claude-code';
 
 export class AgentStorage {

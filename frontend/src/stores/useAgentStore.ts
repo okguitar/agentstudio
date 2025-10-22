@@ -171,8 +171,8 @@ export const useAgentStore = create<AgentState>((set) => ({
   })),
 
   addToolPartToMessage: (messageId, tool) => set((state) => ({
-    messages: state.messages.map((msg) => 
-      msg.id === messageId 
+    messages: state.messages.map((msg) =>
+      msg.id === messageId
         ? {
             ...msg,
             messageParts: [
@@ -182,7 +182,8 @@ export const useAgentStore = create<AgentState>((set) => ({
                 type: 'tool' as const,
                 toolData: {
                   ...tool,
-                  id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+                  id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                  isExecuting: tool.isExecuting ?? false  // 确保 isExecuting 是 boolean
                 },
                 order: (msg.messageParts || []).length
               }

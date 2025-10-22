@@ -12,8 +12,8 @@ import {
   updateVersion, 
   deleteVersion, 
   initializeSystemVersion 
-} from 'agentstudio-shared/utils/claudeVersionStorage';
-import { ClaudeVersionCreate, ClaudeVersionUpdate } from 'agentstudio-shared/types/claude-versions';
+} from '../services/claudeVersionStorage.js';
+import { ClaudeVersionCreate, ClaudeVersionUpdate } from '../types/claude-versions.js';
 
 const router: Router = express.Router();
 const execAsync = promisify(exec);
@@ -737,12 +737,12 @@ router.post('/claude-versions/init-system', async (req, res) => {
     }
 
     // 创建或更新系统版本
-    const storage = await import('agentstudio-shared/utils/claudeVersionStorage');
-    let systemVersion = await storage.initializeSystemVersion(claudePath);
+    const { initializeSystemVersion, updateVersion } = await import('../services/claudeVersionStorage.js');
+    let systemVersion = await initializeSystemVersion(claudePath);
 
     // 更新环境变量
     if (Object.keys(environmentVariables).length > 0) {
-      systemVersion = await storage.updateVersion(systemVersion.id, {
+      systemVersion = await updateVersion(systemVersion.id, {
         environmentVariables
       });
     }

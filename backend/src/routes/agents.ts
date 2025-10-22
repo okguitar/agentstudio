@@ -6,11 +6,37 @@ import * as os from 'os';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { query } from '@anthropic-ai/claude-code';
-import { AgentStorage } from 'agentstudio-shared/utils/agentStorage';
-import { AgentConfig } from 'agentstudio-shared/types/agents';
-import { ProjectMetadataStorage } from 'agentstudio-shared/utils/projectMetadataStorage';
+import type {
+  SDKMessage,
+  SDKSystemMessage,
+  SDKAssistantMessage,
+  SDKUserMessage,
+  SDKResultMessage,
+  SDKPartialAssistantMessage,
+  SDKCompactBoundaryMessage
+} from '@anthropic-ai/claude-agent-sdk';
+import { AgentStorage } from '../services/agentStorage.js';
+import { AgentConfig } from '../types/agents.js';
+import { ProjectMetadataStorage } from '../services/projectMetadataStorage.js';
 import { sessionManager } from '../services/sessionManager.js';
-import { getAllVersions, getDefaultVersionId } from 'agentstudio-shared/utils/claudeVersionStorage';
+import { getAllVersions, getDefaultVersionId } from '../services/claudeVersionStorage.js';
+
+// 类型守卫函数
+function isSDKSystemMessage(message: any): message is SDKSystemMessage {
+  return message && message.type === 'system';
+}
+
+function isSDKResultMessage(message: any): message is SDKResultMessage {
+  return message && message.type === 'result';
+}
+
+function isSDKPartialAssistantMessage(message: any): message is SDKPartialAssistantMessage {
+  return message && message.type === 'stream_event';
+}
+
+function isSDKCompactBoundaryMessage(message: any): message is SDKCompactBoundaryMessage {
+  return message && message.type === 'system' && (message as any).subtype === 'compact_boundary';
+}
 
 const router: express.Router = express.Router();
 const execAsync = promisify(exec);
@@ -839,9 +865,9 @@ router.post('/chat', async (req, res) => {
       // 使用会话的 sendMessage 方法发送消息
       let compactMessageBuffer: any[] = []; // 缓存 compact 相关消息
 
-      const currentRequestId = await claudeSession.sendMessage(userMessage, (sdkMessage: any) => {
+      const currentRequestId = await claudeSession.sendMessage(userMessage, (sdkMessage: SDKMessage) => {
         // 🔧 MCP 工具日志观察 - 检查 MCP 服务器状态
-        if (sdkMessage.type === "system" && sdkMessage.subtype === "init") {
+        if (isSDKSystemMessage(sdkMessage) && sdkMessage.subtype === "init") {
           // 检查 MCP 服务器连接状态
           if (sdkMessage.mcp_servers && Array.isArray(sdkMessage.mcp_servers)) {
             const failedServers = sdkMessage.mcp_servers.filter(
@@ -901,11 +927,12 @@ router.post('/chat', async (req, res) => {
         }
         
         // 🚨 MCP 工具日志观察 - 检查执行错误
-        if (sdkMessage.type === "result" && sdkMessage.subtype === "error_during_execution") {
+        if (isSDKResultMessage(sdkMessage) && sdkMessage.subtype === "error_during_execution") {
+          const errorMessage = sdkMessage as any; // 临时类型断言以访问错误详情
           console.error("❌ [MCP] Execution failed:", {
-            error: sdkMessage.error,
-            details: sdkMessage.details,
-            tool: sdkMessage.tool,
+            error: errorMessage.error,
+            details: errorMessage.details,
+            tool: errorMessage.tool,
             timestamp: Date.now()
           });
           
@@ -913,9 +940,9 @@ router.post('/chat', async (req, res) => {
           const mcpErrorEvent = {
             type: 'mcp_error',
             subtype: 'execution_failed',
-            error: sdkMessage.error,
-            details: sdkMessage.details,
-            tool: sdkMessage.tool,
+            error: errorMessage.error,
+            details: errorMessage.details,
+            tool: errorMessage.tool,
             timestamp: Date.now(),
             agentId: agentId,
             sessionId: actualSessionId || currentSessionId
@@ -932,21 +959,22 @@ router.post('/chat', async (req, res) => {
 
         // 🔍 添加详细日志来观察消息结构
         if (message === '/compact') {
+          const msgWithContent = sdkMessage as any;  // 临时使用 any 访问 message 属性
           console.log('📦 [COMPACT] Received SDK message:', {
             type: sdkMessage.type,
-            subtype: sdkMessage.subtype,
-            hasMessage: !!sdkMessage.message,
-            messageType: typeof sdkMessage.message,
-            messageContentType: sdkMessage.message?.content ? typeof sdkMessage.message.content : 'no content',
-            messageContentLength: Array.isArray(sdkMessage.message?.content) ? sdkMessage.message.content.length : 'not array',
-            firstBlock: Array.isArray(sdkMessage.message?.content) && sdkMessage.message.content.length > 0
-              ? { type: sdkMessage.message.content[0].type, hasText: !!sdkMessage.message.content[0].text, textPreview: sdkMessage.message.content[0].text?.substring(0, 100) }
+            subtype: (sdkMessage as any).subtype,
+            hasMessage: !!msgWithContent.message,
+            messageType: typeof msgWithContent.message,
+            messageContentType: msgWithContent.message?.content ? typeof msgWithContent.message.content : 'no content',
+            messageContentLength: Array.isArray(msgWithContent.message?.content) ? msgWithContent.message.content.length : 'not array',
+            firstBlock: Array.isArray(msgWithContent.message?.content) && msgWithContent.message.content.length > 0
+              ? { type: msgWithContent.message.content[0].type, hasText: !!msgWithContent.message.content[0].text, textPreview: msgWithContent.message.content[0].text?.substring(0, 100) }
               : 'no blocks'
           });
         }
 
         // 处理 /compact 命令的特殊消息序列
-        if (message === '/compact' && sdkMessage.type === 'system' && sdkMessage.subtype === 'compact_boundary') {
+        if (message === '/compact' && isSDKCompactBoundaryMessage(sdkMessage)) {
           compactMessageBuffer.push(sdkMessage);
           console.log('📦 [COMPACT] Detected compact_boundary, buffering messages...');
           return; // 不发送给前端，等待完整的消息序列
@@ -1012,8 +1040,8 @@ router.post('/chat', async (req, res) => {
         }
 
         // 当收到 init 消息时，确认会话 ID
-        const responseSessionId = sdkMessage.session_id || sdkMessage.sessionId;
-        if (sdkMessage.type === 'system' && sdkMessage.subtype === 'init' && responseSessionId) {
+        const responseSessionId = sdkMessage.session_id;
+        if (isSDKSystemMessage(sdkMessage) && sdkMessage.subtype === 'init' && responseSessionId) {
           if (!actualSessionId || !currentSessionId) {
             // 新会话：保存session ID
             claudeSession.setClaudeSessionId(responseSessionId);
@@ -1079,7 +1107,7 @@ router.post('/chat', async (req, res) => {
         }
         
         // 当收到 result 事件时，正常结束 SSE 连接
-        if (sdkMessage.type === 'result') {
+        if (isSDKResultMessage(sdkMessage)) {
           console.log(`✅ Received result event, closing SSE connection for sessionId: ${actualSessionId || currentSessionId}`);
           connectionManager.safeCloseConnection('request completed');
         }

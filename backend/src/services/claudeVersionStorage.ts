@@ -1,7 +1,7 @@
 import { readFile, writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { homedir } from 'os';
-import { ClaudeVersion, ClaudeVersionCreate, ClaudeVersionUpdate, ModelConfig } from '../types/claude-versions.js';
+import { ClaudeVersion, ClaudeVersionCreate, ClaudeVersionUpdate, ModelConfig } from '../types/claude-versions';
 
 // 默认模型配置（用于Claude系统版本）
 const DEFAULT_MODELS: ModelConfig[] = [
@@ -31,7 +31,7 @@ interface VersionStorage {
 async function ensureClaudeAgentDir() {
   try {
     await mkdir(CLAUDE_AGENT_DIR, { recursive: true });
-  } catch (error) {
+  } catch {
     // 忽略目录已存在的错误
   }
 }
@@ -81,7 +81,7 @@ export async function loadClaudeVersions(): Promise<VersionStorage> {
     }
 
     return migrated;
-  } catch (error) {
+  } catch {
     // 文件不存在或解析失败，返回默认配置
     return {
       versions: [],

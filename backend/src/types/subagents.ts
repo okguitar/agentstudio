@@ -1,4 +1,4 @@
-// Subagent type definitions (shared between frontend and backend)
+// Subagent type definitions (backend only)
 export interface Subagent {
   id: string;
   name: string;

@@ -2,8 +2,8 @@
   "compilerOptions": {
     "target": "ES2022",
     "lib": ["ES2022"],
-    "module": "Node16",
-    "moduleResolution": "node16",
+    "module": "ES2022",
+    "moduleResolution": "bundler",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "strict": true,
@@ -15,12 +15,7 @@
     "declarationMap": true,
     "sourceMap": true,
     "noEmit": false,
-    "resolveJsonModule": true,
-    "baseUrl": ".",
-    "paths": {
-      "@agentstudio/shared": ["../shared/dist", "../shared/src"],
-      "@agentstudio/shared/*": ["../shared/dist/*", "../shared/src/*"]
-    }
+    "resolveJsonModule": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

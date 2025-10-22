@@ -1,4 +1,4 @@
-import { ClaudeVersion } from 'agentstudio-shared/types/claude-versions';
+import { ClaudeVersion } from '../types/claude-versions';
 
 /**
  * 根据Claude版本配置生成可执行的终端命令

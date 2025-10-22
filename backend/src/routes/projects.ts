@@ -3,8 +3,8 @@ import fs from 'fs';
 import path from 'path';
 import * as os from 'os';
 import { promisify } from 'util';
-import { ProjectMetadataStorage } from 'agentstudio-shared/utils/projectMetadataStorage';
-import { AgentStorage } from 'agentstudio-shared/utils/agentStorage';
+import { ProjectMetadataStorage } from '../services/projectMetadataStorage.js';
+import { AgentStorage } from '../services/agentStorage.js';
 
 const router: express.Router = express.Router();
 const readFile = promisify(fs.readFile);

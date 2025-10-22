@@ -21,7 +21,7 @@ import { MobileSettingsModal } from './MobileSettingsModal';
 import { useMobileContext } from '../contexts/MobileContext';
 import { McpStatusModal } from './McpStatusModal';
 import { FileBrowser } from './FileBrowser';
-import type { AgentConfig } from '../types/index.js';
+import type { AgentConfig, AgentTool } from '../types/index.js';
 import {
   isCommandTrigger,
   extractCommandSearch,
@@ -317,13 +317,13 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   // Initialize tool selector with agent's preset tools
   useEffect(() => {
     if (agent?.allowedTools?.length > 0) {
-      const enabledTools = agent.allowedTools.filter(tool => tool.enabled);
+      const enabledTools = agent.allowedTools.filter((tool: AgentTool) => tool.enabled);
       
       // Separate regular tools and MCP tools
       const regularTools: string[] = [];
       const mcpTools: string[] = [];
       
-      enabledTools.forEach(tool => {
+      enabledTools.forEach((tool: AgentTool) => {
         if (tool.name.includes('.') && !tool.name.startsWith('mcp__')) {
           // MCP tool format: serverName.toolName -> mcp__serverName__toolName
           const [serverName, toolName] = tool.name.split('.');
@@ -1124,7 +1124,9 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
                   aiMessageId = state.messages[state.messages.length - 1].id;
 
                   // Add the result content as text
-                  addTextPartToMessage(aiMessageId, resultContent);
+                  if (aiMessageId) {
+                    addTextPartToMessage(aiMessageId, resultContent);
+                  }
                   console.log('📝 Added result content to new AI message:', resultContent.substring(0, 100));
                 } else {
                   console.warn('📝 Result event with no content - creating empty success message');
