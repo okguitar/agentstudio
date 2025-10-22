@@ -101,7 +101,8 @@ app.use(cors({
     }
 
     // Allow agentstudio.cc and its subdomains (*.agentstudio.cc) - hardcoded
-    if (origin === 'https://agentstudio.cc' || origin.endsWith('.agentstudio.cc')) {
+    if (origin === 'https://agentstudio.cc' || origin === 'http://agentstudio.cc' || 
+        origin.endsWith('.agentstudio.cc')) {
       return callback(null, true);
     }
 
