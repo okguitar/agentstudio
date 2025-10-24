@@ -29,9 +29,6 @@ importers:
       '@anthropic-ai/claude-code':
         specifier: ^2.0.10
         version: 2.0.14
-      agentstudio-shared:
-        specifier: ^0.1.0
-        version: 0.1.0
       ai:
         specifier: ^5.0.22
         version: 5.0.70(zod@3.25.76)
@@ -129,9 +126,6 @@ importers:
       '@types/prismjs':
         specifier: ^1.26.5
         version: 1.26.5
-      agentstudio-shared:
-        specifier: workspace:*
-        version: link:../shared
       ai:
         specifier: ^5.0.22
         version: 5.0.70(zod@3.25.76)
@@ -274,34 +268,6 @@ importers:
       vitest:
         specifier: ^3.2.4
         version: 3.2.4(@types/debug@4.1.12)(@types/node@20.19.21)(@vitest/ui@3.2.4)(jiti@1.21.7)(jsdom@26.1.0)(tsx@4.20.6)
-
-  shared:
-    dependencies:
-      '@anthropic-ai/claude-agent-sdk':
-        specifier: ^0.1.25
-        version: 0.1.25(zod@3.25.76)
-      '@anthropic-ai/claude-code':
-        specifier: ^2.0.10
-        version: 2.0.14
-    devDependencies:
-      '@eslint/js':
-        specifier: ^9.37.0
-        version: 9.37.0
-      '@types/node':
-        specifier: ^20.5.0
-        version: 20.19.21
-      eslint:
-        specifier: ^9.37.0
-        version: 9.37.0(jiti@1.21.7)
-      globals:
-        specifier: ^16.4.0
-        version: 16.4.0
-      typescript:
-        specifier: ^5.9.2
-        version: 5.9.3
-      typescript-eslint:
-        specifier: ^8.46.1
-        version: 8.46.1(eslint@9.37.0(jiti@1.21.7))(typescript@5.9.3)
 
 packages:
 
@@ -1562,9 +1528,6 @@ packages:
   agent-base@7.1.4:
     resolution: {integrity: sha512-MnA+YT8fwfJPgBx3m60MNqakm30XOkyIoH1y6huTQvC0PwZG7ki8NacLBcrPbNoo8vEZy7Jpuk7+jMO+CUovTQ==}
     engines: {node: '>= 14'}
-
-  agentstudio-shared@0.1.0:
-    resolution: {integrity: sha512-wK52Bd9uQXOeaPRa3k2oWKrwNz9+d5tJO0kc0quyrb2o4EN2+0EbbsLDgtikhBsw4Dg3wJkT9sxXOkq13Hjh2w==}
 
   ai@5.0.70:
     resolution: {integrity: sha512-srJV++Ml1X8I33gTiiJQpq6GUbAv5ivjSzDzzF9SM4d25zq+/m+zTtHBb794tYKTz2PgbJ3oop9+gU50ZdCLbQ==}
@@ -5493,10 +5456,6 @@ snapshots:
   acorn@8.15.0: {}
 
   agent-base@7.1.4: {}
-
-  agentstudio-shared@0.1.0:
-    dependencies:
-      '@anthropic-ai/claude-code': 2.0.14
 
   ai@5.0.70(zod@3.25.76):
     dependencies:
