@@ -153,13 +153,20 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
     }
   }, [currentSessionId, agent.id]);
   
-  // Fetch commands for keyboard navigation
-  const { data: userCommands = [] } = useCommands({ scope: 'user', search: commandSearch });
-  const { data: projectCommands = [] } = useProjectCommands({
+  // Fetch commands for keyboard navigation (with search filter)
+  const { data: userCommandsFiltered = [], error: userCommandsError } = useCommands({ scope: 'user', search: commandSearch });
+  const { data: projectCommandsFiltered = [], error: projectCommandsError } = useProjectCommands({
     projectId: projectPath || '', // Pass projectPath directly as it will be detected as path
     search: commandSearch
   });
-  
+
+  // Fetch complete command lists for detection (without search filter)
+  const { data: userCommands = [] } = useCommands({ scope: 'user' });
+  const { data: projectCommands = [] } = useProjectCommands({
+    projectId: projectPath || '' // Pass projectPath directly as it will be detected as path
+  });
+
+    
   // Claude版本数据
   const { data: claudeVersionsData } = useClaudeVersions();
 
@@ -249,8 +256,21 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
     const systemCommand = SYSTEM_COMMANDS.find(cmd => cmd.name === commandName);
     const projectCommand = projectCommands.find(cmd => cmd.name === commandName);
     const userCommand = userCommands.find(cmd => cmd.name === commandName);
+    
     return !!(systemCommand || projectCommand || userCommand);
   };
+
+  // Helper function to get all available command names for error messages
+  const getAllAvailableCommands = () => {
+    const systemCommands = SYSTEM_COMMANDS.map(cmd => cmd.content);
+    const projectCommandsList = projectCommands.map(cmd => `/${cmd.name}`);
+    const userCommandsList = userCommands.map(cmd => `/${cmd.name}`);
+    
+    return [...systemCommands, ...projectCommandsList, ...userCommandsList].join(', ');
+  };
+
+  // Check if commands failed to load (likely authentication issue)
+  const hasCommandsLoadError = userCommandsError || projectCommandsError;
 
   // Helper function to check if send should be disabled
   const isSendDisabled = () => {
@@ -266,7 +286,7 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
     return false;
   };
 
-  // Memoize allCommands to prevent unnecessary re-renders
+  // Memoize allCommands to prevent unnecessary re-renders (for command selector)
   const allCommands = useMemo(() => {
     // Filter system commands based on search term
     const filteredSystemCommands = SYSTEM_COMMANDS.filter(cmd =>
@@ -274,13 +294,13 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
       cmd.description.toLowerCase().includes(commandSearch.toLowerCase())
     );
 
-    // Combine all commands
+    // Combine all commands (use filtered lists for selector)
     return [
       ...filteredSystemCommands,
-      ...projectCommands,
-      ...userCommands,
+      ...projectCommandsFiltered,
+      ...userCommandsFiltered,
     ];
-  }, [userCommands, projectCommands, commandSearch]);
+  }, [userCommandsFiltered, projectCommandsFiltered, commandSearch]);
 
   // Memoize rendered messages to prevent unnecessary re-renders
   const renderedMessages = useMemo(() => {
@@ -572,10 +592,19 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
       
       // Check if command is defined
       if (!isCommandDefined(commandName)) {
-        setCommandWarning(t('agentChat.unknownCommandWarning', {
-          command: commandName,
-          commands: SYSTEM_COMMANDS.map(cmd => cmd.content).join(', ')
-        }));
+        // If commands failed to load, provide a more helpful error message
+        if (hasCommandsLoadError) {
+          setCommandWarning(t('agentChat.commandsLoadErrorWarning', {
+            command: commandName,
+            commands: SYSTEM_COMMANDS.map(cmd => cmd.content).join(', '),
+            errorMessage: userCommandsError?.message || projectCommandsError?.message || 'Unknown error'
+          }));
+        } else {
+          setCommandWarning(t('agentChat.unknownCommandWarning', {
+            command: commandName,
+            commands: getAllAvailableCommands()
+          }));
+        }
         return;
       }
       
@@ -1394,10 +1423,19 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
       if (isCommandTrigger(inputMessage)) {
         const commandName = inputMessage.slice(1).split(' ')[0].toLowerCase();
         if (!isCommandDefined(commandName)) {
-          setCommandWarning(t('agentChat.unknownCommandWarning', {
-            command: commandName,
-            commands: SYSTEM_COMMANDS.map(cmd => cmd.content).join(', ')
-          }));
+          // If commands failed to load, provide a more helpful error message
+          if (hasCommandsLoadError) {
+            setCommandWarning(t('agentChat.commandsLoadErrorWarning', {
+              command: commandName,
+              commands: SYSTEM_COMMANDS.map(cmd => cmd.content).join(', '),
+              errorMessage: userCommandsError?.message || projectCommandsError?.message || 'Unknown error'
+            }));
+          } else {
+            setCommandWarning(t('agentChat.unknownCommandWarning', {
+              command: commandName,
+              commands: getAllAvailableCommands()
+            }));
+          }
           return;
         }
       }
