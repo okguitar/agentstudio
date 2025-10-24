@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import { loadConfig } from '../config/index.js';
+import { loadConfig } from '../config/index';
 
 // Cache config values to avoid repeated loading
 let cachedJwtConfig: { secret: string; expiresIn: string; refreshThreshold: string } | null = null;

@@ -1,6 +1,6 @@
 import express, { Request, Response, Router } from 'express';
-import { generateToken, verifyToken, shouldRefreshToken } from '../utils/jwt.js';
-import { loadConfig } from '../config/index.js';
+import { generateToken, verifyToken, shouldRefreshToken } from '../utils/jwt';
+import { loadConfig } from '../config/index';
 
 const router: Router = express.Router();
 

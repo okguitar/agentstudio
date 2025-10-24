@@ -1,6 +1,6 @@
 import { query, Options } from '@anthropic-ai/claude-code';
 import type { SDKMessage, SDKSystemMessage } from '@anthropic-ai/claude-agent-sdk';
-import { MessageQueue } from './messageQueue.js';
+import { MessageQueue } from './messageQueue';
 
 /**
  * Claude 会话包装器 - 使用 Streaming Input Mode

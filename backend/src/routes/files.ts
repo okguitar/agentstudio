@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url';
 import { z } from 'zod';
 import * as os from 'os';
 import * as path from 'path';
-import { getProjectId } from './media.js';
+import { getProjectId } from './media';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

@@ -1,7 +1,7 @@
 import express, { Router } from 'express';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
-import { verifyToken, getJwtConfig } from '../utils/jwt.js';
+import { verifyToken, getJwtConfig } from '../utils/jwt';
 
 const router: Router = express.Router();
 
