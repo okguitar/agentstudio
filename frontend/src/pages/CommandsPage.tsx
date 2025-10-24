@@ -392,6 +392,7 @@ export const CommandsPage: React.FC = () => {
           onSuccess={() => {
             setShowForm(false);
             setEditingCommand(null);
+            refetch(); // 刷新命令列表
           }}
         />
       )}

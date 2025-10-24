@@ -206,8 +206,12 @@ export const CommandForm: React.FC<CommandFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Form submit triggered'); // 调试日志
 
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      console.log('Form validation failed'); // 调试日志
+      return;
+    }
 
     try {
       const submitData = {
@@ -218,6 +222,9 @@ export const CommandForm: React.FC<CommandFormProps> = ({
         model: (formData.model || '').trim() || undefined,
       };
 
+      console.log('Submit data:', submitData); // 调试日志
+      console.log('Is editing:', isEditing); // 调试日志
+
       if (isEditing) {
         const updateData: SlashCommandUpdate = {
           description: submitData.description,
@@ -226,13 +233,17 @@ export const CommandForm: React.FC<CommandFormProps> = ({
           allowedTools: submitData.allowedTools,
           model: submitData.model,
         };
+        console.log('Calling updateCommand with:', { id: command.id, updates: updateData }); // 调试日志
         await updateCommand.mutateAsync({ id: command.id, updates: updateData });
       } else {
+        console.log('Calling createCommand with:', submitData); // 调试日志
         await createCommand.mutateAsync(submitData);
       }
 
+      console.log('Command operation successful'); // 调试日志
       onSuccess();
     } catch (error: any) {
+      console.log('Command operation failed:', error); // 调试日志
       setErrors({ submit: error.message || t('commandForm.errors.saveFailed') });
     }
   };
@@ -284,8 +295,8 @@ export const CommandForm: React.FC<CommandFormProps> = ({
               {tc('actions.cancel')}
             </button>
             <button
-              type="submit"
-              form="command-form"
+              type="button"
+              onClick={handleSubmit}
               disabled={createCommand.isPending || updateCommand.isPending}
               className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
             >

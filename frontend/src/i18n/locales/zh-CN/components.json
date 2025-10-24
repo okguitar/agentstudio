@@ -204,6 +204,7 @@
     "executionCompleted": "(执行完成)",
     "genericError": "抱歉，处理您的请求时出现了错误。",
     "unknownCommandWarning": "未知命令: /{{command}}。可用命令: {{commands}}",
+    "commandsLoadErrorWarning": "命令: /{{command}} 未找到。用户/项目命令加载失败 ({{errorMessage}})。可用系统命令: {{commands}}。请检查是否已正确登录。",
     "navigateToAlert": "导航到: {{path}}",
     "generationStopped": "⏹️ 生成已停止",
     "stopping": "正在停止...",

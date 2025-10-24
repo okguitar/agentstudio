@@ -204,6 +204,7 @@
     "executionCompleted": "(Execution Completed)",
     "genericError": "Sorry, an error occurred while processing your request.",
     "unknownCommandWarning": "Unknown command: /{{command}}. Available commands: {{commands}}",
+    "commandsLoadErrorWarning": "Command: /{{command}} not found. User/project commands failed to load ({{errorMessage}}). Available system commands: {{commands}}. Please check if you are properly logged in.",
     "navigateToAlert": "Navigate to: {{path}}",
     "generationStopped": "⏹️ Generation stopped",
     "stopping": "Stopping...",
