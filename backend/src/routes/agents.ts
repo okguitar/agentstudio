@@ -15,11 +15,11 @@ import type {
   SDKPartialAssistantMessage,
   SDKCompactBoundaryMessage
 } from '@anthropic-ai/claude-agent-sdk';
-import { AgentStorage } from '../services/agentStorage.js';
-import { AgentConfig } from '../types/agents.js';
-import { ProjectMetadataStorage } from '../services/projectMetadataStorage.js';
-import { sessionManager } from '../services/sessionManager.js';
-import { getAllVersions, getDefaultVersionId } from '../services/claudeVersionStorage.js';
+import { AgentStorage } from '../services/agentStorage';
+import { AgentConfig } from '../types/agents';
+import { ProjectMetadataStorage } from '../services/projectMetadataStorage';
+import { sessionManager } from '../services/sessionManager';
+import { getAllVersions, getDefaultVersionId } from '../services/claudeVersionStorage';
 
 // 类型守卫函数
 function isSDKSystemMessage(message: any): message is SDKSystemMessage {

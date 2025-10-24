@@ -6,20 +6,20 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { readFileSync } from 'fs';
 
-import filesRouter from './routes/files.js';
-import agentsRouter from './routes/agents.js';
-import mcpRouter from './routes/mcp.js';
-import sessionsRouter from './routes/sessions.js';
-import mediaRouter from './routes/media.js';
-import mediaAuthRouter from './routes/mediaAuth.js';
-import settingsRouter from './routes/settings.js';
-import commandsRouter from './routes/commands.js';
-import subagentsRouter from './routes/subagents.js';
-import projectsRouter from './routes/projects.js';
-import authRouter from './routes/auth.js';
-import configRouter from './routes/config.js';
-import { authMiddleware } from './middleware/auth.js';
-import { loadConfig, getSlidesDir } from './config/index.js';
+import filesRouter from './routes/files';
+import agentsRouter from './routes/agents';
+import mcpRouter from './routes/mcp';
+import sessionsRouter from './routes/sessions';
+import mediaRouter from './routes/media';
+import mediaAuthRouter from './routes/mediaAuth';
+import settingsRouter from './routes/settings';
+import commandsRouter from './routes/commands';
+import subagentsRouter from './routes/subagents';
+import projectsRouter from './routes/projects';
+import authRouter from './routes/auth';
+import configRouter from './routes/config';
+import { authMiddleware } from './middleware/auth';
+import { loadConfig, getSlidesDir } from './config/index';
 
 dotenv.config();
 

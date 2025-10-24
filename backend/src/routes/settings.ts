@@ -12,8 +12,8 @@ import {
   updateVersion, 
   deleteVersion, 
   initializeSystemVersion 
-} from '../services/claudeVersionStorage.js';
-import { ClaudeVersionCreate, ClaudeVersionUpdate } from '../types/claude-versions.js';
+} from '../services/claudeVersionStorage';
+import { ClaudeVersionCreate, ClaudeVersionUpdate } from '../types/claude-versions';
 
 const router: Router = express.Router();
 const execAsync = promisify(exec);

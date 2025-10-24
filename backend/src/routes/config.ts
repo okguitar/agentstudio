@@ -1,8 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
-import { authMiddleware } from '../middleware/auth.js';
-import { loadConfig } from '../config/index.js';
+import { authMiddleware } from '../middleware/auth';
+import { loadConfig } from '../config/index';
 
 const router: Router = Router();
 

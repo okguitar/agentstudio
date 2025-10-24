@@ -2,9 +2,9 @@ import express from 'express';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
-import { AgentStorage } from '../services/agentStorage.js';
-import { ClaudeHistoryMessage, ClaudeHistorySession } from '../types/claude-history.js';
-import { sessionManager } from '../services/sessionManager.js';
+import { AgentStorage } from '../services/agentStorage';
+import { ClaudeHistoryMessage, ClaudeHistorySession } from '../types/claude-history';
+import { sessionManager } from '../services/sessionManager';
 
 const router: express.Router = express.Router();
 
