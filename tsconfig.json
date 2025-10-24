@@ -19,14 +19,9 @@
     "declaration": true,
     "declarationMap": true,
     "composite": true,
-    "baseUrl": ".",
-    "paths": {
-      "@agentstudio/shared": ["./shared/src"],
-      "@agentstudio/shared/*": ["./shared/src/*"]
-    }
+    "baseUrl": "."
   },
   "references": [
-    { "path": "./shared" },
     { "path": "./frontend" },
     { "path": "./backend" }
   ],
