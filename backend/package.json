@@ -2,7 +2,6 @@
   "name": "agentstudio-backend",
   "version": "0.2.0",
   "description": "Backend API for AgentStudio - AI-powered presentation editor with Claude integration",
-  "type": "module",
   "main": "dist/index.js",
   "bin": {
     "agentstudio": "dist/bin/agentstudio.js"

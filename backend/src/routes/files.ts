@@ -2,14 +2,10 @@ import express from 'express';
 import fs from 'fs-extra';
 import { existsSync } from 'fs';
 import { join, dirname, resolve, relative } from 'path';
-import { fileURLToPath } from 'url';
 import { z } from 'zod';
 import * as os from 'os';
 import * as path from 'path';
 import { getProjectId } from './media';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 const router: express.Router = express.Router();
 
