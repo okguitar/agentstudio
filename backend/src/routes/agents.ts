@@ -19,7 +19,7 @@ import { AgentStorage } from '../services/agentStorage';
 import { AgentConfig } from '../types/agents';
 import { ProjectMetadataStorage } from '../services/projectMetadataStorage';
 import { sessionManager } from '../services/sessionManager';
-import { getAllVersions, getDefaultVersionId } from '../services/claudeVersionStorage';
+import { getAllVersions, getAllVersionsInternal, getDefaultVersionId, getVersionByIdInternal } from '../services/claudeVersionStorage';
 
 // 类型守卫函数
 function isSDKSystemMessage(message: any): message is SDKSystemMessage {
@@ -480,9 +480,8 @@ async function buildQueryOptions(agent: any, projectPath: string | undefined, mc
   
   try {
     if (claudeVersion) {
-      // 使用指定版本
-      const versions = await getAllVersions();
-      const selectedVersion = versions.find(v => v.id === claudeVersion);
+      // 使用指定版本 - 使用内部函数获取未处理的版本信息
+      const selectedVersion = await getVersionByIdInternal(claudeVersion);
       if (selectedVersion) {
         if (selectedVersion.executablePath) {
           executablePath = selectedVersion.executablePath.trim();
@@ -496,11 +495,10 @@ async function buildQueryOptions(agent: any, projectPath: string | undefined, mc
         executablePath = await getClaudeExecutablePath();
       }
     } else {
-      // 使用默认版本
+      // 使用默认版本 - 使用内部函数获取未处理的版本信息
       const defaultVersionId = await getDefaultVersionId();
       if (defaultVersionId) {
-        const versions = await getAllVersions();
-        const defaultVersion = versions.find(v => v.id === defaultVersionId);
+        const defaultVersion = await getVersionByIdInternal(defaultVersionId);
         if (defaultVersion) {
           if (defaultVersion.executablePath) {
             executablePath = defaultVersion.executablePath;
