@@ -5,7 +5,20 @@ import { join, dirname, resolve, relative } from 'path';
 import { z } from 'zod';
 import * as os from 'os';
 import * as path from 'path';
-import { getProjectId } from './media';
+// Helper function to get project ID using base64url encoding (reversible)
+const getProjectId = (projectPath: string): string => {
+  return encodeProjectPath(projectPath);
+};
+
+// Helper function to encode project path using base64url encoding
+const encodeProjectPath = (projectPath: string): string => {
+  const normalizedPath = resolve(projectPath);
+  // Use base64url encoding (URL-safe)
+  return Buffer.from(normalizedPath).toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=/g, '');
+};
 
 const router: express.Router = express.Router();
 
