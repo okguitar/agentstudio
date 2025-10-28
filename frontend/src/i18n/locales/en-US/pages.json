@@ -404,6 +404,10 @@
           "kimi": {
             "name": "Kimi K2 (Moonshot AI)",
             "description": "Use Kimi K2 model service, compatible with Anthropic API"
+          },
+          "minimax": {
+            "name": "MiniMax",
+            "description": "Use MiniMax high-performance model service, compatible with Anthropic API"
           }
         }
       },

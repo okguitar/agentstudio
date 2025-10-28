@@ -404,6 +404,10 @@
           "kimi": {
             "name": "Kimi K2 (月之暗面)",
             "description": "使用Kimi K2模型服务，支持Anthropic API兼容"
+          },
+          "minimax": {
+            "name": "MiniMax",
+            "description": "使用MiniMax的高性能模型服务，支持Anthropic API兼容"
           }
         }
       },

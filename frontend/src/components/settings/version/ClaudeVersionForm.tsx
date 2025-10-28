@@ -9,6 +9,7 @@ import { EnvironmentVariablesSection } from './EnvironmentVariablesSection';
 interface ClaudeVersionFormProps {
   editingVersion: ClaudeVersion | null;
   isCreating: boolean;
+  isFromTemplate: boolean;
   formData: Partial<ClaudeVersionCreate>;
   envVarInput: { key: string; value: string };
   modelInput: { id: string; name: string; isVision: boolean };
@@ -32,6 +33,7 @@ interface ClaudeVersionFormProps {
 export const ClaudeVersionForm: React.FC<ClaudeVersionFormProps> = ({
   editingVersion,
   isCreating,
+  isFromTemplate,
   formData,
   envVarInput,
   modelInput,
@@ -94,8 +96,8 @@ export const ClaudeVersionForm: React.FC<ClaudeVersionFormProps> = ({
               </div>
             )}
 
-            {/* 配置模板选择 - 只在新建时显示 */}
-            {isCreating && (
+            {/* 配置模板选择 - 只在新建且不是从模板打开时显示 */}
+            {isCreating && !isFromTemplate && (
               <div className="p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg">
                 <div className="flex items-center space-x-2 mb-3">
                   <Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-400" />

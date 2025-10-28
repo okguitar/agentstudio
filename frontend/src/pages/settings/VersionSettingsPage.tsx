@@ -20,6 +20,7 @@ export const VersionSettingsPage: React.FC = () => {
   // Claude版本管理相关状态
   const [isCreating, setIsCreating] = useState(false);
   const [editingVersion, setEditingVersion] = useState<ClaudeVersion | null>(null);
+  const [isFromTemplate, setIsFromTemplate] = useState(false);
   const [formData, setFormData] = useState<Partial<ClaudeVersionCreate>>({
     name: '',
     alias: '',
@@ -58,6 +59,7 @@ export const VersionSettingsPage: React.FC = () => {
   const handleAddVersion = () => {
     setIsCreating(true);
     setEditingVersion(null);
+    setIsFromTemplate(false);
     resetForm();
   };
 
@@ -65,6 +67,7 @@ export const VersionSettingsPage: React.FC = () => {
     // 先打开创建表单
     setIsCreating(true);
     setEditingVersion(null);
+    setIsFromTemplate(true);
     resetForm();
 
     // 然后应用模板
@@ -101,6 +104,7 @@ export const VersionSettingsPage: React.FC = () => {
   const handleEdit = (version: ClaudeVersion) => {
     setEditingVersion(version);
     setIsCreating(false);
+    setIsFromTemplate(false);
     setFormData({
       name: version.name,
       alias: version.alias,
@@ -114,6 +118,7 @@ export const VersionSettingsPage: React.FC = () => {
   const handleCancel = () => {
     setIsCreating(false);
     setEditingVersion(null);
+    setIsFromTemplate(false);
     resetForm();
   };
 
@@ -326,6 +331,7 @@ export const VersionSettingsPage: React.FC = () => {
         <ClaudeVersionForm
           editingVersion={editingVersion}
           isCreating={isCreating}
+          isFromTemplate={isFromTemplate}
           formData={formData}
           envVarInput={envVarInput}
           modelInput={modelInput}
