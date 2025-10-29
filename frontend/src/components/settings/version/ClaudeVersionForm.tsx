@@ -28,6 +28,7 @@ interface ClaudeVersionFormProps {
   onAddModel: () => void;
   onUpdateModel: (modelId: string, updates: Partial<ModelConfig>) => void;
   onRemoveModel: (modelId: string) => void;
+  onAuthTokenChange?: (changed: boolean) => void; // 新增：接收authTokenChanged状态
 }
 
 export const ClaudeVersionForm: React.FC<ClaudeVersionFormProps> = ({
@@ -52,6 +53,7 @@ export const ClaudeVersionForm: React.FC<ClaudeVersionFormProps> = ({
   onAddModel,
   onUpdateModel,
   onRemoveModel,
+  onAuthTokenChange,
 }) => {
   const { t } = useTranslation('pages');
 
@@ -229,6 +231,7 @@ export const ClaudeVersionForm: React.FC<ClaudeVersionFormProps> = ({
               onUpdateEnvironmentVariable={onUpdateEnvironmentVariable}
               onRemoveEnvironmentVariable={onRemoveEnvironmentVariable}
               onEnvVarInputChange={onEnvVarInputChange}
+              onAuthTokenChange={onAuthTokenChange}
             />
           </div>
         </div>

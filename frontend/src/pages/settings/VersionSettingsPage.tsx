@@ -6,16 +6,12 @@ import { ClaudeVersion, ClaudeVersionCreate, ClaudeVersionUpdate, ModelConfig } 
 import { FileBrowser } from '../../components/FileBrowser';
 import { type VersionTemplate } from '../../types/versionTemplates';
 import { generateClaudeCommand, copyToClipboard } from '../../utils/commandGenerator';
-import { useBackendServices } from '../../hooks/useBackendServices';
-import { resetClaudeSetup } from '../../utils/onboardingStorage';
 import { VersionTemplateSelector } from '../../components/settings/version/VersionTemplateSelector';
 import { ClaudeVersionList } from '../../components/settings/version/ClaudeVersionList';
 import { ClaudeVersionForm } from '../../components/settings/version/ClaudeVersionForm';
-import { ReinitializeSetupButton } from '../../components/settings/version/ReinitializeSetupButton';
 
 export const VersionSettingsPage: React.FC = () => {
   const { t } = useTranslation('pages');
-  const { currentServiceId } = useBackendServices();
   
   // Claude版本管理相关状态
   const [isCreating, setIsCreating] = useState(false);
@@ -33,6 +29,7 @@ export const VersionSettingsPage: React.FC = () => {
   const [modelInput, setModelInput] = useState({ id: '', name: '', isVision: false });
   const [showFileBrowser, setShowFileBrowser] = useState(false);
   const [currentTemplateTokenUrl, setCurrentTemplateTokenUrl] = useState<string | null>(null);
+  const [authTokenChanged, setAuthTokenChanged] = useState(false);
   
   // Claude版本数据和操作
   const { data: claudeVersionsData, isLoading: isLoadingClaudeVersions } = useClaudeVersions();
@@ -54,6 +51,7 @@ export const VersionSettingsPage: React.FC = () => {
     });
     setEnvVarInput({ key: '', value: '' });
     setModelInput({ id: '', name: '', isVision: false });
+    setAuthTokenChanged(false);
   };
 
   const handleAddVersion = () => {
@@ -122,17 +120,7 @@ export const VersionSettingsPage: React.FC = () => {
     resetForm();
   };
 
-  const handleReinitializeSetup = () => {
-    if (currentServiceId) {
-      resetClaudeSetup(currentServiceId);
-      showSuccess(t('settings.version.reinitializeSuccess'));
-      // Reload page to trigger the setup wizard
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
-    }
-  };
-
+  
   const addEnvironmentVariable = () => {
     if (envVarInput.key && envVarInput.value) {
       setFormData(prev => ({
@@ -226,10 +214,13 @@ export const VersionSettingsPage: React.FC = () => {
       };
 
       if (editingVersion) {
-        // 更新现有版本
+        // 更新现有版本，传递authTokenChanged状态
         await updateClaudeVersion.mutateAsync({
           id: editingVersion.id,
-          data: dataToSave as ClaudeVersionUpdate
+          data: {
+            ...dataToSave as ClaudeVersionUpdate,
+            authTokenChanged
+          }
         });
         showSuccess(t('settings.version.success.updateVersion'));
       } else {
@@ -301,9 +292,6 @@ export const VersionSettingsPage: React.FC = () => {
             onQuickCreateWithTemplate={handleQuickCreateWithTemplate}
             onAddVersion={handleAddVersion}
           />
-          <ReinitializeSetupButton
-            onReinitializeSetup={handleReinitializeSetup}
-          />
         </div>
       </div>
 
@@ -358,6 +346,7 @@ export const VersionSettingsPage: React.FC = () => {
           onAddModel={addModel}
           onUpdateModel={updateModel}
           onRemoveModel={removeModel}
+          onAuthTokenChange={setAuthTokenChanged}
         />
       )}
 
