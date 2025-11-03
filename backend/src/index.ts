@@ -139,7 +139,13 @@ const app: express.Express = express();
     allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'X-Requested-With'],
     exposedHeaders: ['Content-Range', 'X-Content-Range']
   }));
-  app.use(express.json({ limit: '10mb' }));
+  // JSON parser - skip /api/slack (needs raw body for signature verification)
+  app.use((req, res, next) => {
+    if (req.path.startsWith('/api/slack')) {
+      return next();
+    }
+    express.json({ limit: '10mb' })(req, res, next);
+  });
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
   // Static files - serve slides directory
@@ -176,7 +182,16 @@ const app: express.Express = express();
 
 // Routes - Public routes
   app.use('/api/auth', authRouter);
-  app.use('/api/slack', slackRouter); // Slack webhook (verified by signature, not auth middleware)
+  // Slack webhook - needs raw body for signature verification
+  app.use('/api/slack',
+    express.json({
+      limit: '10mb',
+      verify: (req: any, res, buf) => {
+        req.rawBody = buf.toString('utf8');
+      }
+    }),
+    slackRouter
+  );
 
   // Protected routes - Require authentication
   app.use('/api/files', authMiddleware, filesRouter);

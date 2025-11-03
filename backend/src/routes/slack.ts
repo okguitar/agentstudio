@@ -65,7 +65,14 @@ function verifySlackRequest(req: express.Request, res: express.Response, next: e
 
   const slackSignature = req.headers['x-slack-signature'] as string;
   const slackTimestamp = req.headers['x-slack-request-timestamp'] as string;
-  const rawBody = JSON.stringify(req.body);
+  const rawBody = (req as any).rawBody || JSON.stringify(req.body);
+
+  console.log('🔍 Debug signature verification:', {
+    hasRawBody: !!(req as any).rawBody,
+    rawBodyLength: rawBody.length,
+    timestamp: slackTimestamp,
+    signature: slackSignature?.substring(0, 10) + '...'
+  });
 
   if (!slackSignature || !slackTimestamp) {
     console.warn('⚠️ Missing Slack signature headers');

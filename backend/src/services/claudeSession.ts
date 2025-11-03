@@ -20,7 +20,7 @@ export class ClaudeSession {
   private projectPath: string | null = null;
   private claudeVersionId: string | undefined = undefined;
 
-  // 响应分发器相关
+  // 响应分发器相关 - 简化版本（会话级别的并发控制在 SlackAIService 中处理）
   private responseCallbacks: Map<string, (response: SDKMessage) => void> = new Map();
   private nextRequestId = 0;
   private isBackgroundRunning = false;
@@ -150,35 +150,24 @@ export class ClaudeSession {
    * @param responseCallback 响应回调函数
    */
   async sendMessage(message: any, responseCallback: (response: SDKMessage) => void): Promise<string> {
-    console.log(`🔧 [DEBUG] sendMessage called for agent: ${this.agentId}, isActive: ${this.isActive}, isBackgroundRunning: ${this.isBackgroundRunning}`);
-    
     if (!this.isActive) {
       throw new Error('Session is not active');
     }
-    
+
     this.lastActivity = Date.now();
-    
+
     // 生成唯一的请求ID
     const requestId = `req_${this.nextRequestId++}_${Date.now()}`;
-    console.log(`🔧 [DEBUG] Generated requestId: ${requestId} for agent: ${this.agentId}`);
-    
-    // 注册响应回调
     this.responseCallbacks.set(requestId, responseCallback);
-    console.log(`🔧 [DEBUG] Registered callback for requestId: ${requestId}, total callbacks: ${this.responseCallbacks.size}`);
-    
-    // 启动后台响应处理器（如果还没有启动）
+
+    // 确保后台响应处理器已启动（简单版本，因为并发控制在上一层）
     if (!this.isBackgroundRunning) {
-      console.log(`🔧 [DEBUG] Starting background response handler for agent: ${this.agentId}`);
       this.startBackgroundResponseHandler();
-    } else {
-      console.log(`🔧 [DEBUG] Background response handler already running for agent: ${this.agentId}`);
     }
-    
-    // 将消息推送到队列中，Claude 会通过 async generator 接收
-    console.log(`🔧 [DEBUG] About to push message to queue for agent: ${this.agentId}, queueSize before: ${this.messageQueue.size()}`);
+
+    // 将消息推送到队列中
     this.messageQueue.push(message);
-    console.log(`📨 Queued message for agent: ${this.agentId}, requestId: ${requestId}, queueSize: ${this.messageQueue.size()}`);
-    
+
     return requestId;
   }
 
@@ -189,17 +178,14 @@ export class ClaudeSession {
     if (this.isBackgroundRunning || !this.queryStream) {
       return;
     }
-    
+
     this.isBackgroundRunning = true;
     console.log(`🚀 Starting background response handler for agent: ${this.agentId}`);
-    
+
     try {
-      console.log(`🔧 [DEBUG] About to start for-await loop for agent: ${this.agentId}, queryStream: ${!!this.queryStream}`);
-      
       for await (const response of this.queryStream) {
         // 类型安全的消息处理
         const sdkMessage = response as SDKMessage;
-        console.log(`🔧 [DEBUG] Received response in background handler for agent: ${this.agentId}, type: ${sdkMessage.type}`);
         this.lastActivity = Date.now();
 
         // 捕获 SDK 返回的 sessionId
@@ -208,33 +194,29 @@ export class ClaudeSession {
           this.claudeSessionId = sessionId;
           console.log(`📝 Captured Claude sessionId: ${this.claudeSessionId} for agent: ${this.agentId}`);
         }
-        
-        // 获取当前最早的请求ID（FIFO队列）
-        const requestIds = Array.from(this.responseCallbacks.keys());
-        const currentRequestId = requestIds.length > 0 ? requestIds[0] : null;
-        
-        console.log(`🔧 [DEBUG] Current pending requests: ${requestIds.length}, processing: ${currentRequestId}`);
-        
-        // 分发响应给对应的请求
-        if (currentRequestId && this.responseCallbacks.has(currentRequestId)) {
-          const callback = this.responseCallbacks.get(currentRequestId)!;          
-          callback(sdkMessage);
 
-          // 如果是 result 事件，该请求完成，从队列中移除
+        // 简单的响应分发：只使用第一个回调（因为我们现在保证了没有并发）
+        const requestIds = Array.from(this.responseCallbacks.keys());
+        if (requestIds.length > 0) {
+          const currentRequestId = requestIds[0];
+          const callback = this.responseCallbacks.get(currentRequestId)!;
+
+          try {
+            callback(sdkMessage);
+          } catch (callbackError) {
+            console.error(`❌ Error in response callback for request ${currentRequestId}:`, callbackError);
+          }
+
+          // 如果是 result 事件，该请求完成，移除回调
           if (sdkMessage.type === 'result') {
-            console.log(`✅ Request ${currentRequestId} completed, removing from queue`);
             this.responseCallbacks.delete(currentRequestId);
           }
-        } else {
-          console.log(`⚠️  No callback found for current request: ${currentRequestId}`);
         }
       }
-      
-      console.log(`🔧 [DEBUG] For-await loop ended for agent: ${this.agentId}`);
-      this.isBackgroundRunning = false; // 重要：循环结束时重置状态
     } catch (error) {
       console.error(`Error in background response handler for agent ${this.agentId}:`, error);
       this.isActive = false;
+    } finally {
       this.isBackgroundRunning = false;
     }
   }

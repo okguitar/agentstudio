@@ -15,7 +15,9 @@ import { promisify } from 'util';
 import { sessionManager } from './sessionManager.js';
 import { AgentStorage } from './agentStorage.js';
 import { slackThreadMapper } from './slackThreadMapper.js';
+import { slackSessionLock } from './slackSessionLock.js';
 import { SlackClient } from './slackClient.js';
+import { getDefaultVersionId, getAllVersionsInternal } from './claudeVersionStorage.js';
 import type { SlackMessageEvent, SlackAppMentionEvent } from '../types/slack.js';
 
 const execAsync = promisify(exec);
@@ -57,7 +59,7 @@ async function getClaudeExecutablePath(): Promise<string | null> {
 /**
  * Build query options for Claude (copied and adapted from agents.ts)
  */
-async function buildQueryOptions(agent: any, projectPath?: string, mcpTools?: string[], permissionMode?: string, model?: string): Promise<Options> {
+async function buildQueryOptions(agent: any, projectPath?: string, mcpTools?: string[], permissionMode?: string, model?: string, defaultEnv?: Record<string, string>): Promise<Options> {
   let cwd = process.cwd();
   if (projectPath) {
     cwd = projectPath;
@@ -106,6 +108,41 @@ async function buildQueryOptions(agent: any, projectPath?: string, mcpTools?: st
     queryOptions.pathToClaudeCodeExecutable = executablePath;
   }
 
+  // Apply environment variables from Claude version if available
+  // This is needed for different Claude versions with different API keys or configurations
+  try {
+    let versionEnv: Record<string, string> | null = null;
+
+    // First try agent-specific Claude version
+    const claudeVersionId = agent.claudeVersionId;
+    if (claudeVersionId) {
+      const versionConfigPath = path.join(os.homedir(), '.claude-agent', 'claude-versions.json');
+      if (fs.existsSync(versionConfigPath)) {
+        const config = JSON.parse(fs.readFileSync(versionConfigPath, 'utf8'));
+        const version = config.versions?.find((v: any) => v.id === claudeVersionId);
+
+        if (version?.environmentVariables) {
+          console.log(`🔧 Applying environment variables for agent-specific Claude version: ${version.name}`);
+          versionEnv = version.environmentVariables;
+        }
+      }
+    }
+
+    // If no agent-specific version, try default version
+    if (!versionEnv && defaultEnv) {
+      console.log(`🔧 Applying environment variables from default Claude version`);
+      versionEnv = defaultEnv;
+    }
+
+    // Apply the environment variables
+    if (versionEnv) {
+      // Merge with existing process.env to ensure critical variables are preserved
+      queryOptions.env = { ...process.env, ...versionEnv };
+    }
+  } catch (error) {
+    console.error('Failed to apply Claude version environment variables:', error);
+  }
+
   return queryOptions;
 }
 
@@ -124,6 +161,41 @@ const readMcpConfig = () => {
   }
   return { mcpServers: {} };
 };
+
+/**
+ * Get default Claude version environment variables
+ */
+async function getDefaultClaudeVersionEnv(): Promise<Record<string, string> | null> {
+  try {
+    const defaultVersionId = await getDefaultVersionId();
+    if (defaultVersionId) {
+      console.log(`🔍 Found default Claude version: ${defaultVersionId}`);
+
+      const allVersions = await getAllVersionsInternal();
+      const defaultVersion = allVersions.find(v => v.id === defaultVersionId);
+
+      if (defaultVersion && defaultVersion.environmentVariables) {
+        console.log(`🎯 Using default Claude version: ${defaultVersion.name} (${defaultVersion.alias})`);
+
+        // Check if this version has API keys configured
+        const hasApiKey = defaultVersion.environmentVariables.ANTHROPIC_API_KEY ||
+                         defaultVersion.environmentVariables.OPENAI_API_KEY ||
+                         defaultVersion.environmentVariables.ANTHROPIC_AUTH_TOKEN;
+
+        if (hasApiKey) {
+          console.log(`✅ Default Claude version has API key configured`);
+          return defaultVersion.environmentVariables;
+        }
+      }
+    }
+
+    console.log(`⚠️ No default Claude version with API keys found`);
+    return null;
+  } catch (error) {
+    console.error('❌ Error getting default Claude version:', error);
+    return null;
+  }
+}
 
 /**
  * Parse agent from message text
@@ -243,15 +315,23 @@ export class SlackAIService {
         }
       }
 
-      // If no agent found, show available agents list
+      // If no agent found, try to use default agent
       if (!currentAgentId) {
-        const agentsList = getAvailableAgentsList(allAgents);
-        await this.slackClient.postMessage({
-          channel: event.channel,
-          text: `🤖 **请选择你想要使用的AI助手：**\n\n${agentsList}\n\n📝 **使用方法：**\n• 直接提及：\`@机器人 ppt-editor 请帮我创建幻灯片\`\n• 或使用别名：\`@机器人 ppt 请帮我创建幻灯片\`\n• 通用对话：\`@机器人 general 随便聊聊\``,
-          thread_ts: threadTs
-        });
-        return;
+        // Try to use default agent
+        const defaultAgent = this.agentStorage.getAgent(this.defaultAgentId);
+        if (defaultAgent && defaultAgent.enabled) {
+          currentAgentId = this.defaultAgentId;
+          console.log(`🔧 Using default agent: ${currentAgentId}`);
+        } else {
+          // If default agent is not available, show available agents list
+          const agentsList = getAvailableAgentsList(allAgents);
+          await this.slackClient.postMessage({
+            channel: event.channel,
+            text: `🤖 **请选择你想要使用的AI助手：**\n\n${agentsList}\n\n📝 **使用方法：**\n• 直接提及：\`@机器人 ppt-editor 请帮我创建幻灯片\`\n• 或使用别名：\`@机器人 ppt 请帮我创建幻灯片\`\n• 通用对话：\`@机器人 general 随便聊聊\``,
+            thread_ts: threadTs
+          });
+          return;
+        }
       }
 
       // Get agent configuration
@@ -284,8 +364,11 @@ export class SlackAIService {
 
       console.log(`📍 Posted placeholder message: ${placeholderMsg.ts}`);
 
-      // Build query options
-      const queryOptions = await buildQueryOptions(agent);
+      // Get default Claude version environment variables
+      const defaultClaudeEnv = await getDefaultClaudeVersionEnv();
+
+      // Build query options with default environment variables
+      const queryOptions = await buildQueryOptions(agent, undefined, undefined, undefined, undefined, defaultClaudeEnv || undefined);
 
       // Get or create Claude session
       let claudeSession = sessionId ? sessionManager.getSession(sessionId) : null;
@@ -296,6 +379,50 @@ export class SlackAIService {
         console.log(`🆕 Created new Claude session for Slack thread: ${threadTs}`);
       } else {
         console.log(`♻️  Reusing existing Claude session: ${sessionId}`);
+      }
+
+      // 检查会话是否被锁定（文件锁机制）
+      let finalSessionId = claudeSession.getClaudeSessionId() || sessionId;
+
+      if (finalSessionId) {
+        const lockStatus = slackSessionLock.isSessionLocked(finalSessionId, true);
+
+        if (lockStatus.locked) {
+          console.log(`⚠️  Session ${finalSessionId} is locked (${lockStatus.reason}), returning busy message`);
+
+          await this.slackClient.updateMessage({
+            channel: event.channel,
+            ts: placeholderMsg.ts,
+            text: `🚦 ${agentDisplayName} 正在处理其他消息，请稍后再试...`
+          });
+
+          return;
+        }
+      }
+
+      // 尝试获取会话锁
+      let lockAcquired = false;
+      if (finalSessionId) {
+        lockAcquired = slackSessionLock.tryAcquireLock(finalSessionId, {
+          sessionId: finalSessionId,
+          threadTs,
+          channel: event.channel,
+          agentId: currentAgentId
+        });
+
+        if (!lockAcquired) {
+          console.log(`⚠️  Failed to acquire lock for session ${finalSessionId}, returning busy message`);
+
+          await this.slackClient.updateMessage({
+            channel: event.channel,
+            ts: placeholderMsg.ts,
+            text: `🚦 ${agentDisplayName} 正在处理其他消息，请稍后再试...`
+          });
+
+          return;
+        }
+
+        console.log(`🔒 Acquired lock for session ${finalSessionId}`);
       }
 
       // Build user message with cleaned text (remove agent mention)
@@ -315,46 +442,114 @@ export class SlackAIService {
       let fullResponse = '';
       let toolUsageInfo = '';
       let hasError = false;
+      let isResponseComplete = false;
 
       try {
-        await claudeSession.sendMessage(userMessage, (sdkMessage: any) => {
-          console.log(`📦 Received SDK message type: ${sdkMessage.type}, subtype: ${sdkMessage.subtype}`);
+        // Create a promise to wait for the response to complete
+        const responsePromise = new Promise<void>((resolve, reject) => {
+          let timeoutId: NodeJS.Timeout;
 
-          // Handle init message to get sessionId
-          if (sdkMessage.type === 'system' && sdkMessage.subtype === 'init' && sdkMessage.session_id) {
-            const newSessionId = sdkMessage.session_id;
-            claudeSession!.setClaudeSessionId(newSessionId);
-            sessionManager.confirmSessionId(claudeSession!, newSessionId);
+          claudeSession.sendMessage(userMessage, (sdkMessage: any) => {
+            console.log(`📦 Received SDK message type: ${sdkMessage.type}, subtype: ${sdkMessage.subtype}`);
 
-            // Update mapping
-            slackThreadMapper.setMapping({
-              threadTs,
-              channel: event.channel,
-              sessionId: newSessionId,
-              agentId: currentAgentId
-            });
+            // Clear any existing timeout
+            if (timeoutId) {
+              clearTimeout(timeoutId);
+            }
 
-            console.log(`✅ Session confirmed: ${newSessionId} for thread: ${threadTs}`);
-          }
+            // Set a new timeout in case we don't get a result event
+            timeoutId = setTimeout(() => {
+              if (!isResponseComplete) {
+                console.log('⏰ Response timeout, treating as complete');
+                isResponseComplete = true;
+                resolve();
+              }
+            }, 30000); // 30 second timeout
 
-          // Collect text responses
-          if (sdkMessage.type === 'assistant' && sdkMessage.subtype === 'text' && sdkMessage.text) {
-            fullResponse += sdkMessage.text;
-          }
+            // Handle init message to get sessionId
+            if (sdkMessage.type === 'system' && sdkMessage.subtype === 'init' && sdkMessage.session_id) {
+              const newSessionId = sdkMessage.session_id;
+              claudeSession!.setClaudeSessionId(newSessionId);
+              sessionManager.confirmSessionId(claudeSession!, newSessionId);
 
-          // Track tool usage
-          if (sdkMessage.type === 'tool_use' && sdkMessage.subtype === 'start') {
-            const toolName = sdkMessage.tool_use?.name || 'unknown';
-            toolUsageInfo += `\n🔧 Using tool: ${toolName}`;
-            console.log(`🔧 Tool started: ${toolName}`);
-          }
+              // Update mapping
+              slackThreadMapper.setMapping({
+                threadTs,
+                channel: event.channel,
+                sessionId: newSessionId,
+                agentId: currentAgentId
+              });
 
-          // Handle errors
-          if (sdkMessage.type === 'error') {
+              console.log(`✅ Session confirmed: ${newSessionId} for thread: ${threadTs}`);
+            }
+
+            // Collect text responses
+            if (sdkMessage.type === 'assistant') {
+              console.log('🔍 Assistant message details:', JSON.stringify({
+                type: sdkMessage.type,
+                subtype: sdkMessage.subtype,
+                hasContent: !!(sdkMessage.content || sdkMessage.message?.content),
+                contentLength: sdkMessage.content?.length || sdkMessage.message?.content?.length || 0
+              }, null, 2));
+
+              // Extract text from message.content array (standard Claude SDK format)
+              if (sdkMessage.message?.content && Array.isArray(sdkMessage.message.content)) {
+                for (const block of sdkMessage.message.content) {
+                  if (block.type === 'text' && block.text) {
+                    fullResponse += block.text;
+                  }
+                }
+              }
+              // Fallback: Try other formats
+              else if (sdkMessage.subtype === 'text' && sdkMessage.text) {
+                fullResponse += sdkMessage.text;
+              } else if (sdkMessage.message && typeof sdkMessage.message === 'string') {
+                fullResponse += sdkMessage.message;
+              } else if (sdkMessage.content) {
+                if (Array.isArray(sdkMessage.content)) {
+                  for (const block of sdkMessage.content) {
+                    if (block.type === 'text' && block.text) {
+                      fullResponse += block.text;
+                    }
+                  }
+                } else if (typeof sdkMessage.content === 'string') {
+                  fullResponse += sdkMessage.content;
+                }
+              }
+            }
+
+            // Track tool usage
+            if (sdkMessage.type === 'tool_use' && sdkMessage.subtype === 'start') {
+              const toolName = sdkMessage.tool_use?.name || 'unknown';
+              toolUsageInfo += `\n🔧 Using tool: ${toolName}`;
+              console.log(`🔧 Tool started: ${toolName}`);
+            }
+
+            // Handle errors
+            if (sdkMessage.type === 'error') {
+              hasError = true;
+              console.error('❌ Claude error:', sdkMessage.error || sdkMessage.message);
+              isResponseComplete = true;
+              resolve();
+            }
+
+            // Check for completion
+            if (sdkMessage.type === 'result') {
+              console.log('✅ AI response completed');
+              isResponseComplete = true;
+              clearTimeout(timeoutId);
+              resolve();
+            }
+          }).catch((error) => {
+            console.error('❌ Error in sendMessage:', error);
             hasError = true;
-            console.error('❌ Claude error:', sdkMessage.error || sdkMessage.message);
-          }
+            clearTimeout(timeoutId);
+            resolve();
+          });
         });
+
+        // Wait for the response to complete
+        await responsePromise;
 
         // Update Slack message with final response
         let finalText = fullResponse || '✅ 完成';
@@ -383,6 +578,16 @@ export class SlackAIService {
           ts: placeholderMsg.ts,
           text: `❌ 错误: ${error instanceof Error ? error.message : '未知错误'}`
         });
+      } finally {
+        // 释放会话锁
+        if (finalSessionId && lockAcquired) {
+          const released = slackSessionLock.releaseLock(finalSessionId);
+          if (released) {
+            console.log(`🔓 Released lock for session ${finalSessionId}`);
+          } else {
+            console.log(`⚠️  Failed to release lock for session ${finalSessionId}`);
+          }
+        }
       }
 
     } catch (error) {
