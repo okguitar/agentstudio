@@ -3,8 +3,8 @@ import fs from 'fs';
 import path from 'path';
 import * as os from 'os';
 import { promisify } from 'util';
-import { ProjectMetadataStorage } from '@agentstudio/shared/utils/projectMetadataStorage';
-import { AgentStorage } from '@agentstudio/shared/utils/agentStorage';
+import { ProjectMetadataStorage } from '../services/projectMetadataStorage';
+import { AgentStorage } from '../services/agentStorage';
 
 const router: express.Router = express.Router();
 const readFile = promisify(fs.readFile);
@@ -245,7 +245,7 @@ router.get('/:dirName/claude-md', async (req, res) => {
     }
 
     // Try to find CLAUDE.md in project directory first, then parent directory
-    let claudeFilePath = path.join(project.path, 'CLAUDE.md');
+    const claudeFilePath = path.join(project.path, 'CLAUDE.md');
     console.log('Looking for CLAUDE.md at:', claudeFilePath);
 
     try {
@@ -352,6 +352,76 @@ router.get('/agents/:agentId', (req, res) => {
   }
 });
 
+// POST /api/projects/import - Import existing project directory
+router.post('/import', (req, res) => {
+  try {
+    const { agentId, projectPath } = req.body;
+    
+    if (!agentId || !projectPath) {
+      return res.status(400).json({ error: 'Agent ID and project path are required' });
+    }
+    
+    // Verify agent exists
+    const agent = globalAgentStorage.getAgent(agentId);
+    if (!agent) {
+      return res.status(404).json({ error: 'Agent not found' });
+    }
+    
+    // Check if project directory exists
+    if (!fs.existsSync(projectPath)) {
+      return res.status(404).json({ error: 'Project directory does not exist' });
+    }
+    
+    // Check if it's actually a directory
+    const stats = fs.statSync(projectPath);
+    if (!stats.isDirectory()) {
+      return res.status(400).json({ error: 'Path is not a directory' });
+    }
+    
+    // Add project path to agent's projects list
+    if (!agent.projects) {
+      agent.projects = [];
+    }
+    const normalizedPath = path.resolve(projectPath);
+    if (!agent.projects.includes(normalizedPath)) {
+      agent.projects.unshift(normalizedPath); // Add to beginning for most recent
+      agent.updatedAt = new Date().toISOString();
+      globalAgentStorage.saveAgent(agent);
+    }
+    
+    // Extract project name from path
+    const projectName = path.basename(normalizedPath);
+
+    // Return project info that matches frontend interface
+    const projectId = `${agentId}-${Buffer.from(normalizedPath).toString('base64').replace(/[+/=]/g, '').slice(-8)}`;
+
+    res.json({
+      success: true,
+      project: {
+        id: projectId,
+        name: projectName,
+        dirName: projectName,
+        path: normalizedPath,
+        agents: [agentId],
+        defaultAgent: agentId,
+        defaultAgentName: agent.name,
+        defaultAgentIcon: agent.ui.icon,
+        createdAt: stats.birthtime.toISOString(),
+        lastAccessed: new Date().toISOString(),
+        description: ''
+      },
+      message: `Project "${projectName}" imported successfully`
+    });
+    
+  } catch (error) {
+    console.error('Failed to import project:', error);
+    res.status(500).json({ 
+      error: 'Failed to import project', 
+      details: error instanceof Error ? error.message : String(error)
+    });
+  }
+});
+
 // POST /api/projects/create - Create new project directory in ~/.claude/projects
 router.post('/create', (req, res) => {
   try {
@@ -436,17 +506,18 @@ The conversation history will be saved in \`.cc-sessions/${agentId}/\` within th
       
       // Return project info that matches frontend interface
       const projectId = `${agentId}-${Buffer.from(normalizedPath).toString('base64').replace(/[+/=]/g, '').slice(-8)}`;
-      
+
       res.json({
         success: true,
         project: {
           id: projectId,
           name: projectName,
+          dirName: projectName,
           path: normalizedPath,
-          agentId,
-          agentName: agent.name,
-          agentIcon: agent.ui.icon,
-          agentColor: '#3B82F6', // 默认蓝色
+          agents: [agentId],
+          defaultAgent: agentId,
+          defaultAgentName: agent.name,
+          defaultAgentIcon: agent.ui.icon,
           createdAt: new Date().toISOString(),
           lastAccessed: new Date().toISOString(),
           description: description || ''

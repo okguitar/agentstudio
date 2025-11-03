@@ -38,8 +38,8 @@ export const GlobTool: React.FC<GlobToolProps> = ({ execution }) => {
       
       {execution.toolResult && !execution.isError && (
         <div className="mt-3">
-          <p className="text-xs font-medium text-gray-600 mb-2">{t('globTool.matchingResults')}</p>
-          <div className="p-3 rounded-md border bg-blue-50 border-blue-200 text-sm font-mono whitespace-pre-wrap break-words text-blue-700">
+          <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">{t('globTool.matchingResults')}</p>
+          <div className="p-3 rounded-md border bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700 text-sm font-mono whitespace-pre-wrap break-words text-blue-700 dark:text-blue-300">
             {formatGlobResult(execution.toolResult)}
           </div>
         </div>

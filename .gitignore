@@ -54,6 +54,6 @@ test-*
 产品介绍文档.md
 DEPLOYMENT.md
 local-docs/
-shared/src/**/*.d.ts
-shared/src/**/*.js
-shared/src/**/*.map
+
+# AgentStudio temporary images
+.agentstudio-images/

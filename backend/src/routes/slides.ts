@@ -2,11 +2,7 @@ import express, { Router } from 'express';
 import fs from 'fs-extra';
 import { existsSync } from 'fs';
 import { join, dirname, resolve, relative } from 'path';
-import { fileURLToPath } from 'url';
 import { z } from 'zod';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 const router: Router = express.Router();
 

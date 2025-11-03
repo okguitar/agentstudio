@@ -18,9 +18,7 @@
     /* Path mapping */
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "@agentstudio/shared": ["../shared/src"],
-      "@agentstudio/shared/*": ["../shared/src/*"]
+      "@/*": ["./src/*"]
     },
 
     /* Linting */

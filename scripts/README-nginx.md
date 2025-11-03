@@ -36,7 +36,7 @@
 
 **示例：**
 ```bash
-./setup-nginx-ssl.sh jeff-hk.agentstudio.cc bbmyth@gmail.com 4936
+./setup-nginx-ssl.sh jeff-hk.agentstudio.cc okguitar@gmail.com 4936
 ```
 
 ### 2. `setup_nginx.sh` (基础版本)

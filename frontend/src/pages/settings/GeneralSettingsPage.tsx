@@ -1,14 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  Save,
   Moon,
   Sun,
   Monitor,
   Globe,
-  // Terminal
 } from 'lucide-react';
-import { showSuccess } from '../../utils/toast';
 import { useMobileContext } from '../../contexts/MobileContext';
 
 export const GeneralSettingsPage: React.FC = () => {
@@ -51,10 +48,6 @@ export const GeneralSettingsPage: React.FC = () => {
   const handleLanguageChange = (newLanguage: string) => {
     setLanguage(newLanguage);
     i18n.changeLanguage(newLanguage);
-  };
-
-  const saveSettings = () => {
-    showSuccess(t('settings.general.settingsSaved'));
   };
 
   return (
@@ -121,34 +114,6 @@ export const GeneralSettingsPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Version Info */}
-          <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-            <h4 className="font-medium text-gray-900 dark:text-white mb-3">{t('settings.general.appInfo.title')}</h4>
-            <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
-              <div className="flex justify-between">
-                <span>{t('settings.general.appInfo.name')}</span>
-                <span>v1.0.0</span>
-              </div>
-              <div className="flex justify-between">
-                <span>{t('settings.general.appInfo.buildDate')}</span>
-                <span>{new Date().toLocaleDateString()}</span>
-              </div>
-            </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
-              {t('settings.general.appInfo.versionNote')}
-            </p>
-          </div>
-        </div>
-
-        {/* Save Button */}
-        <div className={`mt-8 pt-6 border-t border-gray-200 dark:border-gray-700 ${isMobile ? 'flex' : 'flex justify-end'}`}>
-          <button
-            onClick={saveSettings}
-            className={`${isMobile ? 'flex-1' : ''} flex items-center ${isMobile ? 'justify-center' : 'space-x-2'} ${isMobile ? 'px-4 py-3' : 'px-6 py-3'} bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors`}
-          >
-            <Save className={`${isMobile ? 'w-4 h-4 mr-2' : 'w-4 h-4'}`} />
-            <span>{t('common:actions.save')}</span>
-          </button>
         </div>
       </div>
     </div>

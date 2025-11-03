@@ -1,22 +1,22 @@
 {
   "name": "agentstudio",
-  "version": "0.1.0",
+  "version": "0.1.19",
   "description": "Claude-powered AgentStudio with React frontend and Node.js backend, built on top of Claude Code SDK",
   "type": "module",
   "private": true,
   "packageManager": "pnpm@10.18.1",
   "scripts": {
-    "dev": "concurrently \"pnpm --filter frontend run dev\" \"pnpm --filter backend run dev\"",
-    "dev:frontend": "pnpm --filter frontend run dev",
-    "dev:backend": "pnpm --filter backend run dev",
-    "build": "pnpm --filter shared run build && pnpm --filter frontend run build && pnpm --filter backend run build",
-    "build:frontend": "pnpm --filter frontend run build",
-    "build:backend": "pnpm --filter shared run build && pnpm --filter backend run build",
-    "start": "pnpm --filter backend run start",
+    "dev": "concurrently \"pnpm --filter @agentstudio/frontend run dev\" \"pnpm --filter agentstudio-backend run dev\"",
+    "dev:frontend": "pnpm --filter @agentstudio/frontend run dev",
+    "dev:backend": "pnpm --filter agentstudio-backend run dev",
+    "build": "pnpm --filter @agentstudio/frontend run build && pnpm --filter agentstudio-backend run build",
+    "build:frontend": "pnpm --filter @agentstudio/frontend run build",
+    "build:backend": "pnpm --filter agentstudio-backend run build",
+    "start": "pnpm --filter agentstudio-backend run start",
     "setup": "pnpm install",
     "test": "pnpm --recursive run test --if-present",
-    "lint": "pnpm --recursive run lint --if-present",
-    "type-check": "pnpm --recursive run type-check --if-present",
+    "lint": "pnpm --recursive run lint",
+    "type-check": "pnpm --recursive run type-check",
     "clean": "pnpm --recursive run clean --if-present",
     "install:service": "sudo chmod +x install.sh && sudo ./install.sh",
     "service": "./scripts/agent-studio-service",
@@ -34,15 +34,15 @@
     "react",
     "typescript"
   ],
-  "author": "jeffkit <bbmyth@gmail.com>",
+  "author": "okguitar <okguitar@gmail.com>",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/git-men/agentstudio.git"
+    "url": "https://github.com/okguitar/agentstudio.git"
   },
-  "homepage": "https://github.com/git-men/agentstudio#readme",
+  "homepage": "https://github.com/okguitar/agentstudio#readme",
   "bugs": {
-    "url": "https://github.com/git-men/agentstudio/issues"
+    "url": "https://github.com/okguitar/agentstudio/issues"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",

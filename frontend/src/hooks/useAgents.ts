@@ -99,6 +99,12 @@ export const useAgentSessions = (agentId: string, searchTerm?: string, projectPa
   return useQuery({
     queryKey: ['agent-sessions', agentId, searchTerm, projectPath],
     queryFn: async () => {
+      console.log(`🔍 [FRONTEND DEBUG] useAgentSessions called:`, {
+        agentId,
+        searchTerm,
+        projectPath
+      });
+      
       const url = new URL(`${API_BASE}/sessions/${agentId}`);
       if (searchTerm && searchTerm.trim()) {
         url.searchParams.append('search', searchTerm.trim());
@@ -106,11 +112,28 @@ export const useAgentSessions = (agentId: string, searchTerm?: string, projectPa
       if (projectPath) {
         url.searchParams.set('projectPath', projectPath);
       }
+      
+      console.log(`🌐 [FRONTEND DEBUG] Fetching sessions from: ${url.toString()}`);
+      
       const response = await authFetch(url.toString());
       if (!response.ok) {
+        console.error(`❌ [FRONTEND DEBUG] Failed to fetch sessions: ${response.status} ${response.statusText}`);
         throw new Error('Failed to fetch agent sessions');
       }
-      return response.json();
+      
+      const data = await response.json();
+      console.log(`📋 [FRONTEND DEBUG] Received sessions data:`, {
+        sessionCount: data.sessions?.length || 0,
+        sessions: data.sessions?.map((s: any, i: number) => ({
+          index: i + 1,
+          id: s.id,
+          title: s.title,
+          lastUpdated: s.lastUpdated,
+          messageCount: s.messageCount
+        }))
+      });
+      
+      return data;
     },
     enabled: !!agentId
   });
@@ -296,6 +319,31 @@ export const useCreateProject = () => {
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || 'Failed to create project');
+      }
+
+      return response.json();
+    }
+  });
+};
+
+// Import existing project
+export const useImportProject = () => {
+  return useMutation({
+    mutationFn: async ({ agentId, projectPath }: {
+      agentId: string;
+      projectPath: string;
+    }) => {
+      const response = await authFetch(`${API_BASE}/projects/import`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ agentId, projectPath })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to import project');
       }
 
       return response.json();

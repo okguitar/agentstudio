@@ -33,7 +33,7 @@
     --card-foreground: 210 40% 98%;
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
     --primary-foreground: 222.2 47.4% 11.2%;
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
@@ -94,4 +94,19 @@ body {
 
 .api-breathing {
   animation: breathing 2s ease-in-out infinite;
+}
+
+/* 隐藏 Mermaid 自动生成的错误提示 */
+#dmermaid-error,
+[id^="dmermaid-error"],
+.mermaid-error,
+.error-icon,
+.error-text {
+  display: none !important;
+}
+
+/* 隐藏所有 Mermaid 在 body 底部自动插入的错误元素 */
+body > div[id^="dmermaid"],
+body > div[id*="error"] {
+  display: none !important;
 }

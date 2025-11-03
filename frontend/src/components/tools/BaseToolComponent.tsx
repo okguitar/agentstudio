@@ -20,7 +20,8 @@ import {
   ChevronRight,
   Activity,  // 用于BashOutput，表示活动/输出监控
   Square,  // 用于KillBash，表示终止/停止操作
-  Plug  // 用于MCP工具
+  Plug,  // 用于MCP工具
+  AlertCircle  // 用于中断状态
 } from 'lucide-react';
 import type { ToolExecution } from './types';
 
@@ -76,6 +77,7 @@ interface BaseToolProps {
 }
 
 export const BaseToolComponent: React.FC<BaseToolProps> = ({ execution, children, subtitle, showResult = true, isMcpTool = false, hideToolName = true }) => {
+  const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   
   // 为MCP工具使用不同的图标和颜色
@@ -99,15 +101,21 @@ export const BaseToolComponent: React.FC<BaseToolProps> = ({ execution, children
       <div className="border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 max-w-full">
         {/* 可点击的工具头部 */}
         <div
-          className={`flex items-start justify-between cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
+          className={`flex items-center justify-between cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
             hideToolName ? 'p-2' : 'p-4'
           }`}
           onClick={() => setIsExpanded(!isExpanded)}
         >
-          <div className={`flex space-x-2 flex-1 min-w-0 ${hideToolName ? 'items-center' : 'items-start'}`}>
-            <div className={`${hideToolName ? 'p-1.5' : 'p-2'} rounded-full ${colorClass} ${hideToolName ? '' : 'mt-0.5'}`}>
+          <div className={`flex items-center space-x-2 flex-1 min-w-0`}>
+            <div className={`${hideToolName ? 'p-1.5' : 'p-2'} rounded-full ${
+              execution.isInterrupted
+                ? 'text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/30'
+                : colorClass
+            }`}>
               {execution.isExecuting ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
+              ) : execution.isInterrupted ? (
+                <AlertCircle className="w-4 h-4" />
               ) : (
                 <Icon className="w-4 h-4" />
               )}
@@ -117,13 +125,17 @@ export const BaseToolComponent: React.FC<BaseToolProps> = ({ execution, children
                 <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200">{execution.toolName}</h4>
               )}
               {subtitle && (
-                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                  {subtitle}
+                <p className={`text-xs truncate ${
+                  execution.isInterrupted
+                    ? 'text-orange-600 dark:text-orange-400'
+                    : 'text-gray-500 dark:text-gray-400'
+                }`}>
+                  {execution.isInterrupted ? t('baseToolComponent.interrupted') : subtitle}
                 </p>
               )}
             </div>
           </div>
-          <div className="flex items-center">
+          <div className="flex items-center shrink-0">
             {isExpanded ? (
               <ChevronDown className="w-4 h-4 text-gray-400 dark:text-gray-500" />
             ) : (

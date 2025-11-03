@@ -2,14 +2,23 @@ import express from 'express';
 import fs from 'fs-extra';
 import { existsSync } from 'fs';
 import { join, dirname, resolve, relative } from 'path';
-import { fileURLToPath } from 'url';
 import { z } from 'zod';
 import * as os from 'os';
 import * as path from 'path';
-import { getProjectId } from './media.js';
+// Helper function to get project ID using base64url encoding (reversible)
+const getProjectId = (projectPath: string): string => {
+  return encodeProjectPath(projectPath);
+};
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+// Helper function to encode project path using base64url encoding
+const encodeProjectPath = (projectPath: string): string => {
+  const normalizedPath = resolve(projectPath);
+  // Use base64url encoding (URL-safe)
+  return Buffer.from(normalizedPath).toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=/g, '');
+};
 
 const router: express.Router = express.Router();
 
@@ -257,8 +266,16 @@ router.get('/browse', (req, res) => {
     
     const stats = fs.statSync(browsePath);
     
+    // If it's not a directory, return info about the item itself
     if (!stats.isDirectory()) {
-      return res.status(400).json({ error: 'Path is not a directory' });
+      return res.json({
+        currentPath: browsePath,
+        isDirectory: false,
+        size: stats.size,
+        modified: stats.mtime.toISOString(),
+        parentPath: path.dirname(browsePath),
+        items: null
+      });
     }
     
     const items = fs.readdirSync(browsePath)
@@ -294,6 +311,7 @@ router.get('/browse', (req, res) => {
     
     res.json({
       currentPath: browsePath,
+      isDirectory: true,
       parentPath: canGoUp ? parentPath : null,
       items
     });

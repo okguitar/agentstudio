@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { Send, Clock, Square, Image, Wrench, X, Plus, Zap, Cpu, ChevronDown, Terminal, RefreshCw } from 'lucide-react';
+import { Send, Clock, Square, Image, Wrench, X, Plus, Zap, Cpu, ChevronDown, Terminal, RefreshCw, Wifi, WifiOff } from 'lucide-react';
 import { ImagePreview } from './ImagePreview';
 import { CommandSelector } from './CommandSelector';
 import { ConfirmDialog } from './ConfirmDialog';
@@ -17,8 +17,11 @@ import { ChatMessageRenderer } from './ChatMessageRenderer';
 import { SessionsDropdown } from './SessionsDropdown';
 import { UnifiedToolSelector } from './UnifiedToolSelector';
 import { MobileChatToolbar } from './MobileChatToolbar';
+import { MobileSettingsModal } from './MobileSettingsModal';
 import { useMobileContext } from '../contexts/MobileContext';
-import type { AgentConfig } from '../types/index.js';
+import { McpStatusModal } from './McpStatusModal';
+import { FileBrowser } from './FileBrowser';
+import type { AgentConfig, AgentTool } from '../types/index.js';
 import {
   isCommandTrigger,
   extractCommandSearch,
@@ -58,12 +61,13 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
   const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null);
   const [showToolSelector, setShowToolSelector] = useState(false);
   const [selectedRegularTools, setSelectedRegularTools] = useState<string[]>([]);
-  const [permissionMode, setPermissionMode] = useState<'default' | 'acceptEdits' | 'bypassPermissions'>('acceptEdits');
+  const [permissionMode, setPermissionMode] = useState<'default' | 'acceptEdits' | 'bypassPermissions'>('bypassPermissions');
   const [selectedModel, setSelectedModel] = useState<string>('sonnet');
   const [showPermissionDropdown, setShowPermissionDropdown] = useState(false);
   const [showModelDropdown, setShowModelDropdown] = useState(false);
   const [selectedClaudeVersion, setSelectedClaudeVersion] = useState<string | undefined>(undefined);
   const [showVersionDropdown, setShowVersionDropdown] = useState(false);
+  const [showMobileSettings, setShowMobileSettings] = useState(false);
   const [commandWarning, setCommandWarning] = useState<string | null>(null);
   const [hasSuccessfulResponse, setHasSuccessfulResponse] = useState(false);
   const [isNewSession, setIsNewSession] = useState(false);
@@ -71,6 +75,14 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
   const [isStopping, setIsStopping] = useState(false);
   const [isInitializingSession, setIsInitializingSession] = useState(false);
 const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  const [showMcpStatusModal, setShowMcpStatusModal] = useState(false);
+  const [showFileBrowser, setShowFileBrowser] = useState(false);
+  const [atSymbolPosition, setAtSymbolPosition] = useState<number | null>(null);
+
+  // Scroll management states
+  const [isUserScrolling, setIsUserScrolling] = useState(false);
+  const [newMessagesCount, setNewMessagesCount] = useState(0);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   // Get current backend service name
   const [currentServiceName, setCurrentServiceName] = useState<string>('默认服务');
@@ -90,6 +102,7 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
     messages,
     isAiTyping,
     currentSessionId,
+    mcpStatus,
     addMessage,
     addTextPartToMessage,
     addThinkingPartToMessage,
@@ -97,10 +110,12 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
     addCommandPartToMessage,
     addToolPartToMessage,
     updateToolPartInMessage,
+    interruptAllExecutingTools,
     setAiTyping,
     setCurrentSessionId,
     clearMessages,
     loadSessionMessages,
+    updateMcpStatus,
 
   } = useAgentStore();
   
@@ -138,13 +153,20 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
     }
   }, [currentSessionId, agent.id]);
   
-  // Fetch commands for keyboard navigation
-  const { data: userCommands = [] } = useCommands({ scope: 'user', search: commandSearch });
-  const { data: projectCommands = [] } = useProjectCommands({
+  // Fetch commands for keyboard navigation (with search filter)
+  const { data: userCommandsFiltered = [], error: userCommandsError } = useCommands({ scope: 'user', search: commandSearch });
+  const { data: projectCommandsFiltered = [], error: projectCommandsError } = useProjectCommands({
     projectId: projectPath || '', // Pass projectPath directly as it will be detected as path
     search: commandSearch
   });
-  
+
+  // Fetch complete command lists for detection (without search filter)
+  const { data: userCommands = [] } = useCommands({ scope: 'user' });
+  const { data: projectCommands = [] } = useProjectCommands({
+    projectId: projectPath || '' // Pass projectPath directly as it will be detected as path
+  });
+
+    
   // Claude版本数据
   const { data: claudeVersionsData } = useClaudeVersions();
 
@@ -234,8 +256,21 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
     const systemCommand = SYSTEM_COMMANDS.find(cmd => cmd.name === commandName);
     const projectCommand = projectCommands.find(cmd => cmd.name === commandName);
     const userCommand = userCommands.find(cmd => cmd.name === commandName);
+    
     return !!(systemCommand || projectCommand || userCommand);
   };
+
+  // Helper function to get all available command names for error messages
+  const getAllAvailableCommands = () => {
+    const systemCommands = SYSTEM_COMMANDS.map(cmd => cmd.content);
+    const projectCommandsList = projectCommands.map(cmd => `/${cmd.name}`);
+    const userCommandsList = userCommands.map(cmd => `/${cmd.name}`);
+    
+    return [...systemCommands, ...projectCommandsList, ...userCommandsList].join(', ');
+  };
+
+  // Check if commands failed to load (likely authentication issue)
+  const hasCommandsLoadError = userCommandsError || projectCommandsError;
 
   // Helper function to check if send should be disabled
   const isSendDisabled = () => {
@@ -251,7 +286,7 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
     return false;
   };
 
-  // Memoize allCommands to prevent unnecessary re-renders
+  // Memoize allCommands to prevent unnecessary re-renders (for command selector)
   const allCommands = useMemo(() => {
     // Filter system commands based on search term
     const filteredSystemCommands = SYSTEM_COMMANDS.filter(cmd =>
@@ -259,13 +294,13 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
       cmd.description.toLowerCase().includes(commandSearch.toLowerCase())
     );
 
-    // Combine all commands
+    // Combine all commands (use filtered lists for selector)
     return [
       ...filteredSystemCommands,
-      ...projectCommands,
-      ...userCommands,
+      ...projectCommandsFiltered,
+      ...userCommandsFiltered,
     ];
-  }, [userCommands, projectCommands, commandSearch]);
+  }, [userCommandsFiltered, projectCommandsFiltered, commandSearch]);
 
   // Memoize rendered messages to prevent unnecessary re-renders
   const renderedMessages = useMemo(() => {
@@ -280,7 +315,7 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
               ? 'text-white p-3 rounded-lg'
               : 'text-gray-800 dark:text-gray-200'
           }`}
-          style={message.role === 'user' ? { backgroundColor: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))' } : {}}
+          style={message.role === 'user' ? { backgroundColor: 'hsl(var(--primary))', color: 'white' } : {}}
         >
           <ChatMessageRenderer message={message as any} />
         </div>
@@ -302,13 +337,13 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   // Initialize tool selector with agent's preset tools
   useEffect(() => {
     if (agent?.allowedTools?.length > 0) {
-      const enabledTools = agent.allowedTools.filter(tool => tool.enabled);
+      const enabledTools = agent.allowedTools.filter((tool: AgentTool) => tool.enabled);
       
       // Separate regular tools and MCP tools
       const regularTools: string[] = [];
       const mcpTools: string[] = [];
       
-      enabledTools.forEach(tool => {
+      enabledTools.forEach((tool: AgentTool) => {
         if (tool.name.includes('.') && !tool.name.startsWith('mcp__')) {
           // MCP tool format: serverName.toolName -> mcp__serverName__toolName
           const [serverName, toolName] = tool.name.split('.');
@@ -340,31 +375,60 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   }, [agent?.allowedTools]);
 
 
+  // 在光标位置插入占位符
+  const insertPlaceholderAtCursor = (placeholder: string) => {
+    if (!textareaRef.current) return;
+
+    const textarea = textareaRef.current;
+    const start = textarea.selectionStart || 0;
+    const end = textarea.selectionEnd || 0;
+    const currentValue = inputMessage;
+
+    // 在光标位置插入占位符
+    const newValue = currentValue.substring(0, start) + placeholder + currentValue.substring(end);
+    setInputMessage(newValue);
+
+    // 设置光标位置到占位符之后
+    setTimeout(() => {
+      textarea.selectionStart = textarea.selectionEnd = start + placeholder.length;
+      textarea.focus();
+    }, 0);
+  };
+
   // Image handling functions
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files) return;
-    
-    const imageFiles = Array.from(files).filter(file => 
-      file.type.startsWith('image/') && 
+
+    const imageFiles = Array.from(files).filter(file =>
+      file.type.startsWith('image/') &&
       ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)
     );
-    
+
     imageFiles.forEach(file => {
       const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
       const reader = new FileReader();
       reader.onload = (e) => {
         if (e.target?.result) {
-          setSelectedImages(prev => [...prev, {
-            id,
-            file,
-            preview: e.target!.result as string
-          }]);
+          setSelectedImages(prev => {
+            const newImages = [...prev, {
+              id,
+              file,
+              preview: e.target!.result as string
+            }];
+
+            // 在光标位置插入占位符 [imageN]
+            const imageIndex = newImages.length;
+            const placeholder = `[image${imageIndex}]`;
+            insertPlaceholderAtCursor(placeholder);
+
+            return newImages;
+          });
         }
       };
       reader.readAsDataURL(file);
     });
-    
+
     // Clear the input
     if (event.target) {
       event.target.value = '';
@@ -383,25 +447,41 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
     const items = event.clipboardData?.items;
     if (!items) return;
 
+    let hasImage = false;
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
       if (item.type.startsWith('image/')) {
+        hasImage = true;
         const file = item.getAsFile();
         if (file) {
           const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
           const reader = new FileReader();
           reader.onload = (e) => {
             if (e.target?.result) {
-              setSelectedImages(prev => [...prev, {
-                id,
-                file,
-                preview: e.target!.result as string
-              }]);
+              setSelectedImages(prev => {
+                const newImages = [...prev, {
+                  id,
+                  file,
+                  preview: e.target!.result as string
+                }];
+
+                // 在光标位置插入占位符 [imageN]
+                const imageIndex = newImages.length;
+                const placeholder = `[image${imageIndex}]`;
+                insertPlaceholderAtCursor(placeholder);
+
+                return newImages;
+              });
             }
           };
           reader.readAsDataURL(file);
         }
       }
+    }
+
+    // 如果粘贴的是图片,阻止默认行为(防止插入DataURL)
+    if (hasImage) {
+      event.preventDefault();
     }
   };
 
@@ -418,38 +498,79 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const handleDrop = (event: React.DragEvent) => {
     event.preventDefault();
     setIsDragOver(false);
-    
+
     const files = event.dataTransfer?.files;
     if (!files) return;
-    
-    const imageFiles = Array.from(files).filter(file => 
-      file.type.startsWith('image/') && 
+
+    const imageFiles = Array.from(files).filter(file =>
+      file.type.startsWith('image/') &&
       ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)
     );
-    
+
     imageFiles.forEach(file => {
       const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
       const reader = new FileReader();
       reader.onload = (e) => {
         if (e.target?.result) {
-          setSelectedImages(prev => [...prev, {
-            id,
-            file,
-            preview: e.target!.result as string
-          }]);
+          setSelectedImages(prev => {
+            const newImages = [...prev, {
+              id,
+              file,
+              preview: e.target!.result as string
+            }];
+
+            // 在光标位置插入占位符 [imageN]
+            const imageIndex = newImages.length;
+            const placeholder = `[image${imageIndex}]`;
+            insertPlaceholderAtCursor(placeholder);
+
+            return newImages;
+          });
         }
       };
       reader.readAsDataURL(file);
     });
   };
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  // Check if scroll position is near bottom
+  const isNearBottom = useCallback((threshold = 100) => {
+    if (!messagesContainerRef.current) return false;
+    const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+    return scrollHeight - scrollTop - clientHeight < threshold;
+  }, []);
 
+  // Scroll to bottom
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
+    messagesEndRef.current?.scrollIntoView({ behavior });
+  }, []);
+
+  // Handle scroll event
+  const handleScroll = useCallback(() => {
+    const nearBottom = isNearBottom();
+    setIsUserScrolling(!nearBottom);
+    if (nearBottom) {
+      setNewMessagesCount(0);
+    }
+  }, [isNearBottom]);
+
+  // Add scroll event listener
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, isAiTyping]);
+    const container = messagesContainerRef.current;
+    if (container) {
+      container.addEventListener('scroll', handleScroll);
+      return () => container.removeEventListener('scroll', handleScroll);
+    }
+  }, [handleScroll]);
+
+  // Conditional auto-scroll when messages update
+  useEffect(() => {
+    if (!isUserScrolling) {
+      scrollToBottom();
+    } else {
+      // User is scrolling, increment new messages count
+      setNewMessagesCount(prev => prev + 1);
+    }
+  }, [messages, isAiTyping, isUserScrolling, scrollToBottom]);
 
   const handleSendMessage = async () => {
     if ((!inputMessage.trim() && selectedImages.length === 0) || isAiTyping) return;
@@ -471,10 +592,19 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
       
       // Check if command is defined
       if (!isCommandDefined(commandName)) {
-        setCommandWarning(t('agentChat.unknownCommandWarning', {
-          command: commandName,
-          commands: SYSTEM_COMMANDS.map(cmd => cmd.content).join(', ')
-        }));
+        // If commands failed to load, provide a more helpful error message
+        if (hasCommandsLoadError) {
+          setCommandWarning(t('agentChat.commandsLoadErrorWarning', {
+            command: commandName,
+            commands: SYSTEM_COMMANDS.map(cmd => cmd.content).join(', '),
+            errorMessage: userCommandsError?.message || projectCommandsError?.message || 'Unknown error'
+          }));
+        } else {
+          setCommandWarning(t('agentChat.unknownCommandWarning', {
+            command: commandName,
+            commands: getAllAvailableCommands()
+          }));
+        }
         return;
       }
       
@@ -678,6 +808,53 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
               queryClient.invalidateQueries({ queryKey: ['agent-sessions', agent.id] });
             }
           } 
+          // 🔧 处理 MCP 状态事件
+          else if (eventData.type === 'mcp_status') {
+            console.log('📡 MCP Status Event:', eventData);
+            
+            if (eventData.subtype === 'connection_failed') {
+              const failedServers = (eventData as any).failedServers || [];
+              console.warn('🚨 MCP服务器连接失败:', failedServers);
+              
+              // 更新 MCP 状态到 store
+              updateMcpStatus({
+                hasError: true,
+                connectionErrors: failedServers,
+                lastError: `连接失败: ${failedServers.map((s: any) => s.name).join(', ')}`
+              });
+            } else if (eventData.subtype === 'connection_success') {
+              const connectedServers = (eventData as any).connectedServers || [];
+              console.log('✅ MCP服务器连接成功:', connectedServers.map((s: any) => s.name));
+              
+              // 更新 MCP 状态到 store
+              updateMcpStatus({
+                hasError: false,
+                connectedServers: connectedServers,
+                connectionErrors: [],
+                lastError: null
+              });
+            }
+          }
+          // 🚨 处理 MCP 执行错误事件
+          else if (eventData.type === 'mcp_error') {
+            console.log('❌ MCP Error Event:', eventData);
+            
+            if (eventData.subtype === 'execution_failed') {
+              const errorData = eventData as any;
+              const toolName = errorData.tool || '未知工具';
+              const errorMessage = errorData.error || '执行失败';
+              const details = errorData.details || '';
+              
+              console.error('❌ MCP工具执行失败:', { tool: toolName, error: errorMessage, details });
+              
+              // 更新 MCP 状态到 store
+              updateMcpStatus({
+                hasError: true,
+                lastError: `工具执行失败: ${toolName} - ${errorMessage}`,
+                lastErrorDetails: details
+              });
+            }
+          }
           else if (eventData.type === 'session_resumed' && eventData.subtype === 'new_branch') {
             // Handle session resume notification from backend
             const resumeData = eventData as any as {
@@ -784,6 +961,10 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
                   // Add tool usage as a separate part
                   if (block.name) {
                     console.log('📝 Adding tool part:', block.name, 'id:', block.id);
+                    // Special logging for BashOutput
+                    if (block.name === 'BashOutput') {
+                      console.log('🐚 [BashOutput] Tool use detected, claudeId:', block.id, 'input:', block.input);
+                    }
                     const toolData = {
                       toolName: block.name,
                       toolInput: (block.input as Record<string, unknown>) || {},
@@ -809,12 +990,12 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
             if (eventData.message && typeof eventData.message === 'object' && 'content' in eventData.message && eventData.message.content && aiMessageId) {
               for (const block of eventData.message.content as Array<{ type: string; content?: unknown; is_error?: boolean; tool_use_id?: string }>) {
                 if (block.type === 'tool_result' && block.tool_use_id) {
-                  console.log('🔧 Processing tool_result for tool_use_id:', block.tool_use_id);
+                  console.log('🔧 Processing tool_result for tool_use_id:', block.tool_use_id, 'content:', block.content);
                   // Find the tool by tool_use_id - search across ALL messages, not just current
                   const state = useAgentStore.getState();
                   let targetTool: any = null;
                   let targetMessageId: string | null = null;
-                  
+
                   // Search through all messages to find the tool with matching claudeId
                   for (const message of state.messages) {
                     if (message.messageParts) {
@@ -837,13 +1018,22 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
                   
                   if (targetTool?.toolData && targetMessageId) {
                     // Update the corresponding tool with results
-                    const toolResult = typeof block.content === 'string' 
-                      ? block.content 
+                    const toolResult = typeof block.content === 'string'
+                      ? block.content
                       : Array.isArray(block.content)
                         ? block.content.map((c: { text?: string }) => c.text || String(c)).join('')
                         : JSON.stringify(block.content);
-                    
+
                     console.log('🔧 Updating tool with result, setting isExecuting: false');
+                    // Special logging for BashOutput
+                    if (targetTool.toolData.toolName === 'BashOutput') {
+                      console.log('🐚 [BashOutput] Updating tool result:', {
+                        toolId: targetTool.toolData.id,
+                        messageId: targetMessageId,
+                        toolResult: toolResult?.substring(0, 200),
+                        rawContent: block.content
+                      });
+                    }
                     updateToolPartInMessage(targetMessageId, targetTool.toolData.id, {
                       toolResult,
                       isError: block.is_error || false,
@@ -963,7 +1153,9 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
                   aiMessageId = state.messages[state.messages.length - 1].id;
 
                   // Add the result content as text
-                  addTextPartToMessage(aiMessageId, resultContent);
+                  if (aiMessageId) {
+                    addTextPartToMessage(aiMessageId, resultContent);
+                  }
                   console.log('📝 Added result content to new AI message:', resultContent.substring(0, 100));
                 } else {
                   console.warn('📝 Result event with no content - creating empty success message');
@@ -1137,6 +1329,10 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
     }
     // Clear search term
     setSearchTerm('');
+    // Focus on textarea after state updates
+    setTimeout(() => {
+      textareaRef.current?.focus();
+    }, 0);
   };
 
   const handleRefreshMessages = () => {
@@ -1175,6 +1371,9 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
         return; // 不继续执行 abort，按照用户要求不强制断开
       }
 
+      // 中断所有正在执行的工具
+      interruptAllExecutingTools();
+
       // interrupt 成功后，断开 SSE 连接
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
@@ -1195,6 +1394,14 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Handle Escape key for file browser
+    if (e.key === 'Escape' && showFileBrowser) {
+      e.preventDefault();
+      setShowFileBrowser(false);
+      setAtSymbolPosition(null);
+      return;
+    }
+    
     // Handle Enter key for both command selector and regular input
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -1216,10 +1423,19 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
       if (isCommandTrigger(inputMessage)) {
         const commandName = inputMessage.slice(1).split(' ')[0].toLowerCase();
         if (!isCommandDefined(commandName)) {
-          setCommandWarning(t('agentChat.unknownCommandWarning', {
-            command: commandName,
-            commands: SYSTEM_COMMANDS.map(cmd => cmd.content).join(', ')
-          }));
+          // If commands failed to load, provide a more helpful error message
+          if (hasCommandsLoadError) {
+            setCommandWarning(t('agentChat.commandsLoadErrorWarning', {
+              command: commandName,
+              commands: SYSTEM_COMMANDS.map(cmd => cmd.content).join(', '),
+              errorMessage: userCommandsError?.message || projectCommandsError?.message || 'Unknown error'
+            }));
+          } else {
+            setCommandWarning(t('agentChat.unknownCommandWarning', {
+              command: commandName,
+              commands: getAllAvailableCommands()
+            }));
+          }
           return;
         }
       }
@@ -1269,6 +1485,20 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
       setCommandWarning(null);
     }
     
+    // Check for @ symbol trigger immediately
+    if (value.length > 0 && value[value.length - 1] === '@') {
+      // Check if @ is at start of line or preceded by whitespace
+      const textBeforeAt = value.substring(0, value.length - 1);
+      
+      if (textBeforeAt.length === 0 || /\s$/.test(textBeforeAt)) {
+        setAtSymbolPosition(value.length - 1);
+        setShowFileBrowser(true);
+        // Blur the textarea to prevent further input
+        textareaRef.current?.blur();
+        return;
+      }
+    }
+    
     // Check if we should show command selector
     if (isCommandTrigger(value)) {
       const search = extractCommandSearch(value);
@@ -1287,7 +1517,7 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
         setSelectedCommandIndex(0);
       }
     }
-  }, [commandWarning, commandSearch, showCommandSelector]);
+  }, [commandWarning, commandSearch, showCommandSelector, showFileBrowser]);
   
   const handleCommandSelect = (command: CommandType) => {
     // 命令选择器只是帮助填入命令名称，不立即执行
@@ -1304,6 +1534,47 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   
   const handleCommandSelectorClose = () => {
     setShowCommandSelector(false);
+  };
+  
+  const handleFileSelect = (filePath: string, _isDirectory: boolean) => {
+    if (!textareaRef.current || atSymbolPosition === null) return;
+    
+    // Convert absolute path to relative path (without leading ./)
+    let relativePath = filePath;
+    if (projectPath && filePath.startsWith(projectPath)) {
+      relativePath = filePath.slice(projectPath.length);
+      // Remove leading slash if present
+      if (relativePath.startsWith('/')) {
+        relativePath = relativePath.slice(1);
+      }
+    }
+    
+    // Replace @ symbol with @ + selected file path + space
+    const beforeAt = inputMessage.substring(0, atSymbolPosition);
+    const afterAt = inputMessage.substring(atSymbolPosition + 1);
+    const newValue = beforeAt + '@' + relativePath + ' ' + afterAt;
+    
+    setInputMessage(newValue);
+    setShowFileBrowser(false);
+    setAtSymbolPosition(null);
+    
+    // Set cursor position after the inserted file path and space
+    setTimeout(() => {
+      if (textareaRef.current) {
+        const newCursorPosition = atSymbolPosition + 1 + relativePath.length + 1; // +1 for @ symbol, +1 for space
+        textareaRef.current.selectionStart = textareaRef.current.selectionEnd = newCursorPosition;
+        textareaRef.current.focus();
+      }
+    }, 0);
+  };
+  
+  const handleFileBrowserClose = () => {
+    setShowFileBrowser(false);
+    setAtSymbolPosition(null);
+    // Re-focus the textarea when file browser is closed
+    setTimeout(() => {
+      textareaRef.current?.focus();
+    }, 0);
   };
   
   const handleConfirmDialog = () => {
@@ -1412,12 +1683,14 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
         setIsVersionLocked(true);
         console.log(`🔒 Locked to Claude version: ${activeSession.claudeVersionId}`);
       } else {
-        // 会话没有指定版本，使用默认版本但不锁定
+        // 会话没有指定版本，清除选择状态以显示默认版本
+        setSelectedClaudeVersion(undefined);
         setIsVersionLocked(false);
         console.log(`🔓 Session has no specific version, unlocked`);
       }
     } else {
-      // 会话不在活跃列表中，不锁定
+      // 会话不在活跃列表中，清除选择状态以显示默认版本
+      setSelectedClaudeVersion(undefined);
       setIsVersionLocked(false);
       console.log(`🔓 Session ${currentSessionId} not in active sessions, unlocked`);
     }
@@ -1427,9 +1700,9 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
     <div className="flex flex-col h-full bg-white dark:bg-gray-900">
       {/* Header - Fixed */}
       <div
-        className="flex-shrink-0 px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800"
+        className="flex-shrink-0 h-12 px-4 border-b border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 flex items-center"
       >
-        <div className="flex items-center justify-between min-h-[36px]">
+        <div className="flex items-center justify-between w-full">
           {/* Title */}
           <div className="flex-1 min-w-0">
             <h1 className="text-base font-semibold flex items-center space-x-2 text-gray-900 dark:text-white">
@@ -1494,7 +1767,7 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
       </div>
 
       {/* 主内容区域 - 聊天视图 - Scrollable */}
-      <div className="flex-1 px-5 py-5 overflow-y-auto space-y-4 min-h-0">
+      <div ref={messagesContainerRef} className="flex-1 px-5 py-5 overflow-y-auto space-y-4 min-h-0 relative">
         {/* Welcome message */}
         <div className="px-4">
           <div className="text-sm leading-relaxed break-words overflow-hidden text-gray-600 dark:text-gray-400">
@@ -1548,6 +1821,23 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
         )}
 
         <div ref={messagesEndRef} />
+
+        {/* Scroll to bottom button */}
+        {isUserScrolling && newMessagesCount > 0 && (
+          <button
+            onClick={() => {
+              scrollToBottom();
+              setIsUserScrolling(false);
+              setNewMessagesCount(0);
+            }}
+            className="fixed bottom-24 right-8 bg-blue-500 hover:bg-blue-600 text-white rounded-full px-4 py-2 shadow-lg flex items-center space-x-2 transition-all duration-200 z-10"
+          >
+            <ChevronDown className="w-4 h-4" />
+            <span className="text-sm font-medium">
+              {newMessagesCount} {t('agentChat.newMessages')}
+            </span>
+          </button>
+        )}
       </div>
 
       {/* Mobile vs Desktop Input Area */}
@@ -1596,41 +1886,10 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
           showToolSelector={showToolSelector}
           onToolSelectorToggle={() => setShowToolSelector(!showToolSelector)}
           hasSelectedTools={selectedRegularTools.length > 0 || (mcpToolsEnabled && selectedMcpTools.length > 0)}
+          onStopAi={() => abortControllerRef.current?.abort()}
+          onSettingsOpen={() => setShowMobileSettings(true)}
         />
 
-        {/* Mobile Settings */}
-        <div className="px-3 pb-2 border-t border-gray-100 dark:border-gray-700">
-          <div className="flex items-center justify-between py-2">
-            <SettingsDropdown
-              permissionMode={permissionMode}
-              onPermissionModeChange={setPermissionMode}
-              selectedClaudeVersion={selectedClaudeVersion}
-              onClaudeVersionChange={setSelectedClaudeVersion}
-              selectedModel={selectedModel}
-              onModelChange={setSelectedModel}
-              availableModels={availableModels}
-              claudeVersionsData={claudeVersionsData}
-              isVersionLocked={isVersionLocked}
-              isAiTyping={isAiTyping}
-            />
-
-            {isAiTyping || isStopping ? (
-              <button
-                onClick={handleStopGeneration}
-                disabled={isStopping}
-                className={`flex items-center space-x-1 px-3 py-1.5 text-white rounded-lg transition-colors text-xs font-medium ${
-                  isStopping
-                    ? 'bg-red-400 cursor-not-allowed'
-                    : 'bg-red-600 hover:bg-red-700'
-                }`}
-                title={isStopping ? t('agentChatPanel.stopping') : t('agentChatPanel.stopGeneration')}
-              >
-                <Square className="w-3 h-3" />
-                <span>{isStopping ? t('agentChatPanel.stopping') : t('agentChatPanel.stop')}</span>
-              </button>
-            ) : null}
-          </div>
-        </div>
 
         {/* Tool Selector */}
         <UnifiedToolSelector
@@ -1799,6 +2058,38 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
                   </span>
                 )}
               </div>
+
+              {/* MCP 状态指示器 */}
+              {mcpToolsEnabled && (
+                <div className="relative">
+                  <button
+                    onClick={() => setShowMcpStatusModal(true)}
+                    className={`p-2 transition-colors rounded-lg ${
+                      mcpStatus.hasError
+                        ? 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50'
+                        : 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-900/50'
+                    }`}
+                    title={
+                      mcpStatus.hasError 
+                        ? `MCP 工具状态异常: ${mcpStatus.lastError || '连接失败'}`
+                        : 'MCP 工具运行正常'
+                    }
+                  >
+                    {mcpStatus.hasError ? (
+                      <WifiOff className="w-4 h-4" />
+                    ) : (
+                      <Wifi className="w-4 h-4" />
+                    )}
+                  </button>
+                  
+                  {/* 错误指示器 */}
+                  {mcpStatus.hasError && (
+                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full flex items-center justify-center">
+                      <span className="w-1.5 h-1.5 bg-white rounded-full"></span>
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="flex items-center space-x-2">
@@ -1880,10 +2171,43 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
                       >
                         <Terminal className="w-4 h-4" />
                         <span className="text-xs">
-                          {selectedClaudeVersion
-                            ? claudeVersionsData.versions.find(v => v.id === selectedClaudeVersion)?.name || t('agentChat.claudeVersion.custom')
-                            : t('agentChat.claudeVersion.default')
-                          }
+                          {(() => {
+                            // 如果用户选择了特定版本，显示该版本名称
+                            if (selectedClaudeVersion && claudeVersionsData?.versions) {
+                              return claudeVersionsData.versions.find(v => v.id === selectedClaudeVersion)?.name || t('agentChat.claudeVersion.custom');
+                            }
+                            
+                            // 如果没有选择特定版本，尝试显示默认版本名称
+                            if (claudeVersionsData?.versions && claudeVersionsData.versions.length > 0) {
+                              // 首先尝试通过defaultVersionId查找
+                              if (claudeVersionsData.defaultVersionId) {
+                                const defaultVersion = claudeVersionsData.versions.find(v => v.id === claudeVersionsData.defaultVersionId);
+                                if (defaultVersion?.name) {
+                                  return defaultVersion.name;
+                                }
+                              }
+                              
+                              // 如果找不到，则查找标记为默认的版本
+                              const defaultByFlag = claudeVersionsData.versions.find(v => v.isDefault);
+                              if (defaultByFlag?.name) {
+                                return defaultByFlag.name;
+                              }
+                              
+                              // 再次fallback：显示第一个非系统版本
+                              const firstNonSystem = claudeVersionsData.versions.find(v => !v.isSystem);
+                              if (firstNonSystem?.name) {
+                                return firstNonSystem.name;
+                              }
+                              
+                              // 最后显示第一个版本
+                              if (claudeVersionsData.versions[0]?.name) {
+                                return claudeVersionsData.versions[0].name;
+                              }
+                            }
+                            
+                            // 最后回退到翻译文本
+                            return t('agentChat.claudeVersion.default');
+                          })()}
                         </span>
                         <ChevronDown className="w-3 h-3" />
                       </button>
@@ -1900,7 +2224,38 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
                               !selectedClaudeVersion ? 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300' : 'text-gray-700 dark:text-gray-300'
                             }`}
                           >
-                            {t('agentChat.claudeVersion.default')}
+                            {(() => {
+                              // 尝试显示实际的默认版本名称
+                              if (claudeVersionsData?.versions && claudeVersionsData.versions.length > 0) {
+                                // 首先尝试通过defaultVersionId查找
+                                if (claudeVersionsData.defaultVersionId) {
+                                  const defaultVersion = claudeVersionsData.versions.find(v => v.id === claudeVersionsData.defaultVersionId);
+                                  if (defaultVersion?.name) {
+                                    return defaultVersion.name;
+                                  }
+                                }
+                                
+                                // 如果找不到，则查找标记为默认的版本
+                                const defaultByFlag = claudeVersionsData.versions.find(v => v.isDefault);
+                                if (defaultByFlag?.name) {
+                                  return defaultByFlag.name;
+                                }
+                                
+                                // 再次fallback：显示第一个非系统版本
+                                const firstNonSystem = claudeVersionsData.versions.find(v => !v.isSystem);
+                                if (firstNonSystem?.name) {
+                                  return firstNonSystem.name;
+                                }
+                                
+                                // 最后显示第一个版本
+                                if (claudeVersionsData.versions[0]?.name) {
+                                  return claudeVersionsData.versions[0].name;
+                                }
+                              }
+                              
+                              // 最后回退到翻译文本
+                              return t('agentChat.claudeVersion.default');
+                            })()}
                           </button>
 
                           {/* 其他版本选项 */}
@@ -1921,9 +2276,6 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
                               >
                                 <div className="flex items-center space-x-2">
                                   <span>{version.name}</span>
-                                  {version.isSystem && (
-                                    <span className="text-xs text-gray-500 dark:text-gray-400">({t('agentChat.claudeVersion.system')})</span>
-                                  )}
                                 </div>
                               </button>
                             ))
@@ -2001,7 +2353,7 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
                 <button
                   onClick={handleSendMessage}
                   disabled={isSendDisabled()}
-                  className="flex items-center space-x-2 px-4 py-2 text-white rounded-lg hover:opacity-90 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 text-sm font-medium shadow-sm"
+                  className="flex items-center space-x-2 px-4 py-2 text-white rounded-lg hover:opacity-90 disabled:bg-gray-300 dark:disabled:bg-gray-700 dark:disabled:text-gray-500 disabled:cursor-not-allowed transition-all duration-200 text-sm font-medium shadow-sm"
                   style={{ backgroundColor: !isSendDisabled() ? 'hsl(var(--primary))' : undefined }}
                   title={
                     isAiTyping ? t('agentChatPanel.aiTyping') :
@@ -2041,6 +2393,43 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
       <ImagePreview
         images={previewImage ? [previewImage] : []}
         onClose={() => setPreviewImage(null)}
+      />
+
+    {/* MCP 状态弹窗 */}
+      <McpStatusModal
+        isOpen={showMcpStatusModal}
+        onClose={() => setShowMcpStatusModal(false)}
+        mcpStatus={mcpStatus}
+      />
+
+        
+      {/* File Browser for @ symbol */}
+      {showFileBrowser && (
+        <FileBrowser
+          title={t('agentChat.fileBrowser.title', { projectPath: projectPath ? projectPath.split('/').pop() : t('agentChat.fileBrowser.currentProject') })}
+          initialPath={projectPath}
+          allowFiles={true}
+          allowDirectories={false}
+          restrictToProject={true}
+          onSelect={handleFileSelect}
+          onClose={handleFileBrowserClose}
+        />
+      )}
+
+      {/* Mobile Settings Modal */}
+      <MobileSettingsModal
+        isOpen={showMobileSettings}
+        onClose={() => setShowMobileSettings(false)}
+        permissionMode={permissionMode}
+        onPermissionModeChange={setPermissionMode}
+        selectedClaudeVersion={selectedClaudeVersion}
+        onClaudeVersionChange={setSelectedClaudeVersion}
+        selectedModel={selectedModel}
+        onModelChange={setSelectedModel}
+        availableModels={availableModels}
+        claudeVersionsData={claudeVersionsData}
+        isVersionLocked={isVersionLocked}
+        isAiTyping={isAiTyping}
       />
     </div>
   );

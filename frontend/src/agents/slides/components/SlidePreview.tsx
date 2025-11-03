@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
+import { useEffect, useRef, useState, forwardRef, useImperativeHandle, useCallback } from 'react';
 import { Eye, Code } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import Prism from 'prismjs';
@@ -7,7 +7,8 @@ import 'prismjs/components/prism-markup';
 import 'prismjs/components/prism-css';
 import type { Slide } from '../../../types/index.js';
 import { useSlideContent } from '../hooks/useSlides';
-import { API_BASE, MEDIA_BASE } from '../../../lib/config';
+import { authFetch } from '../../../lib/authFetch.js';
+import { getApiBase, getMediaBase } from '../../../lib/config';
 
 interface SlidePreviewProps {
   slide: Slide;
@@ -31,37 +32,59 @@ export const SlidePreview = forwardRef<SlidePreviewRef, SlidePreviewProps>(({ sl
   
   const { data: slideContent } = useSlideContent(slide.index, projectPath);
 
+  // Load iframe directly (no authentication required for media files)
+  const loadIframeWithToken = useCallback((iframe: HTMLIFrameElement, projectId: string, filePath: string) => {
+    try {
+      const timestamp = Date.now();
+      const url = `${getMediaBase()}/${projectId}/${filePath}?t=${timestamp}`;
+      console.log('SlidePreview: Loading iframe with URL:', url);
+      iframe.src = url;
+    } catch (error) {
+      console.error('SlidePreview: Error loading iframe:', error);
+      setError(true);
+      setIsLoading(false);
+    }
+  }, [getMediaBase]);
+
   // Expose refresh method via ref
   useImperativeHandle(ref, () => ({
     refreshIframe: () => {
       const iframe = iframeRef.current;
       if (iframe && projectId && slide.path) {
-        const timestamp = Date.now();
-        const url = `${MEDIA_BASE}/${projectId}/${slide.path}?t=${timestamp}`;
-        iframe.src = url;
+        loadIframeWithToken(iframe, projectId, slide.path);
       }
     }
-  }), [projectId, slide.path]);
+  }), [projectId, slide.path, loadIframeWithToken]);
 
-  // Fetch project ID
+  // Fetch project ID using files API
   useEffect(() => {
-    if (!projectPath) return;
-    
+    if (!projectPath) {
+      console.log('SlidePreview: No projectPath provided');
+      return;
+    }
+
     const fetchProjectId = async () => {
       try {
-        const url = new URL(`${API_BASE}/files/project-id`, window.location.origin);
-        url.searchParams.set('projectPath', projectPath);
-        const response = await fetch(url);
-        
+        const searchParams = new URLSearchParams();
+        searchParams.set('projectPath', projectPath);
+        const url = `${getApiBase()}/files/project-id?${searchParams.toString()}`;
+        console.log('SlidePreview: Fetching project ID from:', url);
+        const response = await authFetch(url);
+
         if (response.ok) {
           const data = await response.json();
+          console.log('SlidePreview: Got project ID:', data.projectId, 'for path:', projectPath);
           setProjectId(data.projectId);
+        } else {
+          console.error('SlidePreview: Failed to fetch project ID, status:', response.status);
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          console.error('SlidePreview: Error details:', errorData);
         }
       } catch (error) {
-        console.error('Failed to fetch project ID:', error);
+        console.error('SlidePreview: Exception while fetching project ID:', error);
       }
     };
-    
+
     fetchProjectId();
   }, [projectPath]);
 
@@ -85,14 +108,14 @@ export const SlidePreview = forwardRef<SlidePreviewRef, SlidePreviewProps>(({ sl
     iframe.addEventListener('load', handleLoad);
     iframe.addEventListener('error', handleError);
     
-    // Use media proxy URL: /media/{project-id}/{relative-path}
-    iframe.src = `${MEDIA_BASE}/${projectId}/${slide.path}`;
+    // Load iframe with temporary token
+    loadIframeWithToken(iframe, projectId, slide.path);
 
     return () => {
       iframe.removeEventListener('load', handleLoad);
       iframe.removeEventListener('error', handleError);
     };
-  }, [viewMode, projectId, slide.path]);
+  }, [viewMode, projectId, slide.path, loadIframeWithToken]);
 
   // Highlight code when switching to code view or when content loads
   useEffect(() => {
@@ -149,8 +172,8 @@ export const SlidePreview = forwardRef<SlidePreviewRef, SlidePreviewProps>(({ sl
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
       {/* Header with tabs and page indicator */}
-      <div className="px-4 py-3 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-        <div className="flex items-center justify-between">
+      <div className="h-12 px-4 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center">
+        <div className="flex items-center gap-4">
           {/* Tab buttons */}
           <div className="flex space-x-1">
             <button
@@ -175,6 +198,11 @@ export const SlidePreview = forwardRef<SlidePreviewRef, SlidePreviewProps>(({ sl
               <Code className="w-4 h-4" />
               <span>{t('slidePreview.tabs.code')}</span>
             </button>
+          </div>
+
+          {/* File name */}
+          <div className="text-sm text-gray-600 dark:text-gray-300 font-medium flex-1">
+            {slide.path ? slide.path.replace(/\.html$/, '') : ''}
           </div>
 
           {/* Page indicator */}

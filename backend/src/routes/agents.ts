@@ -3,22 +3,46 @@ import { z } from 'zod';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
-import { spawn } from 'child_process';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { query, Options } from '@anthropic-ai/claude-code';
-import { AgentStorage } from '@agentstudio/shared/utils/agentStorage';
-import { AgentConfig } from '@agentstudio/shared/types/agents';
-import { ProjectMetadataStorage } from '@agentstudio/shared/utils/projectMetadataStorage';
-import { sessionManager } from '../services/sessionManager.js';
-import { getAllVersions, getDefaultVersionId } from '@agentstudio/shared/utils/claudeVersionStorage';
+import { query } from '@anthropic-ai/claude-code';
+import type {
+  SDKMessage,
+  SDKSystemMessage,
+  SDKAssistantMessage,
+  SDKUserMessage,
+  SDKResultMessage,
+  SDKPartialAssistantMessage,
+  SDKCompactBoundaryMessage
+} from '@anthropic-ai/claude-agent-sdk';
+import { AgentStorage } from '../services/agentStorage';
+import { AgentConfig } from '../types/agents';
+import { ProjectMetadataStorage } from '../services/projectMetadataStorage';
+import { sessionManager } from '../services/sessionManager';
+import { getAllVersions, getAllVersionsInternal, getDefaultVersionId, getVersionByIdInternal } from '../services/claudeVersionStorage';
+
+// 类型守卫函数
+function isSDKSystemMessage(message: any): message is SDKSystemMessage {
+  return message && message.type === 'system';
+}
+
+function isSDKResultMessage(message: any): message is SDKResultMessage {
+  return message && message.type === 'result';
+}
+
+function isSDKPartialAssistantMessage(message: any): message is SDKPartialAssistantMessage {
+  return message && message.type === 'stream_event';
+}
+
+function isSDKCompactBoundaryMessage(message: any): message is SDKCompactBoundaryMessage {
+  return message && message.type === 'system' && (message as any).subtype === 'compact_boundary';
+}
 
 const router: express.Router = express.Router();
 const execAsync = promisify(exec);
 
 // Storage instances
 const globalAgentStorage = new AgentStorage();
-const projectStorage = new ProjectMetadataStorage();
 
 
 
@@ -304,7 +328,7 @@ async function getClaudeExecutablePath(): Promise<string | null> {
             return claudePathOption.trim();
           }
         }
-      } catch (error) {
+      } catch {
         // Fallback to the first path found
       }
     }
@@ -456,9 +480,8 @@ async function buildQueryOptions(agent: any, projectPath: string | undefined, mc
   
   try {
     if (claudeVersion) {
-      // 使用指定版本
-      const versions = await getAllVersions();
-      const selectedVersion = versions.find(v => v.id === claudeVersion);
+      // 使用指定版本 - 使用内部函数获取未处理的版本信息
+      const selectedVersion = await getVersionByIdInternal(claudeVersion);
       if (selectedVersion) {
         if (selectedVersion.executablePath) {
           executablePath = selectedVersion.executablePath.trim();
@@ -472,11 +495,10 @@ async function buildQueryOptions(agent: any, projectPath: string | undefined, mc
         executablePath = await getClaudeExecutablePath();
       }
     } else {
-      // 使用默认版本
+      // 使用默认版本 - 使用内部函数获取未处理的版本信息
       const defaultVersionId = await getDefaultVersionId();
       if (defaultVersionId) {
-        const versions = await getAllVersions();
-        const defaultVersion = versions.find(v => v.id === defaultVersionId);
+        const defaultVersion = await getVersionByIdInternal(defaultVersionId);
         if (defaultVersion) {
           if (defaultVersion.executablePath) {
             executablePath = defaultVersion.executablePath;
@@ -513,11 +535,14 @@ async function buildQueryOptions(agent: any, projectPath: string | undefined, mc
     queryOptions.pathToClaudeCodeExecutable = executablePath;
   }
   
-  // Add environment variables if any
+  // Always merge environment variables with process.env
+  // This ensures critical variables like ANTHROPIC_API_KEY, PATH, etc. are available
+  queryOptions.env = { ...process.env, ...environmentVariables };
+
   if (Object.keys(environmentVariables).length > 0) {
-    // 合并用户环境变量和当前进程环境变量，避免丢失关键的系统环境变量如PATH
-    queryOptions.env = { ...process.env, ...environmentVariables };
-    console.log(`🌍 Using environment variables:`, environmentVariables);
+    console.log(`🌍 Using custom environment variables:`, environmentVariables);
+  } else {
+    console.log(`🌍 Using process environment variables (no custom variables defined)`);
   }
 
   // Add MCP configuration if MCP tools are selected
@@ -573,7 +598,7 @@ async function buildQueryOptions(agent: any, projectPath: string | undefined, mc
  */
 async function handleSessionManagement(agentId: string, sessionId: string | null, projectPath: string | undefined, queryOptions: any, claudeVersionId?: string) {
   let claudeSession: any;
-  let actualSessionId: string | null = sessionId || null;
+  const actualSessionId: string | null = sessionId || null;
 
   if (sessionId) {
     // 尝试复用现有会话
@@ -609,20 +634,88 @@ async function handleSessionManagement(agentId: string, sessionId: string | null
 }
 
 /**
+ * 检测模型是否支持视觉功能
+ * 从版本配置中获取模型的 isVision 字段
+ */
+async function isVisionModel(model: string, claudeVersionId?: string): Promise<boolean> {
+  try {
+    // 获取版本配置
+    let versionId = claudeVersionId;
+    if (!versionId) {
+      versionId = await getDefaultVersionId() || 'system';
+    }
+
+    const versions = await getAllVersions();
+    const version = versions.find(v => v.id === versionId);
+
+    if (!version || !version.models) {
+      // 如果找不到版本或模型配置,默认假设支持视觉
+      console.warn(`⚠️ Version ${versionId} not found or has no model config, assuming vision support`);
+      return true;
+    }
+
+    // 在版本的模型列表中查找匹配的模型
+    const modelConfig = version.models.find(m => m.id === model);
+    if (modelConfig) {
+      console.log(`✅ Found model config for ${model}: isVision=${modelConfig.isVision}`);
+      return modelConfig.isVision;
+    }
+
+    // 如果找不到精确匹配,默认假设支持视觉
+    console.warn(`⚠️ Model ${model} not found in version ${versionId} config, assuming vision support`);
+    return true;
+  } catch (error) {
+    console.error('Failed to check vision support:', error);
+    // 出错时默认假设支持视觉
+    return true;
+  }
+}
+
+/**
+ * 保存图片到隐藏目录并返回相对路径
+ */
+function saveImageToHiddenDir(imageData: string, mediaType: string, imageIndex: number, projectPath?: string): string {
+  const cwd = projectPath || process.cwd();
+  const hiddenDir = path.join(cwd, '.agentstudio-images');
+
+  // 确保隐藏目录存在
+  if (!fs.existsSync(hiddenDir)) {
+    fs.mkdirSync(hiddenDir, { recursive: true });
+  }
+
+  // 根据 mediaType 确定文件扩展名
+  const extMap: Record<string, string> = {
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+    'image/gif': 'gif',
+    'image/webp': 'webp'
+  };
+  const ext = extMap[mediaType] || 'jpg';
+
+  // 生成唯一文件名
+  const timestamp = Date.now();
+  const filename = `image${imageIndex}_${timestamp}.${ext}`;
+  const filepath = path.join(hiddenDir, filename);
+
+  // 将 base64 数据写入文件
+  const buffer = Buffer.from(imageData, 'base64');
+  fs.writeFileSync(filepath, buffer);
+
+  // 返回相对于项目根目录的路径
+  return path.relative(cwd, filepath);
+}
+
+/**
  * 构建用户消息内容
  */
-function buildUserMessageContent(message: string, images?: any[]) {
+async function buildUserMessageContent(message: string, images?: any[], model?: string, projectPath?: string, claudeVersionId?: string) {
   const messageContent: any[] = [];
-  
-  // Add text content if provided
-  if (message && message.trim()) {
-    messageContent.push({
-      type: "text",
-      text: message
-    });
-  }
-  
-  // Add image content
+  let processedMessage = message;
+
+  // 检测模型是否支持视觉(从版本配置中获取)
+  const supportsVision = model ? await isVisionModel(model, claudeVersionId) : true;
+
+  // 处理图片
   if (images && images.length > 0) {
     console.log('📸 Processing images:', images.map(img => ({
       id: img.id,
@@ -631,16 +724,48 @@ function buildUserMessageContent(message: string, images?: any[]) {
       size: img.data.length
     })));
 
-    for (const image of images) {
-      messageContent.push({
-        type: "image",
-        source: {
-          type: "base64",
-          media_type: image.mediaType,
-          data: image.data
+    if (supportsVision) {
+      // 视觉模型:直接添加图片到消息内容
+      console.log('✅ Model supports vision, adding images directly to message content');
+      for (const image of images) {
+        messageContent.push({
+          type: "image",
+          source: {
+            type: "base64",
+            media_type: image.mediaType,
+            data: image.data
+          }
+        });
+      }
+    } else {
+      // 非视觉模型:保存图片到隐藏目录,替换占位符为路径
+      console.log('⚠️ Model does not support vision, saving images to hidden directory');
+      for (let i = 0; i < images.length; i++) {
+        const image = images[i];
+        const imageIndex = i + 1;
+        const placeholder = `[image${imageIndex}]`;
+
+        try {
+          // 保存图片并获取路径
+          const imagePath = saveImageToHiddenDir(image.data, image.mediaType, imageIndex, projectPath);
+          console.log(`💾 Saved image ${imageIndex} to: ${imagePath}`);
+
+          // 替换消息中的占位符为文件路径(添加@前缀)
+          processedMessage = processedMessage.replace(placeholder, `@${imagePath}`);
+        } catch (error) {
+          console.error(`Failed to save image ${imageIndex}:`, error);
+          // 如果保存失败,保留占位符
         }
-      });
+      }
     }
+  }
+
+  // Add text content if provided
+  if (processedMessage && processedMessage.trim()) {
+    messageContent.push({
+      type: "text",
+      text: processedMessage
+    });
   }
 
   return {
@@ -654,9 +779,13 @@ function buildUserMessageContent(message: string, images?: any[]) {
 
 // POST /api/agents/chat - Agent-based AI chat using Claude Code SDK with session management
 router.post('/chat', async (req, res) => {
+  // 重试逻辑：最多重试1次
+  let retryCount = 0;
+  const MAX_RETRIES = 1;
+
   try {
     console.log('Chat request received:', req.body);
-    
+
     // 输出当前Session Manager的状态
     console.log('📊 SessionManager状态 - 收到/chat消息时:');
     console.log(`   活跃会话总数: ${sessionManager.getActiveSessionCount()}`);
@@ -670,7 +799,7 @@ router.post('/chat', async (req, res) => {
       console.log(`       空闲时间: ${Math.round(session.idleTimeMs / 1000)}秒`);
       console.log(`       最后活动: ${new Date(session.lastActivity).toISOString()}`);
     });
-    
+
     // 验证请求数据
     const validation = ChatRequestSchema.safeParse(req.body);
     if (!validation.success) {
@@ -678,7 +807,8 @@ router.post('/chat', async (req, res) => {
       return res.status(400).json({ error: 'Invalid request body', details: validation.error });
     }
 
-    const { message, images, agentId, sessionId, projectPath, mcpTools, permissionMode, model, claudeVersion } = validation.data;
+    const { message, images, agentId, sessionId: initialSessionId, projectPath, mcpTools, permissionMode, model, claudeVersion } = validation.data;
+    let sessionId = initialSessionId;
 
     // 获取 agent 配置
     const agent = globalAgentStorage.getAgent(agentId);
@@ -700,19 +830,25 @@ router.post('/chat', async (req, res) => {
     // 设置连接管理
     const connectionManager = setupSSEConnectionManagement(req, res, agentId);
 
-    try {
-      // 构建查询选项
+    // 重试循环：处理会话失败的情况
+    while (retryCount <= MAX_RETRIES) {
+      try {
+        console.log(`🔄 Attempt ${retryCount + 1}/${MAX_RETRIES + 1} for session: ${sessionId || 'new'}`);
+        // 构建查询选项
       const queryOptions = await buildQueryOptions(agent, projectPath, mcpTools, permissionMode, model, claudeVersion);
 
       // 处理会话管理
       const { claudeSession, actualSessionId: initialSessionId } = await handleSessionManagement(agentId, sessionId || null, projectPath, queryOptions, claudeVersion);
       let actualSessionId = initialSessionId;
-      
+
       // 设置会话到连接管理器
       connectionManager.setClaudeSession(claudeSession);
 
-      // 构建用户消息
-      const userMessage = buildUserMessageContent(message, images);
+      // 获取最终的模型名称(从queryOptions中获取,因为buildQueryOptions已经处理了优先级)
+      const finalModel = queryOptions.model || 'sonnet';
+
+      // 构建用户消息(传递claudeVersion以便查询isVision配置)
+      const userMessage = await buildUserMessageContent(message, images, finalModel, projectPath, claudeVersion);
 
       // 为这个特定请求创建一个独立的query调用，但复用session context
       const currentSessionId = claudeSession.getClaudeSessionId();
@@ -727,24 +863,116 @@ router.post('/chat', async (req, res) => {
       // 使用会话的 sendMessage 方法发送消息
       let compactMessageBuffer: any[] = []; // 缓存 compact 相关消息
 
-      const currentRequestId = await claudeSession.sendMessage(userMessage, (sdkMessage: any) => {
+      const currentRequestId = await claudeSession.sendMessage(userMessage, (sdkMessage: SDKMessage) => {
+        // 🔧 MCP 工具日志观察 - 检查 MCP 服务器状态
+        if (isSDKSystemMessage(sdkMessage) && sdkMessage.subtype === "init") {
+          // 检查 MCP 服务器连接状态
+          if (sdkMessage.mcp_servers && Array.isArray(sdkMessage.mcp_servers)) {
+            const failedServers = sdkMessage.mcp_servers.filter(
+              (s: any) => s.status !== "connected"
+            );
+            
+            if (failedServers.length > 0) {
+              console.warn("🚨 [MCP] Failed to connect MCP servers:", failedServers.map((s: any) => ({
+                name: s.name,
+                status: s.status,
+                error: s.error
+              })));
+              
+              // 发送 MCP 状态通知给前端
+              const mcpStatusEvent = {
+                type: 'mcp_status',
+                subtype: 'connection_failed',
+                failedServers: failedServers,
+                timestamp: Date.now(),
+                agentId: agentId,
+                sessionId: actualSessionId || currentSessionId
+              };
+              
+              try {
+                if (!res.destroyed && !connectionManager.isConnectionClosed()) {
+                  res.write(`data: ${JSON.stringify(mcpStatusEvent)}\n\n`);
+                }
+              } catch (writeError: unknown) {
+                console.error('Failed to write MCP status event:', writeError);
+              }
+            } else {
+              // 所有 MCP 服务器连接成功
+              const connectedServers = sdkMessage.mcp_servers.filter((s: any) => s.status === "connected");
+              if (connectedServers.length > 0) {
+                console.log("✅ [MCP] Successfully connected MCP servers:", connectedServers.map((s: any) => s.name));
+                
+                // 发送成功连接通知给前端
+                const mcpStatusEvent = {
+                  type: 'mcp_status',
+                  subtype: 'connection_success',
+                  connectedServers: connectedServers,
+                  timestamp: Date.now(),
+                  agentId: agentId,
+                  sessionId: actualSessionId || currentSessionId
+                };
+                
+                try {
+                  if (!res.destroyed && !connectionManager.isConnectionClosed()) {
+                    res.write(`data: ${JSON.stringify(mcpStatusEvent)}\n\n`);
+                  }
+                } catch (writeError: unknown) {
+                  console.error('Failed to write MCP success event:', writeError);
+                }
+              }
+            }
+          }
+        }
+        
+        // 🚨 MCP 工具日志观察 - 检查执行错误
+        if (isSDKResultMessage(sdkMessage) && sdkMessage.subtype === "error_during_execution") {
+          const errorMessage = sdkMessage as any; // 临时类型断言以访问错误详情
+          console.error("❌ [MCP] Execution failed:", {
+            error: errorMessage.error,
+            details: errorMessage.details,
+            tool: errorMessage.tool,
+            timestamp: Date.now()
+          });
+          
+          // 发送执行错误通知给前端
+          const mcpErrorEvent = {
+            type: 'mcp_error',
+            subtype: 'execution_failed',
+            error: errorMessage.error,
+            details: errorMessage.details,
+            tool: errorMessage.tool,
+            timestamp: Date.now(),
+            agentId: agentId,
+            sessionId: actualSessionId || currentSessionId
+          };
+          
+          try {
+            if (!res.destroyed && !connectionManager.isConnectionClosed()) {
+              res.write(`data: ${JSON.stringify(mcpErrorEvent)}\n\n`);
+            }
+          } catch (writeError: unknown) {
+            console.error('Failed to write MCP error event:', writeError);
+          }
+        }
+
         // 🔍 添加详细日志来观察消息结构
         if (message === '/compact') {
+          const msgWithContent = sdkMessage as any;  // 临时使用 any 访问 message 属性
           console.log('📦 [COMPACT] Received SDK message:', {
             type: sdkMessage.type,
-            subtype: sdkMessage.subtype,
-            hasMessage: !!sdkMessage.message,
-            messageType: typeof sdkMessage.message,
-            messageContentType: sdkMessage.message?.content ? typeof sdkMessage.message.content : 'no content',
-            messageContentLength: Array.isArray(sdkMessage.message?.content) ? sdkMessage.message.content.length : 'not array',
-            firstBlock: Array.isArray(sdkMessage.message?.content) && sdkMessage.message.content.length > 0
-              ? { type: sdkMessage.message.content[0].type, hasText: !!sdkMessage.message.content[0].text, textPreview: sdkMessage.message.content[0].text?.substring(0, 100) }
+            subtype: (sdkMessage as any).subtype,
+            hasMessage: !!msgWithContent.message,
+            messageType: typeof msgWithContent.message,
+            messageContentType: msgWithContent.message?.content ? typeof msgWithContent.message.content : 'no content',
+            messageContentLength: Array.isArray(msgWithContent.message?.content) ? msgWithContent.message.content.length : 'not array',
+            firstBlock: Array.isArray(msgWithContent.message?.content) && msgWithContent.message.content.length > 0
+              ? { type: msgWithContent.message.content[0].type, hasText: !!msgWithContent.message.content[0].text, textPreview: msgWithContent.message.content[0].text?.substring(0, 100) }
               : 'no blocks'
           });
         }
 
         // 处理 /compact 命令的特殊消息序列
-        if (message === '/compact' && sdkMessage.type === 'system' && sdkMessage.subtype === 'compact_boundary') {
+        if (message === '/compact' && isSDKCompactBoundaryMessage(sdkMessage)) {
           compactMessageBuffer.push(sdkMessage);
           console.log('📦 [COMPACT] Detected compact_boundary, buffering messages...');
           return; // 不发送给前端，等待完整的消息序列
@@ -810,8 +1038,8 @@ router.post('/chat', async (req, res) => {
         }
 
         // 当收到 init 消息时，确认会话 ID
-        const responseSessionId = sdkMessage.session_id || sdkMessage.sessionId;
-        if (sdkMessage.type === 'system' && sdkMessage.subtype === 'init' && responseSessionId) {
+        const responseSessionId = sdkMessage.session_id;
+        if (isSDKSystemMessage(sdkMessage) && sdkMessage.subtype === 'init' && responseSessionId) {
           if (!actualSessionId || !currentSessionId) {
             // 新会话：保存session ID
             claudeSession.setClaudeSessionId(responseSessionId);
@@ -877,7 +1105,7 @@ router.post('/chat', async (req, res) => {
         }
         
         // 当收到 result 事件时，正常结束 SSE 连接
-        if (sdkMessage.type === 'result') {
+        if (isSDKResultMessage(sdkMessage)) {
           console.log(`✅ Received result event, closing SSE connection for sessionId: ${actualSessionId || currentSessionId}`);
           connectionManager.safeCloseConnection('request completed');
         }
@@ -886,27 +1114,65 @@ router.post('/chat', async (req, res) => {
       // 设置当前请求ID到连接管理器
       connectionManager.setCurrentRequestId(currentRequestId);
       
-      console.log(`📨 Started Claude request for agent: ${agentId}, sessionId: ${currentSessionId || 'new'}, requestId: ${currentRequestId}`);
-      
-    } catch (sessionError) {
-      console.error('Claude session error:', sessionError);
-      
-      const errorMessage = sessionError instanceof Error ? sessionError.message : 'Unknown error';
-      
-      if (!connectionManager.isConnectionClosed()) {
-        try {
-          res.write(`data: ${JSON.stringify({ 
-            type: 'error', 
-            error: 'Claude session failed', 
-            message: errorMessage,
-            timestamp: Date.now()
-          })}\n\n`);
-        } catch (writeError) {
-          console.error('Failed to write error message:', writeError);
+        console.log(`📨 Started Claude request for agent: ${agentId}, sessionId: ${currentSessionId || 'new'}, requestId: ${currentRequestId}`);
+
+        // 如果成功发送消息，跳出重试循环
+        break;
+
+      } catch (sessionError) {
+        console.error(`❌ Claude session error (attempt ${retryCount + 1}/${MAX_RETRIES + 1}):`, sessionError);
+
+        const errorMessage = sessionError instanceof Error ? sessionError.message : 'Unknown error';
+        const originalSessionId = sessionId; // 使用外部作用域的sessionId
+
+        // 检查是否应该重试
+        const shouldRetry = retryCount < MAX_RETRIES && originalSessionId !== null;
+
+        if (shouldRetry && originalSessionId) {
+          // 尝试重试：从SessionManager中移除失败的会话
+          console.log(`🔄 Attempting to recover from session failure for session: ${originalSessionId}`);
+          console.log(`   Error details: ${errorMessage}`);
+
+          try {
+            // 从SessionManager中移除失败的会话
+            const removed = await sessionManager.removeSession(originalSessionId);
+            if (removed) {
+              console.log(`✅ Removed failed session ${originalSessionId} from SessionManager`);
+            } else {
+              console.log(`⚠️  Session ${originalSessionId} was not found in SessionManager (may have been cleaned up already)`);
+            }
+          } catch (removeError) {
+            console.error(`⚠️  Failed to remove session ${originalSessionId}:`, removeError);
+          }
+
+          // 将sessionId设为null，下次循环将创建新会话
+          sessionId = null;
+          retryCount++;
+
+          console.log(`🔄 Retrying with new session (attempt ${retryCount + 1}/${MAX_RETRIES + 1})...`);
+          continue; // 继续下一次循环
         }
-        connectionManager.safeCloseConnection(`session error: ${errorMessage}`);
+
+        // 不再重试，发送错误给前端
+        console.log(`❌ Maximum retries reached or no sessionId to retry. Sending error to frontend.`);
+
+        if (!connectionManager.isConnectionClosed()) {
+          try {
+            res.write(`data: ${JSON.stringify({
+              type: 'error',
+              error: 'Claude session failed',
+              message: errorMessage,
+              timestamp: Date.now(),
+              retriesExhausted: retryCount >= MAX_RETRIES
+            })}\n\n`);
+          } catch (writeError) {
+            console.error('Failed to write error message:', writeError);
+          }
+          connectionManager.safeCloseConnection(`session error: ${errorMessage}`);
+        }
+        break; // 跳出重试循环
       }
-    }
+    } // End of while loop
     
   } catch (error) {
     console.error('Error in AI chat:', error);

@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { promisify } from 'util';
 import matter from 'gray-matter';
-import { SlashCommand, SlashCommandCreate, SlashCommandUpdate, SlashCommandFilter } from '@agentstudio/shared/types/commands';
+import { SlashCommand, SlashCommandCreate, SlashCommandUpdate, SlashCommandFilter } from '../types/commands';
 
 const router: Router = express.Router();
 const readdir = promisify(fs.readdir);
@@ -91,11 +91,33 @@ function formatCommandContent(command: SlashCommandCreate | SlashCommandUpdate, 
 // Scan commands in directory
 async function scanCommands(dirPath: string, scope: 'project' | 'user'): Promise<SlashCommand[]> {
   try {
-    await ensureDir(dirPath);
+    // Try to ensure directory exists
+    try {
+      await ensureDir(dirPath);
+    } catch (error) {
+      console.log(`Cannot create commands directory ${dirPath}:`, error instanceof Error ? error.message : 'Unknown error');
+      return [];
+    }
+
+    // Check if directory is accessible
+    try {
+      await stat(dirPath);
+    } catch (error) {
+      // Directory doesn't exist or is not accessible
+      console.log(`Commands directory ${dirPath} not accessible, skipping scan`);
+      return [];
+    }
+
     const commands: SlashCommand[] = [];
-    
+
     async function scanDirectory(currentDir: string, namespace?: string) {
-      const items = await readdir(currentDir, { withFileTypes: true });
+      let items;
+      try {
+        items = await readdir(currentDir, { withFileTypes: true });
+      } catch (error) {
+        console.warn(`Cannot read directory ${currentDir}:`, error instanceof Error ? error.message : 'Unknown error');
+        return;
+      }
       
       for (const item of items) {
         const itemPath = path.join(currentDir, item.name);
@@ -127,10 +149,15 @@ async function scanCommands(dirPath: string, scope: 'project' | 'user'): Promise
       }
     }
     
-    await scanDirectory(dirPath);
+    try {
+      await scanDirectory(dirPath);
+    } catch (error) {
+      console.warn(`Error during directory scan in ${dirPath}:`, error instanceof Error ? error.message : 'Unknown error');
+    }
+
     return commands;
   } catch (error) {
-    console.error(`Error scanning commands in ${dirPath}:`, error);
+    console.error(`Error scanning commands in ${dirPath}:`, error instanceof Error ? error.message : 'Unknown error');
     return [];
   }
 }

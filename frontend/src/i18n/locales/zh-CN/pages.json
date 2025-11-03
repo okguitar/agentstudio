@@ -6,7 +6,7 @@
     "mcp": "MCP服务",
     "settings": "系统设置",
     "settingsSubmenu": {
-      "general": "通用设置",
+      "general": "外观设置",
       "versions": "版本管理",
       "memory": "全局记忆",
       "commands": "自定义命令",
@@ -257,7 +257,12 @@
     "agentNotFoundDesc": "无法找到指定的智能助手，可能已被删除或禁用。",
     "agentDisabled": "助手已禁用",
     "agentDisabledDesc": "智能助手 \"{{name}}\" 目前已被禁用，无法使用。",
-    "closePage": "关闭页面"
+    "closePage": "关闭页面",
+    "tabNotification": {
+      "working": "🤖 正在工作",
+      "completed": "✅ 已完成",
+      "error": "❌ 发生错误"
+    }
   },
   "dashboard": {
     "title": "仪表板",
@@ -305,9 +310,9 @@
   "settings": {
     "title": "设置",
     "general": {
-      "title": "通用设置",
-      "description": "配置界面主题和基本设置",
-      "interfaceSettings": "界面设置",
+      "title": "外观设置",
+      "description": "配置界面主题和语言",
+      "interfaceSettings": "外观设置",
       "theme": {
         "label": "主题",
         "description": "选择界面主题模式",
@@ -318,14 +323,7 @@
       "language": {
         "label": "语言",
         "description": "选择界面语言"
-      },
-      "appInfo": {
-        "title": "应用信息",
-        "name": "AgentStudio",
-        "buildDate": "构建日期",
-        "versionNote": "查看详细版本信息和更新请转至【版本管理】页面"
-      },
-      "settingsSaved": "设置已保存"
+      }
     },
     "api": "API服务器设置",
     "memory": "全局记忆",
@@ -354,9 +352,6 @@
       "title": "版本管理",
       "subtitle": "管理多个 Claude Code 版本，指定可执行路径、别名和环境变量",
       "addVersion": "添加版本",
-      "reinitialize": "重新初始化",
-      "reinitializeTitle": "重新运行 Claude 版本配置向导",
-      "reinitializeSuccess": "配置已重置，即将重新加载页面",
       "noVersions": "还没有配置 Claude 版本",
       "clickToAddFirst": "点击\"添加版本\"来配置第一个 Claude 版本",
       "systemLabel": "系统",
@@ -406,6 +401,10 @@
           "kimi": {
             "name": "Kimi K2 (月之暗面)",
             "description": "使用Kimi K2模型服务，支持Anthropic API兼容"
+          },
+          "minimax": {
+            "name": "MiniMax",
+            "description": "使用MiniMax的高性能模型服务，支持Anthropic API兼容"
           }
         }
       },
@@ -534,7 +533,8 @@
     "confirmDelete": "确定要删除 \"{{name}}\" 配置吗？",
     "import": {
       "button": "从Claude Code导入",
-      "noConfigFound": "没有找到Claude Code的MCP配置",
+      "importing": "导入中...",
+      "noConfigFound": "没有找到Claude Code的MCP配置(从 ~/.claude.json 读取)",
       "success": "成功导入 {{imported}} 个MCP服务器配置{{skipped, select, 0{} other{，跳过 {{skipped}} 个已存在的配置}}",
       "allExist": "所有配置都已存在，没有导入新的配置"
     },
@@ -555,6 +555,7 @@
     },
     "actions": {
       "validate": "重新验证",
+      "copyCommand": "复制命令",
       "edit": "编辑",
       "delete": "删除配置"
     },
@@ -593,8 +594,10 @@
       "networkError": "网络错误或服务不可用",
       "deleteFailed": "删除配置失败",
       "importFailed": "导入失败",
-      "saveFailed": "保存配置失败"
-    }
+      "saveFailed": "保存配置失败",
+      "copyFailed": "复制失败"
+    },
+    "commandCopied": "命令已复制到剪贴板"
   },
   "commands": {
     "title": "自定义命令",

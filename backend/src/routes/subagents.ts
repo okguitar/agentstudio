@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { promisify } from 'util';
 import matter from 'gray-matter';
-import { Subagent, SubagentCreate, SubagentUpdate, SubagentFilter } from '@agentstudio/shared/types/subagents';
+import { Subagent, SubagentCreate, SubagentUpdate, SubagentFilter } from '../types/subagents';
 
 const router: Router = express.Router();
 const readdir = promisify(fs.readdir);

@@ -96,7 +96,9 @@
     "moreTabsCount": "{{count}} more tabs",
     "pinnedTab": "pinned",
     "temporaryTab": "temporary",
-    "closeTab": "Close tab"
+    "closeTab": "Close tab",
+    "noProject": "No Project Selected",
+    "selectProjectFirst": "Please select a project first to browse files"
   },
   "sessionDropdown": {
     "title": "Session Management",
@@ -138,15 +140,18 @@
     "sendImage": "Sent an image",
     "addDescription": "Add description text... (optional)",
     "inputPlaceholder": "Type your message... (Shift+Enter for new line, Enter to send, / for commands)",
+    "inputPlaceholderMobile": "Type message...",
     "toolSelection": "Tool Selection",
     "imageSelection": "Image Selection",
     "selectedCount": "{{count}} selected",
     "stop": "Stop",
     "send": "Send",
+    "stopAi": "Stop AI",
     "aiTyping": "AI is typing",
     "noContent": "No content to send",
     "unknownCommand": "Unknown command",
     "sendMessage": "Send message",
+    "newMessages": "new messages",
     "permissionMode": {
       "default": "Default",
       "acceptEdits": "Accept Edits",
@@ -159,7 +164,7 @@
     },
     "claudeVersion": {
       "title": "Select Claude Version",
-      "default": "Claude",
+      "default": "Default",
       "custom": "Custom",
       "system": "System",
       "locked": "Version Locked (Active Session)"
@@ -199,11 +204,16 @@
     "executionCompleted": "(Execution Completed)",
     "genericError": "Sorry, an error occurred while processing your request.",
     "unknownCommandWarning": "Unknown command: /{{command}}. Available commands: {{commands}}",
+    "commandsLoadErrorWarning": "Command: /{{command}} not found. User/project commands failed to load ({{errorMessage}}). Available system commands: {{commands}}. Please check if you are properly logged in.",
     "navigateToAlert": "Navigate to: {{path}}",
     "generationStopped": "⏹️ Generation stopped",
     "stopping": "Stopping...",
     "stopFailed": "❌ **Stop Failed**",
     "initializingSession": "Initializing new session, please wait...",
+    "fileBrowser": {
+      "title": "Select File - {{projectPath}}",
+      "currentProject": "Current Project"
+    },
     "maxTurnsReached": "⏱️ **Maximum turns reached**",
     "permissionDenials": "⚠️ **Permission Denied Operations:**",
     "permissionNote": "💡 Some operations require user permission confirmation to execute.",
@@ -293,7 +303,8 @@
       "loadingPath": "Loading...",
       "newDirectory": "New Directory",
       "showHidden": "Show Hidden Files",
-      "hideHidden": "Hide Hidden Files"
+      "hideHidden": "Hide Hidden Files",
+      "restrictedToProject": "Restricted to project directory"
     },
     "table": {
       "name": "Name",
@@ -305,7 +316,9 @@
       "select": "Select",
       "cancel": "Cancel",
       "createFolder": "Create Folder",
-      "creating": "Creating..."
+      "creating": "Creating...",
+      "preview": "Preview",
+      "previewCSV": "Preview CSV File"
     },
     "dialog": {
       "newFolder": "New Folder",
@@ -322,6 +335,39 @@
       "browseFailed": "Failed to browse directory",
       "createFailed": "Failed to create directory"
     }
+  },
+  "csvPreview": {
+    "loading": "Loading CSV file...",
+    "info": {
+      "rowCount": "{{count}} rows total",
+      "filtered": "filtered"
+    },
+    "search": {
+      "placeholder": "Search CSV content..."
+    },
+    "table": {
+      "untitled": "Untitled"
+    },
+    "empty": {
+      "noData": "No data to display"
+    },
+    "pagination": {
+      "showing": "Showing {{start}}-{{end}} of {{total}}",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "actions": {
+      "close": "Close",
+      "download": "Download",
+      "maximize": "Maximize",
+      "minimize": "Minimize"
+    },
+    "errors": {
+      "title": "Preview Error",
+      "loadFailed": "Failed to load CSV file",
+      "unknownError": "Unknown error"
+    },
+    "instructions": "Arrow keys to navigate • Ctrl+F to search • ESC to close"
   },
   "unifiedToolSelector": {
     "title": "Tool Selection",
@@ -540,6 +586,9 @@
     "customLocationDescription": "Choose directory and project name",
     "browseProject": "Browse Projects",
     "browseDescription": "Select project directory via file browser",
+    "importProject": "Import Project",
+    "importDescription": "Import existing project directory",
+    "importProjectFailed": "Failed to import project",
     "recentProjects": "Recent Projects",
     "loadingProjects": "Loading projects...",
     "lastAccessed": "Last accessed: {{date}}",
@@ -659,7 +708,8 @@
     "unknownToolType": "Unknown tool type"
   },
   "baseToolComponent": {
-    "executionResult": "Execution result:"
+    "executionResult": "Execution result:",
+    "interrupted": "Interrupted"
   },
   "bashOutputTool": {
     "shellPrefix": "Shell",
@@ -761,6 +811,55 @@
       "title": "Unable to Connect to Service",
       "message": "Cannot connect to service \"{{name}}\" ({{url}}).",
       "consequence": "If you continue switching, you won't be able to login or use this service, but you can reconfigure the service address on the login page.",
+      "cancel": "Cancel",
+      "continue": "Switch Anyway"
+    }
+  },
+  "serviceStatusIndicator": {
+    "checking": "Checking...",
+    "connected": "Connected",
+    "disconnected": "Disconnected",
+    "manageServices": "Manage Services",
+    "quickSwitch": "Quick Switch Services",
+    "version": "Version",
+    "backendName": "Backend Name",
+    "status": "Status",
+    "clickToSwitch": "Click service name to quickly switch",
+    "clickToManage": "Click the gear icon to manage services"
+  },
+  "serviceManagementModal": {
+    "title": "Service Management",
+    "noService": "No Service",
+    "servicesList": "Services List",
+    "addService": "Add Service",
+    "current": "Current",
+    "testConnection": "Test Connection",
+    "switchToService": "Switch to This Service",
+    "editService": "Edit Service",
+    "removeService": "Remove Service",
+    "refreshStatus": "Refresh Status",
+    "servicesOnline": "services online",
+    "close": "Close",
+    "namePlaceholder": "Service Name",
+    "urlPlaceholder": "Service URL (e.g., http://localhost:4936)",
+    "version": "Version",
+    "add": "Add",
+    "save": "Save",
+    "cancel": "Cancel",
+    "addNewService": "Add New Service",
+    "switchSuccess": "Switched to service: {{name}}",
+    "addSuccess": "Service added successfully",
+    "updateSuccess": "Service updated successfully",
+    "removeSuccess": "Service removed successfully",
+    "connectionTest": {
+      "success": "Connection test successful",
+      "failed": "Connection test failed",
+      "error": "Connection test error"
+    },
+    "switchWarning": {
+      "title": "Service Connection Warning",
+      "message": "Service \"{{name}}\" ({{url}}) cannot be connected.",
+      "consequence": "If you continue switching, you may not be able to use certain features properly.",
       "cancel": "Cancel",
       "continue": "Switch Anyway"
     }

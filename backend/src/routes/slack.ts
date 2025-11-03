@@ -88,7 +88,7 @@ function verifySlackRequest(req: express.Request, res: express.Response, next: e
 function initSlackAIService(): SlackAIService {
   if (!slackAIService) {
     const botToken = process.env.SLACK_BOT_TOKEN;
-    const defaultAgentId = process.env.SLACK_DEFAULT_AGENT_ID || 'slack-chat-agent';
+    const defaultAgentId = process.env.SLACK_DEFAULT_AGENT_ID || 'general-chat';
 
     if (!botToken) {
       throw new Error('SLACK_BOT_TOKEN not configured');
@@ -175,7 +175,7 @@ router.get('/status', (req, res) => {
     configured: isConfigured,
     botToken: process.env.SLACK_BOT_TOKEN ? 'set' : 'not set',
     signingSecret: process.env.SLACK_SIGNING_SECRET ? 'set' : 'not set',
-    defaultAgentId: process.env.SLACK_DEFAULT_AGENT_ID || 'slack-chat-agent',
+    defaultAgentId: process.env.SLACK_DEFAULT_AGENT_ID || 'general-chat',
     serviceInitialized: slackAIService !== null
   });
 });

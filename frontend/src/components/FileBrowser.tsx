@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { API_BASE } from '../lib/config';
 import { authFetch } from '../lib/authFetch';
 import { showError } from '../utils/toast';
+import { CSVPreview } from './CSVPreview';
 import {
   Folder,
   File,
@@ -12,7 +13,8 @@ import {
   Eye,
   EyeOff,
   ChevronRight,
-  FolderPlus
+  FolderPlus,
+  FileText
 } from 'lucide-react';
 
 interface FileItem {
@@ -36,6 +38,7 @@ interface FileBrowserProps {
   allowFiles?: boolean;
   allowDirectories?: boolean;
   allowNewDirectory?: boolean;
+  restrictToProject?: boolean; // 限制在项目目录内
   onSelect: (path: string, isDirectory: boolean) => void;
   onClose: () => void;
 }
@@ -46,6 +49,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
   allowFiles = true,
   allowDirectories = true,
   allowNewDirectory = false,
+  restrictToProject = false,
   onSelect,
   onClose
 }) => {
@@ -58,6 +62,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
   const [showNewFolderDialog, setShowNewFolderDialog] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [creatingFolder, setCreatingFolder] = useState(false);
+  const [csvPreviewPath, setCsvPreviewPath] = useState<string | null>(null);
 
   const fetchDirectory = async (path?: string) => {
     setLoading(true);
@@ -105,13 +110,17 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
   };
 
   const goToParent = () => {
-    if (data?.parentPath) {
+    if (data?.parentPath && (!restrictToProject || data.parentPath.startsWith(initialPath || ''))) {
       fetchDirectory(data.parentPath);
     }
   };
 
   const goToHome = () => {
-    fetchDirectory();
+    if (!restrictToProject) {
+      fetchDirectory();
+    } else if (initialPath) {
+      fetchDirectory(initialPath);
+    }
   };
 
   const handleCreateNewFolder = async () => {
@@ -159,11 +168,23 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
     return `${(size / 1024 / 1024 / 1024).toFixed(1)} GB`;
   };
 
+  const isCSVFile = (filename: string) => {
+    return filename.toLowerCase().endsWith('.csv');
+  };
+
+  const handlePreviewCSV = (path: string) => {
+    setCsvPreviewPath(path);
+  };
+
+  const handleCloseCSVPreview = () => {
+    setCsvPreviewPath(null);
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-4xl max-h-[80vh] mx-4 flex flex-col">
+      <div className="bg-white dark:bg-gray-900 rounded-lg w-full max-w-4xl max-h-[80vh] mx-4 flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{title || t('fileBrowser.title')}</h3>
           <button
             onClick={onClose}
@@ -177,15 +198,18 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
         <div className="flex items-center space-x-2 p-4 border-b border-gray-100 dark:border-gray-700">
           <button
             onClick={goToHome}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            title={t('fileBrowser.toolbar.homeDirectory')}
+            className={`p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors ${
+              restrictToProject ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+            title={restrictToProject ? t('fileBrowser.toolbar.restrictedToProject') : t('fileBrowser.toolbar.homeDirectory')}
+            disabled={restrictToProject}
           >
             <Home className="w-4 h-4 text-gray-600 dark:text-gray-400" />
           </button>
 
           <button
             onClick={goToParent}
-            disabled={!data?.parentPath}
+            disabled={!data?.parentPath || (restrictToProject && data?.currentPath === initialPath)}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             title={t('fileBrowser.toolbar.parentDirectory')}
           >
@@ -234,7 +258,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
               }}
             >
               <table className="w-full">
-                <thead className="bg-gray-50 dark:bg-gray-900 sticky top-0">
+                <thead className="bg-gray-100 dark:bg-gray-800 sticky top-0">
                   <tr>
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('fileBrowser.table.name')}</th>
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('fileBrowser.table.size')}</th>
@@ -254,13 +278,24 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
                         <div className="flex items-center space-x-2 flex-1 min-w-0">
                           {item.isDirectory ? (
                             <Folder className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                          ) : isCSVFile(item.name) ? (
+                            <FileText className="w-4 h-4 text-green-600 flex-shrink-0" />
                           ) : (
                             <File className="w-4 h-4 text-gray-600 dark:text-gray-400 flex-shrink-0" />
                           )}
                           <button
-                            onClick={() => handleItemClick(item)}
+                            onClick={() => {
+                              // For files when allowFiles is true, directly select the file
+                              if (!item.isDirectory && allowFiles) {
+                                handleItemSelect(item);
+                              } else {
+                                handleItemClick(item);
+                              }
+                            }}
                             className={`text-left truncate hover:text-blue-600 dark:hover:text-blue-400 ${
                               item.isHidden ? 'text-gray-400' : 'text-gray-900 dark:text-white'
+                            } ${
+                              !item.isDirectory && allowFiles ? 'cursor-pointer font-medium' : ''
                             }`}
                           >
                             {item.name}
@@ -277,16 +312,27 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
                         {new Date(item.modified).toLocaleDateString('zh-CN')}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <button
-                          onClick={() => handleItemSelect(item)}
-                          disabled={
-                            (item.isDirectory && !allowDirectories) ||
-                            (!item.isDirectory && !allowFiles)
-                          }
-                          className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                          {t('fileBrowser.actions.select')}
-                        </button>
+                        <div className="flex items-center justify-end space-x-2">
+                          {!item.isDirectory && isCSVFile(item.name) && (
+                            <button
+                              onClick={() => handlePreviewCSV(item.path)}
+                              className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                              title={t('fileBrowser.actions.previewCSV')}
+                            >
+                              {t('fileBrowser.actions.preview')}
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleItemSelect(item)}
+                            disabled={
+                              (item.isDirectory && !allowDirectories) ||
+                              (!item.isDirectory && !allowFiles)
+                            }
+                            className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          >
+                            {t('fileBrowser.actions.select')}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -322,7 +368,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
       {/* New Folder Dialog */}
       {showNewFolderDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
+          <div className="bg-white dark:bg-gray-900 rounded-lg p-6 w-full max-w-md mx-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('fileBrowser.dialog.newFolder')}</h3>
               <button
@@ -386,6 +432,14 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
             </div>
           </div>
         </div>
+      )}
+      
+      {/* CSV Preview */}
+      {csvPreviewPath && (
+        <CSVPreview
+          filePath={csvPreviewPath}
+          onClose={handleCloseCSVPreview}
+        />
       )}
     </div>
   );

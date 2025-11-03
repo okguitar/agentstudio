@@ -6,7 +6,7 @@
     "mcp": "MCP Services",
     "settings": "Settings",
     "settingsSubmenu": {
-      "general": "General",
+      "general": "Look & Feel",
       "versions": "Versions",
       "memory": "Memory",
       "commands": "Commands",
@@ -257,7 +257,12 @@
     "agentNotFoundDesc": "Unable to find the specified AI assistant, it may have been deleted or disabled.",
     "agentDisabled": "Assistant Disabled",
     "agentDisabledDesc": "AI assistant \"{{name}}\" is currently disabled and cannot be used.",
-    "closePage": "Close Page"
+    "closePage": "Close Page",
+    "tabNotification": {
+      "working": "🤖 Working",
+      "completed": "✅ Completed",
+      "error": "❌ Error"
+    }
   },
   "dashboard": {
     "title": "Dashboard",
@@ -305,9 +310,9 @@
   "settings": {
     "title": "Settings",
     "general": {
-      "title": "General Settings",
-      "description": "Configure interface theme and basic settings",
-      "interfaceSettings": "Interface Settings",
+      "title": "Look and Feel",
+      "description": "Configure interface theme and language",
+      "interfaceSettings": "Look and Feel",
       "theme": {
         "label": "Theme",
         "description": "Select interface theme mode",
@@ -318,14 +323,7 @@
       "language": {
         "label": "Language",
         "description": "Select interface language"
-      },
-      "appInfo": {
-        "title": "Application Info",
-        "name": "AgentStudio",
-        "buildDate": "Build Date",
-        "versionNote": "Go to Version Management page for detailed version info and updates"
-      },
-      "settingsSaved": "Settings saved"
+      }
     },
     "api": "API Server Settings",
     "memory": "Global Memory",
@@ -354,9 +352,6 @@
       "title": "Version Management",
       "subtitle": "Manage multiple Claude Code versions, specify executable paths, aliases and environment variables",
       "addVersion": "Add Version",
-      "reinitialize": "Reinitialize",
-      "reinitializeTitle": "Rerun Claude version setup wizard",
-      "reinitializeSuccess": "Configuration has been reset, reloading page",
       "noVersions": "No Claude versions configured yet",
       "clickToAddFirst": "Click \"Add Version\" to configure your first Claude version",
       "systemLabel": "System",
@@ -406,6 +401,10 @@
           "kimi": {
             "name": "Kimi K2 (Moonshot AI)",
             "description": "Use Kimi K2 model service, compatible with Anthropic API"
+          },
+          "minimax": {
+            "name": "MiniMax",
+            "description": "Use MiniMax high-performance model service, compatible with Anthropic API"
           }
         }
       },
@@ -534,7 +533,8 @@
     "confirmDelete": "Are you sure you want to delete configuration \"{{name}}\"?",
     "import": {
       "button": "Import from Claude Code",
-      "noConfigFound": "No MCP configurations found in Claude Code",
+      "importing": "Importing...",
+      "noConfigFound": "No MCP configurations found in Claude Code (reading from ~/.claude.json)",
       "success": "Successfully imported {{imported}} MCP server configuration(s){{skipped, select, 0{} other{, skipped {{skipped}} existing configuration(s)}}",
       "allExist": "All configurations already exist, no new imports"
     },
@@ -555,6 +555,7 @@
     },
     "actions": {
       "validate": "Re-validate",
+      "copyCommand": "Copy Command",
       "edit": "Edit",
       "delete": "Delete configuration"
     },
@@ -593,8 +594,10 @@
       "networkError": "Network error or service unavailable",
       "deleteFailed": "Failed to delete configuration",
       "importFailed": "Import failed",
-      "saveFailed": "Failed to save configuration"
-    }
+      "saveFailed": "Failed to save configuration",
+      "copyFailed": "Failed to copy"
+    },
+    "commandCopied": "Command copied to clipboard"
   },
   "commands": {
     "title": "Custom Commands",

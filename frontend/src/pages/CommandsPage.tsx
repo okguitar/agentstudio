@@ -24,7 +24,7 @@ import { SlashCommand, SlashCommandFilter } from '../types/commands';
 import { useCommands, useDeleteCommand } from '../hooks/useCommands';
 import { CommandForm } from '../components/CommandForm';
 import { formatRelativeTime } from '../utils';
-import { getToolDisplayName } from '@agentstudio/shared/utils/toolMapping';
+import { getToolDisplayName } from '../utils/toolMapping';
 import { useMobileContext } from '../contexts/MobileContext';
 
 export const CommandsPage: React.FC = () => {
@@ -392,6 +392,7 @@ export const CommandsPage: React.FC = () => {
           onSuccess={() => {
             setShowForm(false);
             setEditingCommand(null);
+            refetch(); // 刷新命令列表
           }}
         />
       )}

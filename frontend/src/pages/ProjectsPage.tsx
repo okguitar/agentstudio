@@ -7,7 +7,8 @@ import {
   Plus,
   Search,
   Folder,
-  X
+  X,
+  FolderOpen
 } from 'lucide-react';
 import { ProjectTable } from '../components/ProjectTable';
 import { useAgents } from '../hooks/useAgents';
@@ -253,6 +254,9 @@ export const ProjectsPage: React.FC = () => {
   const [commandsProject, setCommandsProject] = useState<Project | null>(null);
   const [subAgentsProject, setSubAgentsProject] = useState<Project | null>(null);
   const [agentSelectProject, setAgentSelectProject] = useState<Project | null>(null);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importProjectPath, setImportProjectPath] = useState('');
+  const [showImportBrowser, setShowImportBrowser] = useState(false);
 
   const agents = agentsData?.agents || [];
   const enabledAgents = agents.filter(agent => agent.enabled);
@@ -434,6 +438,80 @@ export const ProjectsPage: React.FC = () => {
     }
   };
 
+  const handleImportProject = async () => {
+    if (!importProjectPath.trim()) return;
+
+    try {
+      // Check if the directory exists
+      const checkResponse = await authFetch(`${API_BASE}/files/browse?path=${encodeURIComponent(importProjectPath)}`);
+      if (!checkResponse.ok) {
+        throw new Error('目录不存在或无法访问');
+      }
+
+      const dirData = await checkResponse.json();
+      if (!dirData.isDirectory) {
+        throw new Error('请选择一个目录');
+      }
+
+      // Import the project using the first available agent
+      const firstAgent = enabledAgents[0];
+      if (!firstAgent) {
+        throw new Error('没有可用的代理');
+      }
+
+      const response = await authFetch(`${API_BASE}/projects/import`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          agentId: firstAgent.id,
+          projectPath: importProjectPath
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+
+        // Add the imported project to the list
+        setProjects(prev => [result.project, ...prev]);
+        setShowImportModal(false);
+        setImportProjectPath('');
+
+        // Show success message and ask if user wants to open the project
+        const shouldOpen = window.confirm(
+          `项目 "${result.project.name}" 导入成功！\n\n是否立即打开该项目？`
+        );
+
+        if (shouldOpen) {
+          // If there are multiple agents, show agent selection dialog
+          if (enabledAgents.length > 1) {
+            setAgentSelectProject(result.project);
+          } else {
+            // Only one agent available, open directly with that agent
+            const params = new URLSearchParams();
+            params.set('project', result.project.path);
+            const url = `/chat/${firstAgent.id}?${params.toString()}`;
+            window.open(url, '_blank');
+          }
+        }
+      } else {
+        const error = await response.json();
+        throw new Error(error.error || '导入项目失败');
+      }
+    } catch (error) {
+      console.error('Failed to import project:', error);
+      showError('导入项目失败', error instanceof Error ? error.message : '未知错误');
+    }
+  };
+
+  const handleImportFileSelect = (path: string, isDirectory: boolean) => {
+    if (isDirectory) {
+      setImportProjectPath(path);
+      setShowImportBrowser(false);
+    }
+  };
+
 
 
   if (loading) {
@@ -489,13 +567,22 @@ export const ProjectsPage: React.FC = () => {
               </div>
             </div>
           </div>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
-          >
-            <Plus className="w-5 h-5" />
-            <span>{t('projects.createButton')}</span>
-          </button>
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => setShowImportModal(true)}
+              className="flex items-center space-x-2 px-6 py-3 border border-green-600 text-green-600 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors whitespace-nowrap"
+            >
+              <FolderOpen className="w-5 h-5" />
+              <span>导入项目</span>
+            </button>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
+            >
+              <Plus className="w-5 h-5" />
+              <span>{t('projects.createButton')}</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -527,6 +614,81 @@ export const ProjectsPage: React.FC = () => {
           onSubAgentManagement={handleSubAgentManagement}
           onDeleteProject={handleDeleteProject}
         />
+      )}
+
+      {/* Import Project Modal */}
+      {showImportModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md mx-4">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">导入项目</h2>
+              <button
+                onClick={() => {
+                  setShowImportModal(false);
+                  setImportProjectPath('');
+                }}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  项目目录路径
+                </label>
+                <div className="flex space-x-2">
+                  <input
+                    type="text"
+                    value={importProjectPath}
+                    onChange={(e) => setImportProjectPath(e.target.value)}
+                    placeholder="请选择或输入项目目录路径"
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowImportBrowser(true)}
+                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                    title="选择目录"
+                  >
+                    <Folder className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  选择要导入的现有项目目录
+                </p>
+              </div>
+
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
+                <p className="text-sm text-blue-800 dark:text-blue-200">
+                  <strong>说明：</strong>导入的目录将被添加到项目中，并关联到第一个可用的代理。
+                </p>
+              </div>
+
+              <div className="flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowImportModal(false);
+                    setImportProjectPath('');
+                  }}
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                >
+                  取消
+                </button>
+                <button
+                  type="button"
+                  onClick={handleImportProject}
+                  disabled={!importProjectPath.trim()}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  导入项目
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Create Project Modal */}
@@ -611,6 +773,17 @@ export const ProjectsPage: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* FileBrowser for Import */}
+      {showImportBrowser && (
+        <FileBrowser
+          title="选择项目目录"
+          allowFiles={false}
+          allowDirectories={true}
+          onSelect={handleImportFileSelect}
+          onClose={() => setShowImportBrowser(false)}
+        />
       )}
     </div>
   );

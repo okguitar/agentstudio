@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { Send, Image, Wrench, X, Mic } from 'lucide-react';
+import React, { useRef } from 'react';
+import { Image, Wrench, X, Settings, Square } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 interface MobileChatToolbarProps {
@@ -14,7 +14,8 @@ interface MobileChatToolbarProps {
   showToolSelector: boolean;
   onToolSelectorToggle: () => void;
   hasSelectedTools: boolean;
-  onVoiceRecord?: () => void;
+  onStopAi: () => void;
+  onSettingsOpen: () => void;
   className?: string;
 }
 
@@ -30,32 +31,22 @@ export const MobileChatToolbar: React.FC<MobileChatToolbarProps> = ({
   showToolSelector,
   onToolSelectorToggle,
   hasSelectedTools,
-  onVoiceRecord,
+  onStopAi,
+  onSettingsOpen,
   className = ""
 }) => {
   const { t } = useTranslation('components');
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isRecording, setIsRecording] = useState(false);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      if (!disabled && inputMessage.trim()) {
+      if (!disabled && !isAiTyping && inputMessage.trim()) {
         onSend();
       }
     }
   };
 
-  const handleVoiceRecord = () => {
-    if (isRecording) {
-      setIsRecording(false);
-    } else {
-      setIsRecording(true);
-      onVoiceRecord?.();
-    }
-  };
-
-  const isSendDisabled = disabled || isAiTyping || (!inputMessage.trim() && selectedImages.length === 0);
 
   return (
     <div className={`flex-shrink-0 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 ${className}`}>
@@ -85,13 +76,13 @@ export const MobileChatToolbar: React.FC<MobileChatToolbarProps> = ({
 
       {/* Main Toolbar */}
       <div className="p-3">
-        <div className="flex items-end space-x-2">
+        <div className="flex items-center space-x-2">
           {/* Left Side Tools */}
           <div className="flex space-x-1">
             {/* Tool Selector */}
             <button
               onClick={onToolSelectorToggle}
-              className={`p-2 transition-colors rounded-lg ${
+              className={`p-2 transition-colors rounded-lg min-w-[44px] min-h-[44px] flex items-center justify-center relative ${
                 showToolSelector || hasSelectedTools
                   ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30'
                   : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
@@ -99,7 +90,7 @@ export const MobileChatToolbar: React.FC<MobileChatToolbarProps> = ({
               title={t('agentChat.toolSelection')}
               disabled={isAiTyping}
             >
-              <Wrench className="w-4 h-4" />
+              <Wrench className="w-5 h-5" />
               {hasSelectedTools && (
                 <span className="absolute -top-1 -right-1 w-2 h-2 bg-blue-600 rounded-full"></span>
               )}
@@ -116,7 +107,7 @@ export const MobileChatToolbar: React.FC<MobileChatToolbarProps> = ({
             />
             <button
               onClick={() => fileInputRef.current?.click()}
-              className={`p-2 transition-colors rounded-lg ${
+              className={`p-2 transition-colors rounded-lg min-w-[44px] min-h-[44px] flex items-center justify-center ${
                 selectedImages.length > 0
                   ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30'
                   : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
@@ -124,67 +115,49 @@ export const MobileChatToolbar: React.FC<MobileChatToolbarProps> = ({
               title={t('agentChat.imageSelection')}
               disabled={isAiTyping}
             >
-              <Image className="w-4 h-4" />
+              <Image className="w-5 h-5" />
             </button>
           </div>
 
-          {/* Text Input */}
+          {/* Text Input - Takes remaining space */}
           <div className="flex-1 min-w-0">
             <textarea
               value={inputMessage}
               onChange={(e) => onInputChange(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={t('agentChat.inputPlaceholder')}
+              placeholder={t('agentChat.inputPlaceholderMobile')}
               disabled={disabled || isAiTyping}
               rows={1}
-              className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white text-sm"
+              className="w-full px-4 py-3 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-full resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white text-sm"
               style={{
-                minHeight: '40px',
+                minHeight: '44px',
                 maxHeight: '120px',
               }}
             />
           </div>
 
-          {/* Right Side Actions */}
-          <div className="flex space-x-1">
-            {/* Voice Recording */}
-            {onVoiceRecord && (
+          {/* Right Side Action - Settings or Stop */}
+          <div className="flex-shrink-0">
+            {isAiTyping ? (
               <button
-                onClick={handleVoiceRecord}
-                className={`p-2 rounded-lg transition-colors ${
-                  isRecording
-                    ? 'text-red-500 bg-red-50 dark:bg-red-900/20'
-                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                }`}
-                title={isRecording ? t('agentChat.stopRecording') : t('agentChat.startRecording')}
+                onClick={onStopAi}
+                className="p-2 transition-colors rounded-lg min-w-[44px] min-h-[44px] flex items-center justify-center text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                title={t('agentChat.stopAi')}
               >
-                <Mic className="w-4 h-4" />
+                <Square className="w-5 h-5" />
+              </button>
+            ) : (
+              <button
+                onClick={onSettingsOpen}
+                className="p-2 transition-colors rounded-lg min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                title={t('agentChat.settings.title')}
+              >
+                <Settings className="w-5 h-5" />
               </button>
             )}
-
-            {/* Send Button */}
-            <button
-              onClick={onSend}
-              disabled={isSendDisabled}
-              className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors min-w-[36px] flex items-center justify-center"
-              title={t('agentChatPanel.send')}
-            >
-              <Send className="w-4 h-4" />
-            </button>
           </div>
         </div>
 
-        {/* Voice Recording Indicator */}
-        {isRecording && (
-          <div className="mt-2 flex items-center space-x-2 text-red-500">
-            <div className="flex space-x-1">
-              <div className="w-1 h-3 bg-red-500 rounded-full animate-pulse"></div>
-              <div className="w-1 h-3 bg-red-500 rounded-full animate-pulse delay-75"></div>
-              <div className="w-1 h-3 bg-red-500 rounded-full animate-pulse delay-150"></div>
-            </div>
-            <span className="text-sm">{t('agentChat.recording')}</span>
-          </div>
-        )}
       </div>
     </div>
   );

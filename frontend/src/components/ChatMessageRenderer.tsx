@@ -59,7 +59,7 @@ const ChatMessageRendererComponent: React.FC<ChatMessageRendererProps> = ({ mess
         {sortedParts.map((part) => {
           if (part.type === 'command' && part.content) {
             return (
-              <div key={part.id} className="inline-flex items-center px-2.5 py-1.5 bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30 dark:border-blue-500/50 rounded-md text-sm font-mono font-medium">
+              <div key={part.id} className="inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-purple-500/15 to-blue-500/15 dark:from-purple-500/25 dark:to-blue-500/25 text-purple-700 dark:text-purple-300 border border-purple-400/40 dark:border-purple-400/50 rounded-lg text-sm font-mono font-semibold shadow-sm">
                 {part.content}
               </div>
             );
@@ -72,11 +72,7 @@ const ChatMessageRendererComponent: React.FC<ChatMessageRendererProps> = ({ mess
           } else if (part.type === 'text' && part.content) {
             return (
               <div key={part.id}>
-                {message.role === 'assistant' ? (
-                  <MarkdownMessage content={part.content} />
-                ) : (
-                  <div className="whitespace-pre-wrap break-words">{part.content}</div>
-                )}
+                <MarkdownMessage content={part.content} isUserMessage={message.role === 'user'} />
               </div>
             );
           } else if (part.type === 'thinking' && part.content) {
@@ -157,11 +153,7 @@ const ChatMessageRendererComponent: React.FC<ChatMessageRendererProps> = ({ mess
               // For other unknown types, render as text
               return (
                 <div key={part.id}>
-                  {message.role === 'assistant' ? (
-                    <MarkdownMessage content={part.content} />
-                  ) : (
-                    <div className="whitespace-pre-wrap break-words">{part.content}</div>
-                  )}
+                  <MarkdownMessage content={part.content} isUserMessage={message.role === 'user'} />
                 </div>
               );
             }
@@ -203,30 +195,26 @@ const ChatMessageRendererComponent: React.FC<ChatMessageRendererProps> = ({ mess
       {/* Text content */}
       {message.content && (
         <div>
-          {message.role === 'assistant' ? (
-            <MarkdownMessage content={message.content} />
-          ) : (
-            (() => {
-              // Check if this is a command message format
-              const commandMatch = message.content.match(
-                /<command-message>.*?<\/command-message>\s*<command-name>(.+?)<\/command-name>/
+          {(() => {
+            // Check if this is a command message format
+            const commandMatch = message.content.match(
+              /<command-message>.*?<\/command-message>\s*<command-name>(.+?)<\/command-name>/
+            );
+            
+            if (commandMatch) {
+              // Render as command block
+              return (
+                <div className="inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-purple-500/15 to-blue-500/15 dark:from-purple-500/25 dark:to-blue-500/25 text-purple-700 dark:text-purple-300 border border-purple-400/40 dark:border-purple-400/50 rounded-lg text-sm font-mono font-semibold shadow-sm">
+                  {commandMatch[1]}
+                </div>
               );
-              
-              if (commandMatch) {
-                // Render as command block
-                return (
-                  <div className="inline-flex items-center px-2.5 py-1.5 bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30 dark:border-blue-500/50 rounded-md text-sm font-mono font-medium">
-                    {commandMatch[1]}
-                  </div>
-                );
-              } else {
-                // Regular text content
-                return (
-                  <div className="whitespace-pre-wrap break-words">{message.content}</div>
-                );
-              }
-            })()
-          )}
+            } else {
+              // Regular text content - always use MarkdownMessage for consistent styling
+              return (
+                <MarkdownMessage content={message.content} isUserMessage={message.role === 'user'} />
+              );
+            }
+          })()}
         </div>
       )}
       

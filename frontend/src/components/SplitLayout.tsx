@@ -1,13 +1,16 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useMobileContext } from '../contexts/MobileContext';
+import { PanelToggle } from './PanelToggle';
 
 interface SplitLayoutProps {
   children: [React.ReactNode, React.ReactNode];
   defaultLeftWidth?: number; // 默认左侧宽度百分比
   minWidth?: number; // 最小宽度百分比
   maxWidth?: number; // 最大宽度百分比
+  hideLeftPanel?: boolean; // 是否隐藏左侧面板
   hideRightPanel?: boolean; // 是否隐藏右侧面板
-  onShowRightPanel?: () => void; // 显示右侧面板的回调
+  onToggleLeftPanel?: () => void; // 切换左侧面板的回调
+  onToggleRightPanel?: () => void; // 切换右侧面板的回调
   mobileLayout?: 'stack' | 'tabs'; // 移动端布局方式
 }
 
@@ -16,8 +19,10 @@ export const SplitLayout: React.FC<SplitLayoutProps> = ({
   defaultLeftWidth = 35,
   minWidth = 20,
   maxWidth = 80,
+  hideLeftPanel = false,
   hideRightPanel = false,
-  onShowRightPanel,
+  onToggleLeftPanel,
+  onToggleRightPanel,
   mobileLayout = 'stack'
 }) => {
   const { isMobile, rightPanelOpen, setRightPanelOpen } = useMobileContext();
@@ -166,7 +171,7 @@ export const SplitLayout: React.FC<SplitLayoutProps> = ({
         )}
 
         {/* Floating Action Button to open right panel */}
-        {!hideRightPanel && !rightPanelOpen && onShowRightPanel && (
+        {!hideRightPanel && !rightPanelOpen && onToggleRightPanel && (
           <button
             onClick={() => setRightPanelOpen(true)}
             className="fixed bottom-6 right-6 z-40 bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition-colors lg:hidden"
@@ -184,48 +189,72 @@ export const SplitLayout: React.FC<SplitLayoutProps> = ({
 
   // 桌面端布局
   return (
-    <div ref={containerRef} className="flex h-full bg-gray-100">
-      {/* 左侧面板 */}
+    <div ref={containerRef} className="flex h-full bg-gray-100 relative">
+      {/* 左侧面板 - 使用CSS隐藏而不是条件渲染 */}
       <div
-        className="flex flex-col"
+        className={`
+          flex flex-col relative
+          ${hideLeftPanel ? 'hidden' : 'block'}
+        `}
         style={{ width: hideRightPanel ? '100%' : `${leftPanelWidth}%` }}
       >
         {children[0]}
       </div>
 
-      {/* 拖拽分隔条 - 只在右侧面板显示时显示 */}
-      {!hideRightPanel && (
+      {/* 分隔条 - 仅当两个面板都显示时才显示 */}
+      {!hideLeftPanel && !hideRightPanel && (
         <div
-          className={`w-1 bg-gray-300 hover:bg-blue-400 cursor-col-resize transition-colors relative ${
-            isDragging ? 'bg-blue-500' : ''
-          }`}
+          className={`
+            resize-separator relative z-10
+            ${isDragging ? 'w-2 bg-blue-500' : 'w-1.5 bg-gray-300 hover:bg-blue-400'}
+            cursor-col-resize transition-all duration-200
+            flex items-center justify-center
+            group
+          `}
           onMouseDown={handleMouseDown}
         >
-          {/* 视觉指示器 */}
-          <div className="absolute inset-y-0 left-1/2 transform -translate-x-1/2 w-1 bg-gray-400 opacity-50 hover:opacity-100" />
+          {/* 拖拽把手 - 三条竖线 */}
+          <div className="absolute inset-y-0 flex items-center justify-center">
+            <div className="flex flex-col items-center justify-center gap-1 py-2">
+              {/* 中间拖拽图标 */}
+              <div className="flex gap-0.5 opacity-40 group-hover:opacity-70 transition-opacity">
+                <div className="w-0.5 h-4 bg-gray-600 dark:bg-gray-400 rounded-full" />
+                <div className="w-0.5 h-4 bg-gray-600 dark:bg-gray-400 rounded-full" />
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* 右侧面板 - 只在不隐藏时显示 */}
-      {!hideRightPanel && (
-        <div
-          className="flex flex-col border-l border-gray-200"
-          style={{ width: `${100 - leftPanelWidth}%` }}
-        >
-          {children[1]}
-        </div>
+      {/* 右侧面板 - 使用CSS隐藏而不是条件渲染 */}
+      <div
+        className={`
+          flex flex-col border-l border-gray-200 relative
+          ${hideRightPanel ? 'hidden' : 'block'}
+        `}
+        style={{ width: hideLeftPanel ? '100%' : `${100 - leftPanelWidth}%` }}
+      >
+        {children[1]}
+      </div>
+
+      {/* 左侧面板切换按钮 - 独立于面板容器，固定定位 */}
+      {onToggleLeftPanel && (
+        <PanelToggle
+          isPanelVisible={!hideLeftPanel}
+          onToggle={onToggleLeftPanel}
+          position="left"
+          className="panel-toggle-left"
+        />
       )}
 
-      {/* 右侧展示条 - 只在面板隐藏时显示 */}
-      {hideRightPanel && onShowRightPanel && (
-        <div
-          className="fixed top-0 right-0 h-full w-2 bg-blue-500 opacity-60 hover:opacity-90 hover:w-4 hover:bg-blue-600 transition-all duration-300 cursor-pointer z-50 group"
-          onClick={onShowRightPanel}
-          title="点击显示右侧面板"
-        >
-          {/* 悬浮时显示的中心指示器 */}
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-0.5 h-8 bg-white opacity-0 group-hover:opacity-70 transition-opacity duration-300 rounded-full" />
-        </div>
+      {/* 右侧面板切换按钮 - 独立于面板容器，固定定位 */}
+      {onToggleRightPanel && (
+        <PanelToggle
+          isPanelVisible={!hideRightPanel}
+          onToggle={onToggleRightPanel}
+          position="right"
+          className="panel-toggle-right"
+        />
       )}
     </div>
   );

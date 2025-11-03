@@ -7,8 +7,7 @@ import {
   Zap,
   ArrowRight,
   Plus,
-  Server,
-  Activity
+  Server
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -252,20 +251,6 @@ export const DashboardPage: React.FC = () => {
               <div className={isMobile ? 'text-center' : ''}>
                 <h3 className={`font-medium text-gray-900 dark:text-white ${isMobile ? 'text-sm mb-1' : ''}`}>{t('dashboard.quickActions.addMcp.title')}</h3>
                 <p className={`text-gray-500 dark:text-gray-400 ${isMobile ? 'text-xs hidden' : 'text-sm'}`}>{t('dashboard.quickActions.addMcp.description')}</p>
-              </div>
-              {!isMobile && <ArrowRight className="w-5 h-5 text-gray-400 dark:text-gray-500 ml-auto" />}
-            </Link>
-
-            <Link
-              to="/analytics"
-              className={`${isMobile ? 'flex flex-col items-center p-4 text-center' : 'flex items-center space-x-4 p-4'} rounded-lg border border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors`}
-            >
-              <div className={`p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg ${isMobile ? 'mb-2' : ''}`}>
-                <Activity className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-              </div>
-              <div className={isMobile ? 'text-center' : ''}>
-                <h3 className={`font-medium text-gray-900 dark:text-white ${isMobile ? 'text-sm mb-1' : ''}`}>{t('dashboard.quickActions.viewAnalytics.title')}</h3>
-                <p className={`text-gray-500 dark:text-gray-400 ${isMobile ? 'text-xs hidden' : 'text-sm'}`}>{t('dashboard.quickActions.viewAnalytics.description')}</p>
               </div>
               {!isMobile && <ArrowRight className="w-5 h-5 text-gray-400 dark:text-gray-500 ml-auto" />}
             </Link>

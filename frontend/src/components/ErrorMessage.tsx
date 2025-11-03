@@ -18,15 +18,45 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({
   // Extract error information
   const getErrorInfo = () => {
     if (error instanceof Error) {
+      // Extract enhanced error properties if they exist
+      const enhancedError = error as any;
+      const details: Record<string, any> = {
+        stack: error.stack || '',
+        name: error.name
+      };
+
+      // Add network error specific details
+      if (enhancedError.requestUrl) details.requestUrl = enhancedError.requestUrl;
+      if (enhancedError.requestMethod) details.requestMethod = enhancedError.requestMethod;
+      if (enhancedError.requestBody) details.requestBody = enhancedError.requestBody;
+      if (enhancedError.statusCode) details.statusCode = enhancedError.statusCode;
+      if (enhancedError.statusText) details.statusText = enhancedError.statusText;
+      if (enhancedError.url) details.apiBaseUrl = enhancedError.url;
+      if (enhancedError.timestamp) details.timestamp = new Date(enhancedError.timestamp).toISOString();
+      if (enhancedError.isNetworkError) details.isNetworkError = true;
+      if (enhancedError.isTimeout) details.isTimeout = true;
+      if (enhancedError.isAbortError) details.isAbortError = true;
+      if (enhancedError.originalError) details.originalError = enhancedError.originalError;
+      if (enhancedError.type) details.errorType = enhancedError.type;
+
       return {
         message: error.message,
-        details: error.stack || '',
+        details: JSON.stringify(details, null, 2),
         raw: error
       };
     } else if (typeof error === 'object' && error !== null) {
+      const errorObj = error as any;
+      const details: Record<string, any> = {};
+      
+      // Extract all possible error properties
+      Object.keys(errorObj).forEach(key => {
+        if (key === 'message') return;
+        details[key] = errorObj[key];
+      });
+
       return {
-        message: (error as { message?: string }).message || JSON.stringify(error),
-        details: (error as { details?: unknown; stack?: string }).details || (error as { stack?: string }).stack || JSON.stringify(error, null, 2),
+        message: errorObj.message || JSON.stringify(error),
+        details: Object.keys(details).length > 0 ? JSON.stringify(details, null, 2) : (errorObj.stack || JSON.stringify(error, null, 2)),
         raw: error
       };
     } else {
@@ -65,11 +95,34 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({
             {errorInfo.message}
           </p>
 
+          {/* Quick error summary for network errors */}
+          {typeof errorInfo.raw === 'object' && errorInfo.raw && 'requestUrl' in errorInfo.raw && (
+            <div className="mt-1 text-xs text-red-500 dark:text-red-400">
+              {('requestUrl' in errorInfo.raw && errorInfo.raw.requestUrl) && (
+                <span>Request: {('requestMethod' in errorInfo.raw ? errorInfo.raw.requestMethod : 'POST') || 'POST'} {(errorInfo.raw as any).requestUrl}</span>
+              )}
+              {('statusCode' in errorInfo.raw && errorInfo.raw.statusCode) && (
+                <span className="ml-2">Status: {(errorInfo.raw as any).statusCode}</span>
+              )}
+              {'isNetworkError' in errorInfo.raw && (errorInfo.raw as any).isNetworkError && (
+                <span className="ml-2">• Network Error</span>
+              )}
+              {'isTimeout' in errorInfo.raw && (errorInfo.raw as any).isTimeout && (
+                <span className="ml-2">• Request Timeout</span>
+              )}
+            </div>
+          )}
+
           {/* Expandable Details */}
           {hasDetails && (
             <button
-              onClick={() => setIsExpanded(!isExpanded)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsExpanded(!isExpanded);
+              }}
               className="flex items-center space-x-1 mt-2 text-xs text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors"
+              type="button"
             >
               {isExpanded ? (
                 <>
@@ -86,8 +139,12 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({
           )}
 
           {/* Detailed Error Information */}
-          {isExpanded && hasDetails && (
-            <div className="mt-3 space-y-2">
+          <div 
+            className={`overflow-hidden transition-all duration-200 ease-in-out ${
+              isExpanded && hasDetails ? 'max-h-96 opacity-100 mt-3' : 'max-h-0 opacity-0'
+            }`}
+          >
+            <div className="space-y-2">
               {/* Raw Error Object */}
               <div className="p-2 bg-red-100 dark:bg-red-900/40 rounded border border-red-200 dark:border-red-700">
                 <div className="flex items-center justify-between mb-1">
@@ -95,9 +152,14 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({
                     Technical Details:
                   </span>
                   <button
-                    onClick={handleCopy}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleCopy();
+                    }}
                     className="flex items-center space-x-1 px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
                     title="Copy error details"
+                    type="button"
                   >
                     {copied ? (
                       <>
@@ -127,7 +189,7 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({
                 Browser: {navigator.userAgent.split(' ')[0]} | URL: {window.location.href}
               </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>

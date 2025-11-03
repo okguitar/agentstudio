@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { SlidesResponse, SlideContent } from '../../../types/index.js';
-import { API_BASE } from '../../../lib/config.js';
+import { authFetch } from '../../../lib/authFetch.js';
+import { getApiBase } from '../../../lib/config.js';
 
 // Helper function to parse slides configuration from content
 const parseSlidesConfig = (configContent: string): { slides: string[], title: string } => {
@@ -61,12 +62,12 @@ export const useSlides = (projectPath?: string) => {
     queryKey: ['slides', projectPath],
     queryFn: async () => {
       // First, read the slides configuration file
-      const configUrl = new URL(`${API_BASE}/files/read`, window.location.origin);
-      configUrl.searchParams.set('path', 'slides.js');
+      const searchParams = new URLSearchParams();
+      searchParams.set('path', 'slides.js');
       if (projectPath) {
-        configUrl.searchParams.set('projectPath', projectPath);
+        searchParams.set('projectPath', projectPath);
       }
-      const configResponse = await fetch(configUrl);
+      const configResponse = await authFetch(`${getApiBase()}/files/read?${searchParams.toString()}`);
       
       // If slides.js doesn't exist, return empty slides response
       if (!configResponse.ok) {
@@ -84,11 +85,11 @@ export const useSlides = (projectPath?: string) => {
       const { slides: slidePaths, title } = parseSlidesConfig(configData.content);
 
       // Then, read all slide files to get metadata
-      const slidesUrl = new URL(`${API_BASE}/files/read-multiple`, window.location.origin);
+      const slidesSearchParams = new URLSearchParams();
       if (projectPath) {
-        slidesUrl.searchParams.set('projectPath', projectPath);
+        slidesSearchParams.set('projectPath', projectPath);
       }
-      const slidesResponse = await fetch(slidesUrl, {
+      const slidesResponse = await authFetch(`${getApiBase()}/files/read-multiple?${slidesSearchParams.toString()}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -106,7 +107,7 @@ export const useSlides = (projectPath?: string) => {
       
       // Build slides with metadata
       const slidesWithMetadata = slidePaths.map((slidePath, index) => {
-        const slideFile = slidesData.files.find((file: any) => 
+        const slideFile = slidesData.files.find((file: { path: string; exists: boolean; content?: string }) => 
           file.path === slidePath
         );
         
@@ -143,19 +144,17 @@ export const useSlideContent = (slideIndex: number, projectPath?: string) => {
     queryKey: ['slide-content', slideIndex, projectPath],
     queryFn: async () => {
       // First get the slides configuration to find the path
-      const configUrl = new URL(`${API_BASE}/files/read`, window.location.origin);
-      configUrl.searchParams.set('path', 'slides.js');
-      if (projectPath) {
-        configUrl.searchParams.set('projectPath', projectPath);
-      }
-      const configResponse = await fetch(configUrl);
+      const configSearchParams = new URLSearchParams();
+      configSearchParams.set('path', 'slides.js');
+      configSearchParams.set('projectPath', projectPath || '');
+      const configResponse = await authFetch(`${getApiBase()}/files/read?${configSearchParams.toString()}`);
       if (!configResponse.ok) {
         if (configResponse.status === 404) {
           throw new Error('No slides configuration found. Please create slides.js file first.');
         }
         throw new Error('Failed to fetch slides configuration');
       }
-      
+
       const configData = await configResponse.json();
       const { slides: slidePaths } = parseSlidesConfig(configData.content);
 
@@ -166,12 +165,10 @@ export const useSlideContent = (slideIndex: number, projectPath?: string) => {
       const slidePath = slidePaths[slideIndex];
 
       // Then read the specific slide file
-      const slideUrl = new URL(`${API_BASE}/files/read`, window.location.origin);
-      slideUrl.searchParams.set('path', slidePath);
-      if (projectPath) {
-        slideUrl.searchParams.set('projectPath', projectPath);
-      }
-      const slideResponse = await fetch(slideUrl);
+      const slideSearchParams = new URLSearchParams();
+      slideSearchParams.set('path', slidePath);
+      slideSearchParams.set('projectPath', projectPath || '');
+      const slideResponse = await authFetch(`${getApiBase()}/files/read?${slideSearchParams.toString()}`);
       if (!slideResponse.ok) {
         throw new Error('Failed to fetch slide content');
       }
@@ -195,19 +192,19 @@ export const useUpdateSlide = () => {
   return useMutation({
     mutationFn: async ({ slideIndex, content, projectPath }: { slideIndex: number; content: string; projectPath?: string }) => {
       // First get the slides configuration to find the path
-      const configUrl = new URL(`${API_BASE}/files/read`, window.location.origin);
-      configUrl.searchParams.set('path', 'slides.js');
+      const configSearchParams = new URLSearchParams();
+      configSearchParams.set('path', 'slides.js');
       if (projectPath) {
-        configUrl.searchParams.set('projectPath', projectPath);
+        configSearchParams.set('projectPath', projectPath);
       }
-      const configResponse = await fetch(configUrl);
+      const configResponse = await authFetch(`${getApiBase()}/files/read?${configSearchParams.toString()}`);
       if (!configResponse.ok) {
         if (configResponse.status === 404) {
           throw new Error('No slides configuration found. Please create slides.js file first.');
         }
         throw new Error('Failed to fetch slides configuration');
       }
-      
+
       const configData = await configResponse.json();
       const { slides: slidePaths } = parseSlidesConfig(configData.content);
 
@@ -218,11 +215,11 @@ export const useUpdateSlide = () => {
       const slidePath = slidePaths[slideIndex];
 
       // Then write the slide content
-      const writeUrl = new URL(`${API_BASE}/files/write`, window.location.origin);
+      const writeSearchParams = new URLSearchParams();
       if (projectPath) {
-        writeUrl.searchParams.set('projectPath', projectPath);
+        writeSearchParams.set('projectPath', projectPath);
       }
-      const response = await fetch(writeUrl, {
+      const response = await authFetch(`${getApiBase()}/files/write?${writeSearchParams.toString()}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

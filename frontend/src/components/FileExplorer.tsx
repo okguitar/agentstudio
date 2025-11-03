@@ -55,6 +55,7 @@ const ICON_MAP = new Map([
   ['htm', <FaHtml5 color="#e34f26" key="htm" />],
   ['json', <VscJson color="#f9d71c" key="json" />],
   ['md', <FaMarkdown color="#083fa1" key="md" />],
+  ['csv', <FaFile color="#00a86b" key="csv" />],
   ['pdf', <FaFilePdf color="#d63031" key="pdf" />],
   ['ppt', <FaFileWord color="#d63031" key="ppt" />],
   ['pptx', <FaFileWord color="#d63031" key="pptx" />],
@@ -84,18 +85,39 @@ const FileIcon: React.FC<{ node: NodeApi<FileTreeItem> }> = ({ node }) => {
 
 // 获取语言类型
 const getLanguageForFile = (fileName: string = ''): string => {
+  // 特殊文件名处理
+  const lowerFileName = fileName.toLowerCase();
+  if (lowerFileName === 'dockerfile' || lowerFileName.startsWith('dockerfile.')) {
+    return 'dockerfile';
+  }
+
   const extension = fileName.split('.').pop()?.toLowerCase() || '';
   switch (extension) {
     case 'js': case 'jsx': return 'javascript';
     case 'ts': case 'tsx': return 'typescript';
-    case 'css': return 'css';
+    case 'css': case 'scss': case 'sass': case 'less': return 'css';
     case 'json': return 'json';
     case 'html': case 'htm': return 'html';
-    case 'md': return 'markdown';
+    case 'md': case 'markdown': return 'markdown';
+    case 'csv': return 'csv';
     case 'py': return 'python';
     case 'java': return 'java';
     case 'xml': return 'xml';
     case 'yaml': case 'yml': return 'yaml';
+    case 'sh': case 'bash': return 'shell';
+    case 'conf': case 'config': case 'ini': return 'ini';
+    case 'nginx': return 'nginx';
+    case 'sql': return 'sql';
+    case 'go': return 'go';
+    case 'rs': return 'rust';
+    case 'c': case 'cpp': case 'cc': case 'cxx': return 'cpp';
+    case 'h': case 'hpp': return 'cpp';
+    case 'cs': return 'csharp';
+    case 'php': return 'php';
+    case 'rb': return 'ruby';
+    case 'swift': return 'swift';
+    case 'kt': return 'kotlin';
+    case 'dockerfile': return 'dockerfile';
     default: return 'plaintext';
   }
 };
@@ -124,7 +146,7 @@ const SimpleImagePreview: React.FC<{ imageUrl: string; fileName: string }> = ({ 
           <img
             src={imageUrl}
             alt={fileName}
-            className="max-w-full max-h-full object-contain bg-white rounded shadow-lg"
+            className="max-w-full max-h-full object-contain bg-white dark:bg-gray-900 rounded shadow-lg"
             onLoad={() => setIsLoading(false)}
             onError={() => {
               setIsLoading(false);
@@ -140,19 +162,33 @@ const SimpleImagePreview: React.FC<{ imageUrl: string; fileName: string }> = ({ 
 
 // 判断文件类型
 const getFileType = (fileName: string): 'text' | 'image' | 'binary' => {
+  // 特殊文件名处理
+  const lowerFileName = fileName.toLowerCase();
+  if (lowerFileName === 'dockerfile' || lowerFileName.startsWith('dockerfile.')) {
+    return 'text';
+  }
+
   const extension = fileName.split('.').pop()?.toLowerCase() || '';
-  
+
   const textExtensions = [
-    'js', 'jsx', 'ts', 'tsx', 'css', 'html', 'htm', 'json', 'md', 'txt', 
-    'py', 'java', 'xml', 'yaml', 'yml', 'sh', 'bat', 'php', 'rb', 'go',
-    'rs', 'cpp', 'c', 'h', 'hpp', 'cs', 'swift', 'kt', 'scala', 'clj',
-    'sql', 'dockerfile', 'gitignore', 'env'
+    'js', 'jsx', 'ts', 'tsx', 'css', 'scss', 'sass', 'less',
+    'html', 'htm', 'json', 'md', 'markdown', 'txt',
+    'py', 'java', 'xml', 'yaml', 'yml',
+    'sh', 'bash', 'bat', 'cmd',
+    'php', 'rb', 'go', 'rs',
+    'cpp', 'c', 'h', 'hpp', 'cc', 'cxx',
+    'cs', 'swift', 'kt', 'scala', 'clj',
+    'sql', 'dockerfile', 'gitignore', 'env',
+    'csv', 'tsv',
+    'conf', 'config', 'ini', 'toml',
+    'nginx', 'apache',
+    'properties', 'cfg'
   ];
-  
+
   const imageExtensions = [
     'png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'ico', 'bmp', 'tiff'
   ];
-  
+
   if (textExtensions.includes(extension)) return 'text';
   if (imageExtensions.includes(extension)) return 'image';
   return 'binary';
@@ -189,7 +225,7 @@ const Node: React.FC<{
     <div
       style={style}
       ref={dragHandle}
-      className={`flex items-center cursor-pointer px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700 ${
+      className={`flex items-center cursor-pointer px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 ${
         node.isSelected ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'
       }`}
       onClick={handleClick}
@@ -245,7 +281,12 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
   const treeApiRef = useRef<TreeApi<FileTreeItem> | null>(null);
   const [lastClickTime, setLastClickTime] = useState<number>(0);
   const [lastClickedPath, setLastClickedPath] = useState<string>('');
-  
+
+  // 暗色模式检测
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(
+    document.documentElement.classList.contains('dark')
+  );
+
   // 懒加载相关状态
   const [loadedDirectories, setLoadedDirectories] = useState<Set<string>>(new Set());
   const [dynamicTreeData, setDynamicTreeData] = useState<FileTreeItem[]>([]);
@@ -277,6 +318,23 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
     projectPath
   );
 
+  // 监听暗色模式变化
+  useEffect(() => {
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === 'class') {
+          setIsDarkMode(document.documentElement.classList.contains('dark'));
+        }
+      });
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+
+    return () => observer.disconnect();
+  }, []);
 
   // 初始化动态树数据
   useEffect(() => {
@@ -762,7 +820,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
           }>
             <Editor
               height="100%"
-              theme="vs-light"
+              theme={isDarkMode ? 'vs-dark' : 'vs-light'}
               language={getLanguageForFile(activeTab.name)}
               value={fileContentData.content}
               options={{
@@ -810,11 +868,11 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
   }
 
   return (
-    <div className={`flex h-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden ${className}`}>
+    <div className={`flex h-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden ${className}`}>
         {/* 文件树侧边栏 */}
       <div className="w-80 border-r border-gray-200 dark:border-gray-700 flex flex-col h-full">
         {/* 工具栏 - 统一高度 */}
-        <div className="h-12 px-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex items-center flex-shrink-0">
+        <div className="h-12 px-3 border-b border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 flex items-center flex-shrink-0">
           <div className="flex items-center justify-between w-full">
             <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('fileExplorer.title')}</h3>
             <button
@@ -829,7 +887,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
         </div>
 
         {/* 文件树 */}
-        <div ref={treeContainerRef} className="flex-1 min-h-0">
+        <div ref={treeContainerRef} className="flex-1 min-h-0 pl-2">
           {isTreeLoading ? (
             <div className="flex items-center justify-center h-32">
               <div className="flex items-center space-x-2 text-gray-500 dark:text-gray-400">
@@ -846,8 +904,8 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
               data={treeData}
               width={320}
               height={containerHeight}
-              indent={16}
-              rowHeight={32}
+              indent={20}
+              rowHeight={36}
               initialOpenState={initialOpenState}
               ref={treeApiRef}
             >
@@ -867,7 +925,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
       {/* 文件预览区域 */}
       <div className="flex-1 flex flex-col h-full">
         {/* 标签栏 - 统一高度 */}
-        <div className="h-12 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex items-center flex-shrink-0">
+        <div className="h-12 border-b border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 flex items-center flex-shrink-0">
           {tabs.length > 0 ? (
             <div className="flex items-center h-full w-full">
               {/* 显示可见的标签 */}
@@ -877,8 +935,8 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                     key={tab.id}
                     className={`group relative flex items-center h-full px-3 border-r border-gray-200 dark:border-gray-700 cursor-pointer transition-colors ${
                       tab.isActive
-                        ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white'
-                        : 'bg-gray-50 dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                        ? 'bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white'
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
                     } ${!tab.isPinned ? 'italic' : ''}`}
                     onClick={() => activateTab(tab.id)}
                     title={`${tab.path} ${tab.isPinned ? '(固定)' : '(临时)'}`}
@@ -960,7 +1018,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
         </div>
 
         {/* 预览内容 */}
-        <div className="flex-1 bg-white dark:bg-gray-800 min-h-0">
+        <div className="flex-1 bg-gray-50 dark:bg-gray-900 min-h-0">
           {renderFilePreview()}
         </div>
       </div>

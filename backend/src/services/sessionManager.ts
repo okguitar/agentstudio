@@ -1,5 +1,5 @@
 import { Options } from '@anthropic-ai/claude-code';
-import { ClaudeSession } from './claudeSession.js';
+import { ClaudeSession } from './claudeSession';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';

@@ -13,7 +13,7 @@ import * as os from 'os';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { sessionManager } from './sessionManager.js';
-import { AgentStorage } from '@agentstudio/shared/utils/agentStorage';
+import { AgentStorage } from './agentStorage.js';
 import { slackThreadMapper } from './slackThreadMapper.js';
 import { SlackClient } from './slackClient.js';
 import type { SlackMessageEvent, SlackAppMentionEvent } from '../types/slack.js';
@@ -126,6 +126,72 @@ const readMcpConfig = () => {
 };
 
 /**
+ * Parse agent from message text
+ * Supports agent mention, agent name, or agent ID
+ */
+function parseAgentFromMessage(text: string, allAgents: any[]): { agentId: string; cleanText: string } | null {
+  // Remove the bot mention if present
+  let cleanText = text.replace(/<@[A-Z0-9]+>/g, '').trim();
+  
+  // Check for agent mention format: @agent-name or agent-name
+  const agentMentionMatch = cleanText.match(/^@?([a-zA-Z0-9\-_]+)\s+(.+)/);
+  if (agentMentionMatch) {
+    const potentialAgentId = agentMentionMatch[1];
+    const remainingText = agentMentionMatch[2].trim();
+    
+    // First try exact match with agent ID
+    let agent = allAgents.find(a => a.id.toLowerCase() === potentialAgentId.toLowerCase());
+    
+    // Then try name match
+    if (!agent) {
+      agent = allAgents.find(a => a.name.toLowerCase().includes(potentialAgentId.toLowerCase()) || 
+                                     potentialAgentId.toLowerCase().includes(a.name.toLowerCase()));
+    }
+    
+    // Finally try to match with common aliases
+    if (!agent) {
+      const aliases: { [key: string]: string } = {
+        'ppt': 'ppt-editor',
+        'slides': 'ppt-editor',
+        'presentation': 'ppt-editor',
+        'powerpoint': 'ppt-editor',
+        'code': 'code-assistant',
+        'coding': 'code-assistant',
+        'developer': 'code-assistant',
+        'programmer': 'code-assistant',
+        'document': 'document-writer',
+        'docs': 'document-writer',
+        'writing': 'document-writer',
+        'writer': 'document-writer',
+        'general': 'general-chat',
+        'chat': 'general-chat',
+        'assistant': 'general-chat',
+        'help': 'general-chat'
+      };
+      
+      const aliasId = aliases[potentialAgentId.toLowerCase()];
+      if (aliasId) {
+        agent = allAgents.find(a => a.id === aliasId);
+      }
+    }
+    
+    if (agent && agent.enabled) {
+      return { agentId: agent.id, cleanText: remainingText };
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * Get available agents list for Slack response
+ */
+function getAvailableAgentsList(allAgents: any[]): string {
+  const enabledAgents = allAgents.filter(a => a.enabled);
+  return enabledAgents.map(agent => `• **${agent.name}** (\`${agent.id}\`) - ${agent.description}`).join('\n');
+}
+
+/**
  * Slack AI Service - Main adapter class
  */
 export class SlackAIService {
@@ -133,7 +199,7 @@ export class SlackAIService {
   private agentStorage: AgentStorage;
   private defaultAgentId: string;
 
-  constructor(botToken: string, defaultAgentId: string = 'slack-chat-agent') {
+  constructor(botToken: string, defaultAgentId: string = 'general-chat') {
     this.slackClient = new SlackClient(botToken);
     this.agentStorage = new AgentStorage();
     this.defaultAgentId = defaultAgentId;
@@ -156,26 +222,63 @@ export class SlackAIService {
 
       // Get or create session mapping
       let sessionId = slackThreadMapper.getSessionId(threadTs, event.channel);
+      let currentAgentId: string | null = null;
+
+      // Get all available agents
+      const allAgents = this.agentStorage.getAllAgents();
+      const enabledAgents = allAgents.filter((agent: any) => agent.enabled);
+
+      // Parse agent from message
+      const agentSelection = parseAgentFromMessage(event.text, enabledAgents);
+      
+      if (agentSelection) {
+        currentAgentId = agentSelection.agentId;
+        console.log(`🎯 Selected agent: ${currentAgentId} from message`);
+      } else if (sessionId) {
+        // Reuse existing agent from session
+        const existingSession = sessionManager.getSession(sessionId);
+        if (existingSession) {
+          currentAgentId = existingSession.getAgentId();
+          console.log(`♻️  Reusing agent from existing session: ${currentAgentId}`);
+        }
+      }
+
+      // If no agent found, show available agents list
+      if (!currentAgentId) {
+        const agentsList = getAvailableAgentsList(allAgents);
+        await this.slackClient.postMessage({
+          channel: event.channel,
+          text: `🤖 **请选择你想要使用的AI助手：**\n\n${agentsList}\n\n📝 **使用方法：**\n• 直接提及：\`@机器人 ppt-editor 请帮我创建幻灯片\`\n• 或使用别名：\`@机器人 ppt 请帮我创建幻灯片\`\n• 通用对话：\`@机器人 general 随便聊聊\``,
+          thread_ts: threadTs
+        });
+        return;
+      }
 
       // Get agent configuration
-      const agent = this.agentStorage.getAgent(this.defaultAgentId);
+      const agent = this.agentStorage.getAgent(currentAgentId);
       if (!agent) {
-        throw new Error(`Agent not found: ${this.defaultAgentId}`);
+        await this.slackClient.postMessage({
+          channel: event.channel,
+          text: `❌ Agent **${currentAgentId}** not found.`,
+          thread_ts: threadTs
+        });
+        return;
       }
 
       if (!agent.enabled) {
         await this.slackClient.postMessage({
           channel: event.channel,
-          text: '⚠️ Agent is currently disabled',
+          text: `⚠️ Agent **${agent.name}** is currently disabled.`,
           thread_ts: threadTs
         });
         return;
       }
 
       // Send "thinking" placeholder
+      const agentDisplayName = agent.ui.icon ? `${agent.ui.icon} ${agent.name}` : agent.name;
       const placeholderMsg = await this.slackClient.postMessage({
         channel: event.channel,
-        text: '🤔 正在思考...',
+        text: `🤔 ${agentDisplayName} 正在思考...`,
         thread_ts: threadTs
       });
 
@@ -189,20 +292,21 @@ export class SlackAIService {
 
       if (!claudeSession) {
         // Create new session
-        claudeSession = sessionManager.createNewSession(this.defaultAgentId, queryOptions);
+        claudeSession = sessionManager.createNewSession(currentAgentId, queryOptions);
         console.log(`🆕 Created new Claude session for Slack thread: ${threadTs}`);
       } else {
         console.log(`♻️  Reusing existing Claude session: ${sessionId}`);
       }
 
-      // Build user message
+      // Build user message with cleaned text (remove agent mention)
+      const messageText = agentSelection ? agentSelection.cleanText : event.text;
       const userMessage = {
         type: "user" as const,
         message: {
           role: "user" as const,
           content: [{
             type: "text" as const,
-            text: event.text
+            text: messageText
           }]
         }
       };
@@ -227,7 +331,7 @@ export class SlackAIService {
               threadTs,
               channel: event.channel,
               sessionId: newSessionId,
-              agentId: this.defaultAgentId
+              agentId: currentAgentId
             });
 
             console.log(`✅ Session confirmed: ${newSessionId} for thread: ${threadTs}`);

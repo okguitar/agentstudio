@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AgentChatPanel } from '../components/AgentChatPanel';
@@ -8,6 +8,7 @@ import { getAgentPlugin } from '../agents/registry';
 import { useAgentStore } from '../stores/useAgentStore';
 import { useAgent } from '../hooks/useAgents';
 import { ProjectSelector } from '../components/ProjectSelector';
+import { useTabNotification, type TabNotificationStatus } from '../hooks/useTabNotification';
 
 export const ChatPage: React.FC = () => {
   const { t } = useTranslation('pages');
@@ -17,11 +18,75 @@ export const ChatPage: React.FC = () => {
   const projectPath = searchParams.get('project');
   const sessionId = searchParams.get('session');
   const { data: agentData, isLoading, error } = useAgent(agentId!);
-  const { setCurrentAgent, setCurrentSessionId } = useAgentStore();
+  const { setCurrentAgent, setCurrentSessionId, isAiTyping } = useAgentStore();
   const [showProjectSelector, setShowProjectSelector] = useState(false);
+  const [hideLeftPanel, setHideLeftPanel] = useState(false);
   const [hideRightPanel, setHideRightPanel] = useState(false);
+  const [lastError, setLastError] = useState<Error | null>(null);
+  const [hasSeenCompletion, setHasSeenCompletion] = useState(false);
+  const wasAiTypingRef = React.useRef(false);
 
   const agent = agentData?.agent;
+
+  // Track AI typing state changes
+  useEffect(() => {
+    if (isAiTyping) {
+      wasAiTypingRef.current = true;
+      setHasSeenCompletion(false); // Reset when AI starts working
+    } else if (wasAiTypingRef.current) {
+      // AI just finished typing
+      // If page is currently visible, mark as seen immediately
+      if (!document.hidden) {
+        setHasSeenCompletion(true);
+        wasAiTypingRef.current = false;
+      }
+      // If page is hidden, wasAiTypingRef stays true until user comes back
+    }
+  }, [isAiTyping]);
+
+  // Reset completion flag when user views the page
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && !isAiTyping && wasAiTypingRef.current) {
+        // User came back to the page and AI is done
+        setHasSeenCompletion(true);
+        wasAiTypingRef.current = false;
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [isAiTyping]);
+
+  // Determine tab notification status based on AI state
+  const tabStatus: TabNotificationStatus = useMemo(() => {
+    if (lastError) return 'error';
+    if (isAiTyping) return 'working';
+    // Only show completed if AI just finished AND user hasn't seen it yet
+    if (!isAiTyping && wasAiTypingRef.current && !hasSeenCompletion) {
+      return 'completed';
+    }
+    return 'idle';
+  }, [isAiTyping, lastError, hasSeenCompletion]);
+
+  // Use tab notification
+  useTabNotification({
+    status: tabStatus,
+    originalTitle: agent ? `${agent.ui.icon} ${agent.name} - AgentStudio` : 'AgentStudio',
+    workingText: t('chat.tabNotification.working'),
+    completedText: t('chat.tabNotification.completed'),
+    errorText: t('chat.tabNotification.error'),
+  });
+
+  // Track errors
+  useEffect(() => {
+    if (error) {
+      setLastError(error as Error);
+      // Clear error after 5 seconds
+      const timer = setTimeout(() => setLastError(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
 
   // Set current agent when data loads, then set session ID
   useEffect(() => {
@@ -96,6 +161,7 @@ export const ChatPage: React.FC = () => {
     };
   }, [agent, agentPlugin]);
 
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
@@ -150,14 +216,26 @@ export const ChatPage: React.FC = () => {
     );
   }
 
-  // 处理面板隐藏/显示
-  const handleTogglePanel = (hidden: boolean) => {
-    setHideRightPanel(hidden);
+  // 处理左侧面板切换
+  const handleToggleLeftPanel = () => {
+    const newHideLeft = !hideLeftPanel;
+    setHideLeftPanel(newHideLeft);
+    
+    // 如果左面板要隐藏，但右面板也是隐藏的，则显示右面板
+    if (newHideLeft && hideRightPanel) {
+      setHideRightPanel(false);
+    }
   };
 
-  // 处理显示右侧面板
-  const handleShowRightPanel = () => {
-    setHideRightPanel(false);
+  // 处理右侧面板切换
+  const handleToggleRightPanel = () => {
+    const newHideRight = !hideRightPanel;
+    setHideRightPanel(newHideRight);
+    
+    // 如果右面板要隐藏，但左面板也是隐藏的，则显示左面板
+    if (newHideRight && hideLeftPanel) {
+      setHideLeftPanel(false);
+    }
   };
 
   // Render layout based on plugin configuration
@@ -165,8 +243,10 @@ export const ChatPage: React.FC = () => {
     // 始终使用分栏布局，右侧根据是否有自定义组件来决定显示内容
     return (
       <SplitLayout
+        hideLeftPanel={hideLeftPanel}
         hideRightPanel={hideRightPanel}
-        onShowRightPanel={handleShowRightPanel}
+        onToggleLeftPanel={handleToggleLeftPanel}
+        onToggleRightPanel={handleToggleRightPanel}
         mobileLayout="tabs"
       >
         <AgentChatPanel agent={agent} projectPath={projectPath || undefined} onSessionChange={handleSessionChange} />
@@ -174,7 +254,6 @@ export const ChatPage: React.FC = () => {
           agent={agent}
           projectPath={projectPath || undefined}
           CustomComponent={RightPanelComponent}
-          onTogglePanel={handleTogglePanel}
         />
       </SplitLayout>
     );
@@ -192,6 +271,7 @@ export const ChatPage: React.FC = () => {
           onClose={handleProjectSelectorClose}
         />
       )}
+
     </div>
   );
 };

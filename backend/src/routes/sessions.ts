@@ -2,9 +2,9 @@ import express from 'express';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
-import { AgentStorage } from '@agentstudio/shared/utils/agentStorage';
-import { ClaudeHistoryMessage, ClaudeHistorySession } from '@agentstudio/shared/types/claude-history';
-import { sessionManager } from '../services/sessionManager.js';
+import { AgentStorage } from '../services/agentStorage';
+import { ClaudeHistoryMessage, ClaudeHistorySession } from '../types/claude-history';
+import { sessionManager } from '../services/sessionManager';
 
 const router: express.Router = express.Router();
 
@@ -182,14 +182,18 @@ function readClaudeHistorySessions(projectPath: string): ClaudeHistorySession[] 
     const claudeProjectPath = convertProjectPathToClaudeFormat(projectPath);
     const historyDir = path.join(os.homedir(), '.claude', 'projects', claudeProjectPath);
     
+    console.log(`📂 [DEBUG] Claude history directory: ${historyDir}`);
+    
     if (!fs.existsSync(historyDir)) {
-      console.log('Claude history directory not found:', historyDir);
+      console.log('❌ [DEBUG] Claude history directory not found:', historyDir);
       return [];
     }
 
     const jsonlFiles = fs.readdirSync(historyDir)
       .filter(file => file.endsWith('.jsonl'))
       .filter(file => !file.startsWith('.'));
+
+    console.log(`📁 [DEBUG] Found ${jsonlFiles.length} JSONL files:`, jsonlFiles);
 
     const sessions: ClaudeHistorySession[] = [];
 
@@ -208,6 +212,8 @@ function readClaudeHistorySessions(projectPath: string): ClaudeHistorySession[] 
         // Find summary message for session title
         const summaryMessage = messages.find(msg => msg.type === 'summary');
         const title = summaryMessage?.summary || `会话 ${sessionId.slice(0, 8)}`;
+        
+        console.log(`📝 [DEBUG] Session ${sessionId}: summary found: ${!!summaryMessage}, title: "${title}"`);
 
         // Process compact context messages before filtering
         const processedMessages = processCompactContextMessages(messages);
@@ -376,13 +382,23 @@ function readClaudeHistorySessions(projectPath: string): ClaudeHistorySession[] 
         const createdAt = timestamps.length > 0 ? Math.min(...timestamps) : Date.now();
         const lastUpdated = timestamps.length > 0 ? Math.max(...timestamps) : Date.now();
 
-        sessions.push({
+        const sessionData = {
           id: sessionId,
           title,
           createdAt: new Date(createdAt).toISOString(),
           lastUpdated: new Date(lastUpdated).toISOString(),
           messages: convertedMessages
+        };
+        
+        console.log(`✅ [DEBUG] Created session:`, {
+          id: sessionData.id,
+          title: sessionData.title,
+          messageCount: sessionData.messages.length,
+          createdAt: sessionData.createdAt,
+          lastUpdated: sessionData.lastUpdated
         });
+
+        sessions.push(sessionData);
 
       } catch (error) {
         console.error(`Failed to parse Claude history file ${filename}:`, error);
@@ -390,7 +406,15 @@ function readClaudeHistorySessions(projectPath: string): ClaudeHistorySession[] 
       }
     }
 
-    return sessions.sort((a, b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime());
+    // Sort sessions by lastUpdated descending
+    const sortedSessions = sessions.sort((a, b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime());
+    
+    console.log(`📊 [DEBUG] Sorted sessions by lastUpdated:`);
+    sortedSessions.forEach((session, index) => {
+      console.log(`   ${index + 1}. ID: ${session.id}, Title: "${session.title}", Last Updated: ${session.lastUpdated}`);
+    });
+    
+    return sortedSessions;
 
   } catch (error) {
     console.error('Failed to read Claude history sessions:', error);
@@ -591,47 +615,88 @@ router.get('/:agentId', (req, res) => {
     const { search } = req.query;
     const projectPath = req.query.projectPath as string;
     
+    console.log(`🔍 [DEBUG] Getting sessions for agent: ${agentId}`);
+    console.log(`🔍 [DEBUG] Search term: "${search}"`);
+    console.log(`🔍 [DEBUG] Project path: "${projectPath}"`);
+    
     // Verify agent exists
     const agent = globalAgentStorage.getAgent(agentId);
     if (!agent) {
+      console.log(`❌ [DEBUG] Agent not found: ${agentId}`);
       return res.status(404).json({ error: 'Agent not found' });
     }
+    
+    console.log(`✅ [DEBUG] Agent found: ${agent.name} (${agent.id})`);
     
     let sessions: any[] = [];
     
     // If projectPath is provided, read from Claude Code history
     if (projectPath) {
-      console.log('Reading Claude history sessions for project:', projectPath);
+      console.log('📂 [DEBUG] Reading Claude history sessions for project:', projectPath);
       const claudeSessions = readClaudeHistorySessions(projectPath);
-      sessions = claudeSessions.map(session => ({
-        id: session.id,
-        agentId: agentId, // Associate with current agent
-        title: session.title,
-        createdAt: session.createdAt,
-        lastUpdated: session.lastUpdated,
-        messageCount: session.messages.length
-      }));
+      console.log(`📊 [DEBUG] Found ${claudeSessions.length} raw Claude sessions`);
+      
+      // Log details of each session
+      claudeSessions.forEach((session, index) => {
+        console.log(`📝 [DEBUG] Session ${index + 1}:`, {
+          id: session.id,
+          title: session.title,
+          createdAt: session.createdAt,
+          lastUpdated: session.lastUpdated,
+          messageCount: session.messages.length,
+          hasSummary: !!session.messages.find((msg: ClaudeHistoryMessage) => msg.type === 'summary')
+        });
+      });
+      
+      sessions = claudeSessions.map((session, index) => {
+        const mappedSession = {
+          id: session.id,
+          agentId: agentId, // Associate with current agent
+          title: session.title,
+          createdAt: session.createdAt,
+          lastUpdated: session.lastUpdated,
+          messageCount: session.messages.length
+        };
+        
+        console.log(`🔄 [DEBUG] Mapped session ${index + 1}:`, mappedSession);
+        return mappedSession;
+      });
     } else {
+      console.log(`📁 [DEBUG] Using project-specific AgentStorage for sessions`);
       // Use project-specific AgentStorage for sessions (existing behavior)
       const agentStorage = getAgentStorageForRequest(req);
       const agentSessions = agentStorage.getAgentSessions(agentId, search as string);
-      sessions = agentSessions.map(session => ({
-        id: session.id,
-        agentId: session.agentId,
-        title: session.title,
-        createdAt: session.createdAt,
-        lastUpdated: session.lastUpdated,
-        messageCount: session.messages.length
-      }));
+      console.log(`📊 [DEBUG] Found ${agentSessions.length} sessions from AgentStorage`);
+      
+      sessions = agentSessions.map((session, index) => {
+        const mappedSession = {
+          id: session.id,
+          agentId: session.agentId,
+          title: session.title,
+          createdAt: session.createdAt,
+          lastUpdated: session.lastUpdated,
+          messageCount: session.messages.length
+        };
+        
+        console.log(`🔄 [DEBUG] Mapped AgentStorage session ${index + 1}:`, mappedSession);
+        return mappedSession;
+      });
     }
     
     // Apply search filter if provided
     if (search && typeof search === 'string' && search.trim()) {
       const searchTerm = search.trim().toLowerCase();
+      const originalLength = sessions.length;
       sessions = sessions.filter(session => 
         session.title.toLowerCase().includes(searchTerm)
       );
+      console.log(`🔍 [DEBUG] Search filter: "${searchTerm}" - ${originalLength} -> ${sessions.length} sessions`);
     }
+    
+    console.log(`📋 [DEBUG] Final sessions list (${sessions.length} sessions):`);
+    sessions.forEach((session, index) => {
+      console.log(`   ${index + 1}. ID: ${session.id}, Title: "${session.title}", Updated: ${session.lastUpdated}`);
+    });
     
     res.json({ sessions });
   } catch (error) {

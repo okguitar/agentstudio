@@ -7,8 +7,8 @@
 **A Claude Code-powered Personal Agent Workspace Platform**
 
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
-[![GitHub stars](https://img.shields.io/github/stars/git-men/agentstudio.svg)](https://github.com/git-men/agentstudio/stargazers)
-[![GitHub issues](https://img.shields.io/github/issues/git-men/agentstudio.svg)](https://github.com/git-men/agentstudio/issues)
+[![GitHub stars](https://img.shields.io/github/stars/okguitar/agentstudio.svg)](https://github.com/okguitar/agentstudio/stargazers)
+[![GitHub issues](https://img.shields.io/github/issues/okguitar/agentstudio.svg)](https://github.com/okguitar/agentstudio/issues)
 
 [English](README.md) | [中文](README.zh-CN.md)
 
@@ -100,7 +100,7 @@ Then open http://localhost in your browser.
 
 ```bash
 # Install Agent Studio backend in user space
-curl -fsSL https://raw.githubusercontent.com/git-men/agentstudio/main/scripts/remote-install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/okguitar/agentstudio/main/scripts/remote-install.sh | bash
 ```
 
 The installer will:
@@ -124,7 +124,7 @@ The installer will ask if you want to start the backend immediately. If you choo
 
 ```powershell
 # Run as Administrator in PowerShell
-PowerShell -ExecutionPolicy Bypass -Command "iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/git-men/agentstudio/main/scripts/windows-install.ps1'))"
+PowerShell -ExecutionPolicy Bypass -Command "iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/okguitar/agentstudio/main/scripts/windows-install.ps1'))"
 ```
 
 The Windows installer will:
@@ -138,7 +138,7 @@ If you already have Node.js and Git installed:
 
 ```batch
 # Download and run the simple installer
-curl -o windows-install-simple.bat https://raw.githubusercontent.com/git-men/agentstudio/main/scripts/windows-install-simple.bat
+curl -o windows-install-simple.bat https://raw.githubusercontent.com/okguitar/agentstudio/main/scripts/windows-install-simple.bat
 windows-install-simple.bat
 ```
 
@@ -154,7 +154,7 @@ For production deployments with automatic startup on boot:
 
 ```bash
 # Install as system service with auto-start
-curl -fsSL https://raw.githubusercontent.com/git-men/agentstudio/main/scripts/remote-install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/okguitar/agentstudio/main/scripts/remote-install.sh | sudo bash
 ```
 
 After installation, manage the service:
@@ -179,7 +179,7 @@ Then access the web interface at **https://agentstudio-frontend.vercel.app/** an
 **Installation:**
 ```bash
 # Clone the repository
-git clone https://github.com/git-men/agentstudio.git
+git clone https://github.com/okguitar/agentstudio.git
 cd agentstudio
 
 # Install dependencies

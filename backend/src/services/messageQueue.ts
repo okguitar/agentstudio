@@ -13,10 +13,19 @@ export class MessageQueue {
   async *[Symbol.asyncIterator](): AsyncIterableIterator<any> {
     while (!this.isEnded || this.queue.length > 0) {
       if (this.queue.length > 0) {
-        yield this.queue.shift();
+        const message = this.queue.shift();
+        // 跳过 null 消息，避免在队列结束时发送 null
+        if (message !== null && message !== undefined) {
+          yield message;
+        }
       } else if (!this.isEnded) {
         // 等待新消息
-        yield new Promise<any>(resolve => this.resolvers.push(resolve));
+        const message = await new Promise<any>(resolve => this.resolvers.push(resolve));
+        // 如果收到 null，说明队列已结束，直接退出
+        if (message === null || message === undefined) {
+          break;
+        }
+        yield message;
       }
     }
   }

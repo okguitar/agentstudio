@@ -12,9 +12,21 @@ export const BashOutputTool: React.FC<BashOutputToolProps> = ({ execution }) => 
   const { t } = useTranslation('components');
   const input = execution.toolInput as BashOutputToolInput;
 
+  // Debug logging
+  console.log('🐚 [BashOutputTool] Rendering with execution:', {
+    isExecuting: execution.isExecuting,
+    hasToolUseResult: !!execution.toolUseResult,
+    toolUseResultType: typeof execution.toolUseResult,
+    toolUseResult: execution.toolUseResult,
+    input
+  });
+
   // 解析工具结果
   const parseToolResult = (): BashOutputToolResult | null => {
-    if (!execution.toolUseResult) return null;
+    if (!execution.toolUseResult) {
+      console.log('🐚 [BashOutputTool] No toolUseResult, returning null');
+      return null;
+    }
     
     // 如果toolUseResult是对象，直接使用
     if (typeof execution.toolUseResult === 'object') {

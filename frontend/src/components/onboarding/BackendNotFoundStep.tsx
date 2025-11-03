@@ -32,7 +32,7 @@ export const BackendNotFoundStep: React.FC<BackendNotFoundStepProps> = ({
   const [testResult, setTestResult] = useState<'success' | 'error' | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const installCommands = `git clone https://github.com/git-men/agentstudio.git
+  const installCommands = `git clone https://github.com/okguitar/agentstudio.git
 cd agentstudio
 pnpm install
 pnpm run dev:backend`;
@@ -223,7 +223,7 @@ pnpm run dev:backend`;
             <span>{t('backend.addService.installGuide.copyCommands')}</span>
           </button>
           <a
-            href="https://github.com/git-men/agentstudio?tab=readme-ov-file#-quick-start"
+            href="https://github.com/okguitar/agentstudio?tab=readme-ov-file#-quick-start"
             target="_blank"
             rel="noopener noreferrer"
             className="flex-1 flex items-center justify-center space-x-1.5 px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"

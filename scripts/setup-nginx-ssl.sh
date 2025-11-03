@@ -23,8 +23,8 @@ if [ -z "$DOMAIN" ]; then
     echo ""
     echo "Examples:"
     echo "  $0 jeff-hk.agentstudio.cc"
-    echo "  $0 jeff-hk.agentstudio.cc bbmyth@gmail.com"
-    echo "  $0 jeff-hk.agentstudio.cc bbmyth@gmail.com 8080"
+    echo "  $0 jeff-hk.agentstudio.cc okguitar@gmail.com"
+    echo "  $0 jeff-hk.agentstudio.cc okguitar@gmail.com 8080"
     echo ""
     exit 1
 fi

@@ -1,5 +1,6 @@
 import { query, Options } from '@anthropic-ai/claude-code';
-import { MessageQueue } from './messageQueue.js';
+import type { SDKMessage, SDKSystemMessage } from '@anthropic-ai/claude-agent-sdk';
+import { MessageQueue } from './messageQueue';
 
 /**
  * Claude 会话包装器 - 使用 Streaming Input Mode
@@ -20,7 +21,7 @@ export class ClaudeSession {
   private claudeVersionId: string | undefined = undefined;
 
   // 响应分发器相关
-  private responseCallbacks: Map<string, (response: any) => void> = new Map();
+  private responseCallbacks: Map<string, (response: SDKMessage) => void> = new Map();
   private nextRequestId = 0;
   private isBackgroundRunning = false;
 
@@ -148,7 +149,7 @@ export class ClaudeSession {
    * @param message 要发送的消息
    * @param responseCallback 响应回调函数
    */
-  async sendMessage(message: any, responseCallback: (response: any) => void): Promise<string> {
+  async sendMessage(message: any, responseCallback: (response: SDKMessage) => void): Promise<string> {
     console.log(`🔧 [DEBUG] sendMessage called for agent: ${this.agentId}, isActive: ${this.isActive}, isBackgroundRunning: ${this.isBackgroundRunning}`);
     
     if (!this.isActive) {
@@ -196,12 +197,14 @@ export class ClaudeSession {
       console.log(`🔧 [DEBUG] About to start for-await loop for agent: ${this.agentId}, queryStream: ${!!this.queryStream}`);
       
       for await (const response of this.queryStream) {
-        console.log(`🔧 [DEBUG] Received response in background handler for agent: ${this.agentId}, type: ${response.type}`);
+        // 类型安全的消息处理
+        const sdkMessage = response as SDKMessage;
+        console.log(`🔧 [DEBUG] Received response in background handler for agent: ${this.agentId}, type: ${sdkMessage.type}`);
         this.lastActivity = Date.now();
-        
+
         // 捕获 SDK 返回的 sessionId
-        const sessionId = response.session_id || response.sessionId;
-        if (response.type === 'system' && response.subtype === 'init' && sessionId) {
+        const sessionId = sdkMessage.session_id;
+        if (sdkMessage.type === 'system' && (sdkMessage as SDKSystemMessage).subtype === 'init' && sessionId) {
           this.claudeSessionId = sessionId;
           console.log(`📝 Captured Claude sessionId: ${this.claudeSessionId} for agent: ${this.agentId}`);
         }
@@ -214,11 +217,11 @@ export class ClaudeSession {
         
         // 分发响应给对应的请求
         if (currentRequestId && this.responseCallbacks.has(currentRequestId)) {
-          const callback = this.responseCallbacks.get(currentRequestId)!;
-          callback(response);
-          
+          const callback = this.responseCallbacks.get(currentRequestId)!;          
+          callback(sdkMessage);
+
           // 如果是 result 事件，该请求完成，从队列中移除
-          if (response.type === 'result') {
+          if (sdkMessage.type === 'result') {
             console.log(`✅ Request ${currentRequestId} completed, removing from queue`);
             this.responseCallbacks.delete(currentRequestId);
           }
@@ -285,9 +288,26 @@ export class ClaudeSession {
    */
   async close(): Promise<void> {
     console.log(`🔚 Closing Claude session for agent: ${this.agentId}, sessionId: ${this.claudeSessionId}`);
+
+    // 如果已经不活跃，直接返回
+    if (!this.isActive) {
+      console.log(`⚠️  Session already inactive for agent: ${this.agentId}`);
+      return;
+    }
+
     this.isActive = false;
+
+    // 清理所有待处理的回调，避免在关闭过程中继续处理响应
+    const pendingCallbacks = this.responseCallbacks.size;
+    this.responseCallbacks.clear();
+    console.log(`🧹 Cleared ${pendingCallbacks} pending response callbacks`);
 
     // 结束消息队列，这会让 async generator 完成
     this.messageQueue.end();
+
+    // 给 SDK 一些时间来优雅地处理队列结束
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    console.log(`✅ Claude session closed for agent: ${this.agentId}`);
   }
 }

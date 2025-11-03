@@ -2,12 +2,12 @@
 
 # Agent Studio Remote Installation Script
 # This script detects the operating system and calls the appropriate platform-specific installer
-# Usage: curl -fsSL https://raw.githubusercontent.com/git-men/agentstudio/main/scripts/remote-install.sh | bash
+# Usage: curl -fsSL https://raw.githubusercontent.com/okguitar/agentstudio/main/scripts/remote-install.sh | bash
 
 set -e
 
 # Configuration
-GITHUB_REPO="git-men/agentstudio"
+GITHUB_REPO="okguitar/agentstudio"
 GITHUB_BRANCH="main"
 SCRIPT_BASE_URL="https://raw.githubusercontent.com/$GITHUB_REPO/$GITHUB_BRANCH/scripts"
 
