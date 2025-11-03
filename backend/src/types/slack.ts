@@ -72,8 +72,16 @@ export interface ThreadSessionMapping {
   sessionId: string;
   channel: string;
   agentId: string;
+  projectId?: string;        // Project directory name
+  projectPath?: string;      // Full project path
   createdAt: number;
   lastActivity: number;
+}
+
+// Project parsing result
+export interface ProjectParseResult {
+  projectIdentifier: string;  // The identifier after "proj:"
+  cleanText: string;         // Text with project specification removed
 }
 
 // Slack Bot Configuration

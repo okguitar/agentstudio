@@ -52,6 +52,8 @@ export class SlackThreadMapper {
     channel: string;
     sessionId: string;
     agentId: string;
+    projectId?: string;
+    projectPath?: string;
   }): void {
     const key = this.makeKey(params.threadTs, params.channel);
     const now = Date.now();
@@ -61,6 +63,8 @@ export class SlackThreadMapper {
       sessionId: params.sessionId,
       channel: params.channel,
       agentId: params.agentId,
+      projectId: params.projectId,
+      projectPath: params.projectPath,
       createdAt: now,
       lastActivity: now
     };
@@ -68,7 +72,8 @@ export class SlackThreadMapper {
     this.mappings.set(key, mapping);
     this.sessionToThread.set(params.sessionId, key);
 
-    console.log(`✅ Mapped Slack thread ${params.threadTs} -> session ${params.sessionId}`);
+    const projectInfo = params.projectId ? ` (project: ${params.projectId})` : '';
+    console.log(`✅ Mapped Slack thread ${params.threadTs} -> session ${params.sessionId}${projectInfo}`);
   }
 
   /**

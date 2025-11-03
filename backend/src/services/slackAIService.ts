@@ -18,7 +18,9 @@ import { slackThreadMapper } from './slackThreadMapper.js';
 import { slackSessionLock } from './slackSessionLock.js';
 import { SlackClient } from './slackClient.js';
 import { getDefaultVersionId, getAllVersionsInternal } from './claudeVersionStorage.js';
-import type { SlackMessageEvent, SlackAppMentionEvent } from '../types/slack.js';
+import { ProjectMetadataStorage } from './projectMetadataStorage.js';
+import type { SlackMessageEvent, SlackAppMentionEvent, ProjectParseResult } from '../types/slack.js';
+import type { ProjectWithAgentInfo } from '../types/projects.js';
 
 const execAsync = promisify(exec);
 
@@ -204,22 +206,22 @@ async function getDefaultClaudeVersionEnv(): Promise<Record<string, string> | nu
 function parseAgentFromMessage(text: string, allAgents: any[]): { agentId: string; cleanText: string } | null {
   // Remove the bot mention if present
   let cleanText = text.replace(/<@[A-Z0-9]+>/g, '').trim();
-  
+
   // Check for agent mention format: @agent-name or agent-name
   const agentMentionMatch = cleanText.match(/^@?([a-zA-Z0-9\-_]+)\s+(.+)/);
   if (agentMentionMatch) {
     const potentialAgentId = agentMentionMatch[1];
     const remainingText = agentMentionMatch[2].trim();
-    
+
     // First try exact match with agent ID
     let agent = allAgents.find(a => a.id.toLowerCase() === potentialAgentId.toLowerCase());
-    
+
     // Then try name match
     if (!agent) {
-      agent = allAgents.find(a => a.name.toLowerCase().includes(potentialAgentId.toLowerCase()) || 
+      agent = allAgents.find(a => a.name.toLowerCase().includes(potentialAgentId.toLowerCase()) ||
                                      potentialAgentId.toLowerCase().includes(a.name.toLowerCase()));
     }
-    
+
     // Finally try to match with common aliases
     if (!agent) {
       const aliases: { [key: string]: string } = {
@@ -240,19 +242,160 @@ function parseAgentFromMessage(text: string, allAgents: any[]): { agentId: strin
         'assistant': 'general-chat',
         'help': 'general-chat'
       };
-      
+
       const aliasId = aliases[potentialAgentId.toLowerCase()];
       if (aliasId) {
         agent = allAgents.find(a => a.id === aliasId);
       }
     }
-    
+
     if (agent && agent.enabled) {
       return { agentId: agent.id, cleanText: remainingText };
     }
   }
-  
+
   return null;
+}
+
+/**
+ * Parse project specification from message text
+ * Supports proj:project-name format
+ */
+function parseProjectFromMessage(text: string): ProjectParseResult | null {
+  // Check for project specification format: proj:project-name
+  // The pattern can appear anywhere in the text
+  const projectMatch = text.match(/proj:([^\s]+)/i);
+  if (projectMatch) {
+    const projectIdentifier = projectMatch[1];
+    // Remove the project specification from the text
+    const cleanText = text.replace(/proj:[^\s]+/gi, '').trim();
+    return { projectIdentifier, cleanText };
+  }
+
+  return null;
+}
+
+/**
+ * Match project identifier against available projects
+ * Priority order: exact path match -> exact directory name match (prefer home paths) -> basename match -> partial match
+ */
+function matchProject(
+  identifier: string,
+  allProjects: ProjectWithAgentInfo[]
+): { matches: ProjectWithAgentInfo[]; isExactMatch: boolean } {
+  const identifierLower = identifier.toLowerCase();
+
+  // Priority 1: Exact path match (full path or real path)
+  const exactPathMatches = allProjects.filter(project =>
+    project.path.toLowerCase() === identifierLower ||
+    project.realPath?.toLowerCase() === identifierLower
+  );
+
+  if (exactPathMatches.length > 0) {
+    return { matches: exactPathMatches, isExactMatch: true };
+  }
+
+  // Priority 2: Exact directory name match
+  const exactDirMatches = allProjects.filter(project =>
+    project.dirName.toLowerCase() === identifierLower
+  );
+
+  if (exactDirMatches.length > 0) {
+    // If multiple exact directory matches, prioritize by:
+    // 1. Home directory paths (containing /home/ or ~)
+    // 2. More recently accessed
+    const prioritizedMatches = exactDirMatches.sort((a, b) => {
+      const aIsHome = a.path.includes('/home/') || a.path.includes('~');
+      const bIsHome = b.path.includes('/home/') || b.path.includes('~');
+
+      if (aIsHome && !bIsHome) return -1;
+      if (!aIsHome && bIsHome) return 1;
+
+      // If both have same home priority, sort by last accessed
+      return new Date(b.lastAccessed).getTime() - new Date(a.lastAccessed).getTime();
+    });
+
+    return { matches: prioritizedMatches, isExactMatch: true };
+  }
+
+  // Priority 3: Basename match (match against the last component of paths)
+  const basenameMatches = allProjects.filter(project => {
+    const pathBasename = path.basename(project.path).toLowerCase();
+    const realPathBasename = project.realPath ? path.basename(project.realPath).toLowerCase() : '';
+
+    return pathBasename === identifierLower || realPathBasename === identifierLower;
+  });
+
+  if (basenameMatches.length > 0) {
+    // Prioritize basename matches the same way
+    const prioritizedMatches = basenameMatches.sort((a, b) => {
+      const aIsHome = a.path.includes('/home/') || a.path.includes('~');
+      const bIsHome = b.path.includes('/home/') || b.path.includes('~');
+
+      if (aIsHome && !bIsHome) return -1;
+      if (!aIsHome && bIsHome) return 1;
+
+      return new Date(b.lastAccessed).getTime() - new Date(a.lastAccessed).getTime();
+    });
+
+    return { matches: prioritizedMatches, isExactMatch: true };
+  }
+
+  // Priority 4: Partial matches (only if no exact matches found)
+  // This matches identifier as a substring of directory names
+  const partialDirMatches = allProjects.filter(project =>
+    project.dirName.toLowerCase().includes(identifierLower) ||
+    identifierLower.includes(project.dirName.toLowerCase())
+  );
+
+  // Priority 5: Partial basename matches
+  const partialBasenameMatches = allProjects.filter(project => {
+    const pathBasename = path.basename(project.path).toLowerCase();
+    const realPathBasename = project.realPath ? path.basename(project.realPath).toLowerCase() : '';
+
+    return pathBasename.includes(identifierLower) ||
+           identifierLower.includes(pathBasename) ||
+           realPathBasename.includes(identifierLower) ||
+           identifierLower.includes(realPathBasename);
+  });
+
+  // Combine all partial matches and remove duplicates, then prioritize
+  const allPartialMatches = [...new Set([...partialDirMatches, ...partialBasenameMatches])];
+
+  const prioritizedPartialMatches = allPartialMatches.sort((a, b) => {
+    const aIsHome = a.path.includes('/home/') || a.path.includes('~');
+    const bIsHome = b.path.includes('/home/') || b.path.includes('~');
+
+    if (aIsHome && !bIsHome) return -1;
+    if (!aIsHome && bIsHome) return 1;
+
+    return new Date(b.lastAccessed).getTime() - new Date(a.lastAccessed).getTime();
+  });
+
+  return { matches: prioritizedPartialMatches, isExactMatch: false };
+}
+
+/**
+ * Create project selection message for multiple matches
+ */
+function createProjectSelectionMessage(matches: ProjectWithAgentInfo[]): string {
+  const projectList = matches.map((project, index) => {
+    const pathInfo = project.realPath ? ` (${project.realPath})` : '';
+    return `${index + 1}. **${project.name}** (\`${project.dirName}\`${pathInfo})`;
+  }).join('\n');
+
+  return `🎯 **找到多个匹配的项目，请选择：**\n\n${projectList}\n\n📝 **使用方法：**\n• 指定目录名：\`proj:目录名\`\n• 或指定完整路径：\`proj:/完整/路径\``;
+}
+
+/**
+ * Create project not found message
+ */
+function createProjectNotFoundMessage(identifier: string, availableProjects: ProjectWithAgentInfo[]): string {
+  const sampleProjects = availableProjects.slice(0, 5).map(project =>
+    `• \`${project.dirName}\` - ${project.name}`
+  ).join('\n');
+
+  return `❌ **未找到项目 "${identifier}"**\n\n📂 **可用项目：**\n${sampleProjects}${availableProjects.length > 5 ? `\n... 还有 ${availableProjects.length - 5} 个项目` : ''}\n\n💡 **提示：** 使用项目目录名或完整路径来指定项目`;
 }
 
 /**
@@ -269,11 +412,13 @@ function getAvailableAgentsList(allAgents: any[]): string {
 export class SlackAIService {
   private slackClient: SlackClient;
   private agentStorage: AgentStorage;
+  private projectStorage: ProjectMetadataStorage;
   private defaultAgentId: string;
 
   constructor(botToken: string, defaultAgentId: string = 'general-chat') {
     this.slackClient = new SlackClient(botToken);
     this.agentStorage = new AgentStorage();
+    this.projectStorage = new ProjectMetadataStorage();
     this.defaultAgentId = defaultAgentId;
   }
 
@@ -291,18 +436,62 @@ export class SlackAIService {
 
       // Determine thread_ts (use thread_ts if exists, otherwise message ts)
       const threadTs = event.thread_ts || event.ts;
+      const isNewThread = !event.thread_ts; // If there's no thread_ts, this is a new thread
 
       // Get or create session mapping
       let sessionId = slackThreadMapper.getSessionId(threadTs, event.channel);
       let currentAgentId: string | null = null;
+      let selectedProject: ProjectWithAgentInfo | null = null;
 
-      // Get all available agents
+      // Get all available agents and projects
       const allAgents = this.agentStorage.getAllAgents();
       const enabledAgents = allAgents.filter((agent: any) => agent.enabled);
+      const allProjects = this.projectStorage.getAllProjects();
 
       // Parse agent from message
       const agentSelection = parseAgentFromMessage(event.text, enabledAgents);
-      
+
+      // Parse project from message (only for new threads)
+      let projectSelection = null;
+      if (isNewThread) {
+        projectSelection = parseProjectFromMessage(event.text);
+        if (projectSelection) {
+          console.log(`🎯 Found project specification: ${projectSelection.projectIdentifier}`);
+
+          // Match project against available projects
+          const projectMatch = matchProject(projectSelection.projectIdentifier, allProjects);
+
+          if (projectMatch.matches.length === 0) {
+            // No projects found
+            const errorMessage = createProjectNotFoundMessage(projectSelection.projectIdentifier, allProjects);
+            await this.slackClient.postMessage({
+              channel: event.channel,
+              text: errorMessage,
+              thread_ts: threadTs
+            });
+            return;
+          } else if (projectMatch.matches.length > 1 && !projectMatch.isExactMatch) {
+            // Multiple partial matches found - ask user to be more specific
+            const selectionMessage = createProjectSelectionMessage(projectMatch.matches);
+            await this.slackClient.postMessage({
+              channel: event.channel,
+              text: selectionMessage,
+              thread_ts: threadTs
+            });
+            return;
+          } else {
+            // Single match found, or multiple exact matches (already prioritized)
+            selectedProject = projectMatch.matches[0];
+            console.log(`✅ Selected project: ${selectedProject.name} (${selectedProject.dirName}) - Path: ${selectedProject.realPath || selectedProject.path}`);
+
+            // If there were multiple exact matches, log this for debugging
+            if (projectMatch.matches.length > 1) {
+              console.log(`📝 Note: Found ${projectMatch.matches.length} exact matches, selected the highest priority one`);
+            }
+          }
+        }
+      }
+
       if (agentSelection) {
         currentAgentId = agentSelection.agentId;
         console.log(`🎯 Selected agent: ${currentAgentId} from message`);
@@ -356,19 +545,26 @@ export class SlackAIService {
 
       // Send "thinking" placeholder
       const agentDisplayName = agent.ui.icon ? `${agent.ui.icon} ${agent.name}` : agent.name;
+      const projectInfo = selectedProject ? ` 在项目 ${selectedProject.name} 中` : '';
       const placeholderMsg = await this.slackClient.postMessage({
         channel: event.channel,
-        text: `🤔 ${agentDisplayName} 正在思考...`,
+        text: `🤔 ${agentDisplayName}${projectInfo} 正在思考...`,
         thread_ts: threadTs
       });
 
       console.log(`📍 Posted placeholder message: ${placeholderMsg.ts}`);
+      if (selectedProject) {
+        console.log(`📂 Working in project: ${selectedProject.name} (${selectedProject.dirName}) - Path: ${selectedProject.realPath || selectedProject.path}`);
+      }
 
       // Get default Claude version environment variables
       const defaultClaudeEnv = await getDefaultClaudeVersionEnv();
 
-      // Build query options with default environment variables
-      const queryOptions = await buildQueryOptions(agent, undefined, undefined, undefined, undefined, defaultClaudeEnv || undefined);
+      // Determine project path for Claude session
+      const projectPath = selectedProject ? (selectedProject.realPath || selectedProject.path) : undefined;
+
+      // Build query options with project path and default environment variables
+      const queryOptions = await buildQueryOptions(agent, projectPath, undefined, undefined, undefined, defaultClaudeEnv || undefined);
 
       // Get or create Claude session
       let claudeSession = sessionId ? sessionManager.getSession(sessionId) : null;
@@ -425,8 +621,14 @@ export class SlackAIService {
         console.log(`🔒 Acquired lock for session ${finalSessionId}`);
       }
 
-      // Build user message with cleaned text (remove agent mention)
-      const messageText = agentSelection ? agentSelection.cleanText : event.text;
+      // Build user message with cleaned text (remove agent mention and project specification)
+      let messageText = agentSelection ? agentSelection.cleanText : event.text;
+
+      // If project was parsed from this message, use the cleaned text from project parsing
+      if (projectSelection) {
+        messageText = projectSelection.cleanText;
+      }
+
       const userMessage = {
         type: "user" as const,
         message: {
@@ -472,12 +674,14 @@ export class SlackAIService {
               claudeSession!.setClaudeSessionId(newSessionId);
               sessionManager.confirmSessionId(claudeSession!, newSessionId);
 
-              // Update mapping
+              // Update mapping with project information
               slackThreadMapper.setMapping({
                 threadTs,
                 channel: event.channel,
                 sessionId: newSessionId,
-                agentId: currentAgentId
+                agentId: currentAgentId,
+                projectId: selectedProject?.dirName,
+                projectPath: selectedProject?.realPath || selectedProject?.path
               });
 
               console.log(`✅ Session confirmed: ${newSessionId} for thread: ${threadTs}`);
