@@ -263,7 +263,7 @@ describe('claudeUtils', () => {
       const options = await buildQueryOptions(mockAgent, undefined, mcpTools);
 
       expect(options.mcpServers).toBeDefined();
-      expect(options.mcpServers.server1).toMatchObject({
+      expect(options.mcpServers?.server1).toMatchObject({
         type: 'stdio',
         command: 'node',
         args: ['server1.js']
