@@ -88,4 +88,23 @@ export class SlackClient {
 
     return response.json() as Promise<{ ok: boolean; error?: string }>;
   }
+
+  /**
+   * Download a file from Slack
+   */
+  async downloadFile(url: string): Promise<Buffer> {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${this.botToken}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to download file from Slack: ${response.statusText}`);
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    return Buffer.from(arrayBuffer);
+  }
 }

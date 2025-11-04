@@ -46,6 +46,7 @@ export class SlackThreadMapper {
 
   /**
    * Create or update mapping
+   * Handles session ID updates when Claude Code resume returns a new session_id
    */
   setMapping(params: {
     threadTs: string;
@@ -58,6 +59,15 @@ export class SlackThreadMapper {
     const key = this.makeKey(params.threadTs, params.channel);
     const now = Date.now();
 
+    // Check if there's an existing mapping for this thread
+    const existingMapping = this.mappings.get(key);
+    if (existingMapping && existingMapping.sessionId !== params.sessionId) {
+      // Session ID has changed (e.g., due to Claude Code resume)
+      // Remove old sessionId -> thread mapping to prevent memory leaks
+      console.log(`🔄 Session ID changed for thread ${params.threadTs}: ${existingMapping.sessionId} -> ${params.sessionId}`);
+      this.sessionToThread.delete(existingMapping.sessionId);
+    }
+
     const mapping: ThreadSessionMapping = {
       threadTs: params.threadTs,
       sessionId: params.sessionId,
@@ -65,7 +75,7 @@ export class SlackThreadMapper {
       agentId: params.agentId,
       projectId: params.projectId,
       projectPath: params.projectPath,
-      createdAt: now,
+      createdAt: existingMapping?.createdAt || now, // Preserve original creation time
       lastActivity: now
     };
 

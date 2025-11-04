@@ -4,6 +4,23 @@
  * Type definitions for Slack Bot integration with AgentStudio
  */
 
+// Slack File types
+export interface SlackFile {
+  id: string;
+  name: string;
+  title: string;
+  mimetype: string;
+  filetype: string;
+  size: number;
+  url_private: string;
+  url_private_download: string;
+  thumb_360?: string;
+  thumb_480?: string;
+  thumb_720?: string;
+  thumb_960?: string;
+  thumb_1024?: string;
+}
+
 // Slack Event types
 export interface SlackMessageEvent {
   type: 'message';
@@ -14,6 +31,7 @@ export interface SlackMessageEvent {
   thread_ts?: string;
   event_ts: string;
   channel_type: 'channel' | 'im' | 'mpim' | 'group';
+  files?: SlackFile[];
 }
 
 export interface SlackAppMentionEvent {
@@ -24,6 +42,7 @@ export interface SlackAppMentionEvent {
   ts: string;
   thread_ts?: string;
   event_ts: string;
+  files?: SlackFile[];
 }
 
 export interface SlackEventCallback {
