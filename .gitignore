@@ -57,3 +57,5 @@ local-docs/
 
 # AgentStudio temporary images
 .agentstudio-images/
+
+coverage/
