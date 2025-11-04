@@ -662,25 +662,86 @@ Feel free to organize your files here as needed. This directory is managed by Ag
       return `🔧 ${toolName}()`;
     }
 
+    // Define large content parameters that should always be hidden
+    const largeContentParams: { [key: string]: string[] } = {
+      'Write': ['content', 'contents'],
+      'write': ['content', 'contents'],
+      'search_replace': ['old_string', 'new_string']
+    };
+
+    // Determine threshold for "large" content
+    const largeContentThreshold = 50; // chars
+
     // Extract key parameters (limit to avoid too long output)
     const params: string[] = [];
-    const keys = Object.keys(input).slice(0, 3); // Only show first 3 params
+    const keys = Object.keys(input);
     
+    // Check if this tool has large content parameters
+    const largeParams = largeContentParams[toolName] || [];
+    
+    // Filter out large content params if they exceed threshold
+    const displayKeys: string[] = [];
     for (const key of keys) {
+      if (largeParams.includes(key)) {
+        // Check if this parameter is large
+        const value = input[key];
+        if (typeof value === 'string') {
+          // If content is large (multi-line or long), skip it from display
+          if (value.length > largeContentThreshold || value.includes('\n')) {
+            continue; // Skip this parameter, will show in summary
+          }
+        }
+      }
+      displayKeys.push(key);
+      if (displayKeys.length >= 3) break; // Limit to 3 displayed params
+    }
+    
+    // Format the displayed parameters
+    for (const key of displayKeys) {
       let value = input[key];
       
       // Simplify long values
-      if (typeof value === 'string' && value.length > 50) {
-        value = value.substring(0, 47) + '...';
+      if (typeof value === 'string') {
+        if (value.length > 50) {
+          value = value.substring(0, 47) + '...';
+        }
+        value = `"${value}"`;
       } else if (typeof value === 'object') {
-        value = JSON.stringify(value).substring(0, 47) + '...';
+        const jsonStr = JSON.stringify(value);
+        if (jsonStr.length > 50) {
+          value = jsonStr.substring(0, 47) + '...';
+        } else {
+          value = jsonStr;
+        }
       }
       
       params.push(`${key}=${value}`);
     }
 
-    const moreParams = Object.keys(input).length > 3 ? ', ...' : '';
-    return `🔧 ${toolName}(${params.join(', ')}${moreParams})`;
+    // Add summary for hidden large params
+    const hiddenLargeParams: string[] = [];
+    if (toolName === 'Write' || toolName === 'write') {
+      if (input.content && displayKeys.indexOf('content') === -1) {
+        hiddenLargeParams.push(`content: ${input.content.length} chars`);
+      }
+      if (input.contents && displayKeys.indexOf('contents') === -1) {
+        hiddenLargeParams.push(`contents: ${input.contents.length} chars`);
+      }
+    }
+    if (toolName === 'search_replace') {
+      if (input.old_string && displayKeys.indexOf('old_string') === -1) {
+        hiddenLargeParams.push(`old: ${input.old_string.length} chars`);
+      }
+      if (input.new_string && displayKeys.indexOf('new_string') === -1) {
+        hiddenLargeParams.push(`new: ${input.new_string.length} chars`);
+      }
+    }
+
+    const moreParamsInfo = hiddenLargeParams.length > 0 
+      ? `, ${hiddenLargeParams.join(', ')}`
+      : (Object.keys(input).length > displayKeys.length ? ', ...' : '');
+    
+    return `🔧 ${toolName}(${params.join(', ')}${moreParamsInfo})`;
   }
 
   /**
