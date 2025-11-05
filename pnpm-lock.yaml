@@ -26,9 +26,6 @@ importers:
       '@anthropic-ai/claude-agent-sdk':
         specifier: ^0.1.25
         version: 0.1.25(zod@3.25.76)
-      '@anthropic-ai/claude-code':
-        specifier: ^2.0.10
-        version: 2.0.14
       ai:
         specifier: ^5.0.22
         version: 5.0.70(zod@3.25.76)
@@ -340,11 +337,6 @@ packages:
     engines: {node: '>=18.0.0'}
     peerDependencies:
       zod: ^3.24.1
-
-  '@anthropic-ai/claude-code@2.0.14':
-    resolution: {integrity: sha512-Q4A4Jo7WZ4aMUIu8CUIIo2Jt66kl2vrEjRg/kYzX6syuK0DiV3WhdMZceSvLAU0BFpX1L8aERhRWxLWDxX3fYg==}
-    engines: {node: '>=18.0.0'}
-    hasBin: true
 
   '@asamuzakjp/css-color@3.2.0':
     resolution: {integrity: sha512-K1A6z8tS3XsmCMM86xoWdn7Fkdn9m6RSVtocUrJYIwZnFVkng/PvkEoWtOWmP+Scc6saYWHWZYbndEEXxl24jw==}
@@ -4508,15 +4500,6 @@ snapshots:
   '@anthropic-ai/claude-agent-sdk@0.1.25(zod@3.25.76)':
     dependencies:
       zod: 3.25.76
-    optionalDependencies:
-      '@img/sharp-darwin-arm64': 0.33.5
-      '@img/sharp-darwin-x64': 0.33.5
-      '@img/sharp-linux-arm': 0.33.5
-      '@img/sharp-linux-arm64': 0.33.5
-      '@img/sharp-linux-x64': 0.33.5
-      '@img/sharp-win32-x64': 0.33.5
-
-  '@anthropic-ai/claude-code@2.0.14':
     optionalDependencies:
       '@img/sharp-darwin-arm64': 0.33.5
       '@img/sharp-darwin-x64': 0.33.5

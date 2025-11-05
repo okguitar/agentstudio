@@ -2,12 +2,10 @@
  * Unit tests for claudeUtils.ts
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as fs from 'fs';
-import * as os from 'os';
 import * as path from 'path';
 import { exec } from 'child_process';
-import { promisify } from 'util';
 import {
   getClaudeExecutablePath,
   readMcpConfig,
@@ -37,8 +35,6 @@ vi.mock('../../services/claudeVersionStorage', () => ({
   getAllVersionsInternal: vi.fn(),
   getVersionByIdInternal: vi.fn()
 }));
-
-const execAsync = promisify(exec);
 
 describe('claudeUtils', () => {
   beforeEach(() => {
@@ -211,7 +207,11 @@ describe('claudeUtils', () => {
       const options = await buildQueryOptions(mockAgent);
 
       expect(options).toMatchObject({
-        appendSystemPrompt: 'Test system prompt',
+        systemPrompt: {
+          type: 'preset',
+          preset: 'claude_code',
+          append: 'Test system prompt'
+        },
         allowedTools: ['Write', 'Read'],
         maxTurns: 10,
         permissionMode: 'acceptEdits',
@@ -287,7 +287,7 @@ describe('claudeUtils', () => {
       const options = await buildQueryOptions(mockAgent, undefined, undefined, undefined, undefined, 'custom-version');
 
       expect(options.pathToClaudeCodeExecutable).toBe('/custom/claude');
-      expect(options.env.ANTHROPIC_API_KEY).toBe('custom-key');
+      expect(options.env?.ANTHROPIC_API_KEY).toBe('custom-key');
     });
 
     it('should override agent settings with request parameters', async () => {

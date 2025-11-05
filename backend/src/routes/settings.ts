@@ -156,11 +156,11 @@ const detectClaudeCodeInstallationSource = async () => {
     if (managers.pnpm) {
       try {
         const { stdout: pnpmRoot } = await execAsync('pnpm root -g');
-        const pnpmClaudePath = `${pnpmRoot.trim()}/@anthropic-ai/claude-code`;
+        const pnpmClaudePath = `${pnpmRoot.trim()}/@anthropic-ai/claude-agent-sdk`;
         await execAsync(`test -d "${pnpmClaudePath}"`);
         return 'pnpm';
       } catch (error) {
-        // Claude Code not found in pnpm global
+        // Claude Agent SDK not found in pnpm global
       }
     }
     
@@ -168,11 +168,11 @@ const detectClaudeCodeInstallationSource = async () => {
     if (managers.yarn) {
       try {
         const { stdout: yarnGlobalDir } = await execAsync('yarn global dir');
-        const yarnClaudePath = `${yarnGlobalDir.trim()}/node_modules/@anthropic-ai/claude-code`;
+        const yarnClaudePath = `${yarnGlobalDir.trim()}/node_modules/@anthropic-ai/claude-agent-sdk`;
         await execAsync(`test -d "${yarnClaudePath}"`);
         return 'yarn';
       } catch (error) {
-        // Claude Code not found in yarn global
+        // Claude Agent SDK not found in yarn global
       }
     }
     
@@ -180,11 +180,11 @@ const detectClaudeCodeInstallationSource = async () => {
     if (managers.npm) {
       try {
         const { stdout: npmPrefix } = await execAsync('npm config get prefix');
-        const npmClaudePath = `${npmPrefix.trim()}/lib/node_modules/@anthropic-ai/claude-code`;
+        const npmClaudePath = `${npmPrefix.trim()}/lib/node_modules/@anthropic-ai/claude-agent-sdk`;
         await execAsync(`test -d "${npmClaudePath}"`);
         return 'npm';
       } catch (error) {
-        // Claude Code not found in npm global
+        // Claude Agent SDK not found in npm global
       }
     }
     
@@ -377,56 +377,6 @@ router.get('/versions', async (req, res) => {
   }
 });
 
-// POST /api/settings/update-claude - Update Claude Code using preferred package manager
-router.post('/update-claude', async (req, res) => {
-  try {
-    const preferredManager = await getPreferredPackageManager();
-    
-    if (!preferredManager) {
-      return res.status(400).json({
-        success: false,
-        error: 'No package manager available',
-        message: 'Please install npm, pnpm, or yarn to update Claude Code'
-      });
-    }
-
-    // Different commands for different package managers
-    let updateCommand: string;
-    switch (preferredManager) {
-      case 'pnpm':
-        updateCommand = 'pnpm add -g @anthropic-ai/claude-code@latest';
-        break;
-      case 'yarn':
-        updateCommand = 'yarn global add @anthropic-ai/claude-code@latest';
-        break;
-      case 'npm':
-      default:
-        updateCommand = 'npm update -g @anthropic-ai/claude-code';
-        break;
-    }
-
-    console.log(`Updating Claude Code using ${preferredManager}: ${updateCommand}`);
-    const { stdout, stderr } = await execAsync(updateCommand);
-    
-    res.json({
-      success: true,
-      message: `Claude Code update completed using ${preferredManager}`,
-      packageManager: preferredManager,
-      command: updateCommand,
-      output: stdout,
-      error: stderr || null
-    });
-  } catch (error: any) {
-    console.error('Failed to update Claude Code:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to update Claude Code',
-      message: error.message,
-      output: error.stdout || null,
-      stderr: error.stderr || null
-    });
-  }
-});
 
 // Claude 版本管理 API
 

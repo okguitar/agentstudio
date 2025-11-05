@@ -27,7 +27,7 @@ import { buildUserMessageContent } from '../utils/sessionUtils.js';
  */
 function parseAgentFromMessage(text: string, allAgents: any[]): { agentId: string; cleanText: string } | null {
   // Remove the bot mention if present
-  let cleanText = text.replace(/<@[A-Z0-9]+>/g, '').trim();
+  const cleanText = text.replace(/<@[A-Z0-9]+>/g, '').trim();
 
   // Check for agent mention format: @agent-name or agent-name
   const agentMentionMatch = cleanText.match(/^@?([a-zA-Z0-9\-_]+)\s+(.+)/);

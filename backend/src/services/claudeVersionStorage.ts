@@ -150,7 +150,21 @@ export async function getVersionByIdInternal(versionId: string): Promise<ClaudeV
   const storage = await loadClaudeVersions();
   
   // 返回原始版本信息，不隐藏敏感环境变量
-  return storage.versions.find(v => v.id === versionId) || null;
+  const version = storage.versions.find(v => v.id === versionId) || null;
+  
+  if (version) {
+    console.log(`📦 Loaded version ${version.alias} (${versionId})`);
+    const envVarKeys = Object.keys(version.environmentVariables || {});
+    if (envVarKeys.length > 0) {
+      console.log(`   Environment variables: ${envVarKeys.join(', ')}`);
+    } else {
+      console.log(`   No environment variables configured`);
+    }
+  } else {
+    console.log(`⚠️ Version not found: ${versionId}`);
+  }
+  
+  return version;
 }
 
 // 获取默认版本ID

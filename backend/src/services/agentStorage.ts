@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { AgentConfig, AgentSession, AgentMessage, BUILTIN_AGENTS } from '../types/agents';
-import { Options, query } from '@anthropic-ai/claude-code';
+import { Options, query } from '@anthropic-ai/claude-agent-sdk';
 
 export class AgentStorage {
   private agentsDir: string;
@@ -337,7 +337,7 @@ export class AgentStorage {
 5. 直接输出标题内容，不要任何前缀或后缀`;
 
         const queryOptions: Options = {
-          customSystemPrompt: "你是一个专门生成简洁标题的助手。请直接输出标题内容，不要任何解释或格式化。",
+          systemPrompt: "你是一个专门生成简洁标题的助手。请直接输出标题内容，不要任何解释或格式化。",
           allowedTools: [],  // No tools needed for title generation
           maxTurns: 1,
           cwd: process.cwd()

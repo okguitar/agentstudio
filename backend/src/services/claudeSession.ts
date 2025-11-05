@@ -1,4 +1,4 @@
-import { query, Options } from '@anthropic-ai/claude-code';
+import { query, Options } from '@anthropic-ai/claude-agent-sdk';
 import type { SDKMessage, SDKSystemMessage } from '@anthropic-ai/claude-agent-sdk';
 import { MessageQueue } from './messageQueue';
 
@@ -112,7 +112,7 @@ export class ClaudeSession {
         console.log(`🔄 Setting resume parameter: ${this.resumeSessionId} for agent: ${this.agentId}`);
         console.log(`📋 Full queryOptions for resume:`, JSON.stringify({
           ...queryOptions,
-          customSystemPrompt: queryOptions.customSystemPrompt ? `${queryOptions.customSystemPrompt.substring(0, 100)}...` : 'none'
+          systemPrompt: typeof queryOptions.systemPrompt === 'string' ? `${queryOptions.systemPrompt.substring(0, 100)}...` : queryOptions.systemPrompt
         }, null, 2));
       } else {
         console.log(`🆕 No resume parameter, starting fresh session for agent: ${this.agentId}`);

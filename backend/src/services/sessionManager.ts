@@ -1,4 +1,4 @@
-import { Options } from '@anthropic-ai/claude-code';
+import { Options } from '@anthropic-ai/claude-agent-sdk';
 import { ClaudeSession } from './claudeSession';
 import * as fs from 'fs';
 import * as path from 'path';

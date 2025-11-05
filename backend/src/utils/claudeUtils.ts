@@ -5,7 +5,7 @@
  * used by both the main agents API and Slack integration.
  */
 
-import { Options } from '@anthropic-ai/claude-code';
+import { Options } from '@anthropic-ai/claude-agent-sdk';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
@@ -81,6 +81,20 @@ export async function getDefaultClaudeVersionEnv(): Promise<Record<string, strin
       if (defaultVersion && defaultVersion.environmentVariables) {
         console.log(`🎯 Using default Claude version: ${defaultVersion.name} (${defaultVersion.alias})`);
 
+        // Log all environment variables
+        const envKeys = Object.keys(defaultVersion.environmentVariables);
+        console.log(`📝 Environment variables from default version:`, envKeys);
+        
+        // Log proxy-related variables
+        const proxyVars = ['HTTP_PROXY', 'HTTPS_PROXY', 'http_proxy', 'https_proxy', 'NO_PROXY', 'no_proxy', 'ALL_PROXY', 'all_proxy'];
+        const configuredProxyVars = proxyVars.filter(key => defaultVersion.environmentVariables![key]);
+        if (configuredProxyVars.length > 0) {
+          console.log(`🌐 Proxy variables in default version:`, configuredProxyVars.reduce((acc, key) => {
+            acc[key] = defaultVersion.environmentVariables![key];
+            return acc;
+          }, {} as Record<string, string>));
+        }
+
         // Check if this version has API keys configured
         const hasApiKey = defaultVersion.environmentVariables.ANTHROPIC_API_KEY ||
                          defaultVersion.environmentVariables.OPENAI_API_KEY ||
@@ -89,6 +103,8 @@ export async function getDefaultClaudeVersionEnv(): Promise<Record<string, strin
         if (hasApiKey) {
           console.log(`✅ Default Claude version has API key configured`);
           return defaultVersion.environmentVariables;
+        } else {
+          console.log(`⚠️ No API keys found in default version environment variables`);
         }
       }
     }
@@ -199,6 +215,25 @@ export async function buildQueryOptions(
             }
             environmentVariables = defaultVersion.environmentVariables || {};
             console.log(`🎯 Using default Claude version: ${defaultVersion.alias} (${executablePath})`);
+            
+            // Log environment variables details
+            const envVarKeys = Object.keys(environmentVariables);
+            if (envVarKeys.length > 0) {
+              console.log(`📝 Environment variables loaded from version config:`, envVarKeys);
+              // Log proxy-related variables specifically
+              const proxyVars = ['HTTP_PROXY', 'HTTPS_PROXY', 'http_proxy', 'https_proxy', 'NO_PROXY', 'no_proxy', 'ALL_PROXY', 'all_proxy'];
+              const loadedProxyVars = proxyVars.filter(key => environmentVariables[key]);
+              if (loadedProxyVars.length > 0) {
+                console.log(`🌐 Proxy variables detected:`, loadedProxyVars.reduce((acc, key) => {
+                  acc[key] = environmentVariables[key];
+                  return acc;
+                }, {} as Record<string, string>));
+              } else {
+                console.log(`🌐 No proxy variables found in environment variables`);
+              }
+            } else {
+              console.log(`⚠️ No environment variables configured for this version`);
+            }
           } else {
             executablePath = await getClaudeExecutablePath();
           }
@@ -215,7 +250,11 @@ export async function buildQueryOptions(
   console.log(`🎯 Using Claude executable path: ${executablePath}`);
   
   const queryOptions: any = {
-    appendSystemPrompt: agent.systemPrompt,
+    systemPrompt: {
+      type: 'preset' as const,
+      preset: 'claude_code' as const,
+      append: agent.systemPrompt
+    },
     allowedTools,
     maxTurns: agent.maxTurns,
     cwd,
@@ -231,9 +270,47 @@ export async function buildQueryOptions(
   // Always merge environment variables with process.env
   // This ensures critical variables like PATH, etc. are available
   queryOptions.env = { ...process.env, ...environmentVariables };
+  
+  // Normalize proxy variables: if uppercase is set, also set lowercase (and vice versa)
+  // This ensures proxy settings work regardless of which form the client library checks first
+  const proxyNormalizations = [
+    ['HTTP_PROXY', 'http_proxy'],
+    ['HTTPS_PROXY', 'https_proxy'],
+    ['NO_PROXY', 'no_proxy'],
+    ['ALL_PROXY', 'all_proxy']
+  ];
+  
+  for (const [upper, lower] of proxyNormalizations) {
+    if (environmentVariables[upper] && !environmentVariables[lower]) {
+      // If uppercase is configured but lowercase isn't, set lowercase to match
+      queryOptions.env[lower] = environmentVariables[upper];
+      console.log(`🔄 Normalized ${upper} → also set ${lower} = ${environmentVariables[upper]}`);
+    } else if (environmentVariables[lower] && !environmentVariables[upper]) {
+      // If lowercase is configured but uppercase isn't, set uppercase to match
+      queryOptions.env[upper] = environmentVariables[lower];
+      console.log(`🔄 Normalized ${lower} → also set ${upper} = ${environmentVariables[lower]}`);
+    }
+  }
 
   if (Object.keys(environmentVariables).length > 0) {
     console.log(`🌍 Using custom environment variables:`, Object.keys(environmentVariables));
+    
+    // Log final proxy configuration that will be used
+    const proxyVars = ['HTTP_PROXY', 'HTTPS_PROXY', 'http_proxy', 'https_proxy', 'NO_PROXY', 'no_proxy', 'ALL_PROXY', 'all_proxy'];
+    const finalProxyVars = proxyVars.filter(key => queryOptions.env[key]);
+    if (finalProxyVars.length > 0) {
+      console.log(`🌐 Final proxy configuration for SDK:`, finalProxyVars.reduce((acc, key) => {
+        acc[key] = queryOptions.env[key];
+        return acc;
+      }, {} as Record<string, string>));
+    }
+    
+    // Log API keys presence (but not values)
+    const apiKeys = ['ANTHROPIC_API_KEY', 'OPENAI_API_KEY', 'ANTHROPIC_AUTH_TOKEN'];
+    const configuredApiKeys = apiKeys.filter(key => queryOptions.env[key]);
+    if (configuredApiKeys.length > 0) {
+      console.log(`🔑 API keys configured:`, configuredApiKeys);
+    }
   } else {
     console.log(`🌍 Using process environment variables (no custom variables defined)`);
   }
