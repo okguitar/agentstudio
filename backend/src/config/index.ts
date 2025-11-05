@@ -17,9 +17,24 @@ export interface AgentStudioConfig {
   allowedFileTypes?: string[];
   linuxOptimizations?: Record<string, any>;
   service?: Record<string, any>;
+  
+  // Slack Integration
+  slackSigningSecret?: string;
+  slackBotToken?: string;
+  slackDefaultAgentId?: string;
+  slackDefaultProject?: string;
+  enableSlackStreaming?: boolean;
 }
 
 let cachedConfig: AgentStudioConfig | null = null;
+
+/**
+ * Clear the configuration cache
+ * Useful for testing or when configuration needs to be reloaded
+ */
+export function clearConfigCache(): void {
+  cachedConfig = null;
+}
 
 /**
  * Load configuration from config file and environment variables
@@ -64,6 +79,13 @@ export async function loadConfig(): Promise<AgentStudioConfig> {
     allowedFileTypes: configData.allowedFileTypes || ['.txt', '.md', '.js', '.ts', '.json', '.html', '.css'],
     linuxOptimizations: configData.linuxOptimizations || {},
     service: configData.service || {},
+    
+    // Slack Integration
+    slackSigningSecret: process.env.SLACK_SIGNING_SECRET || configData.slackSigningSecret,
+    slackBotToken: process.env.SLACK_BOT_TOKEN || configData.slackBotToken,
+    slackDefaultAgentId: process.env.SLACK_DEFAULT_AGENT_ID || configData.slackDefaultAgentId || 'general-chat',
+    slackDefaultProject: process.env.SLACK_DEFAULT_PROJECT || configData.slackDefaultProject,
+    enableSlackStreaming: process.env.ENABLE_SLACK_STREAMING === 'true' || configData.enableSlackStreaming || false,
   };
 
   cachedConfig = finalConfig;
@@ -92,4 +114,33 @@ export async function getServerPort(): Promise<number> {
 export async function getSlidesDir(): Promise<string> {
   const homeDir = process.env.HOME || process.env.USERPROFILE || '';
   return join(homeDir, '.agent-studio', 'data', 'slides');
+}
+
+/**
+ * Unified environment variable getter
+ * Gets values from environment variables or config.json with proper priority
+ * Priority: Environment variables > Config file > Default value
+ * 
+ * @param key - The configuration key to retrieve
+ * @param defaultValue - Optional default value if not found
+ * @returns The configuration value or undefined/default
+ */
+export async function getEnvConfig(key: keyof AgentStudioConfig, defaultValue?: any): Promise<any> {
+  const config = await loadConfig();
+  const value = config[key];
+  return value !== undefined ? value : defaultValue;
+}
+
+/**
+ * Get Slack configuration values
+ */
+export async function getSlackConfig() {
+  const config = await loadConfig();
+  return {
+    signingSecret: config.slackSigningSecret,
+    botToken: config.slackBotToken,
+    defaultAgentId: config.slackDefaultAgentId || 'general-chat',
+    defaultProject: config.slackDefaultProject,
+    enableStreaming: config.enableSlackStreaming || true,
+  };
 }

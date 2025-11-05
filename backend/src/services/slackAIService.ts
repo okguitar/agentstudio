@@ -14,6 +14,7 @@ import { slackThreadMapper } from './slackThreadMapper.js';
 import { slackSessionLock } from './slackSessionLock.js';
 import { SlackClient } from './slackClient.js';
 import { ProjectMetadataStorage } from './projectMetadataStorage.js';
+import { getSlackConfig } from '../config/index.js';
 import type { SlackMessageEvent, SlackAppMentionEvent, ProjectParseResult, SlackFile } from '../types/slack.js';
 import type { ProjectWithAgentInfo } from '../types/projects.js';
 import { buildQueryOptions, getDefaultClaudeVersionEnv } from '../utils/claudeUtils.js';
@@ -280,10 +281,10 @@ export class SlackAIService {
       }
     }
 
-    // Priority 1: Check environment variable
-    const envProjectPath = process.env.SLACK_DEFAULT_PROJECT;
+    // Priority 1: Check configuration (from env or config.json)
+    const { defaultProject: envProjectPath } = await getSlackConfig();
     if (envProjectPath) {
-      console.log(`📂 Found SLACK_DEFAULT_PROJECT env var: ${envProjectPath}`);
+      console.log(`📂 Found SLACK_DEFAULT_PROJECT config: ${envProjectPath}`);
       
       // Check if this path exists in projects
       const allProjects = this.projectStorage.getAllProjects();
@@ -293,7 +294,7 @@ export class SlackAIService {
       
       if (envProject) {
         this.defaultProjectPath = envProject.realPath || envProject.path;
-        console.log(`✅ Using default project from env: ${envProject.name}`);
+        console.log(`✅ Using default project from config: ${envProject.name}`);
         return envProject;
       } else {
         console.warn(`⚠️ SLACK_DEFAULT_PROJECT path not found in projects: ${envProjectPath}`);

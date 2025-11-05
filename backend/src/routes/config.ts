@@ -21,6 +21,12 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
         tokenRefreshThreshold: config.tokenRefreshThreshold,
         corsOrigins: config.corsOrigins,
         corsAllowedDomains: config.corsAllowedDomains,
+        // Slack configuration
+        slackSigningSecret: config.slackSigningSecret ? '***' : undefined,
+        slackBotToken: config.slackBotToken ? '***' : undefined,
+        slackDefaultAgentId: config.slackDefaultAgentId,
+        slackDefaultProject: config.slackDefaultProject,
+        enableSlackStreaming: config.enableSlackStreaming,
       }
     });
   } catch (error) {
@@ -96,7 +102,13 @@ router.post('/', authMiddleware, async (req, res) => {
     }
 
     // Filter sensitive fields and only allow certain updates
-    const allowedUpdates = ['port', 'host', 'adminPassword', 'jwtSecret', 'jwtExpiresIn', 'tokenRefreshThreshold', 'corsOrigins', 'corsAllowedDomains'];
+    const allowedUpdates = [
+      'port', 'host', 'adminPassword', 'jwtSecret', 'jwtExpiresIn', 
+      'tokenRefreshThreshold', 'corsOrigins', 'corsAllowedDomains',
+      // Slack configuration
+      'slackSigningSecret', 'slackBotToken', 'slackDefaultAgentId', 
+      'slackDefaultProject', 'enableSlackStreaming'
+    ];
     const filteredUpdates: any = {};
     
     for (const key of allowedUpdates) {

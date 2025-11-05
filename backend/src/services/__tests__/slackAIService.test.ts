@@ -4,6 +4,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SlackAIService } from '../slackAIService.js';
+import { clearConfigCache } from '../../config/index.js';
 import type { SlackMessageEvent, SlackAppMentionEvent } from '../../types/slack.js';
 
 // Mock dependencies
@@ -168,6 +169,7 @@ describe('SlackAIService', () => {
     it('should use SLACK_DEFAULT_PROJECT env var if set', async () => {
       // Set environment variable
       process.env.SLACK_DEFAULT_PROJECT = '/home/user/test-project';
+      clearConfigCache(); // Clear cache to pick up new env var
 
       const service = new SlackAIService('test-token', 'test-agent');
       const defaultProject = await (service as any).getDefaultProject();
@@ -178,11 +180,13 @@ describe('SlackAIService', () => {
 
       // Clean up
       delete process.env.SLACK_DEFAULT_PROJECT;
+      clearConfigCache();
     });
 
     it('should create slack-app project if no env var is set', async () => {
       // Ensure no env var is set
       delete process.env.SLACK_DEFAULT_PROJECT;
+      clearConfigCache(); // Clear cache to ensure no env var is used
 
       const service = new SlackAIService('test-token', 'test-agent');
       const defaultProject = await (service as any).getDefaultProject();
@@ -193,21 +197,27 @@ describe('SlackAIService', () => {
     });
 
     it('should cache default project path', async () => {
+      clearConfigCache(); // Start fresh
       const service = new SlackAIService('test-token', 'test-agent');
       
       // First call
       const defaultProject1 = await (service as any).getDefaultProject();
+      const cachedPath1 = (service as any).defaultProjectPath;
       
       // Second call should use cache
       const defaultProject2 = await (service as any).getDefaultProject();
+      const cachedPath2 = (service as any).defaultProjectPath;
 
-      expect(defaultProject1).toEqual(defaultProject2);
-      expect((service as any).defaultProjectPath).not.toBeNull();
+      // Verify the cached path is set and consistent
+      expect(cachedPath1).not.toBeNull();
+      expect(cachedPath1).toBe(cachedPath2);
+      expect(defaultProject1?.path).toBe(defaultProject2?.path);
     });
 
     it('should return null if env var path is not found in projects', async () => {
       // Set env var to a path that doesn't exist in mock projects
       process.env.SLACK_DEFAULT_PROJECT = '/nonexistent/path';
+      clearConfigCache(); // Clear cache to pick up new env var
 
       const service = new SlackAIService('test-token', 'test-agent');
       const defaultProject = await (service as any).getDefaultProject();
@@ -218,6 +228,7 @@ describe('SlackAIService', () => {
 
       // Clean up
       delete process.env.SLACK_DEFAULT_PROJECT;
+      clearConfigCache();
     });
   });
 

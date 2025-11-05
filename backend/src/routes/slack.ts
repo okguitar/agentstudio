@@ -8,6 +8,7 @@
 import express from 'express';
 import * as crypto from 'crypto';
 import { SlackAIService } from '../services/slackAIService.js';
+import { getSlackConfig } from '../config/index.js';
 import type {
   SlackWebhookPayload,
   SlackEventCallback,
@@ -55,8 +56,8 @@ function verifySlackSignature(
 /**
  * Middleware to verify Slack requests
  */
-function verifySlackRequest(req: express.Request, res: express.Response, next: express.NextFunction) {
-  const signingSecret = process.env.SLACK_SIGNING_SECRET;
+async function verifySlackRequest(req: express.Request, res: express.Response, next: express.NextFunction) {
+  const { signingSecret } = await getSlackConfig();
 
   if (!signingSecret) {
     console.error('❌ SLACK_SIGNING_SECRET not configured');
@@ -92,16 +93,15 @@ function verifySlackRequest(req: express.Request, res: express.Response, next: e
 /**
  * Initialize Slack AI Service
  */
-function initSlackAIService(): SlackAIService {
+async function initSlackAIService(): Promise<SlackAIService> {
   if (!slackAIService) {
-    const botToken = process.env.SLACK_BOT_TOKEN;
-    const defaultAgentId = process.env.SLACK_DEFAULT_AGENT_ID || 'general-chat';
+    const { botToken, defaultAgentId } = await getSlackConfig();
 
     if (!botToken) {
       throw new Error('SLACK_BOT_TOKEN not configured');
     }
 
-    slackAIService = new SlackAIService(botToken, defaultAgentId);
+    slackAIService = new SlackAIService(botToken, defaultAgentId!);
     console.log('✅ SlackAIService initialized');
   }
 
@@ -135,7 +135,7 @@ router.post('/events', verifySlackRequest, async (req, res) => {
 
       // Process event asynchronously
       try {
-        const service = initSlackAIService();
+        const service = await initSlackAIService();
 
         // Handle different event types
         if (event.type === 'message') {
@@ -175,14 +175,17 @@ router.post('/events', verifySlackRequest, async (req, res) => {
  * GET /api/slack/status
  * Health check endpoint for Slack integration
  */
-router.get('/status', (req, res) => {
-  const isConfigured = !!(process.env.SLACK_BOT_TOKEN && process.env.SLACK_SIGNING_SECRET);
+router.get('/status', async (req, res) => {
+  const { botToken, signingSecret, defaultAgentId, defaultProject, enableStreaming } = await getSlackConfig();
+  const isConfigured = !!(botToken && signingSecret);
 
   res.json({
     configured: isConfigured,
-    botToken: process.env.SLACK_BOT_TOKEN ? 'set' : 'not set',
-    signingSecret: process.env.SLACK_SIGNING_SECRET ? 'set' : 'not set',
-    defaultAgentId: process.env.SLACK_DEFAULT_AGENT_ID || 'general-chat',
+    botToken: botToken ? 'set' : 'not set',
+    signingSecret: signingSecret ? 'set' : 'not set',
+    defaultAgentId,
+    defaultProject: defaultProject ? defaultProject : 'not set',
+    enableStreaming,
     serviceInitialized: slackAIService !== null
   });
 });
