@@ -760,6 +760,10 @@
     "aiTyping": "AI正在输入中",
     "noContentToSend": "无内容可发送",
     "unknownCommand": "未知命令",
+    "noMessages": "暂无消息",
+    "startConversation": "开始新的对话",
+    "newMessages": "新消息",
+    "initializingSession": "正在初始化会话...",
     "errors": {
       "jsonParseError": "解析响应数据时出现错误，可能是由于网络中断或服务器响应格式异常。\n\n**建议操作：**\n- 检查网络连接\n- 重新发送消息\n- 如果问题持续存在，请联系管理员",
       "timeoutError": "请求处理超时，服务器响应时间过长。\n\n**建议操作：**\n- 简化请求内容\n- 稍后重试\n- 检查网络连接状态",

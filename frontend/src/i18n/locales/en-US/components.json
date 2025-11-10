@@ -760,6 +760,10 @@
     "aiTyping": "AI is typing",
     "noContentToSend": "No content to send",
     "unknownCommand": "Unknown command",
+    "noMessages": "No messages yet",
+    "startConversation": "Start a new conversation",
+    "newMessages": "New messages",
+    "initializingSession": "Initializing session...",
     "errors": {
       "jsonParseError": "An error occurred while parsing response data. This may be caused by network interruption or abnormal server response format.\n\n**Suggested Actions:**\n- Check network connection\n- Resend message\n- Contact administrator if the issue persists",
       "timeoutError": "Request processing timeout. Server response time is too long.\n\n**Suggested Actions:**\n- Simplify request content\n- Try again later\n- Check network connection status",

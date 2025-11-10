@@ -1,38 +1,36 @@
-import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { Send, Clock, Square, Image, Wrench, X, Plus, Zap, Cpu, ChevronDown, Terminal, RefreshCw, Wifi, WifiOff } from 'lucide-react';
-import { ImagePreview } from './ImagePreview';
-import { CommandSelector } from './CommandSelector';
-import { ConfirmDialog } from './ConfirmDialog';
-import { SettingsDropdown } from './SettingsDropdown';
+import React, { useState, useRef, useEffect } from 'react';
+import { Clock, Plus, RefreshCw, ChevronDown } from 'lucide-react';
 import { useAgentStore } from '../stores/useAgentStore';
 import { useAgentChat, useAgentSessions, useAgentSessionMessages, useInterruptSession } from '../hooks/useAgents';
-import { useCommands, useProjectCommands } from '../hooks/useCommands';
-import { useClaudeVersions } from '../hooks/useClaudeVersions';
 import { useSessionHeartbeatOnSuccess } from '../hooks/useSessionHeartbeatOnSuccess';
 import { useSessions } from '../hooks/useSessions';
 import { useResponsiveSettings } from '../hooks/useResponsiveSettings';
 import { tabManager } from '../utils/tabManager';
 import { useQueryClient } from '@tanstack/react-query';
-import { ChatMessageRenderer } from './ChatMessageRenderer';
 import { SessionsDropdown } from './SessionsDropdown';
-import { UnifiedToolSelector } from './UnifiedToolSelector';
-import { MobileChatToolbar } from './MobileChatToolbar';
-import { MobileSettingsModal } from './MobileSettingsModal';
-import { useMobileContext } from '../contexts/MobileContext';
-import { McpStatusModal } from './McpStatusModal';
-import { FileBrowser } from './FileBrowser';
-import type { AgentConfig, AgentTool } from '../types/index.js';
+import type { AgentConfig } from '../types/index.js';
 import {
   isCommandTrigger,
-  extractCommandSearch,
-  formatCommandMessage,
-  type CommandType
+  formatCommandMessage
 } from '../utils/commandFormatter';
-import { createCommandHandler, SystemCommand } from '../utils/commandHandler';
+import { createCommandHandler } from '../utils/commandHandler';
 import { eventBus, EVENTS } from '../utils/eventBus';
 import { useTranslation } from 'react-i18next';
 import { showInfo } from '../utils/toast';
 import { loadBackendServices, getCurrentService } from '../utils/backendServiceStorage';
+import { useMobileContext } from '../contexts/MobileContext';
+import { 
+  useImageUpload,
+  useScrollManagement,
+  useCommandCompletion,
+  useToolSelector,
+  useClaudeVersionManager
+} from '../hooks/agentChat';
+import {
+  ChatMessageList,
+  AgentInputArea,
+  createAgentCommandSelectorKeyHandler
+} from './agentChat';
 
 interface AgentChatPanelProps {
   agent: AgentConfig;
@@ -44,60 +42,30 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
   const { t } = useTranslation('components');
   const { isCompactMode } = useResponsiveSettings();
   const { isMobile } = useMobileContext();
-  const [inputMessage, setInputMessage] = useState('');
-  const [showSessions, setShowSessions] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedMcpTools, setSelectedMcpTools] = useState<string[]>([]);
-  const [mcpToolsEnabled, setMcpToolsEnabled] = useState(false);
-  const [selectedImages, setSelectedImages] = useState<Array<{ id: string; file: File; preview: string }>>([]);
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
-  const [isDragOver, setIsDragOver] = useState(false);
-  const [showCommandSelector, setShowCommandSelector] = useState(false);
-  const [commandSearch, setCommandSearch] = useState('');
-  const [selectedCommand, setSelectedCommand] = useState<CommandType | null>(null);
-  const [selectedCommandIndex, setSelectedCommandIndex] = useState(0);
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [confirmMessage, setConfirmMessage] = useState('');
-  const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null);
-  const [showToolSelector, setShowToolSelector] = useState(false);
-  const [selectedRegularTools, setSelectedRegularTools] = useState<string[]>([]);
-  const [permissionMode, setPermissionMode] = useState<'default' | 'acceptEdits' | 'bypassPermissions'>('bypassPermissions');
-  const [selectedModel, setSelectedModel] = useState<string>('sonnet');
-  const [showPermissionDropdown, setShowPermissionDropdown] = useState(false);
-  const [showModelDropdown, setShowModelDropdown] = useState(false);
-  const [selectedClaudeVersion, setSelectedClaudeVersion] = useState<string | undefined>(undefined);
-  const [showVersionDropdown, setShowVersionDropdown] = useState(false);
-  const [showMobileSettings, setShowMobileSettings] = useState(false);
-  const [commandWarning, setCommandWarning] = useState<string | null>(null);
-  const [hasSuccessfulResponse, setHasSuccessfulResponse] = useState(false);
-  const [isNewSession, setIsNewSession] = useState(false);
-  const [isVersionLocked, setIsVersionLocked] = useState(false);
-  const [isStopping, setIsStopping] = useState(false);
-  const [isInitializingSession, setIsInitializingSession] = useState(false);
-const [isLoadingMessages, setIsLoadingMessages] = useState(false);
-  const [showMcpStatusModal, setShowMcpStatusModal] = useState(false);
-  const [showFileBrowser, setShowFileBrowser] = useState(false);
-  const [atSymbolPosition, setAtSymbolPosition] = useState<number | null>(null);
-
-  // Scroll management states
-  const [isUserScrolling, setIsUserScrolling] = useState(false);
-  const [newMessagesCount, setNewMessagesCount] = useState(0);
+  
+  // Refs - 需要在hooks之前定义
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-
-  // Get current backend service name
-  const [currentServiceName, setCurrentServiceName] = useState<string>('默认服务');
-  useEffect(() => {
-    const backendServices = loadBackendServices();
-    const currentService = getCurrentService(backendServices);
-    if (currentService) {
-      setCurrentServiceName(currentService.name);
-    }
-  }, []);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
-  
+
+  // 基础状态
+  const [inputMessage, setInputMessage] = useState('');
+  const [showSessions, setShowSessions] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [confirmMessage, setConfirmMessage] = useState('');
+  const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null);
+  const [showMobileSettings, setShowMobileSettings] = useState(false);
+  const [showMcpStatusModal, setShowMcpStatusModal] = useState(false);
+  const [hasSuccessfulResponse, setHasSuccessfulResponse] = useState(false);
+  const [isNewSession, setIsNewSession] = useState(false);
+  const [isStopping, setIsStopping] = useState(false);
+  const [isInitializingSession, setIsInitializingSession] = useState(false);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+
+  // Agent store状态 - 需要在其他hooks之前  
   const {
     messages,
     isAiTyping,
@@ -116,8 +84,124 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
     clearMessages,
     loadSessionMessages,
     updateMcpStatus,
-
   } = useAgentStore();
+
+  // 使用重构的 hooks
+  const {
+    selectedImages,
+    previewImage,
+    isDragOver,
+    handleImageSelect,
+    handleImageRemove,
+    handleImagePreview,
+    handlePaste,
+    handleDragOver,
+    handleDragLeave,
+    handleDrop,
+    clearImages,
+    setPreviewImage
+  } = useImageUpload({
+    textareaRef,
+    inputMessage,
+    setInputMessage
+  });
+
+  const scrollManagement = useScrollManagement({
+    messagesContainerRef,
+    messagesEndRef,
+    messages,
+    isAiTyping
+  });
+
+  const commandCompletion = useCommandCompletion({
+    projectPath,
+    textareaRef
+  });
+
+  const toolSelector = useToolSelector({
+    agent
+  });
+
+  const claudeVersionManager = useClaudeVersionManager({
+    initialModel: 'claude-3-5-sonnet-20241022'
+  });
+
+  // 从hooks中解构需要的状态和方法
+  const {
+    commandSearch,
+    selectedCommand,
+    selectedCommandIndex,
+    commandWarning,
+    showCommandSelector,
+    showFileBrowser,
+    atSymbolPosition,
+    allCommands,
+    SYSTEM_COMMANDS,
+    userCommands,
+    projectCommands,
+    userCommandsError,
+    projectCommandsError,
+    setSelectedCommand,
+    setSelectedCommandIndex,
+    setCommandWarning,
+    setShowCommandSelector,
+    setShowFileBrowser,
+    setAtSymbolPosition,
+    // handleInputChange,
+    handleCommandSelect,
+    isCommandDefined,
+    getAllAvailableCommands
+  } = commandCompletion;
+
+  const {
+    selectedModel,
+    selectedClaudeVersion,
+    isVersionLocked,
+    claudeVersionsData,
+    availableModels,
+    setSelectedModel,
+    setSelectedClaudeVersion,
+    setIsVersionLocked
+  } = claudeVersionManager;
+
+  const {
+    showToolSelector,
+    selectedRegularTools,
+    selectedMcpTools,
+    mcpToolsEnabled,
+    permissionMode,
+    showPermissionDropdown,
+    showModelDropdown,
+    showVersionDropdown,
+    setShowToolSelector,
+    setSelectedRegularTools,
+    setSelectedMcpTools,
+    setMcpToolsEnabled,
+    setPermissionMode,
+    setShowPermissionDropdown,
+    setShowModelDropdown,
+    setShowVersionDropdown
+  } = toolSelector;
+
+  const {
+    isUserScrolling,
+    newMessagesCount,
+    scrollToBottom,
+    setNewMessagesCount,
+    setIsUserScrolling
+  } = scrollManagement;
+
+  
+  // Get current backend service name
+  const [currentServiceName, setCurrentServiceName] = useState<string>('默认服务');
+  useEffect(() => {
+    const backendServices = loadBackendServices();
+    const currentService = getCurrentService(backendServices);
+    if (currentService) {
+      setCurrentServiceName(currentService.name);
+    }
+  }, []);
+  
   
   const queryClient = useQueryClient();
   const agentChatMutation = useAgentChat();
@@ -153,121 +237,9 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
     }
   }, [currentSessionId, agent.id]);
   
-  // Fetch commands for keyboard navigation (with search filter)
-  const { data: userCommandsFiltered = [], error: userCommandsError } = useCommands({ scope: 'user', search: commandSearch });
-  const { data: projectCommandsFiltered = [], error: projectCommandsError } = useProjectCommands({
-    projectId: projectPath || '', // Pass projectPath directly as it will be detected as path
-    search: commandSearch
-  });
-
-  // Fetch complete command lists for detection (without search filter)
-  const { data: userCommands = [] } = useCommands({ scope: 'user' });
-  const { data: projectCommands = [] } = useProjectCommands({
-    projectId: projectPath || '' // Pass projectPath directly as it will be detected as path
-  });
 
     
-  // Claude版本数据
-  const { data: claudeVersionsData } = useClaudeVersions();
 
-  // 根据选择的版本获取可用模型
-  const availableModels = useMemo(() => {
-    if (!claudeVersionsData?.versions) return [];
-
-    // 如果选择了版本，返回该版本的模型
-    if (selectedClaudeVersion) {
-      const version = claudeVersionsData.versions.find(v => v.id === selectedClaudeVersion);
-      return version?.models || [];
-    }
-
-    // 如果没有选择版本，使用默认版本的模型
-    const defaultVersion = claudeVersionsData.versions.find(
-      v => v.id === claudeVersionsData.defaultVersionId
-    ) || claudeVersionsData.versions[0];
-
-    return defaultVersion?.models || [];
-  }, [claudeVersionsData, selectedClaudeVersion]);
-
-  // 当可用模型变化时，确保当前选择的模型仍然有效
-  useEffect(() => {
-    if (availableModels.length > 0) {
-      const currentModelValid = availableModels.some(m => m.id === selectedModel);
-      if (!currentModelValid) {
-        // 当前选择的模型不在可用列表中，切换到第一个可用模型
-        setSelectedModel(availableModels[0].id);
-      }
-    }
-  }, [availableModels, selectedModel]);
-
-  // System commands definition
-  const SYSTEM_COMMANDS: SystemCommand[] = [
-    {
-      id: 'init',
-      name: 'init',
-      description: t('systemCommands.init.description'),
-      content: '/init',
-      scope: 'system',
-      isSystem: true
-    },
-    {
-      id: 'clear',
-      name: 'clear',
-      description: t('systemCommands.clear.description'),
-      content: '/clear',
-      scope: 'system',
-      isSystem: true
-    },
-    {
-      id: 'compact',
-      name: 'compact',
-      description: t('systemCommands.compact.description'),
-      content: '/compact',
-      scope: 'system',
-      isSystem: true
-    },
-    {
-      id: 'agents',
-      name: 'agents',
-      description: t('systemCommands.agents.description'),
-      content: '/agents',
-      scope: 'system',
-      isSystem: true
-    },
-    {
-      id: 'settings',
-      name: 'settings',
-      description: t('systemCommands.settings.description'),
-      content: '/settings',
-      scope: 'system',
-      isSystem: true
-    },
-    {
-      id: 'help',
-      name: 'help',
-      description: t('systemCommands.help.description'),
-      content: '/help',
-      scope: 'system',
-      isSystem: true
-    },
-  ];
-
-  // Helper function to check if a command is defined
-  const isCommandDefined = (commandName: string) => {
-    const systemCommand = SYSTEM_COMMANDS.find(cmd => cmd.name === commandName);
-    const projectCommand = projectCommands.find(cmd => cmd.name === commandName);
-    const userCommand = userCommands.find(cmd => cmd.name === commandName);
-    
-    return !!(systemCommand || projectCommand || userCommand);
-  };
-
-  // Helper function to get all available command names for error messages
-  const getAllAvailableCommands = () => {
-    const systemCommands = SYSTEM_COMMANDS.map(cmd => cmd.content);
-    const projectCommandsList = projectCommands.map(cmd => `/${cmd.name}`);
-    const userCommandsList = userCommands.map(cmd => `/${cmd.name}`);
-    
-    return [...systemCommands, ...projectCommandsList, ...userCommandsList].join(', ');
-  };
 
   // Check if commands failed to load (likely authentication issue)
   const hasCommandsLoadError = userCommandsError || projectCommandsError;
@@ -286,42 +258,7 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
     return false;
   };
 
-  // Memoize allCommands to prevent unnecessary re-renders (for command selector)
-  const allCommands = useMemo(() => {
-    // Filter system commands based on search term
-    const filteredSystemCommands = SYSTEM_COMMANDS.filter(cmd =>
-      cmd.name.toLowerCase().includes(commandSearch.toLowerCase()) ||
-      cmd.description.toLowerCase().includes(commandSearch.toLowerCase())
-    );
 
-    // Combine all commands (use filtered lists for selector)
-    return [
-      ...filteredSystemCommands,
-      ...projectCommandsFiltered,
-      ...userCommandsFiltered,
-    ];
-  }, [userCommandsFiltered, projectCommandsFiltered, commandSearch]);
-
-  // Memoize rendered messages to prevent unnecessary re-renders
-  const renderedMessages = useMemo(() => {
-    return messages.map((message) => (
-      <div
-        key={message.id}
-        className="px-4"
-      >
-        <div
-          className={`text-sm leading-relaxed break-words overflow-hidden ${
-            message.role === 'user'
-              ? 'text-white p-3 rounded-lg'
-              : 'text-gray-800 dark:text-gray-200'
-          }`}
-          style={message.role === 'user' ? { backgroundColor: 'hsl(var(--primary))', color: 'white' } : {}}
-        >
-          <ChatMessageRenderer message={message as any} />
-        </div>
-      </div>
-    ));
-  }, [messages]);
 
   // Reset selected index when commands change
   useEffect(() => {
@@ -334,243 +271,17 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
     });
   }, [allCommands.length]);
 
-  // Initialize tool selector with agent's preset tools
-  useEffect(() => {
-    if (agent?.allowedTools?.length > 0) {
-      const enabledTools = agent.allowedTools.filter((tool: AgentTool) => tool.enabled);
-      
-      // Separate regular tools and MCP tools
-      const regularTools: string[] = [];
-      const mcpTools: string[] = [];
-      
-      enabledTools.forEach((tool: AgentTool) => {
-        if (tool.name.includes('.') && !tool.name.startsWith('mcp__')) {
-          // MCP tool format: serverName.toolName -> mcp__serverName__toolName
-          const [serverName, toolName] = tool.name.split('.');
-          const mcpToolId = `mcp__${serverName}__${toolName}`;
-          mcpTools.push(mcpToolId);
-        } else if (!tool.name.startsWith('mcp__')) {
-          // Regular tool
-          regularTools.push(tool.name);
-        } else {
-          // Already in mcp__ format
-          mcpTools.push(tool.name);
-        }
-      });
-      
-      // Initialize selected tools with agent's preset tools
-      setSelectedRegularTools(prev => {
-        const newTools = [...new Set([...prev, ...regularTools])];
-        return newTools;
-      });
-      
-      if (mcpTools.length > 0) {
-        setMcpToolsEnabled(true);
-        setSelectedMcpTools(prev => {
-          const newTools = [...new Set([...prev, ...mcpTools])];
-          return newTools;
-        });
-      }
-    }
-  }, [agent?.allowedTools]);
 
 
-  // 在光标位置插入占位符
-  const insertPlaceholderAtCursor = (placeholder: string) => {
-    if (!textareaRef.current) return;
 
-    const textarea = textareaRef.current;
-    const start = textarea.selectionStart || 0;
-    const end = textarea.selectionEnd || 0;
-    const currentValue = inputMessage;
+  // 包装函数以处理事件类型
+  // const handleTextareaChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  //   handleInputChange(e.target.value);
+  // }, [handleInputChange]);
 
-    // 在光标位置插入占位符
-    const newValue = currentValue.substring(0, start) + placeholder + currentValue.substring(end);
-    setInputMessage(newValue);
-
-    // 设置光标位置到占位符之后
-    setTimeout(() => {
-      textarea.selectionStart = textarea.selectionEnd = start + placeholder.length;
-      textarea.focus();
-    }, 0);
-  };
-
+  // 适配器函数处理 FileBrowser 的回调
   // Image handling functions
-  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files) return;
 
-    const imageFiles = Array.from(files).filter(file =>
-      file.type.startsWith('image/') &&
-      ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)
-    );
-
-    imageFiles.forEach(file => {
-      const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        if (e.target?.result) {
-          setSelectedImages(prev => {
-            const newImages = [...prev, {
-              id,
-              file,
-              preview: e.target!.result as string
-            }];
-
-            // 在光标位置插入占位符 [imageN]
-            const imageIndex = newImages.length;
-            const placeholder = `[image${imageIndex}]`;
-            insertPlaceholderAtCursor(placeholder);
-
-            return newImages;
-          });
-        }
-      };
-      reader.readAsDataURL(file);
-    });
-
-    // Clear the input
-    if (event.target) {
-      event.target.value = '';
-    }
-  };
-
-  const handleImageRemove = (id: string) => {
-    setSelectedImages(prev => prev.filter(img => img.id !== id));
-  };
-
-  const handleImagePreview = (preview: string) => {
-    setPreviewImage(preview);
-  };
-
-  const handlePaste = (event: React.ClipboardEvent) => {
-    const items = event.clipboardData?.items;
-    if (!items) return;
-
-    let hasImage = false;
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i];
-      if (item.type.startsWith('image/')) {
-        hasImage = true;
-        const file = item.getAsFile();
-        if (file) {
-          const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            if (e.target?.result) {
-              setSelectedImages(prev => {
-                const newImages = [...prev, {
-                  id,
-                  file,
-                  preview: e.target!.result as string
-                }];
-
-                // 在光标位置插入占位符 [imageN]
-                const imageIndex = newImages.length;
-                const placeholder = `[image${imageIndex}]`;
-                insertPlaceholderAtCursor(placeholder);
-
-                return newImages;
-              });
-            }
-          };
-          reader.readAsDataURL(file);
-        }
-      }
-    }
-
-    // 如果粘贴的是图片,阻止默认行为(防止插入DataURL)
-    if (hasImage) {
-      event.preventDefault();
-    }
-  };
-
-  const handleDragOver = (event: React.DragEvent) => {
-    event.preventDefault();
-    setIsDragOver(true);
-  };
-
-  const handleDragLeave = (event: React.DragEvent) => {
-    event.preventDefault();
-    setIsDragOver(false);
-  };
-
-  const handleDrop = (event: React.DragEvent) => {
-    event.preventDefault();
-    setIsDragOver(false);
-
-    const files = event.dataTransfer?.files;
-    if (!files) return;
-
-    const imageFiles = Array.from(files).filter(file =>
-      file.type.startsWith('image/') &&
-      ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)
-    );
-
-    imageFiles.forEach(file => {
-      const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        if (e.target?.result) {
-          setSelectedImages(prev => {
-            const newImages = [...prev, {
-              id,
-              file,
-              preview: e.target!.result as string
-            }];
-
-            // 在光标位置插入占位符 [imageN]
-            const imageIndex = newImages.length;
-            const placeholder = `[image${imageIndex}]`;
-            insertPlaceholderAtCursor(placeholder);
-
-            return newImages;
-          });
-        }
-      };
-      reader.readAsDataURL(file);
-    });
-  };
-
-  // Check if scroll position is near bottom
-  const isNearBottom = useCallback((threshold = 100) => {
-    if (!messagesContainerRef.current) return false;
-    const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
-    return scrollHeight - scrollTop - clientHeight < threshold;
-  }, []);
-
-  // Scroll to bottom
-  const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
-    messagesEndRef.current?.scrollIntoView({ behavior });
-  }, []);
-
-  // Handle scroll event
-  const handleScroll = useCallback(() => {
-    const nearBottom = isNearBottom();
-    setIsUserScrolling(!nearBottom);
-    if (nearBottom) {
-      setNewMessagesCount(0);
-    }
-  }, [isNearBottom]);
-
-  // Add scroll event listener
-  useEffect(() => {
-    const container = messagesContainerRef.current;
-    if (container) {
-      container.addEventListener('scroll', handleScroll);
-      return () => container.removeEventListener('scroll', handleScroll);
-    }
-  }, [handleScroll]);
-
-  // Conditional auto-scroll when messages update
-  useEffect(() => {
-    if (!isUserScrolling) {
-      scrollToBottom();
-    } else {
-      // User is scrolling, increment new messages count
-      setNewMessagesCount(prev => prev + 1);
-    }
-  }, [messages, isAiTyping, isUserScrolling, scrollToBottom]);
 
   const handleSendMessage = async () => {
     if ((!inputMessage.trim() && selectedImages.length === 0) || isAiTyping) return;
@@ -667,7 +378,7 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
           });
           
           setInputMessage('');
-          setSelectedImages([]);
+          clearImages();
           setSelectedCommand(null);
           setShowCommandSelector(false);
           
@@ -686,7 +397,7 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
     }
     
     setInputMessage('');
-    setSelectedImages([]);
+    clearImages();
     setSelectedCommand(null);
     setShowCommandSelector(false);
     
@@ -1393,189 +1104,62 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Handle Escape key for file browser
-    if (e.key === 'Escape' && showFileBrowser) {
-      e.preventDefault();
-      setShowFileBrowser(false);
-      setAtSymbolPosition(null);
-      return;
-    }
-    
-    // Handle Enter key for both command selector and regular input
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      
-      // If command selector is showing and has commands
-      if (showCommandSelector && allCommands.length > 0) {
-        // Auto-complete to selected command if available
-        const selectedCmd = allCommands[selectedCommandIndex];
-        if (selectedCmd) {
-          handleCommandSelect(selectedCmd);
-        } else {
-          handleSendMessage();
-        }
-        return;
-      }
-      
-      // Regular enter key handling or command selector with no results
-      // Check for undefined command and show warning
-      if (isCommandTrigger(inputMessage)) {
-        const commandName = inputMessage.slice(1).split(' ')[0].toLowerCase();
-        if (!isCommandDefined(commandName)) {
-          // If commands failed to load, provide a more helpful error message
-          if (hasCommandsLoadError) {
-            setCommandWarning(t('agentChat.commandsLoadErrorWarning', {
-              command: commandName,
-              commands: SYSTEM_COMMANDS.map(cmd => cmd.content).join(', '),
-              errorMessage: userCommandsError?.message || projectCommandsError?.message || 'Unknown error'
-            }));
-          } else {
-            setCommandWarning(t('agentChat.unknownCommandWarning', {
-              command: commandName,
-              commands: getAllAvailableCommands()
-            }));
+  // 为 AgentCommandSelector 创建键盘处理器
+  const agentCommandSelectorKeyHandler = createAgentCommandSelectorKeyHandler({
+    showCommandSelector,
+    showFileBrowser,
+    commandSearch,
+    selectedCommand,
+    selectedCommandIndex,
+    atSymbolPosition,
+    projectPath,
+    textareaRef,
+    inputMessage,
+    allCommands,
+    onCommandSelect: handleCommandSelect,
+    onSetInputMessage: setInputMessage,
+    onSetShowCommandSelector: setShowCommandSelector,
+    onSetSelectedCommandIndex: setSelectedCommandIndex,
+    onSetShowFileBrowser: setShowFileBrowser,
+    onSetAtSymbolPosition: setAtSymbolPosition,
+    onHandleKeyDown: (e: React.KeyboardEvent) => {
+      // 处理非命令选择器相关的键盘事件
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        
+        // Check for undefined command and show warning
+        if (isCommandTrigger(inputMessage)) {
+          const commandName = inputMessage.slice(1).split(' ')[0].toLowerCase();
+          if (!isCommandDefined(commandName)) {
+            // If commands failed to load, provide a more helpful error message
+            if (hasCommandsLoadError) {
+              setCommandWarning(t('agentChat.commandsLoadErrorWarning', {
+                command: commandName,
+                commands: SYSTEM_COMMANDS.map(cmd => cmd.content).join(', '),
+                errorMessage: userCommandsError?.message || projectCommandsError?.message || 'Unknown error'
+              }));
+            } else {
+              setCommandWarning(t('agentChat.unknownCommandWarning', {
+                command: commandName,
+                commands: getAllAvailableCommands()
+              }));
+            }
+            return;
           }
-          return;
         }
+        
+        handleSendMessage();
+        return;
       }
-      
-      handleSendMessage();
-      return;
     }
+  });
 
-    // Handle command selector navigation (non-Enter keys)
-    if (showCommandSelector && allCommands.length > 0) {
-      // Arrow keys or Ctrl+P/N for navigation
-      if (e.key === 'ArrowUp' || (e.ctrlKey && e.key === 'p')) {
-        e.preventDefault();
-        setSelectedCommandIndex(prev => 
-          prev > 0 ? prev - 1 : allCommands.length - 1
-        );
-        return;
-      }
-      
-      if (e.key === 'ArrowDown' || (e.ctrlKey && e.key === 'n')) {
-        e.preventDefault();
-        setSelectedCommandIndex(prev => 
-          prev < allCommands.length - 1 ? prev + 1 : 0
-        );
-        return;
-      }
-      
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        setShowCommandSelector(false);
-        return;
-      }
-    }
-  };
-
-  const handleKeyPress = useCallback((_e: React.KeyboardEvent) => {
-    // Enter key is now fully handled in handleKeyDown
-    // This function is kept for potential future use
-  }, []);
+  // const handleKeyPress = useCallback((_e: React.KeyboardEvent) => {
+  //   // Enter key is now fully handled in handleKeyDown
+  //   // This function is kept for potential future use
+  // }, []);
   
-  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const value = e.target.value;
-    setInputMessage(value);
-    
-    // Clear command warning when input changes
-    if (commandWarning) {
-      setCommandWarning(null);
-    }
-    
-    // Check for @ symbol trigger immediately
-    if (value.length > 0 && value[value.length - 1] === '@') {
-      // Check if @ is at start of line or preceded by whitespace
-      const textBeforeAt = value.substring(0, value.length - 1);
-      
-      if (textBeforeAt.length === 0 || /\s$/.test(textBeforeAt)) {
-        setAtSymbolPosition(value.length - 1);
-        setShowFileBrowser(true);
-        // Blur the textarea to prevent further input
-        textareaRef.current?.blur();
-        return;
-      }
-    }
-    
-    // Check if we should show command selector
-    if (isCommandTrigger(value)) {
-      const search = extractCommandSearch(value);
-      // Only update if search term actually changed
-      if (search !== commandSearch) {
-        setCommandSearch(search);
-        setSelectedCommandIndex(0);
-      }
-      if (!showCommandSelector) {
-        setShowCommandSelector(true);
-      }
-    } else {
-      if (showCommandSelector) {
-        setShowCommandSelector(false);
-        setSelectedCommand(null);
-        setSelectedCommandIndex(0);
-      }
-    }
-  }, [commandWarning, commandSearch, showCommandSelector, showFileBrowser]);
   
-  const handleCommandSelect = (command: CommandType) => {
-    // 命令选择器只是帮助填入命令名称，不立即执行
-    setSelectedCommand(command);
-    // 只填入命令名称（带斜杠），不填入完整的 content
-    setInputMessage(`/${command.name}`);
-    setShowCommandSelector(false);
-
-    // 让用户手动点击发送来执行命令
-    if (textareaRef.current) {
-      textareaRef.current.focus();
-    }
-  };
-  
-  const handleCommandSelectorClose = () => {
-    setShowCommandSelector(false);
-  };
-  
-  const handleFileSelect = (filePath: string, _isDirectory: boolean) => {
-    if (!textareaRef.current || atSymbolPosition === null) return;
-    
-    // Convert absolute path to relative path (without leading ./)
-    let relativePath = filePath;
-    if (projectPath && filePath.startsWith(projectPath)) {
-      relativePath = filePath.slice(projectPath.length);
-      // Remove leading slash if present
-      if (relativePath.startsWith('/')) {
-        relativePath = relativePath.slice(1);
-      }
-    }
-    
-    // Replace @ symbol with @ + selected file path + space
-    const beforeAt = inputMessage.substring(0, atSymbolPosition);
-    const afterAt = inputMessage.substring(atSymbolPosition + 1);
-    const newValue = beforeAt + '@' + relativePath + ' ' + afterAt;
-    
-    setInputMessage(newValue);
-    setShowFileBrowser(false);
-    setAtSymbolPosition(null);
-    
-    // Set cursor position after the inserted file path and space
-    setTimeout(() => {
-      if (textareaRef.current) {
-        const newCursorPosition = atSymbolPosition + 1 + relativePath.length + 1; // +1 for @ symbol, +1 for space
-        textareaRef.current.selectionStart = textareaRef.current.selectionEnd = newCursorPosition;
-        textareaRef.current.focus();
-      }
-    }, 0);
-  };
-  
-  const handleFileBrowserClose = () => {
-    setShowFileBrowser(false);
-    setAtSymbolPosition(null);
-    // Re-focus the textarea when file browser is closed
-    setTimeout(() => {
-      textareaRef.current?.focus();
-    }, 0);
-  };
   
   const handleConfirmDialog = () => {
     if (confirmAction) {
@@ -1592,15 +1176,6 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
     setConfirmAction(null);
   };
   
-  const getInputPosition = () => {
-    if (!textareaRef.current) return { top: 0, left: 0 };
-    
-    const rect = textareaRef.current.getBoundingClientRect();
-    return {
-      top: rect.top, // CommandSelector will calculate the actual position
-      left: rect.left
-    };
-  };
 
   const adjustTextareaHeight = () => {
     const textarea = textareaRef.current;
@@ -1787,37 +1362,18 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
             </div>
           </div>
         ) : (
-          renderedMessages
-        )}
-
-        {/* 加载指示器：会话初始化期间只显示一个，避免重复 */}
-        {!isInitializingSession && (isAiTyping || isStopping) && (
-          <div className="flex flex-col items-center py-2 space-y-2">
-            <div className="flex space-x-1">
-              <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce"></div>
-              <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-              <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-            </div>
-            {isStopping && (
-              <div className="text-xs text-gray-500 dark:text-gray-400">
-                {t('agentChat.stopping')}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* 会话初始化指示器：优先级最高 */}
-        {isInitializingSession && (
-          <div className="flex flex-col items-center py-2 space-y-2">
-            <div className="flex space-x-1">
-              <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce"></div>
-              <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-              <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-            </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">
-              {t('agentChat.initializingSession')}
-            </div>
-          </div>
+          <ChatMessageList
+            messages={messages}
+            isLoadingMessages={isLoadingMessages}
+            isInitializingSession={isInitializingSession}
+            isAiTyping={isAiTyping}
+            isStopping={isStopping}
+            messagesContainerRef={messagesContainerRef}
+            messagesEndRef={messagesEndRef}
+            isUserScrolling={isUserScrolling}
+            newMessagesCount={newMessagesCount}
+            onScrollToBottom={scrollToBottom}
+          />
         )}
 
         <div ref={messagesEndRef} />
@@ -1840,596 +1396,102 @@ const [isLoadingMessages, setIsLoadingMessages] = useState(false);
         )}
       </div>
 
-      {/* Mobile vs Desktop Input Area */}
-    {isMobile ? (
-      /* Mobile Chat Toolbar */
-      <div
-        className={`flex-shrink-0 ${isDragOver ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700' : ''}`}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-      >
-        {/* Drag Over Indicator */}
-        {isDragOver && (
-          <div className="absolute inset-0 bg-blue-100 dark:bg-blue-900/50 bg-opacity-75 flex items-center justify-center z-10 pointer-events-none">
-            <div className="text-blue-600 dark:text-blue-300 text-lg font-medium flex items-center space-x-2">
-              <Image className="w-6 h-6" />
-              <span>{t('agentChat.dropImageHere')}</span>
-            </div>
-          </div>
-        )}
-
-        {/* Command Warning */}
-        {commandWarning && (
-          <div className="px-3 pt-2 pb-1">
-            <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-2 flex items-start space-x-2">
-              <div className="flex-shrink-0">
-                <svg className="w-4 h-4 text-red-600 dark:text-red-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <p className="text-xs text-red-800 dark:text-red-300">{commandWarning}</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <MobileChatToolbar
-          inputMessage={inputMessage}
-          onInputChange={(value) => setInputMessage(value)}
-          onSend={handleSendMessage}
-          selectedImages={selectedImages}
-          onImageRemove={handleImageRemove}
-          onImageSelect={(files) => files && handleImageSelect({ target: { files } } as any)}
-          isAiTyping={isAiTyping}
-          showToolSelector={showToolSelector}
-          onToolSelectorToggle={() => setShowToolSelector(!showToolSelector)}
-          hasSelectedTools={selectedRegularTools.length > 0 || (mcpToolsEnabled && selectedMcpTools.length > 0)}
-          onStopAi={() => abortControllerRef.current?.abort()}
-          onSettingsOpen={() => setShowMobileSettings(true)}
-        />
-
-
-        {/* Tool Selector */}
-        <UnifiedToolSelector
-          isOpen={showToolSelector}
-          onClose={() => setShowToolSelector(false)}
-          selectedRegularTools={selectedRegularTools}
-          onRegularToolsChange={setSelectedRegularTools}
-          selectedMcpTools={selectedMcpTools}
-          onMcpToolsChange={setSelectedMcpTools}
-          mcpToolsEnabled={mcpToolsEnabled}
-          onMcpEnabledChange={setMcpToolsEnabled}
-          presetTools={agent.allowedTools}
-        />
-      </div>
-    ) : (
-      /* Desktop Input Area - Fixed */
-      <div
-        className={`flex-shrink-0 border-t border-gray-200 dark:border-gray-700 ${isDragOver ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700' : ''}`}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-      >
-        {/* Selected Images Preview */}
-        {selectedImages.length > 0 && (
-          <div className="p-4 pb-2 border-b border-gray-100 dark:border-gray-700">
-            <div className="flex flex-wrap gap-2">
-              {selectedImages.map((img) => (
-                <div key={img.id} className="relative group">
-                  <img
-                    src={img.preview}
-                    alt={t('agentChat.imagePreview')}
-                    className="w-16 h-16 object-cover rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer hover:opacity-80 transition-opacity"
-                    onClick={() => handleImagePreview(img.preview)}
-                  />
-                  <button
-                    onClick={() => handleImageRemove(img.id)}
-                    className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs hover:bg-red-600"
-                    title={t('agentChat.deleteImage')}
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Drag Over Indicator */}
-        {isDragOver && (
-          <div className="absolute inset-0 bg-blue-100 dark:bg-blue-900/50 bg-opacity-75 flex items-center justify-center z-10 pointer-events-none">
-            <div className="text-blue-600 dark:text-blue-300 text-lg font-medium flex items-center space-x-2">
-              <Image className="w-6 h-6" />
-              <span>{t('agentChat.dropImageHere')}</span>
-            </div>
-          </div>
-        )}
-
-        {/* Command Warning */}
-        {commandWarning && (
-          <div className="px-4 pt-3 pb-2">
-            <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-3 flex items-start space-x-2">
-              <div className="flex-shrink-0">
-                <svg className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <p className="text-sm text-red-800 dark:text-red-300">{commandWarning}</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Text Input */}
-        <div className="p-4 pb-2">
-          <textarea
-            ref={textareaRef}
-            value={inputMessage}
-            onChange={handleInputChange}
-            onKeyDown={handleKeyDown}
-            onKeyPress={handleKeyPress}
-            onPaste={handlePaste}
-            placeholder={
-              selectedImages.length > 0
-                ? t('agentChat.addDescription')
-                : t('agentChat.inputPlaceholder')
-            }
-            rows={1}
-            className="w-full resize-none border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 disabled:bg-gray-50 dark:disabled:bg-gray-700 disabled:text-gray-500 dark:disabled:text-gray-400"
-            style={{
-              '--focus-ring-color': 'hsl(var(--primary))',
-              minHeight: '44px',
-              maxHeight: '120px'
-            } as React.CSSProperties}
-            disabled={isAiTyping}
-          />
-        </div>
-
-        {/* Toolbar */}
-        <div className="px-4 pb-4 pt-2 border-t border-gray-100 dark:border-gray-700">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-1">
-              {/* Hidden file input */}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/gif,image/webp"
-                multiple
-                onChange={handleImageSelect}
-                className="hidden"
-              />
-
-              {/* 工具选择按钮 */}
-              <div className="relative">
-                <button
-                  onClick={() => setShowToolSelector(!showToolSelector)}
-                  className={`p-2 transition-colors rounded-lg ${
-                    showToolSelector || (selectedRegularTools.length > 0 || selectedMcpTools.length > 0)
-                      ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50'
-                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                  }`}
-                  title={t('agentChat.toolSelection')}
-                  disabled={isAiTyping}
-                >
-                  <Wrench className="w-4 h-4" />
-                </button>
-
-                {/* 显示工具数量标识 */}
-                {(selectedRegularTools.length > 0 || (mcpToolsEnabled && selectedMcpTools.length > 0)) && (
-                  <span className="absolute -top-1 -right-1 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center bg-blue-600 dark:bg-blue-500">
-                    {selectedRegularTools.length + (mcpToolsEnabled ? selectedMcpTools.filter(t => t.startsWith('mcp__') && t.split('__').length === 3).length : 0)}
-                  </span>
-                )}
-
-                {/* 工具选择器 - 使用新的UnifiedToolSelector */}
-                <UnifiedToolSelector
-                  isOpen={showToolSelector}
-                  onClose={() => setShowToolSelector(false)}
-                  selectedRegularTools={selectedRegularTools}
-                  onRegularToolsChange={setSelectedRegularTools}
-                  selectedMcpTools={selectedMcpTools}
-                  onMcpToolsChange={setSelectedMcpTools}
-                  mcpToolsEnabled={mcpToolsEnabled}
-                  onMcpEnabledChange={setMcpToolsEnabled}
-                  presetTools={agent.allowedTools}
-                />
-              </div>
-
-              {/* Tool buttons */}
-              <div className="relative">
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className={`p-2 transition-colors rounded-lg ${
-                    selectedImages.length > 0
-                      ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50'
-                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                  }`}
-                  title={selectedImages.length > 0 ? t('agentChat.imageSelection') + ` (${t('agentChat.selectedCount', { count: selectedImages.length })})` : t('agentChat.imageSelection')}
-                  disabled={isAiTyping}
-                >
-                  <Image className="w-4 h-4" />
-                </button>
-                {selectedImages.length > 0 && (
-                  <span className="absolute -top-1 -right-1 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center bg-blue-600 dark:bg-blue-500">
-                    {selectedImages.length}
-                  </span>
-                )}
-              </div>
-
-              {/* MCP 状态指示器 */}
-              {mcpToolsEnabled && (
-                <div className="relative">
-                  <button
-                    onClick={() => setShowMcpStatusModal(true)}
-                    className={`p-2 transition-colors rounded-lg ${
-                      mcpStatus.hasError
-                        ? 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50'
-                        : 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-900/50'
-                    }`}
-                    title={
-                      mcpStatus.hasError 
-                        ? `MCP 工具状态异常: ${mcpStatus.lastError || '连接失败'}`
-                        : 'MCP 工具运行正常'
-                    }
-                  >
-                    {mcpStatus.hasError ? (
-                      <WifiOff className="w-4 h-4" />
-                    ) : (
-                      <Wifi className="w-4 h-4" />
-                    )}
-                  </button>
-                  
-                  {/* 错误指示器 */}
-                  {mcpStatus.hasError && (
-                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full flex items-center justify-center">
-                      <span className="w-1.5 h-1.5 bg-white rounded-full"></span>
-                    </span>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center space-x-2">
-              {/* 窄屏模式：设置下拉菜单 */}
-              {isCompactMode ? (
-                <SettingsDropdown
-                  permissionMode={permissionMode}
-                  onPermissionModeChange={setPermissionMode}
-                  selectedClaudeVersion={selectedClaudeVersion}
-                  onClaudeVersionChange={setSelectedClaudeVersion}
-                  selectedModel={selectedModel}
-                  onModelChange={setSelectedModel}
-                  availableModels={availableModels}
-                  claudeVersionsData={claudeVersionsData}
-                  isVersionLocked={isVersionLocked}
-                  isAiTyping={isAiTyping}
-                />
-              ) : (
-                <>
-                  {/* 权限模式下拉 */}
-                  <div className="relative dropdown-container">
-                    <button
-                      onClick={() => setShowPermissionDropdown(!showPermissionDropdown)}
-                      className={`flex items-center space-x-1 px-3 py-2 text-sm rounded-lg transition-colors ${
-                        permissionMode !== 'default'
-                          ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50'
-                          : 'text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600'
-                      }`}
-                      disabled={isAiTyping}
-                    >
-                      <Zap className="w-4 h-4" />
-                      <span className="text-xs">{t(`agentChat.permissionMode.${permissionMode}`)}</span>
-                      <ChevronDown className="w-3 h-3" />
-                    </button>
-
-                    {showPermissionDropdown && (
-                      <div className="absolute bottom-full left-0 mb-2 w-32 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
-                        {[
-                          { value: 'default', label: t('agentChat.permissionMode.default') },
-                          { value: 'acceptEdits', label: t('agentChat.permissionMode.acceptEdits') },
-                          { value: 'bypassPermissions', label: t('agentChat.permissionMode.bypassPermissions') },
-                          // { value: 'plan', label: t('agentChat.permissionMode.plan') }
-                        ].map(option => (
-                          <button
-                            key={option.value}
-                            onClick={() => {
-                              setPermissionMode(option.value as any);
-                              setShowPermissionDropdown(false);
-                            }}
-                            className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 first:rounded-t-lg last:rounded-b-lg ${
-                              permissionMode === option.value ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'
-                            }`}
-                          >
-                            {option.label}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Claude版本选择下拉 - 只在有多个版本时显示，位置移到模型选择之前 */}
-                  {claudeVersionsData?.versions && claudeVersionsData.versions.length > 1 && (
-                    <div className="relative dropdown-container">
-                      <button
-                        onClick={() => !isVersionLocked && setShowVersionDropdown(!showVersionDropdown)}
-                        className={`flex items-center space-x-1 px-3 py-2 text-sm rounded-lg transition-colors ${
-                          isVersionLocked
-                            ? 'text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 cursor-not-allowed'
-                            : selectedClaudeVersion
-                            ? 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-900/50'
-                            : 'text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600'
-                        }`}
-                        disabled={isAiTyping || isVersionLocked}
-                        title={
-                          isVersionLocked
-                            ? t('agentChat.claudeVersion.locked')
-                            : t('agentChat.claudeVersion.title')
-                        }
-                      >
-                        <Terminal className="w-4 h-4" />
-                        <span className="text-xs">
-                          {(() => {
-                            // 如果用户选择了特定版本，显示该版本名称
-                            if (selectedClaudeVersion && claudeVersionsData?.versions) {
-                              return claudeVersionsData.versions.find(v => v.id === selectedClaudeVersion)?.name || t('agentChat.claudeVersion.custom');
-                            }
-                            
-                            // 如果没有选择特定版本，尝试显示默认版本名称
-                            if (claudeVersionsData?.versions && claudeVersionsData.versions.length > 0) {
-                              // 首先尝试通过defaultVersionId查找
-                              if (claudeVersionsData.defaultVersionId) {
-                                const defaultVersion = claudeVersionsData.versions.find(v => v.id === claudeVersionsData.defaultVersionId);
-                                if (defaultVersion?.name) {
-                                  return defaultVersion.name;
-                                }
-                              }
-                              
-                              // 如果找不到，则查找标记为默认的版本
-                              const defaultByFlag = claudeVersionsData.versions.find(v => v.isDefault);
-                              if (defaultByFlag?.name) {
-                                return defaultByFlag.name;
-                              }
-                              
-                              // 再次fallback：显示第一个非系统版本
-                              const firstNonSystem = claudeVersionsData.versions.find(v => !v.isSystem);
-                              if (firstNonSystem?.name) {
-                                return firstNonSystem.name;
-                              }
-                              
-                              // 最后显示第一个版本
-                              if (claudeVersionsData.versions[0]?.name) {
-                                return claudeVersionsData.versions[0].name;
-                              }
-                            }
-                            
-                            // 最后回退到翻译文本
-                            return t('agentChat.claudeVersion.default');
-                          })()}
-                        </span>
-                        <ChevronDown className="w-3 h-3" />
-                      </button>
-
-                      {showVersionDropdown && (
-                        <div className="absolute bottom-full left-0 mb-2 w-32 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
-                          {/* 默认版本选项 */}
-                          <button
-                            onClick={() => {
-                              setSelectedClaudeVersion(undefined);
-                              setShowVersionDropdown(false);
-                            }}
-                            className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 first:rounded-t-lg ${
-                              !selectedClaudeVersion ? 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300' : 'text-gray-700 dark:text-gray-300'
-                            }`}
-                          >
-                            {(() => {
-                              // 尝试显示实际的默认版本名称
-                              if (claudeVersionsData?.versions && claudeVersionsData.versions.length > 0) {
-                                // 首先尝试通过defaultVersionId查找
-                                if (claudeVersionsData.defaultVersionId) {
-                                  const defaultVersion = claudeVersionsData.versions.find(v => v.id === claudeVersionsData.defaultVersionId);
-                                  if (defaultVersion?.name) {
-                                    return defaultVersion.name;
-                                  }
-                                }
-                                
-                                // 如果找不到，则查找标记为默认的版本
-                                const defaultByFlag = claudeVersionsData.versions.find(v => v.isDefault);
-                                if (defaultByFlag?.name) {
-                                  return defaultByFlag.name;
-                                }
-                                
-                                // 再次fallback：显示第一个非系统版本
-                                const firstNonSystem = claudeVersionsData.versions.find(v => !v.isSystem);
-                                if (firstNonSystem?.name) {
-                                  return firstNonSystem.name;
-                                }
-                                
-                                // 最后显示第一个版本
-                                if (claudeVersionsData.versions[0]?.name) {
-                                  return claudeVersionsData.versions[0].name;
-                                }
-                              }
-                              
-                              // 最后回退到翻译文本
-                              return t('agentChat.claudeVersion.default');
-                            })()}
-                          </button>
-
-                          {/* 其他版本选项 */}
-                          {claudeVersionsData.versions
-                            .filter(version => version.id !== claudeVersionsData.defaultVersionId)
-                            .map(version => (
-                              <button
-                                key={version.id}
-                                onClick={() => {
-                                  setSelectedClaudeVersion(version.id);
-                                  setShowVersionDropdown(false);
-                                }}
-                                className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 last:rounded-b-lg ${
-                                  selectedClaudeVersion === version.id
-                                    ? 'bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400'
-                                    : 'text-gray-700 dark:text-gray-300'
-                                }`}
-                              >
-                                <div className="flex items-center space-x-2">
-                                  <span>{version.name}</span>
-                                </div>
-                              </button>
-                            ))
-                          }
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* 模型切换下拉 - 只在可用模型数量大于等于2时显示 */}
-                  {availableModels.length >= 2 && (
-                    <div className="relative dropdown-container">
-                      <button
-                        onClick={() => setShowModelDropdown(!showModelDropdown)}
-                        className={`flex items-center space-x-1 px-3 py-2 text-sm rounded-lg transition-colors ${
-                          selectedModel === 'opus'
-                            ? 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 dark:hover:bg-purple-900/50'
-                            : 'text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600'
-                        }`}
-                        disabled={isAiTyping}
-                      >
-                        <Cpu className="w-4 h-4" />
-                        <span className="text-xs whitespace-nowrap overflow-hidden text-ellipsis max-w-[100px]" title={availableModels.find(m => m.id === selectedModel)?.name || t(`agentChat.model.${selectedModel}`)}>
-                          {availableModels.find(m => m.id === selectedModel)?.name || t(`agentChat.model.${selectedModel}`)}
-                        </span>
-                        <ChevronDown className="w-3 h-3" />
-                      </button>
-
-                      {showModelDropdown && (
-                        <div className="absolute bottom-full left-0 mb-2 min-w-[160px] max-w-[200px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
-                          {availableModels.map(model => (
-                            <button
-                              key={model.id}
-                              onClick={() => {
-                                setSelectedModel(model.id);
-                                setShowModelDropdown(false);
-                              }}
-                              className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 first:rounded-t-lg last:rounded-b-lg ${
-                                selectedModel === model.id
-                                  ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
-                                  : 'text-gray-700 dark:text-gray-300'
-                              }`}
-                              title={model.description}
-                            >
-                              <div className="flex items-center justify-between">
-                                <span className="whitespace-nowrap overflow-hidden text-ellipsis flex-1 pr-2" title={model.name}>{model.name}</span>
-                                {model.isVision && (
-                                  <span className="text-xs text-gray-400 flex-shrink-0">👁️</span>
-                                )}
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </>
-              )}
-
-              {isAiTyping || isStopping ? (
-                <button
-                  onClick={handleStopGeneration}
-                  disabled={isStopping}
-                  className={`flex items-center space-x-2 px-4 py-2 text-white rounded-lg transition-colors text-sm font-medium shadow-sm ${
-                    isStopping
-                      ? 'bg-red-400 cursor-not-allowed'
-                      : 'bg-red-600 hover:bg-red-700'
-                  }`}
-                  title={isStopping ? t('agentChatPanel.stopping') : t('agentChatPanel.stopGeneration')}
-                >
-                  <Square className="w-4 h-4" />
-                  <span>{isStopping ? t('agentChatPanel.stopping') : t('agentChatPanel.stop')}</span>
-                </button>
-              ) : (
-                <button
-                  onClick={handleSendMessage}
-                  disabled={isSendDisabled()}
-                  className="flex items-center space-x-2 px-4 py-2 text-white rounded-lg hover:opacity-90 disabled:bg-gray-300 dark:disabled:bg-gray-700 dark:disabled:text-gray-500 disabled:cursor-not-allowed transition-all duration-200 text-sm font-medium shadow-sm"
-                  style={{ backgroundColor: !isSendDisabled() ? 'hsl(var(--primary))' : undefined }}
-                  title={
-                    isAiTyping ? t('agentChatPanel.aiTyping') :
-                    !inputMessage.trim() && selectedImages.length === 0 ? t('agentChatPanel.noContentToSend') :
-                    isCommandTrigger(inputMessage) && !isCommandDefined(inputMessage.slice(1).split(' ')[0].toLowerCase()) ? t('agentChatPanel.unknownCommand') :
-                    t('agentChatPanel.sendMessage')
-                  }
-                >
-                  <Send className="w-4 h-4" />
-                  <span>{t('agentChatPanel.send')}</span>
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    )}
-
-      <CommandSelector
-        isOpen={showCommandSelector}
-        onSelect={handleCommandSelect}
-        onClose={handleCommandSelectorClose}
-        searchTerm={commandSearch}
-        position={getInputPosition()}
-        projectId={projectPath} // Pass projectPath as projectId, will be detected as path
-        selectedIndex={selectedCommandIndex}
-        onSelectedIndexChange={setSelectedCommandIndex}
-      />
-      
-      <ConfirmDialog
-        isOpen={showConfirmDialog}
-        message={confirmMessage}
-        onConfirm={handleConfirmDialog}
-        onCancel={handleCancelDialog}
-      />
-      
-      <ImagePreview
-        images={previewImage ? [previewImage] : []}
-        onClose={() => setPreviewImage(null)}
-      />
-
-    {/* MCP 状态弹窗 */}
-      <McpStatusModal
-        isOpen={showMcpStatusModal}
-        onClose={() => setShowMcpStatusModal(false)}
-        mcpStatus={mcpStatus}
-      />
-
+      {/* Unified Input Area */}
+      <AgentInputArea
+        // Basic state
+        inputMessage={inputMessage}
+        selectedImages={selectedImages}
+        isAiTyping={isAiTyping}
+        isStopping={isStopping}
+        isMobile={isMobile}
         
-      {/* File Browser for @ symbol */}
-      {showFileBrowser && (
-        <FileBrowser
-          title={t('agentChat.fileBrowser.title', { projectPath: projectPath ? projectPath.split('/').pop() : t('agentChat.fileBrowser.currentProject') })}
-          initialPath={projectPath}
-          allowFiles={true}
-          allowDirectories={false}
-          restrictToProject={true}
-          onSelect={handleFileSelect}
-          onClose={handleFileBrowserClose}
-        />
-      )}
-
-      {/* Mobile Settings Modal */}
-      <MobileSettingsModal
-        isOpen={showMobileSettings}
-        onClose={() => setShowMobileSettings(false)}
+        // Tool state
+        showToolSelector={showToolSelector}
+        selectedRegularTools={selectedRegularTools}
+        selectedMcpTools={selectedMcpTools}
+        mcpToolsEnabled={mcpToolsEnabled}
+        
+        // Command state
+        showCommandSelector={showCommandSelector}
+        showFileBrowser={showFileBrowser}
+        commandSearch={commandSearch}
+        selectedCommand={selectedCommand}
+        selectedCommandIndex={selectedCommandIndex}
+        atSymbolPosition={atSymbolPosition}
+        commandWarning={commandWarning || ''}
+        
+        // Settings state
         permissionMode={permissionMode}
-        onPermissionModeChange={setPermissionMode}
-        selectedClaudeVersion={selectedClaudeVersion}
-        onClaudeVersionChange={setSelectedClaudeVersion}
         selectedModel={selectedModel}
-        onModelChange={setSelectedModel}
+        selectedClaudeVersion={selectedClaudeVersion || ''}
+        showPermissionDropdown={showPermissionDropdown}
+        showModelDropdown={showModelDropdown}
+        showVersionDropdown={showVersionDropdown}
+        showMobileSettings={showMobileSettings}
+        isCompactMode={isCompactMode}
+        isVersionLocked={isVersionLocked}
+        
+        // UI state
+        isDragOver={isDragOver}
+        previewImage={previewImage}
+        showConfirmDialog={showConfirmDialog}
+        confirmMessage={confirmMessage || ''}
+        showMcpStatusModal={showMcpStatusModal}
+        
+        // Data
         availableModels={availableModels}
         claudeVersionsData={claudeVersionsData}
-        isVersionLocked={isVersionLocked}
-        isAiTyping={isAiTyping}
+        agent={agent}
+        projectPath={projectPath}
+        mcpStatus={mcpStatus}
+        
+        // Refs
+        textareaRef={textareaRef}
+        fileInputRef={fileInputRef}
+        
+        // Event handlers
+        onSend={handleSendMessage}
+        handleKeyDown={agentCommandSelectorKeyHandler}
+        handleImageSelect={handleImageSelect}
+        handleImageRemove={handleImageRemove}
+        handleImagePreview={handleImagePreview}
+        handlePaste={handlePaste}
+        handleDragOver={handleDragOver}
+        handleDragLeave={handleDragLeave}
+        handleDrop={handleDrop}
+        handleStopGeneration={handleStopGeneration}
+        
+        // Setters
+        onSetInputMessage={setInputMessage}
+        onSetShowToolSelector={setShowToolSelector}
+        onSetSelectedRegularTools={setSelectedRegularTools}
+        onSetSelectedMcpTools={setSelectedMcpTools}
+        onSetMcpToolsEnabled={setMcpToolsEnabled}
+        onSetPermissionMode={setPermissionMode}
+        onSetSelectedModel={setSelectedModel}
+        onSetSelectedClaudeVersion={setSelectedClaudeVersion}
+        onSetShowPermissionDropdown={setShowPermissionDropdown}
+        onSetShowModelDropdown={setShowModelDropdown}
+        onSetShowVersionDropdown={setShowVersionDropdown}
+        onSetShowMobileSettings={setShowMobileSettings}
+        onSetPreviewImage={setPreviewImage}
+        onSetShowConfirmDialog={setShowConfirmDialog}
+        onSetShowMcpStatusModal={setShowMcpStatusModal}
+        
+        // Command handlers
+        onCommandSelect={handleCommandSelect}
+        onSetShowCommandSelector={setShowCommandSelector}
+        onSetSelectedCommandIndex={setSelectedCommandIndex}
+        onSetShowFileBrowser={setShowFileBrowser}
+        onSetAtSymbolPosition={setAtSymbolPosition}
+        onSetCommandWarning={setCommandWarning}
+        
+        // Confirm dialog handlers
+        handleConfirmDialog={handleConfirmDialog}
+        handleCancelDialog={handleCancelDialog}
+        
+        // Utility functions
+        isSendDisabled={isSendDisabled}
       />
     </div>
   );
