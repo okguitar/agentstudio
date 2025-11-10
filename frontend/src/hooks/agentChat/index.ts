@@ -9,3 +9,5 @@ export { useToolSelector, type UseToolSelectorProps } from './useToolSelector';
 export { useClaudeVersionManager, type UseClaudeVersionManagerProps } from './useClaudeVersionManager';
 export { useAIStreamHandler, type UseAIStreamHandlerProps } from './useAIStreamHandler';
 export { useMessageSender, type UseMessageSenderProps } from './useMessageSender';
+export { useSessionManager, type UseSessionManagerProps, type UseSessionManagerReturn } from './useSessionManager';
+export { useUIState, type UseUIStateReturn } from './useUIState';

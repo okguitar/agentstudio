@@ -6,7 +6,6 @@ import { useSessionHeartbeatOnSuccess } from '../hooks/useSessionHeartbeatOnSucc
 import { useSessions } from '../hooks/useSessions';
 import { useResponsiveSettings } from '../hooks/useResponsiveSettings';
 import { tabManager } from '../utils/tabManager';
-import { useQueryClient } from '@tanstack/react-query';
 import { SessionsDropdown } from './SessionsDropdown';
 import type { AgentConfig } from '../types/index.js';
 import { isCommandTrigger } from '../utils/commandFormatter';
@@ -19,7 +18,9 @@ import {
   useCommandCompletion,
   useToolSelector,
   useClaudeVersionManager,
-  useMessageSender
+  useMessageSender,
+  useSessionManager,
+  useUIState
 } from '../hooks/agentChat';
 import {
   ChatMessageList,
@@ -47,20 +48,8 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
 
   // 基础状态
   const [inputMessage, setInputMessage] = useState('');
-  const [showSessions, setShowSessions] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [confirmMessage, setConfirmMessage] = useState('');
-  const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null);
-  const [showMobileSettings, setShowMobileSettings] = useState(false);
-  const [showMcpStatusModal, setShowMcpStatusModal] = useState(false);
-  const [hasSuccessfulResponse, setHasSuccessfulResponse] = useState(false);
-  const [isNewSession, setIsNewSession] = useState(false);
-  const [isStopping, setIsStopping] = useState(false);
-  const [isInitializingSession, setIsInitializingSession] = useState(false);
-  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
 
-  // Agent store状态 - 需要在其他hooks之前  
+  // Agent store状态 - 需要在其他hooks之前
   const {
     messages,
     isAiTyping,
@@ -69,10 +58,52 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
     addMessage,
     interruptAllExecutingTools,
     setAiTyping,
-    setCurrentSessionId,
-    clearMessages,
     loadSessionMessages,
   } = useAgentStore();
+
+  // UI状态管理
+  const uiState = useUIState();
+  const {
+    showSessions,
+    showConfirmDialog,
+    showMobileSettings,
+    showMcpStatusModal,
+    confirmMessage,
+    searchTerm,
+    isStopping,
+    isInitializingSession,
+    setShowSessions,
+    setShowConfirmDialog,
+    setShowMobileSettings,
+    setShowMcpStatusModal,
+    setConfirmMessage,
+    setConfirmAction,
+    setSearchTerm,
+    setIsStopping,
+    setIsInitializingSession,
+    handleConfirmDialog,
+    handleCancelDialog
+  } = uiState;
+
+  // 会话管理
+  const sessionManager = useSessionManager({
+    agentId: agent.id,
+    currentSessionId,
+    onSessionChange,
+    textareaRef
+  });
+  const {
+    isLoadingMessages,
+    isNewSession,
+    hasSuccessfulResponse,
+    setIsLoadingMessages,
+    setIsNewSession,
+    setHasSuccessfulResponse,
+    setCurrentSessionId,
+    handleSwitchSession,
+    handleNewSession,
+    handleRefreshMessages
+  } = sessionManager;
 
   // 使用重构的 hooks
   const {
@@ -189,9 +220,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
       setCurrentServiceName(currentService.name);
     }
   }, []);
-  
 
-  const queryClient = useQueryClient();
   const interruptSessionMutation = useInterruptSession();
   const { data: sessionsData } = useAgentSessions(agent.id, searchTerm, projectPath);
   const { data: sessionMessagesData } = useAgentSessionMessages(agent.id, currentSessionId, projectPath);
@@ -245,51 +274,16 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
 
 
 
-  const handleSwitchSession = (sessionId: string) => {
-    setCurrentSessionId(sessionId);
+  // 会话切换时需要额外关闭下拉菜单和清除搜索词
+  const handleSwitchSessionWithUI = (sessionId: string) => {
+    handleSwitchSession(sessionId);
     setShowSessions(false);
-    // Set loading state for message loading
-    setIsLoadingMessages(true);
-    // Reset heartbeat states for resumed session
-    setIsNewSession(false);
-    setHasSuccessfulResponse(false); // 恢复会话时重置，等待检查存在性
-    // Update URL with new session ID
-    if (onSessionChange) {
-      onSessionChange(sessionId);
-    }
-    // Clear messages first, then invalidate to trigger fresh load
-    clearMessages();
-    queryClient.invalidateQueries({ queryKey: ['agent-session-messages', agent.id, sessionId] });
   };
 
-  const handleNewSession = () => {
-    // Clear current session and messages
-    setCurrentSessionId(null);
-    clearMessages();
+  const handleNewSessionWithUI = () => {
+    handleNewSession();
     setShowSessions(false);
-    // Reset heartbeat states
-    setIsNewSession(true);
-    setHasSuccessfulResponse(false);
-    // Update URL to remove session ID
-    if (onSessionChange) {
-      onSessionChange(null);
-    }
-    // Clear search term
     setSearchTerm('');
-    // Focus on textarea after state updates
-    setTimeout(() => {
-      textareaRef.current?.focus();
-    }, 0);
-  };
-
-  const handleRefreshMessages = () => {
-    if (currentSessionId) {
-      // Set loading state
-      setIsLoadingMessages(true);
-      // Clear messages first, then invalidate to trigger fresh load
-      clearMessages();
-      queryClient.invalidateQueries({ queryKey: ['agent-session-messages', agent.id, currentSessionId] });
-    }
   };
 
   const handleStopGeneration = async () => {
@@ -435,24 +429,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
   //   // Enter key is now fully handled in handleKeyDown
   //   // This function is kept for potential future use
   // }, []);
-  
-  
-  
-  const handleConfirmDialog = () => {
-    if (confirmAction) {
-      confirmAction();
-    }
-    setShowConfirmDialog(false);
-    setConfirmMessage('');
-    setConfirmAction(null);
-  };
-  
-  const handleCancelDialog = () => {
-    setShowConfirmDialog(false);
-    setConfirmMessage('');
-    setConfirmAction(null);
-  };
-  
+
 
   const adjustTextareaHeight = () => {
     const textarea = textareaRef.current;
@@ -579,7 +556,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
           {/* Action Buttons */}
           <div className="flex space-x-1 flex-shrink-0 ml-2">
             <button
-              onClick={handleNewSession}
+              onClick={handleNewSessionWithUI}
               className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md transition-colors text-gray-600 dark:text-gray-300"
               title={t('agentChat.newSession')}
             >
@@ -600,7 +577,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
                 onToggle={() => setShowSessions(!showSessions)}
                 sessions={sessionsData?.sessions || []}
                 currentSessionId={currentSessionId}
-                onSwitchSession={handleSwitchSession}
+                onSwitchSession={handleSwitchSessionWithUI}
                 isLoading={false}
                 searchTerm={searchTerm}
                 onSearchChange={setSearchTerm}
