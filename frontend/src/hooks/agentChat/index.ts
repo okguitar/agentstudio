@@ -7,3 +7,5 @@ export { useAgentState } from './useAgentState';
 export { useAgentEffects, type UseAgentEffectsProps } from './useAgentEffects';
 export { useToolSelector, type UseToolSelectorProps } from './useToolSelector';
 export { useClaudeVersionManager, type UseClaudeVersionManagerProps } from './useClaudeVersionManager';
+export { useAIStreamHandler, type UseAIStreamHandlerProps } from './useAIStreamHandler';
+export { useMessageSender, type UseMessageSenderProps } from './useMessageSender';
