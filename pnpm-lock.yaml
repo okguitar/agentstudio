@@ -26,6 +26,9 @@ importers:
       '@anthropic-ai/claude-agent-sdk':
         specifier: ^0.1.25
         version: 0.1.25(zod@3.25.76)
+      '@types/js-yaml':
+        specifier: ^4.0.9
+        version: 4.0.9
       ai:
         specifier: ^5.0.22
         version: 5.0.70(zod@3.25.76)
@@ -53,6 +56,9 @@ importers:
       helmet:
         specifier: ^7.0.0
         version: 7.2.0
+      js-yaml:
+        specifier: ^4.1.0
+        version: 4.1.0
       jsonwebtoken:
         specifier: ^9.0.2
         version: 9.0.2
@@ -1458,6 +1464,9 @@ packages:
 
   '@types/http-errors@2.0.5':
     resolution: {integrity: sha512-r8Tayk8HJnX0FztbZN7oVqGccWgw98T/0neJphO91KkmOzug1KkofZURD4UaD5uH8AqcFLfdPErnBod0u71/qg==}
+
+  '@types/js-yaml@4.0.9':
+    resolution: {integrity: sha512-k4MGaQl5TGo/iipqb2UDG2UwjXziSWkh0uysQelTlJpX1qGlpUZYm8PnO4DxG1qBomtJUdYJ6qR6xdIah10JLg==}
 
   '@types/json-schema@7.0.15':
     resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
@@ -5474,6 +5483,8 @@ snapshots:
       '@types/unist': 3.0.3
 
   '@types/http-errors@2.0.5': {}
+
+  '@types/js-yaml@4.0.9': {}
 
   '@types/json-schema@7.0.15': {}
 

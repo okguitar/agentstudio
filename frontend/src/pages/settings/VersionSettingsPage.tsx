@@ -83,8 +83,8 @@ export const VersionSettingsPage: React.FC = () => {
     });
 
     // 使用i18n获取翻译后的名称和描述
-    const translatedName = t(`settings.version.templates.providers.${template.id}.name`);
-    const translatedDescription = t(`settings.version.templates.providers.${template.id}.description`);
+    const translatedName = t(`settings.supplier.templates.providers.${template.id}.name`);
+    const translatedDescription = t(`settings.supplier.templates.providers.${template.id}.description`);
 
     setFormData(prev => ({
       ...prev,
@@ -202,7 +202,7 @@ export const VersionSettingsPage: React.FC = () => {
   const handleSave = async () => {
     try {
       if (!formData.name || !formData.alias) {
-        showError(t('settings.version.errors.requiredFields'));
+        showError(t('settings.supplier.errors.requiredFields'));
         return;
       }
 
@@ -222,33 +222,33 @@ export const VersionSettingsPage: React.FC = () => {
             authTokenChanged
           }
         });
-        showSuccess(t('settings.version.success.updateVersion'));
+        showSuccess(t('settings.supplier.success.updateVersion'));
       } else {
-        // 创建新版本
+        // 创建新供应商
         await createClaudeVersion.mutateAsync(dataToSave as ClaudeVersionCreate);
-        showSuccess(t('settings.version.success.createVersion'));
+        showSuccess(t('settings.supplier.success.createVersion'));
       }
 
       handleCancel();
     } catch (error) {
       console.error('Error saving version:', error);
-      showError(t('settings.version.errors.saveFailed'), error instanceof Error ? error.message : undefined);
+      showError(t('settings.supplier.errors.saveFailed'), error instanceof Error ? error.message : undefined);
     }
   };
 
   const handleDelete = async (version: ClaudeVersion) => {
     if (version.isSystem) {
-      showError(t('settings.version.errors.cannotDeleteSystem'));
+      showError(t('settings.supplier.errors.cannotDeleteSystem'));
       return;
     }
 
-    if (confirm(t('settings.version.confirmDelete', { alias: version.alias }))) {
+    if (confirm(t('settings.supplier.confirmDelete', { alias: version.alias }))) {
       try {
         await deleteClaudeVersion.mutateAsync(version.id);
-        showSuccess(t('settings.version.success.deleteVersion'));
+        showSuccess(t('settings.supplier.success.deleteVersion'));
       } catch (error) {
         console.error('Error deleting version:', error);
-        showError(t('settings.version.errors.deleteFailed'), error instanceof Error ? error.message : undefined);
+        showError(t('settings.supplier.errors.deleteFailed'), error instanceof Error ? error.message : undefined);
       }
     }
   };
@@ -256,10 +256,10 @@ export const VersionSettingsPage: React.FC = () => {
   const handleSetDefault = async (version: ClaudeVersion) => {
     try {
       await setDefaultClaudeVersion.mutateAsync(version.id);
-      showSuccess(t('settings.version.success.setDefault', { alias: version.alias }));
+      showSuccess(t('settings.supplier.success.setDefault', { alias: version.alias }));
     } catch (error) {
       console.error('Error setting default version:', error);
-      showError(t('settings.version.errors.setDefaultFailed'), error instanceof Error ? error.message : undefined);
+      showError(t('settings.supplier.errors.setDefaultFailed'), error instanceof Error ? error.message : undefined);
     }
   };
 
@@ -269,14 +269,14 @@ export const VersionSettingsPage: React.FC = () => {
       const success = await copyToClipboard(command);
 
       if (success) {
-        showSuccess(t('settings.version.success.copyCommand'));
+        showSuccess(t('settings.supplier.success.copyCommand'));
       } else {
         // 如果复制失败，显示命令让用户手动复制
-        showError(t('settings.version.errors.copyFailed'), command);
+        showError(t('settings.supplier.errors.copyFailed'), command);
       }
     } catch (error) {
       console.error('Error copying command:', error);
-      showError(t('settings.version.errors.copyFailed'));
+      showError(t('settings.supplier.errors.copyFailed'));
     }
   };
 
@@ -284,8 +284,8 @@ export const VersionSettingsPage: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{t('settings.version.title')}</h2>
-          <p className="text-gray-600 dark:text-gray-400">{t('settings.version.subtitle')}</p>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{t('settings.supplier.title')}</h2>
+          <p className="text-gray-600 dark:text-gray-400">{t('settings.supplier.subtitle')}</p>
         </div>
         <div className="flex items-center space-x-3">
           <VersionTemplateSelector
@@ -353,7 +353,7 @@ export const VersionSettingsPage: React.FC = () => {
       {/* FileBrowser 组件 */}
       {showFileBrowser && (
         <FileBrowser
-          title={t('settings.version.form.selectExecutable')}
+          title={t('settings.supplier.form.selectExecutable')}
           allowFiles={true}
           allowDirectories={false}
           onSelect={handleFileSelect}

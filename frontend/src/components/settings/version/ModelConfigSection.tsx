@@ -25,7 +25,7 @@ export const ModelConfigSection: React.FC<ModelConfigSectionProps> = ({
   return (
     <div>
       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-        {t('settings.version.form.models')}
+        {t('settings.supplier.form.models')}
       </label>
       <div className="space-y-3">
         {/* 现有模型 */}
@@ -39,14 +39,14 @@ export const ModelConfigSection: React.FC<ModelConfigSectionProps> = ({
                     value={model.id}
                     onChange={(e) => onUpdateModel(model.id, { id: e.target.value })}
                     className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder={t('settings.version.form.modelId')}
+                    placeholder={t('settings.supplier.form.modelId')}
                   />
                   <input
                     type="text"
                     value={model.name}
                     onChange={(e) => onUpdateModel(model.id, { name: e.target.value })}
                     className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder={t('settings.version.form.modelName')}
+                    placeholder={t('settings.supplier.form.modelName')}
                   />
                   <div className="flex items-center space-x-2">
                     <label className="flex items-center space-x-1 text-sm text-gray-700 dark:text-gray-300">
@@ -56,7 +56,7 @@ export const ModelConfigSection: React.FC<ModelConfigSectionProps> = ({
                         onChange={(e) => onUpdateModel(model.id, { isVision: e.target.checked })}
                         className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
                       />
-                      <span>{t('settings.version.form.visionModel')}</span>
+                      <span>{t('settings.supplier.form.visionModel')}</span>
                     </label>
                     {model.isVision && (
                       <Eye className="w-4 h-4 text-blue-600 dark:text-blue-400" />
@@ -81,14 +81,14 @@ export const ModelConfigSection: React.FC<ModelConfigSectionProps> = ({
             value={modelInput.id}
             onChange={(e) => onModelInputChange({ ...modelInput, id: e.target.value })}
             className="px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder={t('settings.version.form.modelId')}
+            placeholder={t('settings.supplier.form.modelId')}
           />
           <input
             type="text"
             value={modelInput.name}
             onChange={(e) => onModelInputChange({ ...modelInput, name: e.target.value })}
             className="px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder={t('settings.version.form.modelName')}
+            placeholder={t('settings.supplier.form.modelName')}
           />
           <div className="flex items-center space-x-2">
             <label className="flex items-center space-x-1 text-sm text-gray-700 dark:text-gray-300">
@@ -98,7 +98,7 @@ export const ModelConfigSection: React.FC<ModelConfigSectionProps> = ({
                 onChange={(e) => onModelInputChange({ ...modelInput, isVision: e.target.checked })}
                 className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
               />
-              <span>{t('settings.version.form.visionModel')}</span>
+              <span>{t('settings.supplier.form.visionModel')}</span>
             </label>
             <button
               onClick={onAddModel}
@@ -106,7 +106,7 @@ export const ModelConfigSection: React.FC<ModelConfigSectionProps> = ({
               className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center space-x-1"
             >
               <Plus className="w-4 h-4" />
-              <span>{t('settings.version.form.addModel')}</span>
+              <span>{t('settings.supplier.form.addModel')}</span>
             </button>
           </div>
         </div>

@@ -71,7 +71,7 @@ export const EnvironmentVariablesSection: React.FC<EnvironmentVariablesSectionPr
   return (
     <div>
       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-        {t('settings.version.form.envVars')}
+        {t('settings.supplier.form.envVars')}
       </label>
       <div className="space-y-3">
         {/* 现有环境变量 */}
@@ -91,7 +91,7 @@ export const EnvironmentVariablesSection: React.FC<EnvironmentVariablesSectionPr
                         type={showAuthToken ? 'text' : 'password'}
                         value={authTokenValue}
                         onChange={(e) => handleAuthTokenChange(e.target.value)}
-                        placeholder={isHiddenToken(value) ? '点击输入新的API密钥' : t('settings.version.form.emptyValue')}
+                        placeholder={isHiddenToken(value) ? '点击输入新的API密钥' : t('settings.supplier.form.emptyValue')}
                         className="flex-1 px-2 py-1 pr-20 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                       <div className="absolute right-2 flex items-center space-x-1">
@@ -117,7 +117,7 @@ export const EnvironmentVariablesSection: React.FC<EnvironmentVariablesSectionPr
                           className="ml-2 inline-flex items-center space-x-1 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 whitespace-nowrap"
                         >
                           <ExternalLink className="w-3 h-3" />
-                          <span>{t('settings.version.form.getApiKey')}</span>
+                          <span>{t('settings.supplier.form.getApiKey')}</span>
                         </a>
                       )}
                     </div>
@@ -127,7 +127,7 @@ export const EnvironmentVariablesSection: React.FC<EnvironmentVariablesSectionPr
                       type="text"
                       value={value}
                       onChange={(e) => onUpdateEnvironmentVariable(key, e.target.value)}
-                      placeholder={t('settings.version.form.emptyValue')}
+                      placeholder={t('settings.supplier.form.emptyValue')}
                       className="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   )}
@@ -150,14 +150,14 @@ export const EnvironmentVariablesSection: React.FC<EnvironmentVariablesSectionPr
             value={envVarInput.key}
             onChange={(e) => onEnvVarInputChange({ ...envVarInput, key: e.target.value })}
             className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder={t('settings.version.form.varName')}
+            placeholder={t('settings.supplier.form.varName')}
           />
           <input
             type="text"
             value={envVarInput.value}
             onChange={(e) => onEnvVarInputChange({ ...envVarInput, value: e.target.value })}
             className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder={t('settings.version.form.varValue')}
+            placeholder={t('settings.supplier.form.varValue')}
           />
           <button
             onClick={onAddEnvironmentVariable}

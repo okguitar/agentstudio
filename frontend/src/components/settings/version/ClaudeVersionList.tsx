@@ -37,8 +37,8 @@ export const ClaudeVersionList: React.FC<ClaudeVersionListProps> = ({
     return (
       <div className="text-center py-8 text-gray-500 dark:text-gray-400">
         <Settings className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
-        <p>{t('settings.version.noVersions')}</p>
-        <p className="text-sm">{t('settings.version.clickToAddFirst')}</p>
+        <p>{t('settings.supplier.noSuppliers')}</p>
+        <p className="text-sm">{t('settings.supplier.clickToAddFirst')}</p>
       </div>
     );
   }

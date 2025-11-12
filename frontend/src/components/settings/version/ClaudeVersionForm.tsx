@@ -64,11 +64,11 @@ export const ClaudeVersionForm: React.FC<ClaudeVersionFormProps> = ({
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center space-x-3">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              {editingVersion ? t('settings.version.form.editTitle') : t('settings.version.form.createTitle')}
+              {editingVersion ? t('settings.supplier.form.editTitle') : t('settings.supplier.form.createTitle')}
             </h3>
             {editingVersion?.isSystem && (
               <span className="px-2 py-1 text-xs bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded">
-                {t('settings.version.systemLabel')}
+                {t('settings.supplier.systemLabel')}
               </span>
             )}
           </div>
@@ -104,11 +104,11 @@ export const ClaudeVersionForm: React.FC<ClaudeVersionFormProps> = ({
                 <div className="flex items-center space-x-2 mb-3">
                   <Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                   <h4 className="text-sm font-medium text-purple-800 dark:text-purple-300">
-                    {t('settings.version.templates.title')}
+                    {t('settings.supplier.templates.title')}
                   </h4>
                 </div>
                 <p className="text-xs text-purple-700 dark:text-purple-400 mb-3">
-                  {t('settings.version.templates.description')}
+                  {t('settings.supplier.templates.description')}
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {VERSION_TEMPLATES.map(template => (
@@ -132,11 +132,11 @@ export const ClaudeVersionForm: React.FC<ClaudeVersionFormProps> = ({
                             />
                           )}
                           <h5 className="font-medium text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400">
-                            {t(`settings.version.templates.providers.${template.id}.name`)}
+                            {t(`settings.supplier.templates.providers.${template.id}.name`)}
                           </h5>
                         </div>
                         <p className="text-xs text-gray-600 dark:text-gray-400">
-                          {t(`settings.version.templates.providers.${template.id}.description`)}
+                          {t(`settings.supplier.templates.providers.${template.id}.description`)}
                         </p>
                       </div>
                     </button>
@@ -148,27 +148,27 @@ export const ClaudeVersionForm: React.FC<ClaudeVersionFormProps> = ({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('settings.version.form.versionName')} <span className="text-red-500">*</span>
+                  {t('settings.supplier.form.supplierName')} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={formData.name || ''}
                   onChange={(e) => onFormDataChange({ ...formData, name: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder={t('settings.version.form.versionNamePlaceholder')}
+                  placeholder={t('settings.supplier.form.supplierNamePlaceholder')}
                   disabled={editingVersion?.isSystem}
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('settings.version.form.alias')} <span className="text-red-500">*</span>
+                  {t('settings.supplier.form.alias')} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={formData.alias || ''}
                   onChange={(e) => onFormDataChange({ ...formData, alias: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder={t('settings.version.form.aliasPlaceholder')}
+                  placeholder={t('settings.supplier.form.aliasPlaceholder')}
                   disabled={editingVersion?.isSystem}
                 />
               </div>
@@ -176,21 +176,21 @@ export const ClaudeVersionForm: React.FC<ClaudeVersionFormProps> = ({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t('settings.version.form.description')}
+                {t('settings.supplier.form.description')}
               </label>
               <textarea
                 value={formData.description || ''}
                 onChange={(e) => onFormDataChange({ ...formData, description: e.target.value })}
                 rows={2}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder={t('settings.version.form.descriptionPlaceholder')}
+                placeholder={t('settings.supplier.form.descriptionPlaceholder')}
                 disabled={editingVersion?.isSystem}
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t('settings.version.form.executablePath')}
+                {t('settings.supplier.form.executablePath')}
               </label>
               <div className="flex space-x-2">
                 <input
@@ -198,13 +198,13 @@ export const ClaudeVersionForm: React.FC<ClaudeVersionFormProps> = ({
                   value={formData.executablePath || ''}
                   onChange={(e) => onFormDataChange({ ...formData, executablePath: e.target.value })}
                   className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder={t('settings.version.form.executablePathPlaceholder')}
+                  placeholder={t('settings.supplier.form.executablePathPlaceholder')}
                   disabled={editingVersion?.isSystem}
                 />
                 <button
                   onClick={onSelectExecutablePath}
                   className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                  title={t('settings.version.form.browseFile')}
+                  title={t('settings.supplier.form.browseFile')}
                   disabled={editingVersion?.isSystem}
                 >
                   <FolderOpen className="w-4 h-4 text-gray-600 dark:text-gray-400" />
@@ -242,7 +242,7 @@ export const ClaudeVersionForm: React.FC<ClaudeVersionFormProps> = ({
             onClick={onCancel}
             className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
           >
-            {t('settings.version.form.cancel')}
+            {t('settings.supplier.form.cancel')}
           </button>
           <button
             onClick={onSave}
@@ -252,10 +252,10 @@ export const ClaudeVersionForm: React.FC<ClaudeVersionFormProps> = ({
             <Save className="w-4 h-4" />
             <span>
               {isSaving
-                ? t('settings.version.form.saving')
+                ? t('settings.supplier.form.saving')
                 : editingVersion
-                ? t('settings.version.form.update')
-                : t('settings.version.form.create')
+                ? t('settings.supplier.form.update')
+                : t('settings.supplier.form.create')
               }
             </span>
           </button>
