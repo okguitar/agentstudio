@@ -99,6 +99,7 @@ export class ProjectMetadataStorage {
       lastAccessed: now,
       agents: {},
       defaultAgent: '',
+      skills: {},
       tags: [],
       metadata: {}
     };
@@ -365,6 +366,7 @@ export class ProjectMetadataStorage {
       lastAccessed: now,
       agents: {},
       defaultAgent: '',
+      skills: {},
       tags: initialData.tags || [],
       metadata: initialData.metadata || {}
     };

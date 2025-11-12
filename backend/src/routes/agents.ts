@@ -66,7 +66,6 @@ const CreateAgentSchema = z.object({
     headerTitle: z.string(),
     headerDescription: z.string(),
     welcomeMessage: z.string().optional(),
-    componentType: z.enum(['slides', 'chat', 'documents', 'code', 'custom']),
     customComponent: z.string().optional()
   }),
   workingDirectory: z.string().optional(),
@@ -158,9 +157,7 @@ router.get('/', (req, res) => {
     }
     
     // Filter by component type
-    if (type && typeof type === 'string') {
-      agents = agents.filter(agent => agent.ui.componentType === type);
-    }
+    // componentType filtering removed - no longer needed
     
     res.json({ agents });
   } catch (error) {
@@ -252,15 +249,20 @@ router.put('/:agentId', (req, res) => {
 router.delete('/:agentId', (req, res) => {
   try {
     const { agentId } = req.params;
+    console.log(`🗑️ [ROUTE DEBUG] DELETE request for agent: ${agentId}`);
+    
     const deleted = globalAgentStorage.deleteAgent(agentId);
+    console.log(`🗑️ [ROUTE DEBUG] Delete result:`, deleted);
     
     if (!deleted) {
+      console.log(`❌ [ROUTE DEBUG] Agent not found: ${agentId}`);
       return res.status(404).json({ error: 'Agent not found' });
     }
     
+    console.log(`✅ [ROUTE DEBUG] Agent deleted successfully: ${agentId}`);
     res.json({ success: true, message: 'Agent deleted successfully' });
   } catch (error) {
-    console.error('Failed to delete agent:', error);
+    console.error('❌ [ROUTE DEBUG] Failed to delete agent:', error);
     res.status(500).json({ error: 'Failed to delete agent' });
   }
 });

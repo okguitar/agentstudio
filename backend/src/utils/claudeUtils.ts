@@ -6,6 +6,7 @@
  */
 
 import { Options } from '@anthropic-ai/claude-agent-sdk';
+import { SystemPrompt, PresetSystemPrompt } from '../types/agents.js';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
@@ -250,11 +251,7 @@ export async function buildQueryOptions(
   console.log(`🎯 Using Claude executable path: ${executablePath}`);
   
   const queryOptions: any = {
-    systemPrompt: {
-      type: 'preset' as const,
-      preset: 'claude_code' as const,
-      append: agent.systemPrompt
-    },
+    systemPrompt: agent.systemPrompt, // 直接使用 Agent 配置中的 systemPrompt
     allowedTools,
     maxTurns: agent.maxTurns,
     cwd,

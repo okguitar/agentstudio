@@ -101,16 +101,35 @@ export class AgentStorage {
 
   deleteAgent(agentId: string): boolean {
     try {
+      console.log(`🗑️ [BACKEND DEBUG] Attempting to delete agent: ${agentId}`);
       const filePath = path.join(this.agentsDir, `${agentId}.json`);
+      console.log(`🗑️ [BACKEND DEBUG] File path: ${filePath}, exists: ${fs.existsSync(filePath)}`);
+      
       if (fs.existsSync(filePath)) {
         // Don't delete built-in agents, just disable them
         const agent = this.getAgent(agentId);
+        console.log(`🗑️ [BACKEND DEBUG] Agent data:`, {
+          found: !!agent,
+          id: agent?.id,
+          name: agent?.name,
+          enabled: agent?.enabled
+        });
+        
         if (agent && BUILTIN_AGENTS.some(builtin => builtin.id === agentId)) {
-          agent.enabled = false;
-          this.saveAgent(agent);
-          return true;
+          // Allow deletion of deprecated built-in agents (code-assistant, document-writer)
+          const DEPRECATED_BUILTINS = ['code-assistant', 'document-writer'];
+          if (DEPRECATED_BUILTINS.includes(agentId)) {
+            console.log(`✅ [BACKEND DEBUG] Deleting deprecated built-in agent: ${agentId}`);
+          } else {
+            // Protect current built-in agents (ppt-editor, general-chat, claude-code)
+            console.log(`🛑 [BACKEND DEBUG] Protected built-in agent, disabling instead: ${agentId}`);
+            agent.enabled = false;
+            this.saveAgent(agent);
+            return true;
+          }
         }
         
+        console.log(`🗑️ [BACKEND DEBUG] Deleting file: ${filePath}`);
         fs.unlinkSync(filePath);
         
         // Also delete all sessions for this agent
