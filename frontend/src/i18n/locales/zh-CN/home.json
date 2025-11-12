@@ -18,9 +18,8 @@
   "enableAgentButton": "启用助手",
   "componentTypes": {
     "slides": "幻灯片",
-    "code": "代码",
-    "documents": "文档",
-    "chat": "对话"
+    "chat": "对话",
+    "claude-code": "Claude Code"
   },
   "errors": {
     "toggleFailed": "操作失败，请重试"

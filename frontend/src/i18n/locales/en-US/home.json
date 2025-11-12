@@ -18,9 +18,8 @@
   "enableAgentButton": "Enable Assistant",
   "componentTypes": {
     "slides": "Slides",
-    "code": "Code",
-    "documents": "Documents",
-    "chat": "Chat"
+    "chat": "Chat",
+    "claude-code": "Claude Code"
   },
   "errors": {
     "toggleFailed": "Operation failed, please try again"
