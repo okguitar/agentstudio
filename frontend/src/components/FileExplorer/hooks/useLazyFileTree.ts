@@ -7,9 +7,10 @@ import { DEBOUNCE_TIME } from '../constants';
 
 interface UseLazyFileTreeOptions {
   projectPath?: string;
+  showHiddenFiles?: boolean;
 }
 
-export const useLazyFileTree = ({ projectPath }: UseLazyFileTreeOptions = {}) => {
+export const useLazyFileTree = ({ projectPath, showHiddenFiles }: UseLazyFileTreeOptions = {}) => {
   // 懒加载相关状态
   const [loadedDirectories, setLoadedDirectories] = useState<Set<string>>(new Set());
   const [dynamicTreeData, setDynamicTreeData] = useState<FileTreeItem[]>([]);
@@ -26,7 +27,7 @@ export const useLazyFileTree = ({ projectPath }: UseLazyFileTreeOptions = {}) =>
     isLoading: isTreeLoading, 
     error: treeError,
     refetch: refetchTree
-  } = useFileTree(projectPath);
+  } = useFileTree(projectPath, showHiddenFiles);
 
   // 初始化动态树数据
   useEffect(() => {
@@ -78,6 +79,9 @@ export const useLazyFileTree = ({ projectPath }: UseLazyFileTreeOptions = {}) =>
     try {
       const searchParams = new URLSearchParams();
       searchParams.append('path', dirPath);
+      if (showHiddenFiles) {
+        searchParams.append('showHiddenFiles', 'true');
+      }
 
       const response = await authFetch(`${API_BASE}/files/browse?${searchParams.toString()}`);
       if (!response.ok) {
@@ -88,7 +92,7 @@ export const useLazyFileTree = ({ projectPath }: UseLazyFileTreeOptions = {}) =>
       const childItems: FileSystemItem[] = [];
 
       for (const item of data.items) {
-        if (item.isHidden) continue; // 跳过隐藏文件
+        // 后端已经处理了隐藏文件过滤，这里不再需要手动过滤
         
         if (item.isDirectory) {
           childItems.push({
@@ -161,7 +165,7 @@ export const useLazyFileTree = ({ projectPath }: UseLazyFileTreeOptions = {}) =>
         return newSet;
       });
     }
-  }, [loadedDirectories, loadingDirectories]);
+  }, [loadedDirectories, loadingDirectories, showHiddenFiles]);
 
   // 刷新文件树的统一方法
   const refreshFileTree = useCallback(() => {

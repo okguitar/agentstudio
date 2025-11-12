@@ -76,18 +76,12 @@ return (
 ### 1. Slides Agent (`slides`)
 - **右侧面板**：`SlidePreviewPanel` - 幻灯片列表和预览
 - **特性**：继承了原有的PPT功能
+- **状态**：活跃（暂时隐藏）
 
 ### 2. Chat Agent (`chat`)
 - **布局**：单栏（无右侧面板）
 - **特性**：纯聊天交互
-
-### 3. Documents Agent (`documents`)
-- **右侧面板**：`DocumentOutlinePanel` - 文档大纲（框架）
-- **状态**：基础框架，待完善
-
-### 4. Code Agent (`code`)
-- **右侧面板**：`CodeExplorerPanel` - 代码浏览器（框架）
-- **状态**：基础框架，待完善
+- **状态**：活跃，作为默认模板
 
 ## 添加新Agent类型
 

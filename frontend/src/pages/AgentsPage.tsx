@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Eye, EyeOff, Search, Edit, Trash2, Save, X, Play, Settings, Wrench, Tag } from 'lucide-react';
+import { Plus, Eye, EyeOff, Search, Edit, Trash2, Save, X, Play, Settings, Wrench } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -16,6 +16,8 @@ import type { AgentConfig, AgentTool } from '../types/index.js';
 import { useTranslation } from 'react-i18next';
 import { showError } from '../utils/toast';
 import { useMobileContext } from '../contexts/MobileContext';
+import { SystemPromptEditor } from '../components/SystemPromptEditor';
+import { ToolsList } from '../components/ToolsList';
 
 
 export const AgentsPage: React.FC = () => {
@@ -33,20 +35,21 @@ export const AgentsPage: React.FC = () => {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [selectedAgentForStart, setSelectedAgentForStart] = useState<AgentConfig | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filter, setFilter] = useState<'all' | 'enabled' | 'disabled'>('all');
   const [showToolSelector, setShowToolSelector] = useState(false);
   const [selectedRegularTools, setSelectedRegularTools] = useState<string[]>([]);
   const [selectedMcpTools, setSelectedMcpTools] = useState<string[]>([]);
   const [mcpToolsEnabled, setMcpToolsEnabled] = useState(false);
+  const [expandedTools, setExpandedTools] = useState<Record<string, boolean>>({});
 
   const agents = agentsData?.agents || [];
-  const filteredAgents = agents.filter(agent => {
+
+  // 🎯 显示所有已启用的 Agent，用户可以管理所有 Agent
+  const userAgents = agents;
+
+  const filteredAgents = userAgents.filter(agent => {
     const matchesSearch = agent.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          agent.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesFilter = filter === 'all' || 
-                         (filter === 'enabled' && agent.enabled) ||
-                         (filter === 'disabled' && !agent.enabled);
-    return matchesSearch && matchesFilter;
+    return matchesSearch;
   });
 
   const handleProjectSelect = (projectPath: string) => {
@@ -89,23 +92,43 @@ export const AgentsPage: React.FC = () => {
   };
 
   const handleCreate = () => {
+    // 🎯 降级方案：基于 general-chat 模板创建新 Agent
+    const generalChatTemplate = agents.find(a => a.id === 'general-chat');
+
     const defaultAgent: Partial<AgentConfig> = {
+      id: `agent-${Date.now()}`, // 提供默认 ID，用户可以修改
       name: '',
       description: '',
       version: '1.0.0',
-      systemPrompt: '',
-      maxTurns: undefined,
-      permissionMode: 'default',
-      allowedTools: [
-        { name: 'Read', enabled: true },
+      // 使用 general-chat 的系统提示词作为默认值
+      systemPrompt: generalChatTemplate?.systemPrompt || `You are a general-purpose AI assistant. You can help with:
+- General questions and conversations
+- Problem-solving and brainstorming
+- Information and explanations
+- Creative tasks and writing
+- Analysis and research
+- File operations when needed
+
+You are helpful, harmless, and honest. Always strive to provide accurate and useful information.
+Please respond in Chinese unless the user specifically requests another language.`,
+      maxTurns: generalChatTemplate?.maxTurns || undefined,
+      permissionMode: generalChatTemplate?.permissionMode || 'bypassPermissions',
+      // 使用 general-chat 的工具配置
+      allowedTools: generalChatTemplate?.allowedTools || [
         { name: 'Write', enabled: true },
-        { name: 'Edit', enabled: true }
+        { name: 'Read', enabled: true },
+        { name: 'Edit', enabled: true },
+        { name: 'Glob', enabled: true },
+        { name: 'MultiEdit', enabled: true },
+        { name: 'Bash', enabled: true },
+        { name: 'Task', enabled: true },
+        { name: 'WebFetch', enabled: true },
+        { name: 'WebSearch', enabled: true }
       ],
       ui: {
         icon: '🤖',
         headerTitle: '',
-        headerDescription: '',
-        componentType: 'chat'
+        headerDescription: ''
       },
       author: 'User',
       tags: ['custom'],
@@ -157,11 +180,23 @@ export const AgentsPage: React.FC = () => {
       const allowedTools = updateToolsFromSelector();
       
       if (isCreating) {
+        // 验证 ID 字段
+        if (!editForm.id || editForm.id.trim() === '') {
+          setSaveError('请输入 Agent ID');
+          return;
+        }
+        
+        // 简单的 ID 验证：只允许字母、数字、连字符和下划线
+        const idRegex = /^[a-zA-Z0-9_-]+$/;
+        if (!idRegex.test(editForm.id)) {
+          setSaveError('ID 只能包含字母、数字、连字符和下划线');
+          return;
+        }
+        
         const dataToSave = {
           ...editForm,
           allowedTools,
           maxTurns: editForm.maxTurns,
-          id: `custom-${Date.now()}`,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           ui: {
@@ -216,19 +251,33 @@ export const AgentsPage: React.FC = () => {
   };
 
   const handleDelete = async (agent: AgentConfig) => {
-    if (agent.id === 'ppt-editor' || agent.id === 'code-assistant' || agent.id === 'document-writer') {
-      showError(t('agents.errors.builtinCannotDelete'));
+    console.log(`🗑️ [FRONTEND DEBUG] Attempting to delete agent:`, {
+      id: agent.id,
+      name: agent.name,
+      author: agent.author
+    });
+
+    // System agents (author: 'System') cannot be deleted
+    if (agent.author === 'System') {
+      console.log(`🛑 [FRONTEND DEBUG] Blocked deletion of system agent: ${agent.id}`);
+      showError('System agents cannot be deleted');
       return;
     }
 
     const confirmed = window.confirm(t('agents.confirmDelete', { name: agent.name }));
-    if (!confirmed) return;
+    if (!confirmed) {
+      console.log('❌ [FRONTEND DEBUG] User cancelled deletion');
+      return;
+    }
 
+    console.log('✅ [FRONTEND DEBUG] User confirmed deletion, calling API...');
     try {
       await deleteAgent.mutateAsync(agent.id);
+      console.log('✅ [FRONTEND DEBUG] Delete API call successful');
       queryClient.invalidateQueries({ queryKey: ['agents'] });
+      console.log('🔄 [FRONTEND DEBUG] Invalidated agents query');
     } catch (error) {
-      console.error('Failed to delete agent:', error);
+      console.error('❌ [FRONTEND DEBUG] Failed to delete agent:', error);
       showError(t('agents.errors.deleteFailed'));
     }
   };
@@ -257,39 +306,15 @@ export const AgentsPage: React.FC = () => {
 
         {/* Search and Add Button */}
         <div className="flex items-center space-x-4">
-          <div className="flex-1 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-            <div className="flex items-center space-x-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="text"
-                  placeholder={t('agents.searchPlaceholder')}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-2 w-full border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                />
-              </div>
-              {/* Filter Tabs */}
-              <div className="flex space-x-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
-                {[
-                  { key: 'all', label: t('agents.filter.all'), count: agents.length },
-                  { key: 'enabled', label: t('agents.filter.enabled'), count: agents.filter(a => a.enabled).length },
-                  { key: 'disabled', label: t('agents.filter.disabled'), count: agents.filter(a => !a.enabled).length }
-                ].map((tab) => (
-                  <button
-                    key={tab.key}
-                    onClick={() => setFilter(tab.key as any)}
-                    className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                      filter === tab.key
-                        ? 'bg-white dark:bg-gray-600 text-blue-700 dark:text-blue-400 shadow-sm'
-                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                    }`}
-                  >
-                    {tab.label} ({tab.count})
-                  </button>
-                ))}
-              </div>
-            </div>
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder={t('agents.searchPlaceholder')}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 pr-4 py-3 w-full border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+            />
           </div>
           <button
             onClick={handleCreate}
@@ -344,31 +369,23 @@ export const AgentsPage: React.FC = () => {
 
                   {/* Agent Details */}
                   <div className="space-y-2 text-sm mb-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-500 dark:text-gray-400">类型:</span>
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        agent.ui.componentType === 'slides' ? 'bg-blue-100 text-blue-800' :
-                        agent.ui.componentType === 'code' ? 'bg-green-100 text-green-800' :
-                        agent.ui.componentType === 'documents' ? 'bg-purple-100 text-purple-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {agent.ui.componentType}
-                      </span>
+                    {/* Tools */}
+                    <div className="mb-3">
+                      <div className="flex items-start text-sm">
+                        <span className="text-gray-500 dark:text-gray-400 mr-2 mt-1">工具:</span>
+                        <div className="flex-1">
+                          <ToolsList
+                            tools={(agent.allowedTools?.filter((tool: AgentTool) => tool.enabled).map((tool: AgentTool) => tool.name) || [])}
+                            id={agent.id}
+                            expandedTools={expandedTools}
+                            setExpandedTools={setExpandedTools}
+                            isMobile={true}
+                            emptyMessage="未启用工具"
+                          />
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-500 dark:text-gray-400">工具:</span>
-                      <span className="text-gray-900 dark:text-white">{agent.allowedTools?.length || 0} 个</span>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-500 dark:text-gray-400">状态:</span>
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        agent.enabled ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {agent.enabled ? '已启用' : '已禁用'}
-                      </span>
-                    </div>
                   </div>
 
                   {/* Quick Actions */}
@@ -392,6 +409,14 @@ export const AgentsPage: React.FC = () => {
                     >
                       <Edit className="w-4 h-4" />
                     </button>
+                    <button
+                      onClick={() => handleDelete(agent)}
+                      className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/50 rounded"
+                      title="删除助手"
+                      disabled={agent.author === 'System'}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
               ))}
@@ -404,22 +429,16 @@ export const AgentsPage: React.FC = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider w-48">
                       {t('agents.table.agent')}
                     </TableHead>
-                    <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      {t('agents.table.type')}
-                    </TableHead>
-                    <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider w-48">
                       {t('agents.table.config')}
                     </TableHead>
-                    <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider w-96">
                       工具
                     </TableHead>
-                    <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      {t('agents.table.status')}
-                    </TableHead>
-                    <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider w-48">
                       {t('agents.table.actions')}
                     </TableHead>
                   </TableRow>
@@ -428,40 +447,28 @@ export const AgentsPage: React.FC = () => {
                   {filteredAgents.map((agent) => (
                     <TableRow key={agent.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                       {/* Agent */}
-                      <TableCell className="px-6 py-4 whitespace-nowrap">
+                      <TableCell className="px-6 py-4 whitespace-nowrap w-48">
                         <div className="flex items-center">
                           <div className={`text-2xl mr-4 ${!agent.enabled ? 'opacity-50' : ''}`}>
                             {agent.ui.icon}
                           </div>
-                          <div>
+                          <div className="min-w-0">
                             <div className={`text-sm font-medium ${
                               agent.enabled ? 'text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'
-                            }`}>
+                            } truncate`}>
                               {agent.name}
                             </div>
                             <div className={`text-sm ${
                               agent.enabled ? 'text-gray-500 dark:text-gray-400' : 'text-gray-400 dark:text-gray-500'
-                            }`}>
+                            } truncate`}>
                               {agent.description}
                             </div>
                           </div>
                         </div>
                       </TableCell>
 
-                      {/* Type */}
-                      <TableCell className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          agent.ui.componentType === 'slides' ? 'bg-blue-100 text-blue-800' :
-                          agent.ui.componentType === 'code' ? 'bg-green-100 text-green-800' :
-                          agent.ui.componentType === 'documents' ? 'bg-purple-100 text-purple-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
-                          {agent.ui.componentType}
-                        </span>
-                      </TableCell>
-
                       {/* Configuration */}
-                      <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                      <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white w-48">
                         <div className="space-y-1">
                           <div className="flex items-center">
                             <Settings className="w-3 h-3 mr-1 text-gray-400" />
@@ -480,26 +487,19 @@ export const AgentsPage: React.FC = () => {
                       </TableCell>
 
                       {/* Tools */}
-                      <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        <div className="flex items-center">
-                          <Tag className="w-3 h-3 mr-1 text-gray-400" />
-                          <span>{agent.allowedTools?.length || 0} 个工具</span>
-                        </div>
-                      </TableCell>
-
-                      {/* Status */}
-                      <TableCell className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          agent.enabled
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {agent.enabled ? '已启用' : '已禁用'}
-                        </span>
+                      <TableCell className="px-6 py-4 w-96">
+                        <ToolsList
+                          tools={(agent.allowedTools?.filter((tool: AgentTool) => tool.enabled).map((tool: AgentTool) => tool.name) || [])}
+                          id={agent.id}
+                          expandedTools={expandedTools}
+                          setExpandedTools={setExpandedTools}
+                          isMobile={false}
+                          emptyMessage="未启用工具"
+                        />
                       </TableCell>
 
                       {/* Actions */}
-                      <TableCell className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <TableCell className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium w-48">
                         <div className="flex items-center space-x-2">
                           {/* Start Using Button - Only show for enabled agents */}
                           {agent.enabled && (
@@ -538,7 +538,7 @@ export const AgentsPage: React.FC = () => {
                             onClick={() => handleDelete(agent)}
                             className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/50 rounded transition-colors"
                             title="删除助手"
-                            disabled={agent.id === 'ppt-editor' || agent.id === 'code-assistant' || agent.id === 'document-writer'}
+                            disabled={agent.author === 'System'}
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -608,6 +608,27 @@ export const AgentsPage: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Basic Info */}
                   <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ID</label>
+                      <input
+                        type="text"
+                        value={editForm.id || ''}
+                        onChange={(e) => setEditForm({ ...editForm, id: e.target.value })}
+                        disabled={!isCreating}
+                        placeholder={isCreating ? "例如: my-custom-agent" : "ID 在编辑模式下不可修改"}
+                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white ${
+                          !isCreating 
+                            ? 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed' 
+                            : 'border-gray-300 dark:border-gray-600'
+                        }`}
+                      />
+                      {isCreating && (
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                          ID 用于唯一标识这个助手，只能包含字母、数字和连字符
+                        </p>
+                      )}
+                    </div>
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">名称</label>
                       <input
@@ -730,13 +751,10 @@ export const AgentsPage: React.FC = () => {
 
                 {/* System Prompt */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">系统提示词</label>
-                  <textarea
+                  <SystemPromptEditor
                     value={editForm.systemPrompt || ''}
-                    onChange={(e) => setEditForm({ ...editForm, systemPrompt: e.target.value })}
-                    rows={8}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm dark:bg-gray-700 dark:text-white"
-                    placeholder="输入助手的系统提示词..."
+                    onChange={(systemPrompt) => setEditForm({ ...editForm, systemPrompt })}
+                    disabled={editingAgent?.id === 'claude-code'}
                   />
                 </div>
               </div>

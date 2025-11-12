@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import { AgentChatPanel } from '../components/AgentChatPanel';
 import { SplitLayout } from '../components/SplitLayout';
 import { RightPanelWrapper } from '../components/RightPanelWrapper';
-import { getAgentPlugin } from '../agents/registry';
 import { useAgentStore } from '../stores/useAgentStore';
 import { useAgent } from '../hooks/useAgents';
 import { ProjectSelector } from '../components/ProjectSelector';
@@ -144,22 +143,13 @@ export const ChatPage: React.FC = () => {
     navigate('/agents');
   };
 
-  // Get agent plugin configuration
-  const agentPlugin = agent ? getAgentPlugin(agent.ui.componentType) : undefined;
-  const RightPanelComponent = agentPlugin?.rightPanelComponent;
+  // Agent plugins are no longer used - all agents use the same interface
+  const RightPanelComponent = undefined;
 
-  // Handle plugin lifecycle
+  // Plugin system removed - no longer needed
   useEffect(() => {
-    if (agent && agentPlugin?.onMount) {
-      agentPlugin.onMount(agent.id);
-    }
-
-    return () => {
-      if (agent && agentPlugin?.onUnmount) {
-        agentPlugin.onUnmount(agent.id);
-      }
-    };
-  }, [agent, agentPlugin]);
+    // Plugin lifecycle management removed
+  }, [agent]);
 
 
   if (isLoading) {

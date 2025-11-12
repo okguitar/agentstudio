@@ -31,7 +31,11 @@ export const DashboardPage: React.FC = () => {
   const [showClaudeSetup, setShowClaudeSetup] = useState(false);
 
   const agents = agentsData?.agents || [];
-  const enabledAgents = agents.filter(agent => agent.enabled);
+
+  // 🎯 显示所有已启用的 Agent
+  const displayAgents = agents.filter(agent => agent.enabled);
+
+  const enabledAgents = displayAgents;
 
   // Check if Claude setup is needed
   const needsClaudeSetup = !versionsLoading && versionsData && (!versionsData.versions || versionsData.versions.length === 0);
@@ -173,18 +177,7 @@ export const DashboardPage: React.FC = () => {
                   <p className={`text-sm text-gray-500 dark:text-gray-400 truncate ${isMobile ? 'hidden' : ''}`}>{agent.description}</p>
                 </div>
                 <div className={`${isMobile ? 'flex flex-col items-end space-y-1' : 'flex items-center space-x-2'}`}>
-                  <span className={`px-2 py-1 text-xs rounded-full ${
-                    agent.ui.componentType === 'slides' ? 'bg-blue-100 text-blue-700' :
-                    agent.ui.componentType === 'code' ? 'bg-green-100 text-green-700' :
-                    agent.ui.componentType === 'documents' ? 'bg-purple-100 text-purple-700' :
-                    'bg-gray-100 text-gray-700'
-                  }`}>
-                    {agent.ui.componentType === 'slides' ? t('dashboard.recentAgents.types.slides') :
-                     agent.ui.componentType === 'code' ? t('dashboard.recentAgents.types.code') :
-                     agent.ui.componentType === 'documents' ? t('dashboard.recentAgents.types.documents') :
-                     agent.ui.componentType}
-                  </span>
-                  <Link
+                                    <Link
                     to={`/chat/${agent.id}`}
                     className="text-blue-600 hover:text-blue-700"
                   >
