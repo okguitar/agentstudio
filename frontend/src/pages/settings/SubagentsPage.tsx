@@ -5,8 +5,7 @@ import {
   Edit,
   Trash2,
   AlertCircle,
-  Calendar,
-  Tag
+  Calendar
 } from 'lucide-react';
 import {
   Table,
@@ -21,8 +20,8 @@ import { Subagent } from '../../types/subagents';
 import { useSubagents, useDeleteSubagent } from '../../hooks/useSubagents';
 import { SubagentForm } from '../../components/SubagentForm';
 import { formatRelativeTime } from '../../utils';
-import { getToolDisplayName } from '../../utils/toolMapping';
 import { useMobileContext } from '../../contexts/MobileContext';
+import { ToolsList } from '../../components/ToolsList';
 
 export const SubagentsPage: React.FC = () => {
   const { t } = useTranslation('pages');
@@ -31,6 +30,7 @@ export const SubagentsPage: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingSubagent, setEditingSubagent] = useState<Subagent | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<Subagent | null>(null);
+  const [expandedTools, setExpandedTools] = useState<Record<string, boolean>>({});
 
   const { data: subagents = [], isLoading, error, refetch } = useSubagents({
     search: searchTerm.trim() || undefined
@@ -65,7 +65,7 @@ export const SubagentsPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className={`${isMobile ? 'p-4' : 'p-8'} flex items-center justify-center`}>
+      <div className="flex items-center justify-center">
         <div className="text-center">
           <div className={`animate-spin rounded-full ${isMobile ? 'h-8 w-8' : 'h-12 w-12'} border-b-2 border-blue-600 mx-auto ${isMobile ? 'mb-3' : 'mb-4'}`}></div>
           <div className={`text-gray-600 dark:text-gray-400 ${isMobile ? 'text-sm' : ''}`}>{t('settings.subagents.loading')}</div>
@@ -76,7 +76,7 @@ export const SubagentsPage: React.FC = () => {
 
   if (error) {
     return (
-      <div className={`${isMobile ? 'p-4' : 'p-8'} flex items-center justify-center`}>
+      <div className="flex items-center justify-center">
         <div className="text-center">
           <AlertCircle className={`${isMobile ? 'h-8 w-8' : 'h-12 w-12'} text-red-500 mx-auto ${isMobile ? 'mb-3' : 'mb-4'}`} />
           <h3 className={`${isMobile ? 'text-base' : 'text-lg'} font-medium text-gray-900 dark:text-white mb-2`}>{t('settings.subagents.loadFailed')}</h3>
@@ -93,9 +93,9 @@ export const SubagentsPage: React.FC = () => {
   }
 
   return (
-    <div className={isMobile ? 'p-4' : 'p-8'}>
+    <>
       {/* Header */}
-      <div className={isMobile ? 'mb-6' : 'mb-8'}>
+      <div className="mb-8">
         <div className={isMobile ? 'mb-4' : 'flex items-center justify-between mb-6'}>
           <div>
             <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold text-gray-900 dark:text-white`}>{t('settings.subagents.title')}</h1>
@@ -105,17 +105,15 @@ export const SubagentsPage: React.FC = () => {
 
         {/* Search and Add Button */}
         <div className={isMobile ? 'space-y-3' : 'flex items-center space-x-4'}>
-          <div className={`${isMobile ? '' : 'flex-1'} bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4`}>
-            <div className={`${isMobile ? 'flex items-center space-x-2' : 'relative'}`}>
-              <Search className={`${isMobile ? 'text-gray-400 w-4 h-4' : 'absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5'}`} />
-              <input
-                type="text"
-                placeholder={t('settings.subagents.searchPlaceholder')}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className={`${isMobile ? 'pl-10' : 'pl-10'} pr-4 py-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${isMobile ? 'text-sm' : ''}`}
-              />
-            </div>
+          <div className={`${isMobile ? '' : 'flex-1'} relative`}>
+            <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 ${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
+            <input
+              type="text"
+              placeholder={t('settings.subagents.searchPlaceholder')}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className={`pl-10 pr-4 ${isMobile ? 'py-2' : 'py-3'} w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${isMobile ? 'text-sm' : ''}`}
+            />
           </div>
           <button
             onClick={() => {
@@ -185,25 +183,20 @@ export const SubagentsPage: React.FC = () => {
                   {/* Subagent Details */}
                   <div className="space-y-2 mb-4">
                     {/* Tools */}
-                    <div className="flex items-start text-sm">
-                      <span className="text-gray-500 dark:text-gray-400 mr-2 mt-1">{t('settings.subagents.table.tools')}:</span>
-                      {subagent.tools && subagent.tools.length > 0 ? (
+                    <div className="mb-3">
+                      <div className="flex items-start text-sm">
+                        <span className="text-gray-500 dark:text-gray-400 mr-2 mt-1">{t('settings.subagents.table.tools')}:</span>
                         <div className="flex-1">
-                          <div className="flex items-center space-x-1 text-gray-500 dark:text-gray-400 mb-1">
-                            <Tag className="w-3 h-3" />
-                            <span className="text-xs">{t('settings.subagents.table.toolsCount', { count: subagent.tools.length })}</span>
-                          </div>
-                          <div className="flex flex-wrap gap-1">
-                            {subagent.tools.map((tool, toolIndex) => (
-                              <code key={toolIndex} className="bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-1.5 py-0.5 rounded text-xs">
-                                {getToolDisplayName(tool)}
-                              </code>
-                            ))}
-                          </div>
+                          <ToolsList
+                            tools={subagent.tools || []}
+                            id={subagent.id}
+                            expandedTools={expandedTools}
+                            setExpandedTools={setExpandedTools}
+                            isMobile={true}
+                            emptyMessage={t('settings.subagents.table.inheritSettings')}
+                          />
                         </div>
-                      ) : (
-                        <span className="text-sm text-gray-500 dark:text-gray-400">{t('settings.subagents.table.inheritSettings')}</span>
-                      )}
+                      </div>
                     </div>
 
                     {/* Created At */}
@@ -278,23 +271,14 @@ export const SubagentsPage: React.FC = () => {
                         </div>
                       </TableCell>
                       <TableCell className="px-6 py-4">
-                        {subagent.tools && subagent.tools.length > 0 ? (
-                          <div>
-                            <div className="flex items-center space-x-1 text-sm text-gray-500 dark:text-gray-400 mb-1">
-                              <Tag className="w-3 h-3" />
-                              <span>{t('settings.subagents.table.toolsCount', { count: subagent.tools.length })}</span>
-                            </div>
-                            <div className="flex flex-wrap gap-1">
-                              {subagent.tools.map((tool, toolIndex) => (
-                                <code key={toolIndex} className="bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-1.5 py-0.5 rounded text-xs">
-                                  {getToolDisplayName(tool)}
-                                </code>
-                              ))}
-                            </div>
-                          </div>
-                        ) : (
-                          <span className="text-sm text-gray-500 dark:text-gray-400">{t('settings.subagents.table.inheritSettings')}</span>
-                        )}
+                        <ToolsList
+                          tools={subagent.tools || []}
+                          id={subagent.id}
+                          expandedTools={expandedTools}
+                          setExpandedTools={setExpandedTools}
+                          isMobile={false}
+                          emptyMessage={t('settings.subagents.table.inheritSettings')}
+                        />
                       </TableCell>
                       <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                         <div className="flex items-center space-x-1">
@@ -379,6 +363,6 @@ export const SubagentsPage: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };

@@ -9,7 +9,6 @@ import {
   // User,
   AlertCircle,
   Clock,
-  Tag,
   Code
 } from 'lucide-react';
 import {
@@ -24,8 +23,8 @@ import { SlashCommand, SlashCommandFilter } from '../types/commands';
 import { useCommands, useDeleteCommand } from '../hooks/useCommands';
 import { CommandForm } from '../components/CommandForm';
 import { formatRelativeTime } from '../utils';
-import { getToolDisplayName } from '../utils/toolMapping';
 import { useMobileContext } from '../contexts/MobileContext';
+import { ToolsList } from '../components/ToolsList';
 
 export const CommandsPage: React.FC = () => {
   const { t } = useTranslation('pages');
@@ -35,6 +34,7 @@ export const CommandsPage: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingCommand, setEditingCommand] = useState<SlashCommand | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<SlashCommand | null>(null);
+  const [expandedTools, setExpandedTools] = useState<Record<string, boolean>>({});
 
   const { data: commands = [], isLoading, error, refetch } = useCommands({
     ...filter,
@@ -66,7 +66,7 @@ export const CommandsPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center">
+      <div className="flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500 mx-auto"></div>
           <p className="mt-4 text-gray-600 dark:text-gray-400">{t('commands.loading')}</p>
@@ -77,7 +77,7 @@ export const CommandsPage: React.FC = () => {
 
   if (error) {
     return (
-      <div className="flex-1 flex items-center justify-center">
+      <div className="flex items-center justify-center">
         <div className="text-center">
           <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
           <p className="text-red-600 text-lg mb-2">{t('commands.error.loadFailed')}</p>
@@ -94,9 +94,9 @@ export const CommandsPage: React.FC = () => {
   }
 
   return (
-    <div className={isMobile ? 'p-4' : 'p-8'}>
+    <>
       {/* Header */}
-      <div className={`${isMobile ? 'mb-6' : 'mb-8'}`}>
+      <div className="mb-8">
         <div className={`${isMobile ? 'mb-4' : 'flex items-center justify-between mb-6'}`}>
           <div>
             <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold text-gray-900 dark:text-white`}>{t('commands.title')}</h1>
@@ -107,19 +107,15 @@ export const CommandsPage: React.FC = () => {
         {/* Search and Add Button */}
         <div className={`${isMobile ? 'space-y-3' : 'flex items-center space-x-4'}`}>
           {/* Search */}
-          <div className={`${isMobile ? '' : 'flex-1'} bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 ${isMobile ? 'p-3' : 'p-4'}`}>
-            <div className={`${isMobile ? 'flex items-center space-x-2' : 'flex items-center space-x-4'}`}>
-              <div className="flex-1 relative">
-                <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 ${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
-                <input
-                  type="text"
-                  placeholder={t('commands.searchPlaceholder')}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className={`pl-10 pr-4 py-2 w-full border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white ${isMobile ? 'text-sm' : ''}`}
-                />
-              </div>
-            </div>
+          <div className={`${isMobile ? '' : 'flex-1'} relative`}>
+            <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 ${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
+            <input
+              type="text"
+              placeholder={t('commands.searchPlaceholder')}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className={`pl-10 pr-4 ${isMobile ? 'py-2' : 'py-3'} w-full border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white ${isMobile ? 'text-sm' : ''}`}
+            />
           </div>
 
           {/* Add Button */}
@@ -209,25 +205,20 @@ export const CommandsPage: React.FC = () => {
                     </div>
 
                     {/* Tools */}
-                    <div className="flex items-start text-sm">
-                      <span className="text-gray-500 dark:text-gray-400 mr-2 mt-1">{t('commands.table.tools')}:</span>
-                      {command.allowedTools && command.allowedTools.length > 0 ? (
+                    <div className="mb-3">
+                      <div className="flex items-start text-sm">
+                        <span className="text-gray-500 dark:text-gray-400 mr-2 mt-1">{t('commands.table.tools')}:</span>
                         <div className="flex-1">
-                          <div className="flex items-center space-x-1 text-gray-500 dark:text-gray-400 mb-1">
-                            <Tag className="w-3 h-3" />
-                            <span className="text-xs">{t('commands.table.toolsCount', { count: command.allowedTools.length })}</span>
-                          </div>
-                          <div className="flex flex-wrap gap-1">
-                            {command.allowedTools.map((tool, idx) => (
-                              <code key={idx} className="bg-green-50 dark:bg-green-900/50 text-green-700 dark:text-green-400 px-1.5 py-0.5 rounded text-xs">
-                                {getToolDisplayName(tool)}
-                              </code>
-                            ))}
-                          </div>
+                          <ToolsList
+                            tools={command.allowedTools || []}
+                            id={command.id}
+                            expandedTools={expandedTools}
+                            setExpandedTools={setExpandedTools}
+                            isMobile={true}
+                            emptyMessage={t('commands.table.inheritSettings')}
+                          />
                         </div>
-                      ) : (
-                        <span className="text-sm text-gray-500 dark:text-gray-400">{t('commands.table.inheritSettings')}</span>
-                      )}
+                      </div>
                     </div>
 
                     {/* Created At */}
@@ -325,23 +316,14 @@ export const CommandsPage: React.FC = () => {
                           )}
                         </TableCell>
                         <TableCell className="px-6 py-4">
-                          {command.allowedTools && command.allowedTools.length > 0 ? (
-                            <div>
-                              <div className="flex items-center space-x-1 text-sm text-gray-500 dark:text-gray-400 mb-1">
-                                <Tag className="w-3 h-3" />
-                                <span>{t('commands.table.toolsCount', { count: command.allowedTools.length })}</span>
-                              </div>
-                              <div className="flex flex-wrap gap-1">
-                                {command.allowedTools.map((tool, idx) => (
-                                  <code key={idx} className="bg-green-50 dark:bg-green-900/50 text-green-700 dark:text-green-400 px-1.5 py-0.5 rounded text-xs">
-                                    {getToolDisplayName(tool)}
-                                  </code>
-                                ))}
-                              </div>
-                            </div>
-                          ) : (
-                            <span className="text-sm text-gray-500 dark:text-gray-400">{t('commands.table.inheritSettings')}</span>
-                          )}
+                          <ToolsList
+                            tools={command.allowedTools || []}
+                            id={command.id}
+                            expandedTools={expandedTools}
+                            setExpandedTools={setExpandedTools}
+                            isMobile={false}
+                            emptyMessage={t('commands.table.inheritSettings')}
+                          />
                         </TableCell>
                         <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                           <div className="flex items-center space-x-1">
@@ -432,6 +414,6 @@ export const CommandsPage: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };

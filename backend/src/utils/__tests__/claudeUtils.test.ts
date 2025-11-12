@@ -207,11 +207,7 @@ describe('claudeUtils', () => {
       const options = await buildQueryOptions(mockAgent);
 
       expect(options).toMatchObject({
-        systemPrompt: {
-          type: 'preset',
-          preset: 'claude_code',
-          append: 'Test system prompt'
-        },
+        systemPrompt: 'Test system prompt',
         allowedTools: ['Write', 'Read'],
         maxTurns: 10,
         permissionMode: 'acceptEdits',

@@ -248,7 +248,6 @@ export const ProjectsPage: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterAgent, setFilterAgent] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [memoryProject, setMemoryProject] = useState<Project | null>(null);
   const [commandsProject, setCommandsProject] = useState<Project | null>(null);
@@ -290,9 +289,7 @@ export const ProjectsPage: React.FC = () => {
                          project.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          project.defaultAgentName.toLowerCase().includes(searchQuery.toLowerCase());
     
-    const matchesAgent = filterAgent === 'all' || project.defaultAgent === filterAgent;
-    
-    return matchesSearch && matchesAgent;
+    return matchesSearch;
   }).sort((a, b) => {
     // 按最后访问时间倒序排列（最近访问的在前面）
     return new Date(b.lastAccessed).getTime() - new Date(a.lastAccessed).getTime();
@@ -538,51 +535,30 @@ export const ProjectsPage: React.FC = () => {
 
         {/* Search and Add Button */}
         <div className="flex items-center space-x-4">
-          <div className="flex-1 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-            <div className="flex items-center space-x-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="text"
-                  placeholder={t('projects.searchPlaceholder')}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-2 w-full border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                />
-              </div>
-              <div className="flex items-center space-x-2">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('projects.table.agent')}:</span>
-                <select
-                  value={filterAgent}
-                  onChange={(e) => setFilterAgent(e.target.value)}
-                  className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                >
-                  <option value="all">{t('projects.filter.all')}</option>
-                  {enabledAgents.map(agent => (
-                    <option key={agent.id} value={agent.id}>
-                      {agent.ui.icon} {agent.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder={t('projects.searchPlaceholder')}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 pr-4 py-3 w-full border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+            />
           </div>
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={() => setShowImportModal(true)}
-              className="flex items-center space-x-2 px-6 py-3 border border-green-600 text-green-600 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors whitespace-nowrap"
-            >
-              <FolderOpen className="w-5 h-5" />
-              <span>导入项目</span>
-            </button>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
-            >
-              <Plus className="w-5 h-5" />
-              <span>{t('projects.createButton')}</span>
-            </button>
-          </div>
+          <button
+            onClick={() => setShowImportModal(true)}
+            className="flex items-center space-x-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 hover:shadow-md active:scale-95 transition-all whitespace-nowrap font-medium"
+          >
+            <FolderOpen className="w-5 h-5" />
+            <span>导入项目</span>
+          </button>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
+          >
+            <Plus className="w-5 h-5" />
+            <span>{t('projects.createButton')}</span>
+          </button>
         </div>
       </div>
 
@@ -596,7 +572,7 @@ export const ProjectsPage: React.FC = () => {
           <p className="text-gray-600 dark:text-gray-400 mb-6">
             {t('projects.selectType')}
           </p>
-          {!searchQuery && filterAgent === 'all' && (
+          {!searchQuery && (
             <button
               onClick={() => setShowCreateModal(true)}
               className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
