@@ -4,24 +4,32 @@ import * as os from 'os';
 import { ProjectMetadata, ProjectWithAgentInfo } from '../types/projects';
 import { AgentStorage } from './agentStorage';
 
+interface ProjectMetadataStore {
+  [projectPath: string]: ProjectMetadata;
+}
+
 export class ProjectMetadataStorage {
-  private projectsMetaDir: string;  // ~/.claude-agent/projects/
-  private projectsDir: string;      // ~/.claude/projects/
+  private metadataFilePath: string;  // ~/.claude-agent/projects.json
+  private projectsDir: string;       // ~/.claude/projects/
+  private claudeConfigPath: string;  // ~/.claude.json
   private agentStorage: AgentStorage;
+  private metadataCache: ProjectMetadataStore | null = null;
 
   constructor() {
     const baseDir = path.join(os.homedir(), '.claude-agent');
-    this.projectsMetaDir = path.join(baseDir, 'projects');
+    this.metadataFilePath = path.join(baseDir, 'projects.json');
     this.projectsDir = path.join(os.homedir(), '.claude', 'projects');
+    this.claudeConfigPath = path.join(os.homedir(), '.claude.json');
     this.agentStorage = new AgentStorage();
-    
+
     // Ensure directories exist
     this.ensureDirectoriesExist();
   }
 
   private ensureDirectoriesExist(): void {
-    if (!fs.existsSync(this.projectsMetaDir)) {
-      fs.mkdirSync(this.projectsMetaDir, { recursive: true });
+    const baseDir = path.dirname(this.metadataFilePath);
+    if (!fs.existsSync(baseDir)) {
+      fs.mkdirSync(baseDir, { recursive: true });
     }
     if (!fs.existsSync(this.projectsDir)) {
       fs.mkdirSync(this.projectsDir, { recursive: true });
@@ -29,74 +37,227 @@ export class ProjectMetadataStorage {
   }
 
   /**
-   * Scan ~/.claude/projects directory to discover all project directories
+   * Load all metadata from the single JSON file
    */
-  private scanProjectDirectories(): string[] {
-    try {
-      const items = fs.readdirSync(this.projectsDir, { withFileTypes: true });
-      return items
-        .filter(item => item.isDirectory())
-        .map(item => item.name)
-        .sort();
-    } catch (error) {
-      console.error('Failed to scan projects directory:', error);
-      return [];
-    }
-  }
-
-  /**
-   * Get all projects by scanning directories and enriching with metadata
-   */
-  getAllProjects(): ProjectWithAgentInfo[] {
-    const projectDirs = this.scanProjectDirectories();
-    const projects: ProjectWithAgentInfo[] = [];
-
-    for (const dirName of projectDirs) {
-      try {
-        const metadata = this.getProjectMetadata(dirName);
-        const enriched = this.enrichProjectWithAgentInfo(dirName, metadata);
-        projects.push(enriched);
-      } catch (error) {
-        console.error(`Failed to process project ${dirName}:`, error);
-      }
+  private loadMetadata(): ProjectMetadataStore {
+    if (this.metadataCache) {
+      return this.metadataCache;
     }
 
-    return projects.sort((a, b) => new Date(b.lastAccessed).getTime() - new Date(a.lastAccessed).getTime());
-  }
-
-  /**
-   * Get project metadata for a specific project directory
-   */
-  getProjectMetadata(dirName: string): ProjectMetadata {
-    const metaFilePath = path.join(this.projectsMetaDir, `${dirName}.json`);
-    
     try {
-      if (fs.existsSync(metaFilePath)) {
-        const content = fs.readFileSync(metaFilePath, 'utf-8');
-        return JSON.parse(content);
+      if (fs.existsSync(this.metadataFilePath)) {
+        const content = fs.readFileSync(this.metadataFilePath, 'utf-8');
+        this.metadataCache = JSON.parse(content);
+        return this.metadataCache!;
       }
     } catch (error) {
-      console.error(`Failed to read metadata for project ${dirName}:`, error);
+      console.error('Failed to load project metadata:', error);
     }
 
-    // Create default metadata if file doesn't exist
-    return this.createDefaultProjectMetadata(dirName);
+    // If file doesn't exist, try to migrate from old format
+    console.log('📦 Migrating project metadata from old format...');
+    this.metadataCache = this.migrateFromOldFormat();
+
+    // Save the migrated data
+    if (Object.keys(this.metadataCache).length > 0) {
+      this.saveMetadata(this.metadataCache);
+      console.log(`✅ Migrated ${Object.keys(this.metadataCache).length} projects`);
+    } else {
+      this.metadataCache = {};
+    }
+
+    return this.metadataCache;
   }
 
   /**
-   * Create default metadata for a project
+   * Migrate from old format (~/.claude-agent/projects/*.json) to new format
    */
-  private createDefaultProjectMetadata(dirName: string): ProjectMetadata {
-    const projectPath = path.join(this.projectsDir, dirName);
-    const now = new Date().toISOString();
-    
+  private migrateFromOldFormat(): ProjectMetadataStore {
+    const oldProjectsDir = path.join(path.dirname(this.metadataFilePath), 'projects');
+    const store: ProjectMetadataStore = {};
+
+    if (!fs.existsSync(oldProjectsDir)) {
+      return store;
+    }
+
+    try {
+      const files = fs.readdirSync(oldProjectsDir);
+
+      for (const file of files) {
+        if (!file.endsWith('.json')) continue;
+
+        try {
+          const filePath = path.join(oldProjectsDir, file);
+          const content = fs.readFileSync(filePath, 'utf-8');
+          const metadata: ProjectMetadata = JSON.parse(content);
+
+          // The old metadata.path points to ~/.claude/projects/{encoded-name}
+          // We need to extract the real project path from session files
+          const realPath = this.extractRealProjectPath(metadata.path);
+
+          if (realPath) {
+            // Update metadata with real path
+            metadata.path = realPath;
+            store[realPath] = metadata;
+            console.log(`  ✓ Migrated: ${metadata.name} (${realPath})`);
+          } else {
+            console.warn(`  ⚠ Could not find real path for ${metadata.name}`);
+          }
+        } catch (error) {
+          console.warn(`  ⚠ Failed to migrate ${file}:`, error);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to read old projects directory:', error);
+    }
+
+    return store;
+  }
+
+  /**
+   * Extract real project path from session files in ~/.claude/projects/
+   */
+  private extractRealProjectPath(claudeProjectDir: string): string | null {
+    try {
+      if (!fs.existsSync(claudeProjectDir)) {
+        return null;
+      }
+
+      // Find all jsonl files in the project directory
+      const files = fs.readdirSync(claudeProjectDir).filter(file => file.endsWith('.jsonl'));
+
+      for (const file of files) {
+        try {
+          const filePath = path.join(claudeProjectDir, file);
+          const content = fs.readFileSync(filePath, 'utf-8');
+          const firstLine = content.split('\n')[0];
+
+          if (firstLine) {
+            const message = JSON.parse(firstLine);
+            if (message.cwd) {
+              return message.cwd;
+            }
+          }
+        } catch {
+          // Skip this file and try the next one
+          continue;
+        }
+      }
+    } catch {
+      // Directory doesn't exist or can't be read
+    }
+
+    return null;
+  }
+
+  /**
+   * Save all metadata to the single JSON file
+   */
+  private saveMetadata(metadata: ProjectMetadataStore): void {
+    try {
+      fs.writeFileSync(this.metadataFilePath, JSON.stringify(metadata, null, 2), 'utf-8');
+      this.metadataCache = metadata;
+    } catch (error) {
+      console.error('Failed to save project metadata:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Read all project paths from ~/.claude.json
+   */
+  private getClaudeProjects(): string[] {
+    try {
+      if (fs.existsSync(this.claudeConfigPath)) {
+        const content = fs.readFileSync(this.claudeConfigPath, 'utf-8');
+        const config = JSON.parse(content);
+
+        if (config.projects && typeof config.projects === 'object') {
+          return Object.keys(config.projects);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to read Claude config:', error);
+    }
+
+    return [];
+  }
+
+  /**
+   * Get or create metadata for a project path
+   */
+  private getOrCreateMetadataForPath(projectPath: string): ProjectMetadata {
+    const allMetadata = this.loadMetadata();
+
+    // Check if metadata exists for this path
+    if (allMetadata[projectPath]) {
+      const existing = allMetadata[projectPath];
+      let shouldUpdate = false;
+
+      // Always get fresh timestamps to compare with stored ones
+      const timestamps = this.getProjectTimestamps(projectPath);
+
+      // Check if we need to refresh timestamps
+      const refreshConditions = [
+        // Condition 1: Migration artifacts (same timestamps)
+        existing.createdAt === existing.lastAccessed,
+        
+        // Condition 2: Session directory is newer than stored lastAccessed
+        (() => {
+          const sessionDirPath = this.findClaudeSessionDir(projectPath);
+          if (sessionDirPath && fs.existsSync(sessionDirPath)) {
+            const sessionStats = fs.statSync(sessionDirPath);
+            const sessionTime = new Date(sessionStats.mtime).getTime();
+            const storedTime = new Date(existing.lastAccessed).getTime();
+            return sessionTime > storedTime + 60000; // More than 1 minute newer
+          }
+          return false;
+        })(),
+
+        // Condition 3: Creation time looks wrong (much older than reasonable)
+        (() => {
+          const storedCreatedTime = new Date(existing.createdAt).getTime();
+          const filesystemCreatedTime = new Date(timestamps.createdAt).getTime();
+          const timeDiff = Math.abs(storedCreatedTime - filesystemCreatedTime);
+          return timeDiff > 24 * 60 * 60 * 1000; // More than 1 day difference
+        })()
+      ];
+
+      shouldUpdate = refreshConditions.some(condition => condition);
+
+      if (shouldUpdate) {
+        // Only update if we got better timestamps (not current time)
+        const now = new Date();
+        const timestampDate = new Date(timestamps.createdAt);
+        const timeDiff = Math.abs(now.getTime() - timestampDate.getTime());
+
+        // If timestamp is more than 1 minute old, it's likely from filesystem
+        if (timeDiff > 60000) {
+          existing.createdAt = timestamps.createdAt;
+          existing.lastAccessed = timestamps.lastAccessed;
+          allMetadata[projectPath] = existing;
+          this.saveMetadata(allMetadata);
+          console.log(`🔄 Refreshed timestamps for: ${projectPath}`);
+          console.log(`   Created: ${existing.createdAt}`);
+          console.log(`   Accessed: ${existing.lastAccessed}`);
+        }
+      }
+
+      return existing;
+    }
+
+    // Create new metadata if not found
+    // Try to get real timestamps from filesystem
+    const timestamps = this.getProjectTimestamps(projectPath);
+    const metadataId = `project_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
     const metadata: ProjectMetadata = {
-      id: `project_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      name: dirName, // Temporarily use dirName, will be updated below
+      id: metadataId,
+      name: path.basename(projectPath),
       description: '',
       path: projectPath,
-      createdAt: now,
-      lastAccessed: now,
+      createdAt: timestamps.createdAt,
+      lastAccessed: timestamps.lastAccessed,
       agents: {},
       defaultAgent: '',
       skills: {},
@@ -104,50 +265,173 @@ export class ProjectMetadataStorage {
       metadata: {}
     };
 
-    // Extract clean project name from directory name and metadata
-    const cleanProjectName = this.extractCleanProjectName(dirName, metadata);
-    metadata.name = cleanProjectName;
+    // Save to store
+    allMetadata[projectPath] = metadata;
+    this.saveMetadata(allMetadata);
 
-    // Save the default metadata
-    this.saveProjectMetadata(dirName, metadata);
     return metadata;
   }
 
   /**
-   * Save project metadata
+   * Get project timestamps from filesystem
    */
-  saveProjectMetadata(dirName: string, metadata: ProjectMetadata): void {
+  private getProjectTimestamps(projectPath: string): { createdAt: string; lastAccessed: string } {
+    const now = new Date().toISOString();
+    let createdAt = now;
+    let lastAccessed = now;
+
     try {
-      const metaFilePath = path.join(this.projectsMetaDir, `${dirName}.json`);
-      fs.writeFileSync(metaFilePath, JSON.stringify(metadata, null, 2), 'utf-8');
+      // Strategy 1: Try to get last accessed time from Claude sessions directory FIRST
+      // This is the most accurate for when the project was actually used
+      const sessionDirPath = this.findClaudeSessionDir(projectPath);
+      if (sessionDirPath && fs.existsSync(sessionDirPath)) {
+        const sessionStats = fs.statSync(sessionDirPath);
+        lastAccessed = sessionStats.mtime.toISOString();
+      }
+
+      // Strategy 2: Try to get creation time from real project directory
+      if (fs.existsSync(projectPath)) {
+        const stats = fs.statSync(projectPath);
+        createdAt = stats.birthtime.toISOString();
+        
+        // Only use project directory mtime if we don't have session time
+        if (lastAccessed === now) {
+          lastAccessed = stats.mtime.toISOString();
+        }
+      } else {
+        // Strategy 3: If project directory doesn't exist, try parent directory
+        // This helps for projects that were deleted but still exist in ~/.claude.json
+        const parentDir = path.dirname(projectPath);
+        if (fs.existsSync(parentDir)) {
+          const parentStats = fs.statSync(parentDir);
+          createdAt = parentStats.birthtime.toISOString();
+          
+          // Only use parent directory mtime if we don't have session time
+          if (lastAccessed === now) {
+            lastAccessed = parentStats.mtime.toISOString();
+          }
+          console.log(`📁 Using parent directory timestamps for missing project: ${projectPath}`);
+        }
+      }
     } catch (error) {
-      console.error(`Failed to save metadata for project ${dirName}:`, error);
-      throw error;
+      console.warn(`Failed to get timestamps for ${projectPath}:`, error);
     }
+
+    return { createdAt, lastAccessed };
   }
 
   /**
-   * Get Claude project directory last modified time from filesystem
+   * Find the Claude session directory for a project path
    */
-  private getProjectLastModified(dirName: string, metadata: ProjectMetadata): string {
+  private findClaudeSessionDir(projectPath: string): string | null {
     try {
-      // Use the Claude project directory path: ~/.claude/projects/{dirName}
-      const claudeProjectPath = path.join(this.projectsDir, dirName);
-      
-      // Get the directory stats
-      const stats = fs.statSync(claudeProjectPath);
-      return stats.mtime.toISOString();
+      // The session directory name is the encoded project path
+      // For example: /Users/kongjie/projects -> -Users-kongjie-projects
+      const encoded = projectPath.replace(/\//g, '-');
+      const sessionDir = path.join(this.projectsDir, encoded);
+
+      if (fs.existsSync(sessionDir)) {
+        return sessionDir;
+      }
     } catch (error) {
-      console.warn(`Failed to get filesystem time for Claude project ${dirName}:`, error);
-      // Fallback to metadata lastAccessed if filesystem time is unavailable
-      return metadata.lastAccessed;
+      // Ignore errors
     }
+
+    return null;
   }
+
+  /**
+   * Get all projects by reading from both ~/.claude.json and AgentStudio metadata
+   */
+  getAllProjects(): ProjectWithAgentInfo[] {
+    const claudeProjectPaths = this.getClaudeProjects();
+    const allMetadata = this.loadMetadata();
+    const projects: ProjectWithAgentInfo[] = [];
+    const processedPaths = new Set<string>();
+
+    // First, process projects from Claude config (active projects)
+    for (const projectPath of claudeProjectPaths) {
+      try {
+        // Get or create metadata for this project
+        const metadata = this.getOrCreateMetadataForPath(projectPath);
+
+        // Enrich with agent info
+        const enriched = this.enrichProjectWithAgentInfo(metadata);
+        projects.push(enriched);
+        processedPaths.add(projectPath);
+      } catch (error) {
+        console.error(`Failed to process project ${projectPath}:`, error);
+      }
+    }
+
+    // Then, process projects that only exist in AgentStudio metadata (created but not yet used)
+    for (const projectPath of Object.keys(allMetadata)) {
+      if (!processedPaths.has(projectPath)) {
+        try {
+          const metadata = allMetadata[projectPath];
+          
+          // Only include if the project has agents associated (active projects)
+          if (Object.keys(metadata.agents).length > 0) {
+            const enriched = this.enrichProjectWithAgentInfo(metadata);
+            projects.push(enriched);
+            console.log(`📋 Added AgentStudio-only project: ${metadata.name}`);
+          }
+        } catch (error) {
+          console.error(`Failed to process AgentStudio project ${projectPath}:`, error);
+        }
+      }
+    }
+
+    return projects.sort((a, b) => new Date(b.lastAccessed).getTime() - new Date(a.lastAccessed).getTime());
+  }
+
+  /**
+   * Get project metadata by path
+   */
+  getProjectMetadata(projectPath: string): ProjectMetadata | null {
+    const allMetadata = this.loadMetadata();
+    return allMetadata[projectPath] || null;
+  }
+
+  /**
+   * Save project metadata for a specific path
+   */
+  private saveProjectMetadata(projectPath: string, metadata: ProjectMetadata): void {
+    const allMetadata = this.loadMetadata();
+    allMetadata[projectPath] = metadata;
+    this.saveMetadata(allMetadata);
+  }
+
+  /**
+   * Get project directory last modified time from filesystem by path
+   */
+  private getProjectLastModifiedByPath(projectPath: string, metadata: ProjectMetadata): string {
+    try {
+      // Priority 1: Use session directory time (most accurate for last activity)
+      const sessionDirPath = this.findClaudeSessionDir(projectPath);
+      if (sessionDirPath && fs.existsSync(sessionDirPath)) {
+        const sessionStats = fs.statSync(sessionDirPath);
+        return sessionStats.mtime.toISOString();
+      }
+
+      // Priority 2: Use project directory time
+      if (fs.existsSync(projectPath)) {
+        const stats = fs.statSync(projectPath);
+        return stats.mtime.toISOString();
+      }
+    } catch (error) {
+      console.warn(`Failed to get filesystem time for project ${projectPath}:`, error);
+    }
+
+    // Fallback to metadata lastAccessed if filesystem time is unavailable
+    return metadata.lastAccessed;
+  }
+
 
   /**
    * Enrich project metadata with agent information
    */
-  private enrichProjectWithAgentInfo(dirName: string, metadata: ProjectMetadata): ProjectWithAgentInfo {
+  private enrichProjectWithAgentInfo(metadata: ProjectMetadata): ProjectWithAgentInfo {
     const enabledAgents = Object.keys(metadata.agents).filter(
       agentId => metadata.agents[agentId].enabled
     );
@@ -178,25 +462,39 @@ export class ProjectMetadataStorage {
 
         // Update metadata with new default
         metadata.defaultAgent = defaultAgent;
-        this.saveProjectMetadata(dirName, metadata);
+        const allMetadata = this.loadMetadata();
+        allMetadata[metadata.path] = metadata;
+        this.saveMetadata(allMetadata);
+      }
+    } else {
+      // No agents assigned, use claude-code as default fallback
+      const fallbackAgent = this.agentStorage.getAgent('claude-code');
+      if (fallbackAgent && fallbackAgent.enabled) {
+        defaultAgent = 'claude-code';
+        defaultAgentName = fallbackAgent.name;
+        defaultAgentIcon = fallbackAgent.ui.icon;
+        console.log(`📋 Using fallback agent (claude-code) for project: ${metadata.name}`);
       }
     }
 
-    // Extract real project path from session files
-    const realProject = this.extractRealProjectPath(dirName);
-    
+    // Use the path from metadata (which is the real project path)
+    const projectPath = metadata.path;
+
     // Get actual last modified time from filesystem
-    const lastAccessed = this.getProjectLastModified(dirName, metadata);
+    const lastAccessed = this.getProjectLastModifiedByPath(projectPath, metadata);
+
+    // Extract directory name from path for compatibility
+    const dirName = path.basename(projectPath);
 
     return {
       id: metadata.id,
       name: metadata.name,
       dirName,
-      path: realProject?.realPath || metadata.path, // Use real path when available
-      realPath: realProject?.realPath,
+      path: projectPath,
+      realPath: projectPath,
       description: metadata.description,
       createdAt: metadata.createdAt,
-      lastAccessed: lastAccessed, // Use filesystem time instead of metadata
+      lastAccessed: lastAccessed,
       agents: enabledAgents,
       defaultAgent,
       defaultAgentName,
@@ -209,8 +507,10 @@ export class ProjectMetadataStorage {
   /**
    * Add an agent to a project
    */
-  addAgentToProject(dirName: string, agentId: string): void {
-    const metadata = this.getProjectMetadata(dirName);
+  addAgentToProject(projectPath: string, agentId: string): void {
+    const metadata = this.getProjectMetadata(projectPath);
+    if (!metadata) return;
+
     const now = new Date().toISOString();
 
     if (!metadata.agents[agentId]) {
@@ -231,18 +531,19 @@ export class ProjectMetadataStorage {
     }
 
     metadata.lastAccessed = now;
-    this.saveProjectMetadata(dirName, metadata);
+    this.saveProjectMetadata(projectPath, metadata);
   }
 
   /**
    * Remove an agent from a project
    */
-  removeAgentFromProject(dirName: string, agentId: string): void {
-    const metadata = this.getProjectMetadata(dirName);
-    
+  removeAgentFromProject(projectPath: string, agentId: string): void {
+    const metadata = this.getProjectMetadata(projectPath);
+    if (!metadata) return;
+
     if (metadata.agents[agentId]) {
       metadata.agents[agentId].enabled = false;
-      
+
       // If this was the default agent, find a new default
       if (metadata.defaultAgent === agentId) {
         const enabledAgents = Object.keys(metadata.agents).filter(
@@ -250,73 +551,81 @@ export class ProjectMetadataStorage {
         );
         metadata.defaultAgent = enabledAgents.length > 0 ? enabledAgents[0] : '';
       }
-      
+
       metadata.lastAccessed = new Date().toISOString();
-      this.saveProjectMetadata(dirName, metadata);
+      this.saveProjectMetadata(projectPath, metadata);
     }
   }
 
   /**
    * Set default agent for a project
    */
-  setDefaultAgent(dirName: string, agentId: string): void {
-    const metadata = this.getProjectMetadata(dirName);
-    
+  setDefaultAgent(projectPath: string, agentId: string): void {
+    const metadata = this.getProjectMetadata(projectPath);
+    if (!metadata) return;
+
     // Ensure the agent is enabled for this project
     if (!metadata.agents[agentId]) {
-      this.addAgentToProject(dirName, agentId);
+      this.addAgentToProject(projectPath, agentId);
       return;
     }
-    
+
     if (metadata.agents[agentId].enabled) {
       metadata.defaultAgent = agentId;
       metadata.lastAccessed = new Date().toISOString();
-      this.saveProjectMetadata(dirName, metadata);
+      this.saveProjectMetadata(projectPath, metadata);
     }
   }
 
   /**
    * Update project tags
    */
-  updateProjectTags(dirName: string, tags: string[]): void {
-    const metadata = this.getProjectMetadata(dirName);
+  updateProjectTags(projectPath: string, tags: string[]): void {
+    const metadata = this.getProjectMetadata(projectPath);
+    if (!metadata) return;
+
     metadata.tags = tags;
     metadata.lastAccessed = new Date().toISOString();
-    this.saveProjectMetadata(dirName, metadata);
+    this.saveProjectMetadata(projectPath, metadata);
   }
 
   /**
    * Update project custom metadata
    */
-  updateProjectMetadata(dirName: string, customMetadata: Record<string, any>): void {
-    const metadata = this.getProjectMetadata(dirName);
+  updateProjectMetadata(projectPath: string, customMetadata: Record<string, any>): void {
+    const metadata = this.getProjectMetadata(projectPath);
+    if (!metadata) return;
+
     metadata.metadata = { ...metadata.metadata, ...customMetadata };
     metadata.lastAccessed = new Date().toISOString();
-    this.saveProjectMetadata(dirName, metadata);
+    this.saveProjectMetadata(projectPath, metadata);
   }
 
   /**
    * Update project basic info
    */
-  updateProjectInfo(dirName: string, updates: { name?: string; description?: string }): void {
-    const metadata = this.getProjectMetadata(dirName);
-    
+  updateProjectInfo(projectPath: string, updates: { name?: string; description?: string }): void {
+    const metadata = this.getProjectMetadata(projectPath);
+    if (!metadata) return;
+
     if (updates.name !== undefined) {
       metadata.name = updates.name;
     }
     if (updates.description !== undefined) {
       metadata.description = updates.description;
     }
-    
+
     metadata.lastAccessed = new Date().toISOString();
-    this.saveProjectMetadata(dirName, metadata);
+    this.saveProjectMetadata(projectPath, metadata);
   }
 
   /**
    * Record agent usage for a project
    */
-  recordAgentUsage(dirName: string, agentId: string): void {
-    const metadata = this.getProjectMetadata(dirName);
+  recordAgentUsage(projectPath: string, agentId: string): void {
+    const metadata = this.getProjectMetadata(projectPath);
+    if (!metadata) return;
+
     const now = new Date().toISOString();
 
     if (!metadata.agents[agentId]) {
@@ -335,33 +644,32 @@ export class ProjectMetadataStorage {
     // Update default agent to the most recently used
     metadata.defaultAgent = agentId;
     metadata.lastAccessed = now;
-    
-    this.saveProjectMetadata(dirName, metadata);
+
+    this.saveProjectMetadata(projectPath, metadata);
   }
 
   /**
-   * Create a new project directory and metadata
+   * Create a new project metadata entry
+   * @param projectPath The real project path (can be anywhere on the filesystem)
+   * @param initialData Initial project data including name, description, agentId, etc.
    */
-  createProject(dirName: string, initialData: {
+  createProject(projectPath: string, initialData: {
     name?: string;
     description?: string;
     agentId?: string;
     tags?: string[];
     metadata?: Record<string, any>;
   }): ProjectMetadata {
-    const projectPath = path.join(this.projectsDir, dirName);
-    
-    // Create project directory
-    if (!fs.existsSync(projectPath)) {
-      fs.mkdirSync(projectPath, { recursive: true });
-    }
-
     const now = new Date().toISOString();
+
+    // Generate a unique metadata ID
+    const metadataId = `project_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
     const metadata: ProjectMetadata = {
-      id: `project_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      name: initialData.name || dirName,
+      id: metadataId,
+      name: initialData.name || path.basename(projectPath),
       description: initialData.description || '',
-      path: projectPath,
+      path: projectPath, // Store the real project path
       createdAt: now,
       lastAccessed: now,
       agents: {},
@@ -382,104 +690,74 @@ export class ProjectMetadataStorage {
       metadata.defaultAgent = initialData.agentId;
     }
 
-    this.saveProjectMetadata(dirName, metadata);
+    // Save metadata
+    this.saveProjectMetadata(projectPath, metadata);
     return metadata;
   }
 
   /**
-   * Delete a project (remove metadata, but keep directory)
+   * Delete a project (remove metadata, claude config entry, and session directory)
    */
-  deleteProject(dirName: string): boolean {
+  deleteProject(projectPath: string): boolean {
     try {
-      const metaFilePath = path.join(this.projectsMetaDir, `${dirName}.json`);
-      if (fs.existsSync(metaFilePath)) {
-        fs.unlinkSync(metaFilePath);
-        return true;
+      let deletedSomething = false;
+
+      // 1. Delete from AgentStudio metadata
+      const allMetadata = this.loadMetadata();
+      if (allMetadata[projectPath]) {
+        delete allMetadata[projectPath];
+        this.saveMetadata(allMetadata);
+        deletedSomething = true;
+        console.log(`🗑️ Removed project metadata: ${projectPath}`);
       }
-      return false;
+
+      // 2. Remove from Claude's config file (~/.claude.json)
+      try {
+        if (fs.existsSync(this.claudeConfigPath)) {
+          const content = fs.readFileSync(this.claudeConfigPath, 'utf-8');
+          const config = JSON.parse(content);
+          
+          if (config.projects && config.projects[projectPath]) {
+            delete config.projects[projectPath];
+            fs.writeFileSync(this.claudeConfigPath, JSON.stringify(config, null, 2));
+            deletedSomething = true;
+            console.log(`🗑️ Removed from Claude config: ${projectPath}`);
+          }
+        }
+      } catch (error) {
+        console.warn(`Failed to remove from Claude config:`, error);
+      }
+
+      // 3. Remove Claude session directory
+      try {
+        const sessionDirPath = this.findClaudeSessionDir(projectPath);
+        if (sessionDirPath && fs.existsSync(sessionDirPath)) {
+          fs.rmSync(sessionDirPath, { recursive: true, force: true });
+          deletedSomething = true;
+          console.log(`🗑️ Removed session directory: ${sessionDirPath}`);
+        }
+      } catch (error) {
+        console.warn(`Failed to remove session directory:`, error);
+      }
+
+      return deletedSomething;
     } catch (error) {
-      console.error(`Failed to delete project metadata for ${dirName}:`, error);
+      console.error(`Failed to delete project ${projectPath}:`, error);
       return false;
     }
   }
 
   /**
-   * Get project by directory name
+   * Get project by path
    */
-  getProject(dirName: string): ProjectWithAgentInfo | null {
+  getProject(projectPath: string): ProjectWithAgentInfo | null {
     try {
-      const metadata = this.getProjectMetadata(dirName);
-      return this.enrichProjectWithAgentInfo(dirName, metadata);
+      const metadata = this.getProjectMetadata(projectPath);
+      if (!metadata) return null;
+      return this.enrichProjectWithAgentInfo(metadata);
     } catch (error) {
-      console.error(`Failed to get project ${dirName}:`, error);
+      console.error(`Failed to get project ${projectPath}:`, error);
       return null;
     }
-  }
-
-  /**
-   * Extract real project path from jsonl session files
-   */
-  private extractRealProjectPath(dirName: string): { realPath: string; projectName: string } | null {
-    const projectDir = path.join(this.projectsDir, dirName);
-    
-    try {
-      // Find all jsonl files in the project directory
-      const files = fs.readdirSync(projectDir).filter(file => file.endsWith('.jsonl'));
-      
-      for (const file of files) {
-        try {
-          const filePath = path.join(projectDir, file);
-          const content = fs.readFileSync(filePath, 'utf-8');
-          const firstLine = content.split('\n')[0];
-          
-          if (firstLine) {
-            const message = JSON.parse(firstLine);
-            if (message.cwd) {
-              return {
-                realPath: message.cwd,
-                projectName: path.basename(message.cwd)
-              };
-            }
-          }
-        } catch {
-          // Skip this file and try the next one
-          continue;
-        }
-      }
-    } catch {
-      // Directory doesn't exist or can't be read
-    }
-    
-    return null;
-  }
-
-  /**
-   * Extract clean project name from directory name and metadata
-   */
-  private extractCleanProjectName(dirName: string, metadata?: ProjectMetadata): string {
-    // Try to extract from jsonl session files first
-    const realProject = this.extractRealProjectPath(dirName);
-    if (realProject) {
-      return realProject.projectName;
-    }
-    
-    // If metadata has migratedFrom, use the original path to extract the real directory name
-    if (metadata?.metadata?.migratedFrom) {
-      const originalPath = metadata.metadata.migratedFrom as string;
-      return path.basename(originalPath);
-    }
-    
-    // Otherwise, try to extract from the dirName (which is the actual directory name in ~/.claude/projects)
-    // The dirName is already the real directory name, so we can try to extract meaningful parts
-    if (dirName.includes('-')) {
-      // This might be an encoded path, try to extract the last meaningful segment
-      const segments = dirName.split('-').filter(segment => segment.length > 0);
-      if (segments.length > 0) {
-        return segments[segments.length - 1];
-      }
-    }
-    
-    // Fallback to original directory name
-    return dirName;
   }
 }
