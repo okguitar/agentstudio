@@ -98,7 +98,9 @@
     "temporaryTab": "temporary",
     "closeTab": "Close tab",
     "noProject": "No Project Selected",
-    "selectProjectFirst": "Please select a project first to browse files"
+    "selectProjectFirst": "Please select a project first to browse files",
+    "collapsePanel": "Collapse directory panel",
+    "expandPanel": "Expand directory panel"
   },
   "sessionDropdown": {
     "title": "Session Management",

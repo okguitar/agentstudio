@@ -338,18 +338,20 @@ export const ProjectsPage: React.FC = () => {
   };
 
   const handleOpenProject = async (project: Project) => {
-    // Check if project has a default agent
-    if (!project.defaultAgent || project.agents.length === 0) {
-      // Show agent selection dialog
+    // If project has agents but no default, show selection dialog
+    if (project.agents.length > 0 && !project.defaultAgent) {
       setAgentSelectProject(project);
       return;
     }
 
-    // Open project with default agent
-    console.log('Opening project:', project.name, 'with agent:', project.defaultAgent);
+    // Use default agent or fallback to claude-code
+    const agentToUse = project.defaultAgent || 'claude-code';
+    
+    // Open project with agent
+    console.log('Opening project:', project.name, 'with agent:', agentToUse);
     const params = new URLSearchParams();
     params.set('project', project.path);
-    const url = `/chat/${project.defaultAgent}?${params.toString()}`;
+    const url = `/chat/${agentToUse}?${params.toString()}`;
     console.log('Generated URL:', url);
     window.open(url, '_blank');
 
@@ -397,12 +399,27 @@ export const ProjectsPage: React.FC = () => {
     setSubAgentsProject(project);
   };
 
+  const handleAgentChanged = (projectId: string, newAgent: any) => {
+    // 更新项目列表中的助手信息
+    setProjects(prev => prev.map(p => 
+      p.id === projectId 
+        ? { 
+            ...p, 
+            defaultAgent: newAgent.id,
+            defaultAgentName: newAgent.name,
+            defaultAgentIcon: newAgent.ui.icon,
+            lastAccessed: new Date().toISOString()
+          }
+        : p
+    ));
+  };
+
   const handleAgentSelection = async (agentId: string) => {
     if (!agentSelectProject) return;
 
     try {
-      // Call API to select agent for project
-      const response = await authFetch(`${API_BASE}/projects/${agentSelectProject.dirName}/select-agent`, {
+      // Call API to select agent for project using full project path
+      const response = await authFetch(`${API_BASE}/projects/${encodeURIComponent(agentSelectProject.path)}/select-agent`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -584,11 +601,13 @@ export const ProjectsPage: React.FC = () => {
       ) : (
         <ProjectTable
           projects={filteredProjects}
+          agents={enabledAgents}
           onOpenProject={handleOpenProject}
           onMemoryManagement={handleMemoryManagement}
           onCommandManagement={handleCommandManagement}
           onSubAgentManagement={handleSubAgentManagement}
           onDeleteProject={handleDeleteProject}
+          onAgentChanged={handleAgentChanged}
         />
       )}
 
