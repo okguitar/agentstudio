@@ -85,18 +85,22 @@ vi.mock('../projectMetadataStorage.js', () => ({
         lastAccessed: '2024-01-02T00:00:00Z'
       }
     ]),
-    getProjectMetadata: vi.fn((dirName: string) => ({
-      id: `project_${Date.now()}`,
-      name: dirName,
-      description: '',
-      path: `/home/user/${dirName}`,
-      createdAt: new Date().toISOString(),
-      lastAccessed: new Date().toISOString(),
-      agents: {},
-      defaultAgent: '',
-      tags: [],
-      metadata: {}
-    })),
+    getProjectMetadata: vi.fn((pathOrDirName: string) => {
+      // Extract the directory name from the path
+      const dirName = pathOrDirName.split('/').pop() || pathOrDirName;
+      return {
+        id: `project_${Date.now()}`,
+        name: dirName,
+        description: '',
+        path: pathOrDirName,
+        createdAt: new Date().toISOString(),
+        lastAccessed: new Date().toISOString(),
+        agents: {},
+        defaultAgent: '',
+        tags: [],
+        metadata: {}
+      };
+    }),
     saveProjectMetadata: vi.fn()
   }))
 }));

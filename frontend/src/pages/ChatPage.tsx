@@ -7,6 +7,7 @@ import { RightPanelWrapper } from '../components/RightPanelWrapper';
 import { useAgentStore } from '../stores/useAgentStore';
 import { useAgent } from '../hooks/useAgents';
 import { ProjectSelector } from '../components/ProjectSelector';
+import { getAgentPlugin } from '../agents/registry';
 import { useTabNotification, type TabNotificationStatus } from '../hooks/useTabNotification';
 
 export const ChatPage: React.FC = () => {
@@ -143,13 +144,30 @@ export const ChatPage: React.FC = () => {
     navigate('/agents');
   };
 
-  // Agent plugins are no longer used - all agents use the same interface
-  const RightPanelComponent = undefined;
-
-  // Plugin system removed - no longer needed
-  useEffect(() => {
-    // Plugin lifecycle management removed
+  // Get agent plugin for custom UI components
+  const agentPlugin = useMemo(() => {
+    if (!agent?.ui?.componentType) return undefined;
+    return getAgentPlugin(agent.ui.componentType);
   }, [agent]);
+
+  const RightPanelComponent = agentPlugin?.rightPanelComponent;
+
+  // Plugin lifecycle management
+  useEffect(() => {
+    if (!agent || !agentPlugin) return;
+
+    // Call plugin onMount if exists
+    if (agentPlugin.onMount) {
+      agentPlugin.onMount(agent.id);
+    }
+
+    // Cleanup on unmount
+    return () => {
+      if (agentPlugin.onUnmount) {
+        agentPlugin.onUnmount(agent.id);
+      }
+    };
+  }, [agent, agentPlugin]);
 
 
   if (isLoading) {

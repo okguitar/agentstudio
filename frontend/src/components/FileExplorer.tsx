@@ -13,7 +13,7 @@ import { SiTypescript } from 'react-icons/si';
 import { useFileTree, useFileContent, type FileSystemItem } from '../hooks/useFileSystem';
 import { API_BASE } from '../lib/config';
 import { authFetch } from '../lib/authFetch';
-import { Loader2, ChevronRight, RefreshCw, X, ChevronDown, MoreHorizontal, Eye, EyeOff } from 'lucide-react';
+import { Loader2, ChevronRight, RefreshCw, X, ChevronDown, MoreHorizontal, Eye, EyeOff, PanelLeftClose, PanelLeft } from 'lucide-react';
 import { eventBus, EVENTS } from '../utils/eventBus';
 
 // 将 FileSystemItem 转换为 react-arborist 需要的格式
@@ -310,6 +310,9 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
   const [dynamicTreeData, setDynamicTreeData] = useState<FileTreeItem[]>([]);
   const [loadingDirectories, setLoadingDirectories] = useState<Set<string>>(new Set());
   const [showHiddenFiles, setShowHiddenFiles] = useState<boolean>(false);
+  
+  // 控制左侧目录面板的显示/隐藏
+  const [isTreePanelCollapsed, setIsTreePanelCollapsed] = useState<boolean>(false);
 
   // 获取项目ID用于媒体文件访问（暂时注释掉，未使用）
   // const { data: projectData } = useProjectId(projectPath);
@@ -902,35 +905,44 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
   return (
     <div className={`flex h-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden ${className}`}>
         {/* 文件树侧边栏 */}
-      <div className="w-80 border-r border-gray-200 dark:border-gray-700 flex flex-col h-full">
-        {/* 工具栏 - 统一高度 */}
-        <div className="h-12 px-3 border-b border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 flex items-center flex-shrink-0">
-          <div className="flex items-center justify-between w-full">
-            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('fileExplorer.title')}</h3>
-            <div className="flex items-center space-x-1">
-              {/* 显示隐藏文件开关 */}
-              <button
-                onClick={toggleShowHiddenFiles}
-                className={`p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors ${
-                  showHiddenFiles 
-                    ? 'text-blue-600 dark:text-blue-400' 
-                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                }`}
-                title={showHiddenFiles ? '隐藏文件和文件夹' : '显示隐藏文件和文件夹'}
-              >
-                {showHiddenFiles ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-              </button>
-              <button
-                onClick={refreshFileTree}
-                className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
-                title={t('common:actions.refresh')}
-                disabled={isTreeLoading}
-              >
-                <RefreshCw className={`w-4 h-4 ${isTreeLoading ? 'animate-spin' : ''}`} />
-              </button>
+      {!isTreePanelCollapsed && (
+        <div className="w-80 border-r border-gray-200 dark:border-gray-700 flex flex-col h-full">
+          {/* 工具栏 - 统一高度 */}
+          <div className="h-12 px-3 border-b border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 flex items-center flex-shrink-0">
+            <div className="flex items-center justify-between w-full">
+              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('fileExplorer.title')}</h3>
+              <div className="flex items-center space-x-1">
+                {/* 显示隐藏文件开关 */}
+                <button
+                  onClick={toggleShowHiddenFiles}
+                  className={`p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors ${
+                    showHiddenFiles 
+                      ? 'text-blue-600 dark:text-blue-400' 
+                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                  }`}
+                  title={showHiddenFiles ? '隐藏文件和文件夹' : '显示隐藏文件和文件夹'}
+                >
+                  {showHiddenFiles ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                </button>
+                <button
+                  onClick={refreshFileTree}
+                  className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
+                  title={t('common:actions.refresh')}
+                  disabled={isTreeLoading}
+                >
+                  <RefreshCw className={`w-4 h-4 ${isTreeLoading ? 'animate-spin' : ''}`} />
+                </button>
+                {/* 折叠按钮 */}
+                <button
+                  onClick={() => setIsTreePanelCollapsed(true)}
+                  className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
+                  title={t('fileExplorer.collapsePanel')}
+                >
+                  <PanelLeftClose className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
-        </div>
 
         {/* 文件树 */}
         <div ref={treeContainerRef} className="flex-1 min-h-0 pl-2">
@@ -966,12 +978,23 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
             </Tree>
           )}
         </div>
-      </div>
+        </div>
+      )}
 
       {/* 文件预览区域 */}
       <div className="flex-1 flex flex-col h-full">
         {/* 标签栏 - 统一高度 */}
         <div className="h-12 border-b border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 flex items-center flex-shrink-0">
+          {/* 展开按钮（当目录面板折叠时显示） */}
+          {isTreePanelCollapsed && (
+            <button
+              onClick={() => setIsTreePanelCollapsed(false)}
+              className="p-1.5 mx-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
+              title={t('fileExplorer.expandPanel')}
+            >
+              <PanelLeft className="w-4 h-4" />
+            </button>
+          )}
           {tabs.length > 0 ? (
             <div className="flex items-center h-full w-full">
               {/* 显示可见的标签 */}

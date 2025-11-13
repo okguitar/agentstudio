@@ -41,6 +41,7 @@ export interface AgentConfig {
     headerTitle: string;
     headerDescription: string;
     welcomeMessage?: string; // Custom welcome message instead of title + description
+    componentType?: string; // Plugin type for custom UI components (e.g., 'slides', 'chat')
   };
   
   // File system integration

@@ -358,27 +358,29 @@ Feel free to organize your files here as needed. This directory is managed by Ag
       // Project directory exists but not in metadata, it will be picked up on next scan
       // For now, create a minimal project info
       console.log(`🔄 Slack-app directory exists but not in metadata, will be picked up on next scan`);
-      
+
       // Try to get it from storage (in case it was just added)
-      const metadata = this.projectStorage.getProjectMetadata('slack-app');
-      
-      // Construct a minimal project info
-      slackAppProject = {
-        id: metadata.id,
-        name: metadata.name || 'Slack App',
-        description: metadata.description || 'Default project for Slack interactions',
-        path: slackAppPath,
-        realPath: slackAppPath,
-        dirName: 'slack-app',
-        createdAt: metadata.createdAt,
-        lastAccessed: metadata.lastAccessed,
-        agents: [],
-        defaultAgent: metadata.defaultAgent || '',
-        defaultAgentName: '',
-        defaultAgentIcon: '',
-        tags: metadata.tags || [],
-        metadata: metadata.metadata || {}
-      };
+      const metadata = this.projectStorage.getProjectMetadata(slackAppPath);
+
+      if (metadata) {
+        // Construct a minimal project info
+        slackAppProject = {
+          id: metadata.id,
+          name: metadata.name || 'Slack App',
+          description: metadata.description || 'Default project for Slack interactions',
+          path: slackAppPath,
+          realPath: slackAppPath,
+          dirName: 'slack-app',
+          createdAt: metadata.createdAt,
+          lastAccessed: metadata.lastAccessed,
+          agents: [],
+          defaultAgent: metadata.defaultAgent || '',
+          defaultAgentName: '',
+          defaultAgentIcon: '',
+          tags: metadata.tags || [],
+          metadata: metadata.metadata || {}
+        };
+      }
     }
 
     if (!slackAppProject) {
