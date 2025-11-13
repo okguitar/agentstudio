@@ -11,6 +11,15 @@ export interface AgentTool {
   };
 }
 
+// 新的提示词结构定义
+export interface PresetSystemPrompt {
+  type: 'preset';
+  preset: 'claude_code'; // 固定为 claude_code，用于兼容 Claude Code SDK
+  append?: string;
+}
+
+export type SystemPrompt = string | PresetSystemPrompt;
+
 export interface AgentConfig {
   id: string;
   name: string;
@@ -18,7 +27,7 @@ export interface AgentConfig {
   version: string;
 
   // AI configuration
-  systemPrompt: string;
+  systemPrompt: SystemPrompt;
   maxTurns: number;
   permissionMode: PermissionMode;  // 使用 SDK 类型
   model: string;
@@ -32,8 +41,7 @@ export interface AgentConfig {
     headerTitle: string;
     headerDescription: string;
     welcomeMessage?: string; // Custom welcome message instead of title + description
-    componentType: 'slides' | 'chat' | 'documents' | 'code' | 'custom';
-    customComponent?: string; // Path to custom component
+    componentType?: string; // Plugin type for custom UI components (e.g., 'slides', 'chat')
   };
   
   // File system integration

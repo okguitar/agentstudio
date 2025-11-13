@@ -442,13 +442,13 @@ export const McpPage: React.FC = () => {
         <div className={`${isMobile ? 'space-y-3' : 'flex items-center space-x-4'}`}>
           {/* Search */}
           <div className={`${isMobile ? '' : 'flex-1'} relative`}>
-            <Search className={`absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 ${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
+            <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 ${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
             <input
               type="text"
               placeholder={t('mcp.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className={`pl-11 pr-4 py-3 w-full border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white dark:border-gray-600 transition-all ${isMobile ? 'text-sm' : ''}`}
+              className={`pl-10 pr-4 ${isMobile ? 'py-2' : 'py-3'} w-full border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white ${isMobile ? 'text-sm' : ''}`}
             />
           </div>
 
@@ -499,7 +499,7 @@ export const McpPage: React.FC = () => {
             {filteredServers.map((server, index) => (
               <div
                 key={server.name + '-' + index}
-                className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:shadow-lg hover:border-gray-300 dark:hover:border-gray-600 transition-all overflow-hidden"
+                className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow overflow-hidden"
               >
                 <div className="p-4">
                   {/* Server Header */}
@@ -668,23 +668,20 @@ export const McpPage: React.FC = () => {
           </div>
 
           {/* Desktop Table View */}
-          <div className="hidden md:block bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+          <div className="hidden md:block bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
             <Table>
               <TableHeader>
-                <TableRow className="bg-gray-50 dark:bg-gray-900/50">
-                  <TableHead className="px-6 py-4 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                <TableRow>
+                  <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     {t('mcp.table.server')}
                   </TableHead>
-                  <TableHead className="px-6 py-4 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                  <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     {t('mcp.table.type')}
                   </TableHead>
-                  <TableHead className="px-6 py-4 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
-                    {t('mcp.table.status')}
-                  </TableHead>
-                  <TableHead className="px-6 py-4 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                  <TableHead className="px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     {t('mcp.table.tools')}
                   </TableHead>
-                  <TableHead className="px-6 py-4 text-right text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                  <TableHead className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     {t('mcp.table.actions')}
                   </TableHead>
                 </TableRow>
@@ -693,7 +690,7 @@ export const McpPage: React.FC = () => {
                 {filteredServers.map((server, index) => (
                   <TableRow
                     key={server.name + '-' + index}
-                    className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                   >
                     <TableCell className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
@@ -718,32 +715,6 @@ export const McpPage: React.FC = () => {
                       }`}>
                         {server.type === 'http' ? 'HTTP' : 'Stdio'}
                       </span>
-                    </TableCell>
-                    <TableCell className="px-6 py-4 whitespace-nowrap">
-                      {server.status === 'active' && (
-                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-                          <CheckCircle className="w-3 h-3 mr-1" />
-                          {t('mcp.status.active')}
-                        </span>
-                      )}
-                      {server.status === 'error' && (
-                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
-                          <XCircle className="w-3 h-3 mr-1" />
-                          {t('mcp.status.error')}
-                        </span>
-                      )}
-                      {server.status === 'validating' && (
-                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
-                          <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                          {t('mcp.status.validating')}
-                        </span>
-                      )}
-                      {!server.status && (
-                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
-                          <AlertTriangle className="w-3 h-3 mr-1" />
-                          {t('mcp.status.unvalidated')}
-                        </span>
-                      )}
                     </TableCell>
                     <TableCell className="px-6 py-4">
                       {server.status === 'active' && server.tools && server.tools.length > 0 ? (

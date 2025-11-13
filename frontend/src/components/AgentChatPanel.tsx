@@ -253,7 +253,6 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
     }
   }, [currentSessionId, agent.id]);
   
-
     
 
 

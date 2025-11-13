@@ -186,5 +186,79 @@ export const VERSION_TEMPLATES: VersionTemplate[] = [
         description: 'Kimi 最新版本视觉模型'
       }
     ]
+  },
+  {
+    id: 'minimax',
+    name: 'MiniMax',
+    alias: 'minimax',
+    description: '使用MiniMax的高性能模型服务，支持Anthropic API兼容',
+    versionDescription: 'MiniMax模型 - Anthropic兼容版本',
+    apiTokenUrl: 'https://platform.minimaxi.com/user-center/basic-information/interface-key',
+    logoUrl: 'https://agent.minimaxi.com/assets/logo/favicon.png?v=4',
+    envVars: [
+      {
+        key: 'ANTHROPIC_BASE_URL',
+        value: 'https://api.minimaxi.com/anthropic',
+        isRequired: true,
+        description: 'MiniMax的Anthropic兼容端点'
+      },
+      {
+        key: 'ANTHROPIC_AUTH_TOKEN',
+        value: '',
+        isRequired: true,
+        placeholder: '<MINIMAX_API_KEY>',
+        description: '您的MiniMax API密钥（必填）'
+      },
+      {
+        key: 'API_TIMEOUT_MS',
+        value: '3000000',
+        isRequired: false,
+        description: 'API请求超时时间（毫秒）'
+      },
+      {
+        key: 'CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC',
+        value: '1',
+        isRequired: false,
+        description: '禁用非必要流量（1=启用，0=禁用）'
+      },
+      {
+        key: 'ANTHROPIC_MODEL',
+        value: 'MiniMax-M2',
+        isRequired: false,
+        description: '使用的MiniMax模型名称'
+      },
+      {
+        key: 'ANTHROPIC_SMALL_FAST_MODEL',
+        value: 'MiniMax-M2',
+        isRequired: false,
+        description: '快速轻量级模型名称'
+      },
+      {
+        key: 'ANTHROPIC_DEFAULT_SONNET_MODEL',
+        value: 'MiniMax-M2',
+        isRequired: false,
+        description: '默认Sonnet模型名称'
+      },
+      {
+        key: 'ANTHROPIC_DEFAULT_OPUS_MODEL',
+        value: 'MiniMax-M2',
+        isRequired: false,
+        description: '默认Opus模型名称'
+      },
+      {
+        key: 'ANTHROPIC_DEFAULT_HAIKU_MODEL',
+        value: 'MiniMax-M2',
+        isRequired: false,
+        description: '默认Haiku模型名称'
+      }
+    ],
+    models: [
+      {
+        id: 'MiniMax-M2',
+        name: 'MiniMax M2',
+        isVision: false,
+        description: 'MiniMax M2 最新模型'
+      }
+    ]
   }
 ];

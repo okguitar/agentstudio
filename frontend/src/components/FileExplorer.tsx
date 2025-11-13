@@ -13,7 +13,7 @@ import { SiTypescript } from 'react-icons/si';
 import { useFileTree, useFileContent, type FileSystemItem } from '../hooks/useFileSystem';
 import { API_BASE } from '../lib/config';
 import { authFetch } from '../lib/authFetch';
-import { Loader2, ChevronRight, RefreshCw, X, ChevronDown, MoreHorizontal } from 'lucide-react';
+import { Loader2, ChevronRight, RefreshCw, X, ChevronDown, MoreHorizontal, Eye, EyeOff, PanelLeftClose, PanelLeft } from 'lucide-react';
 import { eventBus, EVENTS } from '../utils/eventBus';
 
 // 将 FileSystemItem 转换为 react-arborist 需要的格式
@@ -71,16 +71,28 @@ const ICON_MAP = new Map([
 ]);
 
 const FileIcon: React.FC<{ node: NodeApi<FileTreeItem> }> = ({ node }) => {
+  const isHidden = node.data.isHidden;
+  
   if (node.data.isDirectory) {
     // 如果目录已展开，就显示为打开状态，不管是否有子项
     // 这样空目录展开时也能正确显示为打开状态
+    const folderColor = isHidden ? "#9ca3af" : "#87b3d6"; // 隐藏文件夹使用灰色
     return node.isOpen ? 
-      <FaFolderOpen color="#87b3d6" /> : 
-      <FaFolder color="#87b3d6" />;
+      <FaFolderOpen color={folderColor} /> : 
+      <FaFolder color={folderColor} />;
   }
   
   const extension = node.data.name.split('.').pop()?.toLowerCase() || '';
-  return ICON_MAP.get(extension) || <FaFile color="#6d8a9f" />;
+  const defaultColor = isHidden ? "#9ca3af" : "#6d8a9f"; // 隐藏文件使用灰色
+  
+  // 为隐藏文件添加透明度样式
+  const iconStyle = isHidden ? { opacity: 0.6 } : {};
+  
+  return (
+    <span style={iconStyle}>
+      {ICON_MAP.get(extension) || <FaFile color={defaultColor} />}
+    </span>
+  );
 };
 
 // 获取语言类型
@@ -249,7 +261,13 @@ const Node: React.FC<{
       </span>
       
       {/* 文件/文件夹名称 */}
-      <span className="text-sm truncate flex-1">{node.data.name}</span>
+      <span className={`text-sm truncate flex-1 ${
+        node.data.isHidden 
+          ? 'text-gray-400 dark:text-gray-500 italic' 
+          : 'text-gray-700 dark:text-gray-300'
+      }`}>
+        {node.data.name}
+      </span>
 
       {/* 文件大小信息 - 只对文件显示 */}
       {!node.data.isDirectory && node.data.size && (
@@ -291,6 +309,10 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
   const [loadedDirectories, setLoadedDirectories] = useState<Set<string>>(new Set());
   const [dynamicTreeData, setDynamicTreeData] = useState<FileTreeItem[]>([]);
   const [loadingDirectories, setLoadingDirectories] = useState<Set<string>>(new Set());
+  const [showHiddenFiles, setShowHiddenFiles] = useState<boolean>(false);
+  
+  // 控制左侧目录面板的显示/隐藏
+  const [isTreePanelCollapsed, setIsTreePanelCollapsed] = useState<boolean>(false);
 
   // 获取项目ID用于媒体文件访问（暂时注释掉，未使用）
   // const { data: projectData } = useProjectId(projectPath);
@@ -301,7 +323,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
     isLoading: isTreeLoading, 
     error: treeError,
     refetch: refetchTree
-  } = useFileTree(projectPath);
+  } = useFileTree(projectPath, showHiddenFiles);
   
   // 获取当前活跃的标签
   const activeTab = useMemo(() => {
@@ -340,21 +362,24 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
   useEffect(() => {
     if (fileTreeData) {
       const convertToTreeData = (items: FileSystemItem[]): FileTreeItem[] => {
-        return items.map(item => {
-          const treeItem = {
-            id: item.path,
-            name: item.name,
-            path: item.path,
-            isDirectory: item.isDirectory,
-            size: item.size,
-            modified: item.modified,
-            isHidden: item.isHidden,
-            children: item.children ? convertToTreeData(item.children) : undefined,
-          };
-          
-          
-          return treeItem;
-        });
+        return items
+          // 根据 showHiddenFiles 状态进行客户端过滤
+          .filter(item => showHiddenFiles || !item.isHidden)
+          .map(item => {
+            const treeItem = {
+              id: item.path,
+              name: item.name,
+              path: item.path,
+              isDirectory: item.isDirectory,
+              size: item.size,
+              modified: item.modified,
+              isHidden: item.isHidden,
+              children: item.children ? convertToTreeData(item.children) : undefined,
+            };
+
+
+            return treeItem;
+          });
       };
       
       // 收集所有已经有子项的目录路径，标记为已加载
@@ -372,21 +397,22 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
       setLoadedDirectories(loadedDirs);
       setDynamicTreeData(convertToTreeData(fileTreeData));
     }
-  }, [fileTreeData]);
+  }, [fileTreeData, showHiddenFiles]);
 
   // 懒加载目录子项的函数
   const loadDirectoryChildren = useCallback(async (dirPath: string): Promise<void> => {
     if (loadedDirectories.has(dirPath) || loadingDirectories.has(dirPath)) {
-      console.log('Directory already loaded or loading:', dirPath);
       return; // 已加载或正在加载
     }
 
-    console.log('Starting to load directory:', dirPath);
     setLoadingDirectories(prev => new Set(prev).add(dirPath));
 
     try {
       const searchParams = new URLSearchParams();
       searchParams.append('path', dirPath);
+      if (showHiddenFiles) {
+        searchParams.append('showHiddenFiles', 'true');
+      }
 
       const response = await authFetch(`${API_BASE}/files/browse?${searchParams.toString()}`);
       if (!response.ok) {
@@ -397,7 +423,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
       const childItems: FileSystemItem[] = [];
 
       for (const item of data.items) {
-        if (item.isHidden) continue; // 跳过隐藏文件
+        // 后端已经处理了隐藏文件过滤，这里不再需要手动过滤
         
         if (item.isDirectory) {
           childItems.push({
@@ -408,8 +434,6 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
           childItems.push(item);
         }
       }
-
-      console.log('Loaded', childItems.length, 'items for directory:', dirPath);
 
       // 更新动态树数据
       setDynamicTreeData(prevData => {
@@ -449,8 +473,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
       });
 
       setLoadedDirectories(prev => new Set(prev).add(dirPath));
-      console.log('Successfully loaded directory:', dirPath);
-      
+
       // 使用 TreeApi 关闭新加载的子目录，确保它们显示为折叠状态
       // 但是如果当前目录为空，不要关闭它，让用户看到空目录状态
       if (treeApiRef.current && childItems.length > 0) {
@@ -471,17 +494,30 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
         return newSet;
       });
     }
-  }, [loadedDirectories, loadingDirectories]);
+  }, [loadedDirectories, loadingDirectories, showHiddenFiles]);
 
   // 刷新文件树的统一方法
   const refreshFileTree = useCallback(() => {
-    console.log('Refreshing file tree...');
     // 重置懒加载状态
     setLoadedDirectories(new Set());
     setLoadingDirectories(new Set());
     // 重新获取根目录数据
     refetchTree();
   }, [refetchTree]);
+
+  // 切换隐藏文件显示状态
+  const toggleShowHiddenFiles = useCallback(() => {
+    setShowHiddenFiles(prev => !prev);
+  }, []);
+
+  // 监听showHiddenFiles变化，重置懒加载状态并强制刷新
+  useEffect(() => {
+    // 重置懒加载状态
+    setLoadedDirectories(new Set());
+    setLoadingDirectories(new Set());
+    // 强制重新获取数据,绕过React Query缓存
+    refetchTree();
+  }, [showHiddenFiles, refetchTree]);
 
   // 移除面包屑导航相关代码，因为我们现在使用树形结构
 
@@ -688,7 +724,6 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
     const currentTime = Date.now();
     const lastTime = lastToggleTime[node.data.path] || 0;
     if (currentTime - lastTime < 300) {
-      console.log('Debounce: ignoring rapid click for', node.data.path);
       return;
     }
     
@@ -870,21 +905,44 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
   return (
     <div className={`flex h-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden ${className}`}>
         {/* 文件树侧边栏 */}
-      <div className="w-80 border-r border-gray-200 dark:border-gray-700 flex flex-col h-full">
-        {/* 工具栏 - 统一高度 */}
-        <div className="h-12 px-3 border-b border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 flex items-center flex-shrink-0">
-          <div className="flex items-center justify-between w-full">
-            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('fileExplorer.title')}</h3>
-            <button
-              onClick={refreshFileTree}
-              className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
-              title={t('common:actions.refresh')}
-              disabled={isTreeLoading}
-            >
-              <RefreshCw className={`w-4 h-4 ${isTreeLoading ? 'animate-spin' : ''}`} />
-            </button>
+      {!isTreePanelCollapsed && (
+        <div className="w-80 border-r border-gray-200 dark:border-gray-700 flex flex-col h-full">
+          {/* 工具栏 - 统一高度 */}
+          <div className="h-12 px-3 border-b border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 flex items-center flex-shrink-0">
+            <div className="flex items-center justify-between w-full">
+              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('fileExplorer.title')}</h3>
+              <div className="flex items-center space-x-1">
+                {/* 显示隐藏文件开关 */}
+                <button
+                  onClick={toggleShowHiddenFiles}
+                  className={`p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors ${
+                    showHiddenFiles 
+                      ? 'text-blue-600 dark:text-blue-400' 
+                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                  }`}
+                  title={showHiddenFiles ? '隐藏文件和文件夹' : '显示隐藏文件和文件夹'}
+                >
+                  {showHiddenFiles ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                </button>
+                <button
+                  onClick={refreshFileTree}
+                  className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
+                  title={t('common:actions.refresh')}
+                  disabled={isTreeLoading}
+                >
+                  <RefreshCw className={`w-4 h-4 ${isTreeLoading ? 'animate-spin' : ''}`} />
+                </button>
+                {/* 折叠按钮 */}
+                <button
+                  onClick={() => setIsTreePanelCollapsed(true)}
+                  className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
+                  title={t('fileExplorer.collapsePanel')}
+                >
+                  <PanelLeftClose className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
 
         {/* 文件树 */}
         <div ref={treeContainerRef} className="flex-1 min-h-0 pl-2">
@@ -920,12 +978,23 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
             </Tree>
           )}
         </div>
-      </div>
+        </div>
+      )}
 
       {/* 文件预览区域 */}
       <div className="flex-1 flex flex-col h-full">
         {/* 标签栏 - 统一高度 */}
         <div className="h-12 border-b border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 flex items-center flex-shrink-0">
+          {/* 展开按钮（当目录面板折叠时显示） */}
+          {isTreePanelCollapsed && (
+            <button
+              onClick={() => setIsTreePanelCollapsed(false)}
+              className="p-1.5 mx-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
+              title={t('fileExplorer.expandPanel')}
+            >
+              <PanelLeft className="w-4 h-4" />
+            </button>
+          )}
           {tabs.length > 0 ? (
             <div className="flex items-center h-full w-full">
               {/* 显示可见的标签 */}

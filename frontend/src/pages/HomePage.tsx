@@ -16,8 +16,12 @@ export const HomePage: React.FC = () => {
   const [selectedAgentForStart, setSelectedAgentForStart] = useState<AgentConfig | null>(null);
 
   const agents = agentsData?.agents || [];
-  const enabledAgents = agents.filter(agent => agent.enabled);
-  const disabledAgents = agents.filter(agent => !agent.enabled);
+
+  // 🎯 显示所有 Agent
+  const displayAgents = agents;
+
+  const enabledAgents = displayAgents.filter(agent => agent.enabled);
+  const disabledAgents = displayAgents.filter(agent => !agent.enabled);
 
   const handleProjectSelect = (projectPath: string) => {
     if (selectedAgentForStart) {
@@ -131,14 +135,6 @@ export const HomePage: React.FC = () => {
                   <p className="text-gray-600 text-sm mb-4 line-clamp-2">{agent.description}</p>
 
                   <div className="flex items-center space-x-2 mb-4">
-                    <span className={`px-2 py-1 text-xs rounded-full ${
-                      agent.ui.componentType === 'slides' ? 'bg-blue-100 text-blue-700' :
-                      agent.ui.componentType === 'code' ? 'bg-green-100 text-green-700' :
-                      agent.ui.componentType === 'documents' ? 'bg-purple-100 text-purple-700' :
-                      'bg-gray-100 text-gray-700'
-                    }`}>
-                      {t(`componentTypes.${agent.ui.componentType}`, agent.ui.componentType)}
-                    </span>
                     {agent.tags.slice(0, 2).map((tag: string) => (
                       <span key={tag} className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">
                         {tag}

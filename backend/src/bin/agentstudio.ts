@@ -2,11 +2,7 @@
 import { program } from 'commander';
 import app from '../index';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { readFileSync } from 'fs';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 // Read version from root package.json
 const rootPackageJson = JSON.parse(readFileSync(path.join(__dirname, '../../../package.json'), 'utf8'));

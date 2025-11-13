@@ -25,13 +25,16 @@ export interface FileContent {
 }
 
 // 浏览文件系统目录
-export const useFileSystemBrowse = (path?: string) => {
+export const useFileSystemBrowse = (path?: string, showHiddenFiles?: boolean) => {
   return useQuery({
-    queryKey: ['file-system-browse', path],
+    queryKey: ['file-system-browse', path, showHiddenFiles],
     queryFn: async (): Promise<FileSystemResponse> => {
       const searchParams = new URLSearchParams();
       if (path) {
         searchParams.append('path', path);
+      }
+      if (showHiddenFiles) {
+        searchParams.append('showHiddenFiles', 'true');
       }
       
       const response = await authFetch(`${API_BASE}/files/browse?${searchParams.toString()}`);
@@ -78,9 +81,9 @@ export const useFileContent = (filePath?: string, projectPath?: string) => {
 };
 
 // 递归构建完整的文件树结构（原有实现，保留以备后用）
-export const useFileTreeRecursive = (projectPath?: string) => {
+export const useFileTreeRecursive = (projectPath?: string, showHiddenFiles?: boolean) => {
   return useQuery({
-    queryKey: ['file-tree-recursive', projectPath],
+    queryKey: ['file-tree-recursive', projectPath, showHiddenFiles],
     queryFn: async () => {
       if (!projectPath) {
         throw new Error('Project path is required');
@@ -90,6 +93,9 @@ export const useFileTreeRecursive = (projectPath?: string) => {
       const buildFileTree = async (dirPath: string): Promise<FileSystemItem[]> => {
         const searchParams = new URLSearchParams();
         searchParams.append('path', dirPath);
+        if (showHiddenFiles) {
+          searchParams.append('showHiddenFiles', 'true');
+        }
         
         const response = await authFetch(`${API_BASE}/files/browse?${searchParams.toString()}`);
         if (!response.ok) {
@@ -101,7 +107,7 @@ export const useFileTreeRecursive = (projectPath?: string) => {
         const items: FileSystemItem[] = [];
 
         for (const item of data.items) {
-          if (item.isHidden) continue; // 跳过隐藏文件
+          // 后端已经处理了隐藏文件过滤，这里不再需要手动过滤
           
           if (item.isDirectory) {
             // 递归加载子目录
@@ -134,9 +140,9 @@ export const useFileTreeRecursive = (projectPath?: string) => {
 };
 
 // 懒加载文件树结构 - 只加载指定目录的直接子项
-export const useFileTree = (projectPath?: string) => {
+export const useFileTree = (projectPath?: string, showHiddenFiles?: boolean) => {
   return useQuery({
-    queryKey: ['file-tree-lazy', projectPath],
+    queryKey: ['file-tree-lazy', projectPath, showHiddenFiles],
     queryFn: async (): Promise<FileSystemItem[]> => {
       if (!projectPath) {
         throw new Error('Project path is required');
@@ -144,18 +150,21 @@ export const useFileTree = (projectPath?: string) => {
 
       const searchParams = new URLSearchParams();
       searchParams.append('path', projectPath);
-      
+      if (showHiddenFiles) {
+        searchParams.append('showHiddenFiles', 'true');
+      }
+
       const response = await authFetch(`${API_BASE}/files/browse?${searchParams.toString()}`);
       if (!response.ok) {
         throw new Error('Failed to browse directory');
       }
-      
+
       const data: FileSystemResponse = await response.json();
       const items: FileSystemItem[] = [];
 
       for (const item of data.items) {
-        if (item.isHidden) continue; // 跳过隐藏文件
-        
+        // 后端已经处理了隐藏文件过滤，这里不再需要手动过滤
+
         if (item.isDirectory) {
           // 对于目录，不预加载子项，而是在需要时懒加载
           items.push({
@@ -175,9 +184,9 @@ export const useFileTree = (projectPath?: string) => {
 };
 
 // 懒加载目录子项
-export const useDirectoryChildren = (dirPath?: string) => {
+export const useDirectoryChildren = (dirPath?: string, showHiddenFiles?: boolean) => {
   return useQuery({
-    queryKey: ['directory-children', dirPath],
+    queryKey: ['directory-children', dirPath, showHiddenFiles],
     queryFn: async (): Promise<FileSystemItem[]> => {
       if (!dirPath) {
         throw new Error('Directory path is required');
@@ -185,6 +194,9 @@ export const useDirectoryChildren = (dirPath?: string) => {
 
       const searchParams = new URLSearchParams();
       searchParams.append('path', dirPath);
+      if (showHiddenFiles) {
+        searchParams.append('showHiddenFiles', 'true');
+      }
       
       const response = await authFetch(`${API_BASE}/files/browse?${searchParams.toString()}`);
       if (!response.ok) {
@@ -195,7 +207,7 @@ export const useDirectoryChildren = (dirPath?: string) => {
       const items: FileSystemItem[] = [];
 
       for (const item of data.items) {
-        if (item.isHidden) continue; // 跳过隐藏文件
+        // 后端已经处理了隐藏文件过滤，这里不再需要手动过滤
         
         if (item.isDirectory) {
           // 对于目录，不预加载子项

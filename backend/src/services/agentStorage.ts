@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { AgentConfig, AgentSession, AgentMessage, BUILTIN_AGENTS } from '../types/agents';
-import { Options, query } from '@anthropic-ai/claude-code';
+import { Options, query } from '@anthropic-ai/claude-agent-sdk';
 
 export class AgentStorage {
   private agentsDir: string;
@@ -101,16 +101,35 @@ export class AgentStorage {
 
   deleteAgent(agentId: string): boolean {
     try {
+      console.log(`🗑️ [BACKEND DEBUG] Attempting to delete agent: ${agentId}`);
       const filePath = path.join(this.agentsDir, `${agentId}.json`);
+      console.log(`🗑️ [BACKEND DEBUG] File path: ${filePath}, exists: ${fs.existsSync(filePath)}`);
+      
       if (fs.existsSync(filePath)) {
         // Don't delete built-in agents, just disable them
         const agent = this.getAgent(agentId);
+        console.log(`🗑️ [BACKEND DEBUG] Agent data:`, {
+          found: !!agent,
+          id: agent?.id,
+          name: agent?.name,
+          enabled: agent?.enabled
+        });
+        
         if (agent && BUILTIN_AGENTS.some(builtin => builtin.id === agentId)) {
-          agent.enabled = false;
-          this.saveAgent(agent);
-          return true;
+          // Allow deletion of deprecated built-in agents (code-assistant, document-writer)
+          const DEPRECATED_BUILTINS = ['code-assistant', 'document-writer'];
+          if (DEPRECATED_BUILTINS.includes(agentId)) {
+            console.log(`✅ [BACKEND DEBUG] Deleting deprecated built-in agent: ${agentId}`);
+          } else {
+            // Protect current built-in agents (ppt-editor, general-chat, claude-code)
+            console.log(`🛑 [BACKEND DEBUG] Protected built-in agent, disabling instead: ${agentId}`);
+            agent.enabled = false;
+            this.saveAgent(agent);
+            return true;
+          }
         }
         
+        console.log(`🗑️ [BACKEND DEBUG] Deleting file: ${filePath}`);
         fs.unlinkSync(filePath);
         
         // Also delete all sessions for this agent
@@ -337,7 +356,7 @@ export class AgentStorage {
 5. 直接输出标题内容，不要任何前缀或后缀`;
 
         const queryOptions: Options = {
-          customSystemPrompt: "你是一个专门生成简洁标题的助手。请直接输出标题内容，不要任何解释或格式化。",
+          systemPrompt: "你是一个专门生成简洁标题的助手。请直接输出标题内容，不要任何解释或格式化。",
           allowedTools: [],  // No tools needed for title generation
           maxTurns: 1,
           cwd: process.cwd()

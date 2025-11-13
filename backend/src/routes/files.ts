@@ -2,14 +2,23 @@ import express from 'express';
 import fs from 'fs-extra';
 import { existsSync } from 'fs';
 import { join, dirname, resolve, relative } from 'path';
-import { fileURLToPath } from 'url';
 import { z } from 'zod';
 import * as os from 'os';
 import * as path from 'path';
-import { getProjectId } from './media';
+// Helper function to get project ID using base64url encoding (reversible)
+const getProjectId = (projectPath: string): string => {
+  return encodeProjectPath(projectPath);
+};
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+// Helper function to encode project path using base64url encoding
+const encodeProjectPath = (projectPath: string): string => {
+  const normalizedPath = resolve(projectPath);
+  // Use base64url encoding (URL-safe)
+  return Buffer.from(normalizedPath).toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=/g, '');
+};
 
 const router: express.Router = express.Router();
 
@@ -241,11 +250,14 @@ router.get('/project-id', async (req, res) => {
 // GET /api/files/browse - Browse file system
 router.get('/browse', (req, res) => {
   try {
-    const { path: requestedPath } = req.query;
+    const { path: requestedPath, showHiddenFiles } = req.query;
     
     // Default to home directory if no path provided
     const browsePath = requestedPath ? String(requestedPath) : os.homedir();
     
+    // Parse showHiddenFiles parameter (default to false)
+    const includeHidden = showHiddenFiles === 'true';
+
     // Security check: ensure path is safe
     if (browsePath.includes('..') || !path.isAbsolute(browsePath)) {
       return res.status(400).json({ error: 'Invalid path' });
@@ -274,13 +286,14 @@ router.get('/browse', (req, res) => {
         const itemPath = path.join(browsePath, name);
         try {
           const itemStats = fs.statSync(itemPath);
+          const isHidden = name.startsWith('.');
           return {
             name,
             path: itemPath,
             isDirectory: itemStats.isDirectory(),
             size: itemStats.isDirectory() ? null : itemStats.size,
             modified: itemStats.mtime.toISOString(),
-            isHidden: name.startsWith('.')
+            isHidden
           };
         } catch (error) {
           // Skip items that can't be read
@@ -288,6 +301,7 @@ router.get('/browse', (req, res) => {
         }
       })
       .filter(item => item !== null)
+      .filter(item => includeHidden || !item.isHidden) // Filter hidden files based on parameter
       .sort((a, b) => {
         // Directories first, then by name
         if (a.isDirectory !== b.isDirectory) {

@@ -103,10 +103,68 @@ function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
 
-// 获取所有版本
+// 隐藏敏感环境变量（如ANTHROPIC_AUTH_TOKEN）
+function hideSensitiveEnvVars(envVars: Record<string, string>): Record<string, string> {
+  const result: Record<string, string> = {};
+  
+  for (const [key, value] of Object.entries(envVars)) {
+    if (key === 'ANTHROPIC_AUTH_TOKEN') {
+      // 藏头露尾：显示前4位和后4位，中间用***代替
+      if (value && value.length > 8) {
+        const start = value.substring(0, 4);
+        const end = value.substring(value.length - 4);
+        result[key] = `${start}***${end}`;
+      } else {
+        // 如果值太短，全部隐藏
+        result[key] = '***';
+      }
+    } else {
+      result[key] = value;
+    }
+  }
+  
+  return result;
+}
+
+// 获取所有版本（隐藏敏感信息）
 export async function getAllVersions(): Promise<ClaudeVersion[]> {
   const storage = await loadClaudeVersions();
+  
+  // 对每个版本隐藏敏感环境变量
+  return storage.versions.map(version => ({
+    ...version,
+    environmentVariables: hideSensitiveEnvVars(version.environmentVariables || {})
+  }));
+}
+
+// 获取所有版本（内部使用，不隐藏敏感信息）
+export async function getAllVersionsInternal(): Promise<ClaudeVersion[]> {
+  const storage = await loadClaudeVersions();
+  
+  // 返回原始版本信息，不隐藏敏感环境变量
   return storage.versions;
+}
+
+// 根据ID获取版本（内部使用，不隐藏敏感信息）
+export async function getVersionByIdInternal(versionId: string): Promise<ClaudeVersion | null> {
+  const storage = await loadClaudeVersions();
+  
+  // 返回原始版本信息，不隐藏敏感环境变量
+  const version = storage.versions.find(v => v.id === versionId) || null;
+  
+  if (version) {
+    console.log(`📦 Loaded version ${version.alias} (${versionId})`);
+    const envVarKeys = Object.keys(version.environmentVariables || {});
+    if (envVarKeys.length > 0) {
+      console.log(`   Environment variables: ${envVarKeys.join(', ')}`);
+    } else {
+      console.log(`   No environment variables configured`);
+    }
+  } else {
+    console.log(`⚠️ Version not found: ${versionId}`);
+  }
+  
+  return version;
 }
 
 // 获取默认版本ID
@@ -166,7 +224,7 @@ export async function createVersion(data: ClaudeVersionCreate): Promise<ClaudeVe
 }
 
 // 更新版本
-export async function updateVersion(versionId: string, data: ClaudeVersionUpdate): Promise<ClaudeVersion> {
+export async function updateVersion(versionId: string, data: ClaudeVersionUpdate & { authTokenChanged?: boolean }): Promise<ClaudeVersion> {
   const storage = await loadClaudeVersions();
   
   const versionIndex = storage.versions.findIndex(v => v.id === versionId);
@@ -205,6 +263,17 @@ export async function updateVersion(versionId: string, data: ClaudeVersionUpdate
   }
   if (data.description === undefined) {
     delete (updatedVersion as any).description;
+  }
+  
+  // 如果环境变量中有 ANTHROPIC_AUTH_TOKEN 且 authTokenChanged 为 false，
+  // 则恢复原有的值（不更新）
+  if (!data.authTokenChanged && data.environmentVariables?.ANTHROPIC_AUTH_TOKEN !== undefined) {
+    // 保留原有的 ANTHROPIC_AUTH_TOKEN，不更新
+    const originalToken = version.environmentVariables?.ANTHROPIC_AUTH_TOKEN || '';
+    updatedVersion.environmentVariables = {
+      ...data.environmentVariables,
+      ANTHROPIC_AUTH_TOKEN: originalToken
+    };
   }
 
   storage.versions[versionIndex] = updatedVersion;

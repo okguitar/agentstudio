@@ -11,6 +11,15 @@ export interface AgentTool {
   };
 }
 
+// 新的提示词结构定义
+export interface PresetSystemPrompt {
+  type: 'preset';
+  preset: 'claude_code'; // 固定为 claude_code，用于兼容 Claude Code SDK
+  append?: string;
+}
+
+export type SystemPrompt = string | PresetSystemPrompt;
+
 export interface AgentConfig {
   id: string;
   name: string;
@@ -18,7 +27,7 @@ export interface AgentConfig {
   version: string;
 
   // AI configuration
-  systemPrompt: string;
+  systemPrompt: SystemPrompt;
   maxTurns: number;
   permissionMode: PermissionMode;  // 使用 SDK 类型
   model: string;
@@ -32,8 +41,6 @@ export interface AgentConfig {
     headerTitle: string;
     headerDescription: string;
     welcomeMessage?: string; // Custom welcome message instead of title + description
-    componentType: 'slides' | 'chat' | 'documents' | 'code' | 'custom';
-    customComponent?: string; // Path to custom component
   };
   
   // File system integration
@@ -105,148 +112,7 @@ export interface MessagePart {
   originalContent?: string; // For commands that need to preserve original content
 }
 
-// Built-in agent templates
-export const BUILTIN_AGENTS: Partial<AgentConfig>[] = [
-  {
-    id: 'ppt-editor',
-    name: 'PPT编辑助手',
-    description: '专门用于创建和编辑HTML演示文稿的AI助手',
-    systemPrompt: `You are an AI assistant specialized in helping users create and edit HTML presentations. 
-You can help with:
-- Content creation and editing  
-- Design suggestions
-- Structure improvements
-- HTML/CSS modifications
-- Presentation flow optimization
-- File operations for slide management
-
-The presentation uses HTML slides with embedded CSS styling. Each slide should be self-contained with a 1280x720 viewport.
-Slides are stored in the ../slides/ directory relative to the backend.
-
-Always provide helpful, specific suggestions and when possible, include code examples.
-Please respond in Chinese.`,
-    allowedTools: [
-      { name: 'Write', enabled: true },
-      { name: 'Read', enabled: true },
-      { name: 'Edit', enabled: true },
-      { name: 'Glob', enabled: true },
-      { name: 'MultiEdit', enabled: true },
-      { name: 'Bash', enabled: true }
-    ],
-    ui: {
-      icon: '🎯',
-      headerTitle: 'AI PPT助手',
-      headerDescription: '与AI聊天来编辑你的演示文稿',
-      welcomeMessage: '你好！我是你的AI PPT助手，可以帮你创建、编辑和优化HTML演示文稿。有什么需要帮助的吗？',
-      componentType: 'slides'
-    },
-    workingDirectory: '../slides',
-    dataDirectory: '.ai-sessions',
-    fileTypes: ['.html', '.css', '.js'],
-    tags: ['presentation', 'html', 'css', 'slides'],
-    enabled: true
-  },
-  {
-    id: 'code-assistant',
-    name: '代码助手',
-    description: '通用代码开发和审查助手',
-    systemPrompt: `You are a professional software development assistant. You can help with:
-- Code review and optimization
-- Bug fixing and debugging
-- Architecture design
-- Best practices implementation
-- Documentation writing
-- Testing strategies
-
-You have access to file system operations and can directly modify code files.
-Always follow coding best practices and maintain clean, readable code.
-Please respond in Chinese.`,
-    allowedTools: [
-      { name: 'Write', enabled: true },
-      { name: 'Read', enabled: true },
-      { name: 'Edit', enabled: true },
-      { name: 'Glob', enabled: true },
-      { name: 'MultiEdit', enabled: true },
-      { name: 'Bash', enabled: true },
-      { name: 'Task', enabled: true }
-    ],
-    ui: {
-      icon: '💻',
-      headerTitle: '代码助手',
-      headerDescription: '专业的软件开发和代码审查助手',
-      welcomeMessage: '你好！我是专业的代码助手，可以帮你进行代码开发、审查、调试和优化。请告诉我你想要解决的编程问题！',
-      componentType: 'code'
-    },
-    tags: ['coding', 'development', 'review', 'debugging'],
-    enabled: false
-  },
-  {
-    id: 'document-writer',
-    name: '文档助手',
-    description: '专注于文档创建和编辑的助手',
-    systemPrompt: `You are a professional document writing assistant. You can help with:
-- Creating and editing documentation
-- Technical writing
-- Content structuring
-- Markdown formatting
-- Research and information gathering
-- Proofreading and editing
-
-You work primarily with text files and markdown documents.
-Focus on clarity, accuracy, and professional presentation.
-Please respond in Chinese.`,
-    allowedTools: [
-      { name: 'Write', enabled: true },
-      { name: 'Read', enabled: true },
-      { name: 'Edit', enabled: true },
-      { name: 'Glob', enabled: true },
-      { name: 'WebFetch', enabled: true },
-      { name: 'WebSearch', enabled: true }
-    ],
-    ui: {
-      icon: '📝',
-      headerTitle: '文档助手',
-      headerDescription: '专业的文档创建和编辑助手',
-      welcomeMessage: '你好！我是文档助手，专门帮助你创建、编辑和优化各种文档。无论是技术文档还是普通文档，我都能为你提供专业建议！',
-      componentType: 'documents'
-    },
-    fileTypes: ['.md', '.txt', '.rst', '.adoc'],
-    tags: ['documentation', 'writing', 'markdown', 'content'],
-    enabled: true
-  },
-  {
-    id: 'general-chat',
-    name: '通用聊天助手',
-    description: '通用的AI聊天助手，适用于各种对话和咨询',
-    systemPrompt: `You are a general-purpose AI assistant. You can help with:
-- General questions and conversations
-- Problem-solving and brainstorming  
-- Information and explanations
-- Creative tasks and writing
-- Analysis and research
-- File operations when needed
-
-You are helpful, harmless, and honest. Always strive to provide accurate and useful information.
-Please respond in Chinese unless the user specifically requests another language.`,
-    allowedTools: [
-      { name: 'Write', enabled: true },
-      { name: 'Read', enabled: true },
-      { name: 'Edit', enabled: true },
-      { name: 'Glob', enabled: true },
-      { name: 'MultiEdit', enabled: true },
-      { name: 'Bash', enabled: true },
-      { name: 'Task', enabled: true },
-      { name: 'WebFetch', enabled: true },
-      { name: 'WebSearch', enabled: true }
-    ],
-    ui: {
-      icon: '💬',
-      headerTitle: '通用聊天',
-      headerDescription: '与AI进行自由对话和咨询',
-      welcomeMessage: '你好！我是通用AI助手，可以帮你解答问题、进行对话、处理各种任务。有什么我可以帮助你的吗？',
-      componentType: 'chat'
-    },
-    tags: ['general', 'chat', 'conversation', 'assistant'],
-    enabled: true
-  }
-];
+// Built-in agents will be loaded from configuration files during initialization
+// No hardcoded agents - all agent data should be stored in configuration files
+// Example: ~/.claude-agent/agents/claude-code.json
+export const BUILTIN_AGENTS: Partial<AgentConfig>[] = [];

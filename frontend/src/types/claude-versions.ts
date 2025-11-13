@@ -36,6 +36,7 @@ export interface ClaudeVersionUpdate {
   executablePath?: string;
   environmentVariables?: Record<string, string>;
   models?: ModelConfig[]; // 可选的模型列表更新
+  authTokenChanged?: boolean; // 标记ANTHROPIC_AUTH_TOKEN是否被修改
 }
 
 export interface ClaudeVersionResponse {

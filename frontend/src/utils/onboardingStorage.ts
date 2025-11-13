@@ -79,21 +79,3 @@ export const setClaudeSetupCompleted = (backendId: string, skipped: boolean = fa
   }
 };
 
-export const resetClaudeSetup = (backendId?: string): void => {
-  if (!backendId) {
-    // Reset all
-    localStorage.removeItem(CLAUDE_SETUP_KEY);
-    return;
-  }
-
-  try {
-    const data = localStorage.getItem(CLAUDE_SETUP_KEY);
-    if (!data) return;
-
-    const allStatus: ClaudeSetupStatus = JSON.parse(data);
-    delete allStatus[backendId];
-    localStorage.setItem(CLAUDE_SETUP_KEY, JSON.stringify(allStatus));
-  } catch (error) {
-    console.error('Failed to reset Claude setup status:', error);
-  }
-};

@@ -98,7 +98,9 @@
     "temporaryTab": "临时",
     "closeTab": "关闭标签",
     "noProject": "未选择项目",
-    "selectProjectFirst": "请先选择一个项目以浏览文件"
+    "selectProjectFirst": "请先选择一个项目以浏览文件",
+    "collapsePanel": "收起目录面板",
+    "expandPanel": "展开目录面板"
   },
   "sessionDropdown": {
     "title": "会话管理",

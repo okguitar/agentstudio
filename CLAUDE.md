@@ -16,7 +16,7 @@ Claude-powered AgentStudio with React frontend and Node.js backend, built on top
 
 ### Key Technologies
 - **State Management**: Zustand (lightweight) + React Query (server state)
-- **AI Integration**: Claude Code SDK (@anthropic-ai/claude-code) with streaming responses
+- **AI Integration**: Claude Agent SDK (@anthropic-ai/claude-agent-sdk) with streaming responses
 - **Build Tools**: Vite (frontend), TSX (backend development)
 - **Testing**: Vitest + Testing Library + jsdom environment
 - **Styling**: TailwindCSS with component variants

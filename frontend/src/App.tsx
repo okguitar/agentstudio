@@ -13,10 +13,11 @@ const ProjectsPage = lazy(() => import('./pages/ProjectsPage').then(module => ({
 const McpPage = lazy(() => import('./pages/McpPage').then(module => ({ default: module.McpPage })));
 const SettingsLayout = lazy(() => import('./components/SettingsLayout').then(module => ({ default: module.SettingsLayout })));
 const GeneralSettingsPage = lazy(() => import('./pages/settings/GeneralSettingsPage').then(module => ({ default: module.GeneralSettingsPage })));
-const VersionSettingsPage = lazy(() => import('./pages/settings/VersionSettingsPage').then(module => ({ default: module.VersionSettingsPage })));
+const SupplierSettingsPage = lazy(() => import('./pages/settings/VersionSettingsPage').then(module => ({ default: module.VersionSettingsPage })));
 const MemorySettingsPage = lazy(() => import('./pages/settings/MemorySettingsPage').then(module => ({ default: module.MemorySettingsPage })));
 const SubagentsPage = lazy(() => import('./pages/settings/SubagentsPage').then(module => ({ default: module.SubagentsPage })));
 const CommandsPage = lazy(() => import('./pages/CommandsPage').then(module => ({ default: module.CommandsPage })));
+const SkillsPage = lazy(() => import('./pages/SkillsPage').then(module => ({ default: module.SkillsPage })));
 const ChatPage = lazy(() => import('./pages/ChatPage').then(module => ({ default: module.ChatPage })));
 const LandingPage = lazy(() => import('./pages/LandingPage').then(module => ({ default: module.default })));
 const LoginPage = lazy(() => import('./pages/LoginPage').then(module => ({ default: module.LoginPage })));
@@ -112,6 +113,11 @@ const AppContent: React.FC = () => {
               <Layout><McpPage /></Layout>
             </ProtectedRoute>
           } />
+          <Route path="/skills" element={
+            <ProtectedRoute>
+              <Layout><SkillsPage /></Layout>
+            </ProtectedRoute>
+          } />
           <Route path="/settings" element={
             <ProtectedRoute>
               <Layout><SettingsLayout /></Layout>
@@ -119,7 +125,7 @@ const AppContent: React.FC = () => {
           }>
             <Route index element={<GeneralSettingsPage />} />
             <Route path="general" element={<GeneralSettingsPage />} />
-            <Route path="versions" element={<VersionSettingsPage />} />
+            <Route path="suppliers" element={<SupplierSettingsPage />} />
             <Route path="memory" element={<MemorySettingsPage />} />
             <Route path="commands" element={<CommandsPage />} />
             <Route path="subagents" element={<SubagentsPage />} />

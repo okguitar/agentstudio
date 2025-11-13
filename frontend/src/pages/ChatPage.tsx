@@ -4,10 +4,10 @@ import { useTranslation } from 'react-i18next';
 import { AgentChatPanel } from '../components/AgentChatPanel';
 import { SplitLayout } from '../components/SplitLayout';
 import { RightPanelWrapper } from '../components/RightPanelWrapper';
-import { getAgentPlugin } from '../agents/registry';
 import { useAgentStore } from '../stores/useAgentStore';
 import { useAgent } from '../hooks/useAgents';
 import { ProjectSelector } from '../components/ProjectSelector';
+import { getAgentPlugin } from '../agents/registry';
 import { useTabNotification, type TabNotificationStatus } from '../hooks/useTabNotification';
 
 export const ChatPage: React.FC = () => {
@@ -144,18 +144,26 @@ export const ChatPage: React.FC = () => {
     navigate('/agents');
   };
 
-  // Get agent plugin configuration
-  const agentPlugin = agent ? getAgentPlugin(agent.ui.componentType) : undefined;
+  // Get agent plugin for custom UI components
+  const agentPlugin = useMemo(() => {
+    if (!agent?.ui?.componentType) return undefined;
+    return getAgentPlugin(agent.ui.componentType);
+  }, [agent]);
+
   const RightPanelComponent = agentPlugin?.rightPanelComponent;
 
-  // Handle plugin lifecycle
+  // Plugin lifecycle management
   useEffect(() => {
-    if (agent && agentPlugin?.onMount) {
+    if (!agent || !agentPlugin) return;
+
+    // Call plugin onMount if exists
+    if (agentPlugin.onMount) {
       agentPlugin.onMount(agent.id);
     }
 
+    // Cleanup on unmount
     return () => {
-      if (agent && agentPlugin?.onUnmount) {
+      if (agentPlugin.onUnmount) {
         agentPlugin.onUnmount(agent.id);
       }
     };

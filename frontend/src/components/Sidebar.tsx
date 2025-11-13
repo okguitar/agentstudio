@@ -11,7 +11,8 @@ import {
   ChevronRight,
   Terminal,
   Brain,
-  Palette
+  Palette,
+  Zap
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { ServiceStatusIndicator } from './ServiceStatusIndicator';
@@ -30,14 +31,29 @@ const getNavigationItems = (t: (key: string) => string) => [
     icon: FolderOpen,
   },
   {
+    name: t('nav.mcp'),
+    href: '/mcp',
+    icon: Server,
+  },
+  {
+    name: t('nav.skills'),
+    href: '/skills',
+    icon: Zap,
+  },
+  {
     name: t('nav.agents'),
     href: '/agents',
     icon: Bot,
   },
   {
-    name: t('nav.mcp'),
-    href: '/mcp',
-    icon: Server,
+    name: t('nav.commands'),
+    href: '/settings/commands',
+    icon: Command,
+  },
+  {
+    name: t('nav.subagents'),
+    href: '/settings/subagents',
+    icon: Bot,
   },
   {
     name: t('nav.settings'),
@@ -50,24 +66,14 @@ const getNavigationItems = (t: (key: string) => string) => [
         icon: Palette,
       },
       {
-        name: t('nav.settingsSubmenu.versions'),
-        href: '/settings/versions',
+        name: t('nav.settingsSubmenu.suppliers'),
+        href: '/settings/suppliers',
         icon: Terminal,
       },
       {
         name: t('nav.settingsSubmenu.memory'),
         href: '/settings/memory',
         icon: Brain,
-      },
-      {
-        name: t('nav.settingsSubmenu.commands'),
-        href: '/settings/commands',
-        icon: Command,
-      },
-      {
-        name: t('nav.settingsSubmenu.subagents'),
-        href: '/settings/subagents',
-        icon: Bot,
       },
     ],
   },
@@ -100,18 +106,24 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
 
   const isMenuExpanded = (itemKey: string) => expandedMenus.includes(itemKey);
   
-  const isItemActive = (href: string, hasSubmenu: boolean) => {
+  const isItemActive = (item: any) => {
+    const hasSubmenu = item.submenu && item.submenu.length > 0;
+    
     if (hasSubmenu) {
-      return location.pathname.startsWith(href);
+      // 对于有子菜单的项目，只有当前路径匹配子菜单中的某一项时才高亮
+      return item.submenu.some((subItem: any) => 
+        location.pathname === subItem.href || 
+        location.pathname.startsWith(subItem.href + '/')
+      );
     }
-    return location.pathname === href;
+    return location.pathname === item.href || location.pathname.startsWith(item.href + '/');
   };
 
   
   const renderNavItem = (item: any) => {
     const hasSubmenu = item.submenu && item.submenu.length > 0;
     const isExpanded = isMenuExpanded(item.name);
-    const isActive = isItemActive(item.href, hasSubmenu);
+    const isActive = isItemActive(item);
 
     if (hasSubmenu) {
       return (

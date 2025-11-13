@@ -3,14 +3,15 @@
     "dashboard": "仪表板",
     "projects": "项目管理",
     "agents": "Agent管理",
+    "skills": "技能管理",
     "mcp": "MCP服务",
-    "settings": "系统设置",
+    "commands": "自定义命令",
+    "subagents": "Subagent管理",
+    "settings": "系统管理",
     "settingsSubmenu": {
       "general": "外观设置",
-      "versions": "版本管理",
-      "memory": "全局记忆",
-      "commands": "自定义命令",
-      "subagents": "Subagent管理"
+      "suppliers": "供应商管理",
+      "memory": "全局记忆"
     }
   },
   "footer": {
@@ -278,8 +279,7 @@
       "viewAll": "查看全部",
       "types": {
         "slides": "演示文稿",
-        "code": "代码开发",
-        "documents": "文档写作"
+        "claude-code": "Claude Code"
       },
       "noAgents": "暂无可用助手",
       "goEnable": "去启用助手"
@@ -348,15 +348,12 @@
       "saveSuccess": "全局记忆已保存",
       "saveFailed": "保存失败，请重试"
     },
-    "version": {
-      "title": "版本管理",
-      "subtitle": "管理多个 Claude Code 版本，指定可执行路径、别名和环境变量",
-      "addVersion": "添加版本",
-      "reinitialize": "重新初始化",
-      "reinitializeTitle": "重新运行 Claude 版本配置向导",
-      "reinitializeSuccess": "配置已重置，即将重新加载页面",
-      "noVersions": "还没有配置 Claude 版本",
-      "clickToAddFirst": "点击\"添加版本\"来配置第一个 Claude 版本",
+    "supplier": {
+      "title": "供应商管理",
+      "subtitle": "管理多个模型供应商，指定可执行路径、别名和环境变量",
+      "addSupplier": "添加供应商",
+      "noSuppliers": "还没有配置模型供应商",
+      "clickToAddFirst": "点击\"添加供应商\"来配置第一个模型供应商",
       "systemLabel": "系统",
       "defaultLabel": "默认",
       "pathLabel": "路径",
@@ -366,11 +363,11 @@
       "copyCommand": "复制命令",
       "edit": "编辑",
       "delete": "删除",
-      "confirmDelete": "确定要删除版本 \"{{alias}}\" 吗？",
-      "currentVersion": {
-        "title": "当前版本",
+      "confirmDelete": "确定要删除供应商 \"{{alias}}\" 吗？",
+      "currentSupplier": {
+        "title": "当前供应商",
         "checking": "检查中...",
-        "checkVersion": "检查版本",
+        "checkVersion": "检查供应商",
         "claudeDesc": "AI编程助手",
         "updating": "更新中...",
         "update": "更新",
@@ -380,7 +377,7 @@
         "preferred": "推荐",
         "packageManager": "包管理器",
         "lastChecked": "最后检查时间",
-        "clickToCheck": "点击\"检查版本\"获取版本信息",
+        "clickToCheck": "点击\"检查供应商\"获取供应商信息",
         "updateSuccess": "更新成功",
         "updateFailed": "更新失败",
         "info1": "Claude Code 是 AI 编程助手，支持代码生成、编辑和项目管理",
@@ -390,8 +387,8 @@
         "info5": "建议保持 Claude Code 为最新版本以获得最佳体验"
       },
       "templates": {
-        "title": "服务商快速配置模板",
-        "description": "选择预设模板快速配置第三方API服务商，自动填充环境变量配置",
+        "title": "供应商快速配置模板",
+        "description": "选择预设模板快速配置第三方API供应商，自动填充环境变量配置",
         "providers": {
           "glm": {
             "name": "GLM (智谱AI)",
@@ -404,18 +401,22 @@
           "kimi": {
             "name": "Kimi K2 (月之暗面)",
             "description": "使用Kimi K2模型服务，支持Anthropic API兼容"
+          },
+          "minimax": {
+            "name": "MiniMax",
+            "description": "使用MiniMax的高性能模型服务，支持Anthropic API兼容"
           }
         }
       },
       "form": {
-        "createTitle": "添加新版本",
-        "editTitle": "编辑版本",
-        "versionName": "版本名称",
-        "versionNamePlaceholder": "例如: Claude Code v1.2.3",
+        "createTitle": "添加新供应商",
+        "editTitle": "编辑供应商",
+        "supplierName": "供应商名称",
+        "supplierNamePlaceholder": "例如: Claude Code v1.2.3",
         "alias": "别名",
         "aliasPlaceholder": "例如: claude-1.2.3",
         "description": "描述",
-        "descriptionPlaceholder": "版本描述（可选）",
+        "descriptionPlaceholder": "供应商描述（可选）",
         "executablePath": "可执行文件路径",
         "executablePathPlaceholder": "不指定则使用系统默认路径",
         "browseFile": "浏览文件",
@@ -439,15 +440,15 @@
         "requiredFields": "请填写所有必填字段",
         "saveFailed": "保存失败",
         "deleteFailed": "删除失败",
-        "setDefaultFailed": "设置默认版本失败",
-        "cannotDeleteSystem": "不能删除系统版本",
+        "setDefaultFailed": "设置默认供应商失败",
+        "cannotDeleteSystem": "不能删除系统供应商",
         "copyFailed": "复制失败，请手动复制以下命令："
       },
       "success": {
-        "createVersion": "版本创建成功",
-        "updateVersion": "版本更新成功",
-        "deleteVersion": "版本删除成功",
-        "setDefault": "已将 \"{{alias}}\" 设置为默认版本",
+        "createVersion": "供应商创建成功",
+        "updateVersion": "供应商更新成功",
+        "deleteVersion": "供应商删除成功",
+        "setDefault": "已将 \"{{alias}}\" 设置为默认供应商",
         "copyCommand": "命令已复制到剪贴板"
       }
     },
@@ -635,6 +636,100 @@
       "cancel": "取消",
       "delete": "删除",
       "deleting": "删除中..."
+    }
+  },
+  "skills": {
+    "title": "技能管理",
+    "subtitle": "管理你的专业技能库",
+    "loading": "加载技能中...",
+    "searchPlaceholder": "搜索技能...",
+    "createButton": "创建新技能",
+    "noSkills": "还没有技能",
+    "noSkillsSearch": "未找到匹配的技能",
+    "createFirst": "创建你的第一个专业技能",
+    "adjustSearch": "尝试调整搜索条件",
+    "card": {
+      "viewDetails": "查看详情",
+      "tools": "{{count}} 个工具",
+      "editSkill": "编辑技能",
+      "deleteSkill": "删除技能"
+    },
+    "form": {
+      "name": "技能名称",
+      "namePlaceholder": "例如：网页开发专家",
+      "nameRequired": "请输入技能名称",
+      "description": "技能描述",
+      "descriptionPlaceholder": "描述这个技能的作用和适用场景...",
+      "systemPrompt": "系统提示词",
+      "systemPromptPlaceholder": "定义AI助手在启用此技能时的行为和专业知识...",
+      "tags": "标签",
+      "tagsPlaceholder": "添加相关标签，用逗号分隔",
+      "enabledTools": "启用的工具",
+      "selectTools": "选择工具",
+      "tools": "工具",
+      "allTools": "所有工具",
+      "save": "保存技能",
+      "cancel": "取消",
+      "saving": "保存中...",
+      "preview": {
+        "title": "预览",
+        "name": "技能名称",
+        "description": "技能描述",
+        "tools": "可用工具"
+      }
+    },
+    "modal": {
+      "createTitle": "创建新技能",
+      "editTitle": "编辑技能",
+      "saveSkill": "保存技能",
+      "updateSkill": "更新技能",
+      "close": "关闭"
+    },
+    "delete": {
+      "title": "删除技能",
+      "confirmMessage": "确定要删除技能 \"{{name}}\" 吗？此操作无法撤销。",
+      "cancel": "取消",
+      "delete": "删除",
+      "deleting": "删除中..."
+    },
+    "errors": {
+      "createFailed": "创建技能失败",
+      "updateFailed": "更新技能失败",
+      "deleteFailed": "删除技能失败",
+      "loadFailed": "加载技能失败"
+    },
+    "success": {
+      "create": "技能创建成功",
+      "update": "技能更新成功",
+      "delete": "技能删除成功"
+    },
+    "editor": {
+      "title": "技能编辑器",
+      "files": {
+        "title": "技能文件",
+        "addFile": "添加文件",
+        "createFile": "新建文件",
+        "uploadFile": "上传文件",
+        "noFiles": "还没有技能文件",
+        "fileActions": "文件操作",
+        "deleteFile": "删除文件",
+        "renameFile": "重命名文件",
+        "saveFile": "保存文件"
+      },
+      "manifest": {
+        "title": "技能清单",
+        "name": "技能名称",
+        "description": "描述",
+        "version": "版本",
+        "author": "作者",
+        "license": "许可证",
+        "tags": "标签"
+      },
+      "validation": {
+        "invalidYaml": "YAML 格式错误",
+        "missingFields": "缺少必需字段",
+        "invalidSkillName": "技能名称无效"
+      }
     }
   }
 }

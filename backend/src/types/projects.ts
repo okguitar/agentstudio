@@ -7,6 +7,13 @@ export interface ProjectAgentConfig {
   customConfig: Record<string, any>;
 }
 
+export interface ProjectSkillConfig {
+  enabled: boolean;
+  lastUsed: string;
+  usageCount: number;
+  customConfig: Record<string, any>;
+}
+
 export interface ProjectMetadata {
   id: string;
   name: string;
@@ -18,6 +25,9 @@ export interface ProjectMetadata {
   // Agent associations
   agents: Record<string, ProjectAgentConfig>;
   defaultAgent: string;
+  
+  // Skill associations
+  skills: Record<string, ProjectSkillConfig>;
   
   // Simplified metadata
   tags: string[];

@@ -3,14 +3,15 @@
     "dashboard": "Dashboard",
     "projects": "Projects",
     "agents": "Agents",
+    "skills": "Skills",
     "mcp": "MCP Services",
+    "commands": "Commands",
+    "subagents": "Subagents",
     "settings": "Settings",
     "settingsSubmenu": {
       "general": "Look & Feel",
-      "versions": "Versions",
-      "memory": "Memory",
-      "commands": "Commands",
-      "subagents": "Subagents"
+      "suppliers": "Suppliers",
+      "memory": "Memory"
     }
   },
   "footer": {
@@ -278,8 +279,7 @@
       "viewAll": "View All",
       "types": {
         "slides": "Presentations",
-        "code": "Code Development",
-        "documents": "Document Writing"
+        "claude-code": "Claude Code"
       },
       "noAgents": "No assistants available",
       "goEnable": "Enable assistants"
@@ -348,15 +348,12 @@
       "saveSuccess": "Global memory saved successfully",
       "saveFailed": "Failed to save, please try again"
     },
-    "version": {
-      "title": "Version Management",
-      "subtitle": "Manage multiple Claude Code versions, specify executable paths, aliases and environment variables",
-      "addVersion": "Add Version",
-      "reinitialize": "Reinitialize",
-      "reinitializeTitle": "Rerun Claude version setup wizard",
-      "reinitializeSuccess": "Configuration has been reset, reloading page",
-      "noVersions": "No Claude versions configured yet",
-      "clickToAddFirst": "Click \"Add Version\" to configure your first Claude version",
+    "supplier": {
+      "title": "Supplier Management",
+      "subtitle": "Manage multiple model suppliers, specify executable paths, aliases and environment variables",
+      "addSupplier": "Add Supplier",
+      "noSuppliers": "No model suppliers configured yet",
+      "clickToAddFirst": "Click \"Add Supplier\" to configure your first model supplier",
       "systemLabel": "System",
       "defaultLabel": "Default",
       "pathLabel": "Path",
@@ -366,11 +363,11 @@
       "copyCommand": "Copy Command",
       "edit": "Edit",
       "delete": "Delete",
-      "confirmDelete": "Are you sure you want to delete version \"{{alias}}\"?",
-      "currentVersion": {
-        "title": "Current Version",
+      "confirmDelete": "Are you sure you want to delete supplier \"{{alias}}\"?",
+      "currentSupplier": {
+        "title": "Current Supplier",
         "checking": "Checking...",
-        "checkVersion": "Check Version",
+        "checkVersion": "Check Supplier",
         "claudeDesc": "AI Programming Assistant",
         "updating": "Updating...",
         "update": "Update",
@@ -380,7 +377,7 @@
         "preferred": "Preferred",
         "packageManager": "Package Manager",
         "lastChecked": "Last Checked",
-        "clickToCheck": "Click \"Check Version\" to get version info",
+        "clickToCheck": "Click \"Check Supplier\" to get supplier info",
         "updateSuccess": "Update Successful",
         "updateFailed": "Update Failed",
         "info1": "Claude Code is an AI programming assistant that supports code generation, editing and project management",
@@ -391,7 +388,7 @@
       },
       "templates": {
         "title": "Quick Configuration Templates",
-        "description": "Select a preset template to quickly configure third-party API providers with auto-filled environment variables",
+        "description": "Select a preset template to quickly configure third-party API suppliers with auto-filled environment variables",
         "providers": {
           "glm": {
             "name": "GLM (Zhipu AI)",
@@ -404,18 +401,22 @@
           "kimi": {
             "name": "Kimi K2 (Moonshot AI)",
             "description": "Use Kimi K2 model service, compatible with Anthropic API"
+          },
+          "minimax": {
+            "name": "MiniMax",
+            "description": "Use MiniMax high-performance model service, compatible with Anthropic API"
           }
         }
       },
       "form": {
-        "createTitle": "Add New Version",
-        "editTitle": "Edit Version",
-        "versionName": "Version Name",
-        "versionNamePlaceholder": "e.g., Claude Code v1.2.3",
+        "createTitle": "Add New Supplier",
+        "editTitle": "Edit Supplier",
+        "supplierName": "Supplier Name",
+        "supplierNamePlaceholder": "e.g., Claude Code v1.2.3",
         "alias": "Alias",
         "aliasPlaceholder": "e.g., claude-1.2.3",
         "description": "Description",
-        "descriptionPlaceholder": "Version description (optional)",
+        "descriptionPlaceholder": "Supplier description (optional)",
         "executablePath": "Executable Path",
         "executablePathPlaceholder": "Leave empty to use system default path",
         "browseFile": "Browse Files",
@@ -438,16 +439,16 @@
       "errors": {
         "requiredFields": "Please fill in all required fields",
         "saveFailed": "Save failed",
-        "cannotDeleteSystem": "Cannot delete system version",
+        "cannotDeleteSystem": "Cannot delete system supplier",
         "deleteFailed": "Delete failed",
-        "setDefaultFailed": "Failed to set default version",
+        "setDefaultFailed": "Failed to set default supplier",
         "copyFailed": "Copy failed, please manually copy the following command:"
       },
       "success": {
-        "createVersion": "Version created successfully",
-        "updateVersion": "Version updated successfully",
-        "deleteVersion": "Version deleted successfully",
-        "setDefault": "Set \"{{alias}}\" as default version",
+        "createVersion": "Supplier created successfully",
+        "updateVersion": "Supplier updated successfully",
+        "deleteVersion": "Supplier deleted successfully",
+        "setDefault": "Set \"{{alias}}\" as default supplier",
         "copyCommand": "Command copied to clipboard"
       }
     },
@@ -635,6 +636,135 @@
       "cancel": "Cancel",
       "delete": "Delete",
       "deleting": "Deleting..."
+    }
+  },
+  "skills": {
+    "title": "Agent Skills",
+    "subtitle": "Manage and organize your agent capabilities",
+    "createButton": "Create Skill",
+    "noSkills": "No skills created yet",
+    "noSkillsSearch": "No skills found matching your filters",
+    "createFirst": "Create Your First Skill",
+    "searchPlaceholder": "Search skills...",
+    "filter": {
+      "all": "All Skills",
+      "user": "User Skills",
+      "project": "Project Skills"
+    },
+    "scope": {
+      "user": "User",
+      "project": "Project"
+    },
+    "status": {
+      "enabled": "Enabled",
+      "disabled": "Disabled"
+    },
+    "create": {
+      "title": "Create New Skill",
+      "subtitle": "Define a new capability for your AI agents",
+      "steps": {
+        "basic": "Basic Info",
+        "content": "Content",
+        "preview": "Preview"
+      },
+      "basic": {
+        "name": "Skill Name",
+        "namePlaceholder": "my-awesome-skill",
+        "nameHint": "Use lowercase letters, numbers, and hyphens only (max 64 characters)",
+        "description": "Description",
+        "descriptionPlaceholder": "Brief description of what this skill does and when to use it",
+        "descriptionHint": "Include both what the skill does and when Claude should use it (max 1024 characters)",
+        "allowedTools": "Allowed Tools",
+        "allowedToolsPlaceholder": "Read, Write, Grep (comma-separated)",
+        "allowedToolsHint": "Tools this skill can use without asking for permission. Leave empty for default behavior.",
+        "selectTools": "Select Tools",
+        "noToolsSelected": "No tools selected"
+      },
+      "content": {
+        "skillManifest": "SKILL.md Content",
+        "additionalFiles": "Additional Files",
+        "addFile": "Add File",
+        "noFiles": "No additional files",
+        "noFilesHint": "Add files to extend your skill functionality",
+        "fileName": "File name",
+        "filePath": "Path/to/file",
+        "fileContent": "File content",
+        "fileType": {
+          "markdown": "Markdown",
+          "text": "Text",
+          "script": "Script",
+          "template": "Template",
+          "other": "Other"
+        }
+      },
+      "preview": {
+        "title": "Skill Preview",
+        "name": "Name:",
+        "description": "Description:",
+        "scope": "Scope:",
+        "allowedTools": "Allowed Tools:",
+        "additionalFiles": "Additional Files:",
+        "none": "None",
+        "fileCount": "{{count}} file(s)",
+        "previewContent": "SKILL.md Preview:",
+        "noContent": "(no content)"
+      }
+    },
+    "editor": {
+      "title": "Edit Skill",
+      "basic": {
+        "name": "Name",
+        "description": "Description",
+        "allowedTools": "Allowed Tools",
+        "allowedToolsHint": "Tools this skill can use without asking for permission. Leave empty for default behavior.",
+        "skillContent": "SKILL.md Content",
+        "validationErrors": "Validation Errors:",
+        "unsavedChanges": "You have unsaved changes. Press Cmd+S to save."
+      },
+      "files": {
+        "title": "Additional Files",
+        "addFile": "Add File",
+        "noFiles": "No additional files",
+        "addFilesHint": "Add files to extend your skill functionality"
+      },
+      "scope": {
+        "user": "User Skill"
+      },
+      "errors": {
+        "validationErrors": "Validation Errors:",
+        "saveFailed": "Failed to save skill. Please try again."
+      }
+    },
+    "preview": {
+      "title": "Skill Content",
+      "usageStats": "Usage Statistics",
+      "usage": "Used {{count}} time{{count, plural, one {} other{s}}",
+      "lastUsed": "Last used",
+      "created": "Created:",
+      "updated": "Updated:",
+      "scope": "Scope:",
+      "userScopeDesc": "Personal (across all projects)",
+      "projectScopeDesc": "Project: Current",
+      "actions": {
+        "edit": "Edit",
+        "enable": "Enable",
+        "disable": "Disable",
+        "delete": "Delete"
+      }
+    },
+    "errors": {
+      "loadFailed": "Error loading skills",
+      "deleteFailed": "Failed to delete skill. Please try again.",
+      "toggleFailed": "Toggle functionality will be implemented in the API",
+      "createFailed": "Failed to create skill. Please try again."
+    },
+    "deleteConfirm": "Are you sure you want to delete \"{{name}}\"?",
+    "usage": {
+      "customInstructions": "Custom instructions",
+      "toolPermissions": "Tool permissions"
+    },
+    "filter": {
+      "showDisabled": "Show disabled"
     }
   }
 }

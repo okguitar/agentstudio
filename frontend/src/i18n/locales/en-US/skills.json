@@ -1,0 +1,105 @@
+{
+  "title": "Skills Management",
+  "subtitle": "Create and manage Claude assistant skills to extend AI capabilities",
+  "createButton": "Create Skill",
+  "searchPlaceholder": "Search skills by name or description...",
+  "filter": {
+    "showDisabled": "Show disabled skills"
+  },
+  "noSkills": "No skills created yet",
+  "noSkillsSearch": "No skills found matching your search",
+  "createFirst": "Create your first skill",
+  "scope": {
+    "user": "User Skill"
+  },
+  "status": {
+    "enabled": "Enabled",
+    "disabled": "Disabled"
+  },
+  "table": {
+    "skill": "Skill",
+    "tools": "Tools",
+    "status": "Status", 
+    "updated": "Updated",
+    "actions": "Actions"
+  },
+  "adjustSearch": "Try adjusting your search criteria",
+  "preview": {
+    "updated": "Updated",
+    "usage": "Used {{count}} times",
+    "actions": {
+      "edit": "Edit",
+      "delete": "Delete"
+    }
+  },
+  "deleteConfirm": "Are you sure you want to delete the skill \"{{name}}\"? This action cannot be undone.",
+  "errors": {
+    "loadFailed": "Failed to load skills",
+    "createFailed": "Failed to create skill",
+    "updateFailed": "Failed to update skill",
+    "deleteFailed": "Failed to delete skill"
+  },
+  "create": {
+    "title": "Create New Skill",
+    "subtitle": "Configure basic information and functionality for the new skill",
+    "tabs": {
+      "basic": "Basic Info",
+      "manifest": "Manifest",
+      "files": "Files"
+    },
+    "basic": {
+      "name": "Skill Name",
+      "namePlaceholder": "Enter skill name",
+      "nameHint": "Display name for the skill, supports Chinese, English and numbers",
+      "description": "Skill Description",
+      "descriptionPlaceholder": "Detailed description of this skill's functionality and purpose",
+      "descriptionHint": "Clear description helps understand the skill's purpose",
+      "allowedTools": "Allowed Tools",
+      "allowedToolsHint": "Select tools that this skill can use",
+      "noToolsSelected": "No tools selected",
+      "selectTools": "Select Tools",
+      "unsavedChanges": "You have unsaved changes"
+    },
+    "content": {
+      "skillManifest": "Skill Manifest",
+      "additionalFiles": "Additional Files",
+      "addFile": "Add File",
+      "noFiles": "No additional files",
+      "noFilesHint": "Click the button above to add skill-related files",
+      "fileName": "File Name",
+      "filePath": "File Path",
+      "fileContent": "File Content",
+      "fileType": {
+        "markdown": "Markdown",
+        "text": "Text",
+        "script": "Script",
+        "template": "Template",
+        "other": "Other"
+      }
+    }
+  },
+  "editor": {
+    "title": "Edit Skill",
+    "scope": {
+      "user": "User-level Skill"
+    },
+    "basic": {
+      "name": "Skill Name",
+      "description": "Skill Description",
+      "allowedTools": "Allowed Tools",
+      "allowedToolsHint": "Select tools that this skill can use",
+      "skillContent": "Skill Content",
+      "unsavedChanges": "You have unsaved changes, press Cmd+S to save"
+    },
+    "files": {
+      "title": "Additional Files",
+      "addFile": "Add File",
+      "noFiles": "No additional files",
+      "addFilesHint": "Add related files to support skill functionality"
+    },
+    "errors": {
+      "validationErrors": "Validation Errors",
+      "saveFailed": "Failed to save skill"
+    }
+  }
+}

@@ -45,9 +45,7 @@ export default defineConfig({
           ],
           // 将代理相关组件分离
           'agents': [
-            './src/agents/slides/components/SlidePreview.tsx',
-            './src/agents/documents/components/DocumentOutlinePanel.tsx',
-            './src/agents/code/components/CodeExplorerPanel.tsx'
+            './src/agents/slides/components/SlidePreview.tsx'
           ]
         }
       }
