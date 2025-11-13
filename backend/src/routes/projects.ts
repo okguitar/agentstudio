@@ -137,19 +137,31 @@ router.delete('/:dirName', async (req, res) => {
 });
 
 // PUT /api/projects/:dirName/default-agent - Set default agent
+// Note: dirName is actually the full project path (URL encoded)
 router.put('/:dirName/default-agent', async (req, res) => {
   try {
-    const { dirName } = req.params;
+    // dirName here is actually the full project path (URL encoded)
+    const projectPath = decodeURIComponent(req.params.dirName);
     const { agentId } = req.body;
     
     if (!agentId) {
       return res.status(400).json({ error: 'Agent ID is required' });
     }
     
-    projectStorage.setDefaultAgent(dirName, agentId);
-    const updatedProject = projectStorage.getProject(dirName);
+    // Add the agent to the project and set it as default
+    projectStorage.addAgentToProject(projectPath, agentId);
+    projectStorage.setDefaultAgent(projectPath, agentId);
     
-    res.json({ project: updatedProject });
+    const updatedProject = projectStorage.getProject(projectPath);
+    
+    if (!updatedProject) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+    
+    res.json({ 
+      success: true,
+      project: updatedProject 
+    });
   } catch (error) {
     console.error('Error setting default agent:', error);
     res.status(500).json({ error: 'Failed to set default agent' });
@@ -211,7 +223,8 @@ router.get('/:dirName/check-agent', async (req, res) => {
 // POST /api/projects/:dirName/select-agent - Select first agent for project
 router.post('/:dirName/select-agent', async (req, res) => {
   try {
-    const { dirName } = req.params;
+    // dirName here is actually the full project path (URL encoded)
+    const projectPath = decodeURIComponent(req.params.dirName);
     const { agentId } = req.body;
     
     if (!agentId) {
@@ -219,10 +232,14 @@ router.post('/:dirName/select-agent', async (req, res) => {
     }
     
     // Add the agent to the project and set it as default
-    projectStorage.addAgentToProject(dirName, agentId);
-    projectStorage.setDefaultAgent(dirName, agentId);
+    projectStorage.addAgentToProject(projectPath, agentId);
+    projectStorage.setDefaultAgent(projectPath, agentId);
     
-    const updatedProject = projectStorage.getProject(dirName);
+    const updatedProject = projectStorage.getProject(projectPath);
+    
+    if (!updatedProject) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
     
     res.json({ 
       success: true,
@@ -426,22 +443,22 @@ router.post('/import', (req, res) => {
 router.post('/create', (req, res) => {
   try {
     const { agentId, projectName, parentDirectory, description } = req.body;
-    
+
     if (!agentId || !projectName) {
       return res.status(400).json({ error: 'Agent ID and project name are required' });
     }
-    
+
     // Verify agent exists
     const agent = globalAgentStorage.getAgent(agentId);
     if (!agent) {
       return res.status(404).json({ error: 'Agent not found' });
     }
-    
+
     // Use custom parent directory if provided, otherwise default to ~/claude-code-projects
     let projectPath: string;
     if (parentDirectory && parentDirectory !== '~/claude-code-projects') {
       // Expand tilde if present
-      const expandedParent = parentDirectory.startsWith('~/') 
+      const expandedParent = parentDirectory.startsWith('~/')
         ? path.join(os.homedir(), parentDirectory.slice(2))
         : parentDirectory;
       projectPath = path.join(expandedParent, projectName);
@@ -449,21 +466,21 @@ router.post('/create', (req, res) => {
       const homeDir = os.homedir();
       const projectsDir = path.join(homeDir, 'claude-code-projects');
       projectPath = path.join(projectsDir, projectName);
-      
+
       // Create projects directory if it doesn't exist
       if (!fs.existsSync(projectsDir)) {
         fs.mkdirSync(projectsDir, { recursive: true });
       }
     }
-    
+
     // Create project directory
     if (!fs.existsSync(projectPath)) {
       fs.mkdirSync(projectPath, { recursive: true });
-      
+
       // Create .cc-sessions directory and project metadata
       const sessionsDir = path.join(projectPath, '.cc-sessions');
       fs.mkdirSync(sessionsDir, { recursive: true });
-      
+
       const projectMetadata = {
         name: projectName,
         description: description || '',
@@ -472,12 +489,12 @@ router.post('/create', (req, res) => {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
-      
+
       fs.writeFileSync(
-        path.join(sessionsDir, 'project.json'), 
+        path.join(sessionsDir, 'project.json'),
         JSON.stringify(projectMetadata, null, 2)
       );
-      
+
       // Create a basic README file
       const readmeContent = `# ${projectName}
 
@@ -485,14 +502,14 @@ Created with ${agent.name} on ${new Date().toLocaleString()}
 
 ${description ? `## Description\n${description}\n\n` : ''}This is your project workspace. You can:
 - Store your files here
-- Create subdirectories for organization  
+- Create subdirectories for organization
 - Use this directory for your ${agent.name} sessions
 
 The conversation history will be saved in \`.cc-sessions/${agentId}/\` within this directory.
 `;
-      
+
       fs.writeFileSync(path.join(projectPath, 'README.md'), readmeContent);
-      
+
       // Add project path to agent's projects list
       if (!agent.projects) {
         agent.projects = [];
@@ -503,7 +520,18 @@ The conversation history will be saved in \`.cc-sessions/${agentId}/\` within th
         agent.updatedAt = new Date().toISOString();
         globalAgentStorage.saveAgent(agent);
       }
-      
+
+      // 🔧 FIX: Create project metadata using ProjectMetadataStorage
+      // This ensures the project shows up correctly in the projects list with proper agent info
+      // The metadata stores the real project path, regardless of where it is on the filesystem
+      projectStorage.createProject(normalizedPath, {
+        name: projectName,
+        description: description || '',
+        agentId: agentId,
+        tags: [],
+        metadata: {}
+      });
+
       // Return project info that matches frontend interface
       const projectId = `${agentId}-${Buffer.from(normalizedPath).toString('base64').replace(/[+/=]/g, '').slice(-8)}`;
 
@@ -527,11 +555,11 @@ The conversation history will be saved in \`.cc-sessions/${agentId}/\` within th
     } else {
       res.status(409).json({ error: 'Project directory already exists' });
     }
-    
+
   } catch (error) {
     console.error('Failed to create project:', error);
-    res.status(500).json({ 
-      error: 'Failed to create project directory', 
+    res.status(500).json({
+      error: 'Failed to create project directory',
       details: error instanceof Error ? error.message : String(error)
     });
   }
@@ -616,8 +644,8 @@ router.delete('/by-id/:projectId', (req, res) => {
         return res.status(404).json({ error: 'Project not found' });
       }
       
-      // Delete project metadata
-      const success = projectStorage.deleteProject(project.dirName);
+      // Delete project metadata - use full path for deletion
+      const success = projectStorage.deleteProject(project.path);
       if (!success) {
         return res.status(404).json({ error: 'Project not found' });
       }
