@@ -181,7 +181,16 @@ export const createAgentCommandSelectorKeyHandler = (props: AgentCommandSelector
       e.preventDefault();
       const selectedCmd = props.allCommands[props.selectedCommandIndex];
       if (selectedCmd) {
+        // 调用父组件的 onCommandSelect 来更新状态
         props.onCommandSelect(selectedCmd);
+        // 同时更新输入框内容（与点击时的行为保持一致）
+        props.onSetInputMessage(`/${selectedCmd.name}`);
+        // 关闭命令选择器
+        props.onSetShowCommandSelector(false);
+        // 重新聚焦到输入框
+        setTimeout(() => {
+          props.textareaRef.current?.focus();
+        }, 0);
       }
       return;
     }
