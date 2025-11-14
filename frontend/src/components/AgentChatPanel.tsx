@@ -166,6 +166,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
     setShowCommandSelector,
     setShowFileBrowser,
     setAtSymbolPosition,
+    setCommandSearch,
     // handleInputChange,
     handleCommandSelect,
     isCommandDefined,
@@ -738,6 +739,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
         onSetShowFileBrowser={setShowFileBrowser}
         onSetAtSymbolPosition={setAtSymbolPosition}
         onSetCommandWarning={setCommandWarning}
+        onSetCommandSearch={setCommandSearch}
         
         // Confirm dialog handlers
         handleConfirmDialog={handleConfirmDialog}

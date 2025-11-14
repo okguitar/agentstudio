@@ -102,6 +102,7 @@ export interface AgentInputAreaProps {
   onSetShowFileBrowser: (show: boolean) => void;
   onSetAtSymbolPosition: (position: number | null) => void;
   onSetCommandWarning: (warning: string | null) => void;
+  onSetCommandSearch: (search: string) => void;
   
   // Confirm dialog handlers
   handleConfirmDialog: () => void;
@@ -183,6 +184,7 @@ export const AgentInputArea: React.FC<AgentInputAreaProps> = (props) => {
     onSetShowFileBrowser,
     onSetAtSymbolPosition,
     onSetCommandWarning,
+    onSetCommandSearch,
     handleConfirmDialog,
     handleCancelDialog,
     isSendDisabled
@@ -214,9 +216,12 @@ export const AgentInputArea: React.FC<AgentInputAreaProps> = (props) => {
     
     // Check if we should show command selector
     if (isCommandTrigger(value)) {
-      // Extract command search for potential future use
-      extractCommandSearch(value);
-      // Note: Command search update should be handled by the parent hook
+      // Extract command search and update state
+      const search = extractCommandSearch(value);
+      if (search !== commandSearch) {
+        onSetCommandSearch(search);
+        onSetSelectedCommandIndex(0);
+      }
       if (!showCommandSelector) {
         onSetShowCommandSelector(true);
       }
@@ -236,6 +241,7 @@ export const AgentInputArea: React.FC<AgentInputAreaProps> = (props) => {
     onSetShowCommandSelector,
     onSetCommandWarning,
     onSetSelectedCommandIndex,
+    onSetCommandSearch,
     textareaRef
   ]);
 

@@ -1,8 +1,6 @@
 import { useState, useCallback, useMemo, useEffect, RefObject } from 'react';
 import { useCommands, useProjectCommands } from '../useCommands';
 import {
-  isCommandTrigger,
-  extractCommandSearch,
   type CommandType
 } from '../../utils/commandFormatter';
 import { SystemCommand } from '../../utils/commandHandler';
@@ -162,26 +160,7 @@ export const useCommandCompletion = ({
         return;
       }
     }
-
-    // Check if we should show command selector
-    if (isCommandTrigger(value)) {
-      const search = extractCommandSearch(value);
-      // Only update if search term actually changed
-      if (search !== commandSearch) {
-        setCommandSearch(search);
-        setSelectedCommandIndex(0);
-      }
-      if (!showCommandSelector) {
-        setShowCommandSelector(true);
-      }
-    } else {
-      if (showCommandSelector) {
-        setShowCommandSelector(false);
-        setSelectedCommand(null);
-        setSelectedCommandIndex(0);
-      }
-    }
-  }, [commandWarning, commandSearch, showCommandSelector, textareaRef]);
+  }, [commandWarning, textareaRef]);
 
   // Handle command selection
   const handleCommandSelect = useCallback((command: CommandType) => {
@@ -262,6 +241,7 @@ export const useCommandCompletion = ({
     setShowCommandSelector,
     setShowFileBrowser,
     setAtSymbolPosition,
+    setCommandSearch,
     handleInputChange,
     handleCommandSelect,
     handleCommandSelectorClose,
