@@ -250,13 +250,14 @@ export async function buildQueryOptions(
 
   console.log(`🎯 Using Claude executable path: ${executablePath}`);
   
-  const queryOptions: any = {
+  const queryOptions: Options = {
     systemPrompt: agent.systemPrompt, // 直接使用 Agent 配置中的 systemPrompt
     allowedTools,
     maxTurns: agent.maxTurns,
     cwd,
     permissionMode: finalPermissionMode as any,
     model: finalModel,
+    settingSources: ["user", "project"],
   };
 
   // Only add pathToClaudeCodeExecutable if we have a valid path
@@ -281,30 +282,20 @@ export async function buildQueryOptions(
     if (environmentVariables[upper] && !environmentVariables[lower]) {
       // If uppercase is configured but lowercase isn't, set lowercase to match
       queryOptions.env[lower] = environmentVariables[upper];
-      console.log(`🔄 Normalized ${upper} → also set ${lower} = ${environmentVariables[upper]}`);
     } else if (environmentVariables[lower] && !environmentVariables[upper]) {
       // If lowercase is configured but uppercase isn't, set uppercase to match
       queryOptions.env[upper] = environmentVariables[lower];
-      console.log(`🔄 Normalized ${lower} → also set ${upper} = ${environmentVariables[lower]}`);
     }
   }
 
   if (Object.keys(environmentVariables).length > 0) {
-    console.log(`🌍 Using custom environment variables:`, Object.keys(environmentVariables));
-    
     // Log final proxy configuration that will be used
     const proxyVars = ['HTTP_PROXY', 'HTTPS_PROXY', 'http_proxy', 'https_proxy', 'NO_PROXY', 'no_proxy', 'ALL_PROXY', 'all_proxy'];
-    const finalProxyVars = proxyVars.filter(key => queryOptions.env[key]);
-    if (finalProxyVars.length > 0) {
-      console.log(`🌐 Final proxy configuration for SDK:`, finalProxyVars.reduce((acc, key) => {
-        acc[key] = queryOptions.env[key];
-        return acc;
-      }, {} as Record<string, string>));
-    }
+    const finalProxyVars = proxyVars.filter(key => queryOptions.env?.[key]);
     
     // Log API keys presence (but not values)
     const apiKeys = ['ANTHROPIC_API_KEY', 'OPENAI_API_KEY', 'ANTHROPIC_AUTH_TOKEN'];
-    const configuredApiKeys = apiKeys.filter(key => queryOptions.env[key]);
+    const configuredApiKeys = apiKeys.filter(key => queryOptions.env?.[key]);
     if (configuredApiKeys.length > 0) {
       console.log(`🔑 API keys configured:`, configuredApiKeys);
     }
