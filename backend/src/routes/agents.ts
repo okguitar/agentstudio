@@ -1,25 +1,15 @@
 import express from 'express';
 import { z } from 'zod';
-import * as path from 'path';
-import * as fs from 'fs';
-import * as os from 'os';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import { query } from '@anthropic-ai/claude-agent-sdk';
 import type {
   SDKMessage,
   SDKSystemMessage,
-  SDKAssistantMessage,
-  SDKUserMessage,
   SDKResultMessage,
   SDKPartialAssistantMessage,
   SDKCompactBoundaryMessage
 } from '@anthropic-ai/claude-agent-sdk';
 import { AgentStorage } from '../services/agentStorage';
 import { AgentConfig } from '../types/agents';
-import { ProjectMetadataStorage } from '../services/projectMetadataStorage';
 import { sessionManager } from '../services/sessionManager';
-import { getAllVersions, getDefaultVersionId } from '../services/claudeVersionStorage';
 import { buildQueryOptions } from '../utils/claudeUtils.js';
 import { handleSessionManagement, buildUserMessageContent } from '../utils/sessionUtils.js';
 
