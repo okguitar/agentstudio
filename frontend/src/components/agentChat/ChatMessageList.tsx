@@ -117,21 +117,6 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
       )}
 
       <div ref={messagesEndRef} />
-
-      {/* Floating "New Messages" indicator */}
-      {isUserScrolling && newMessagesCount > 0 && (
-        <div className="sticky bottom-4 left-0 right-0 flex justify-center pointer-events-none">
-          <button
-            onClick={onScrollToBottom}
-            className="pointer-events-auto bg-blue-500 text-white px-4 py-2 rounded-full shadow-lg hover:bg-blue-600 transition-colors text-sm font-medium flex items-center space-x-2"
-          >
-            <span>{t('agentChatPanel.newMessages', { count: newMessagesCount })}</span>
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-            </svg>
-          </button>
-        </div>
-      )}
     </div>
   );
 };

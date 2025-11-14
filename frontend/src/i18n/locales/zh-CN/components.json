@@ -154,6 +154,7 @@
     "unknownCommand": "未知命令",
     "sendMessage": "发送消息",
     "newMessages": "条新消息",
+    "scrollToLatest": "查看最新消息",
     "permissionMode": {
       "default": "默认",
       "acceptEdits": "接受编辑",

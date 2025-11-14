@@ -595,44 +595,46 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
         </div>
       </div>
 
-      {/* 主内容区域 - 聊天视图 - Scrollable */}
-      <div ref={messagesContainerRef} className="flex-1 px-5 py-5 overflow-y-auto space-y-4 min-h-0 relative">
-        {/* Welcome message */}
-        <div className="px-4">
-          <div className="text-sm leading-relaxed break-words overflow-hidden text-gray-600 dark:text-gray-400">
-            {agent.ui.welcomeMessage || agent.description}
+      {/* 主内容区域 - 聊天视图 - Scrollable with button overlay */}
+      <div className="flex-1 relative min-h-0">
+        <div ref={messagesContainerRef} className="absolute inset-0 px-5 py-5 overflow-y-auto space-y-4">
+          {/* Welcome message */}
+          <div className="px-4">
+            <div className="text-sm leading-relaxed break-words overflow-hidden text-gray-600 dark:text-gray-400">
+              {agent.ui.welcomeMessage || agent.description}
+            </div>
           </div>
+
+          {isLoadingMessages ? (
+            <div className="flex flex-col items-center justify-center py-12 space-y-3">
+              <div className="flex space-x-2">
+                <div className="w-3 h-3 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce"></div>
+                <div className="w-3 h-3 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                <div className="w-3 h-3 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+              </div>
+              <div className="text-sm text-gray-500 dark:text-gray-400">
+                {t('agentChat.loadingMessages')}
+              </div>
+            </div>
+          ) : (
+            <ChatMessageList
+              messages={messages}
+              isLoadingMessages={isLoadingMessages}
+              isInitializingSession={isInitializingSession}
+              isAiTyping={isAiTyping}
+              isStopping={isStopping}
+              messagesContainerRef={messagesContainerRef}
+              messagesEndRef={messagesEndRef}
+              isUserScrolling={isUserScrolling}
+              newMessagesCount={newMessagesCount}
+              onScrollToBottom={scrollToBottom}
+            />
+          )}
+
+          <div ref={messagesEndRef} />
         </div>
 
-        {isLoadingMessages ? (
-          <div className="flex flex-col items-center justify-center py-12 space-y-3">
-            <div className="flex space-x-2">
-              <div className="w-3 h-3 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce"></div>
-              <div className="w-3 h-3 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-              <div className="w-3 h-3 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-            </div>
-            <div className="text-sm text-gray-500 dark:text-gray-400">
-              {t('agentChat.loadingMessages')}
-            </div>
-          </div>
-        ) : (
-          <ChatMessageList
-            messages={messages}
-            isLoadingMessages={isLoadingMessages}
-            isInitializingSession={isInitializingSession}
-            isAiTyping={isAiTyping}
-            isStopping={isStopping}
-            messagesContainerRef={messagesContainerRef}
-            messagesEndRef={messagesEndRef}
-            isUserScrolling={isUserScrolling}
-            newMessagesCount={newMessagesCount}
-            onScrollToBottom={scrollToBottom}
-          />
-        )}
-
-        <div ref={messagesEndRef} />
-
-        {/* Scroll to bottom button */}
+        {/* Scroll to bottom button - fixed at bottom of chat area */}
         {isUserScrolling && newMessagesCount > 0 && (
           <button
             onClick={() => {
@@ -640,12 +642,12 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
               setIsUserScrolling(false);
               setNewMessagesCount(0);
             }}
-            className="fixed bottom-24 right-8 bg-blue-500 hover:bg-blue-600 text-white rounded-full px-4 py-2 shadow-lg flex items-center space-x-2 transition-all duration-200 z-10"
+            className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-blue-500 hover:bg-blue-600 text-white rounded-full px-4 py-2 shadow-lg flex items-center space-x-2 transition-all duration-200 z-10"
           >
-            <ChevronDown className="w-4 h-4" />
             <span className="text-sm font-medium">
-              {newMessagesCount} {t('agentChat.newMessages')}
+              {t('agentChat.scrollToLatest')}
             </span>
+            <ChevronDown className="w-4 h-4" />
           </button>
         )}
       </div>

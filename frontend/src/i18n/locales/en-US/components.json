@@ -154,6 +154,7 @@
     "unknownCommand": "Unknown command",
     "sendMessage": "Send message",
     "newMessages": "new messages",
+    "scrollToLatest": "View Latest Messages",
     "permissionMode": {
       "default": "Default",
       "acceptEdits": "Accept Edits",
