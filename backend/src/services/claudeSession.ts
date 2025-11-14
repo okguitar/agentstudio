@@ -109,11 +109,6 @@ export class ClaudeSession {
       const queryOptions = { ...this.options };
       if (this.resumeSessionId) {
         queryOptions.resume = this.resumeSessionId;
-        console.log(`🔄 Setting resume parameter: ${this.resumeSessionId} for agent: ${this.agentId}`);
-        console.log(`📋 Full queryOptions for resume:`, JSON.stringify({
-          ...queryOptions,
-          systemPrompt: typeof queryOptions.systemPrompt === 'string' ? `${queryOptions.systemPrompt.substring(0, 100)}...` : queryOptions.systemPrompt
-        }, null, 2));
       } else {
         console.log(`🆕 No resume parameter, starting fresh session for agent: ${this.agentId}`);
       }
@@ -121,7 +116,6 @@ export class ClaudeSession {
       // 使用 Streaming Input Mode - 只构造一次 query
       // 这个 query 对象会持续运行，通过 messageQueue 接收新的用户输入
       console.log(`🔧 [DEBUG] About to call query() for agent: ${this.agentId}`);
-      console.log(`🔧 [DEBUG] MessageQueue ready: ${!!this.messageQueue}, queryOptions ready: ${!!queryOptions}`);
 
       // query 返回的对象既是 AsyncGenerator 又有 interrupt() 等方法
       this.queryObject = query({
@@ -131,8 +125,6 @@ export class ClaudeSession {
 
       // queryObject 本身就是 AsyncIterable，可以直接赋值给 queryStream
       this.queryStream = this.queryObject;
-
-      console.log(`🔧 [DEBUG] query() called, queryObject created: ${!!this.queryObject}, has interrupt: ${typeof this.queryObject?.interrupt === 'function'} for agent: ${this.agentId}`);
 
       this.isInitialized = true;
       const action = this.resumeSessionId ? 'Resumed' : 'Initialized';

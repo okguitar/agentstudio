@@ -212,8 +212,6 @@ function readClaudeHistorySessions(projectPath: string): ClaudeHistorySession[] 
         // Find summary message for session title
         const summaryMessage = messages.find(msg => msg.type === 'summary');
         const title = summaryMessage?.summary || `会话 ${sessionId.slice(0, 8)}`;
-        
-        console.log(`📝 [DEBUG] Session ${sessionId}: summary found: ${!!summaryMessage}, title: "${title}"`);
 
         // Process compact context messages before filtering
         const processedMessages = processCompactContextMessages(messages);
@@ -389,14 +387,6 @@ function readClaudeHistorySessions(projectPath: string): ClaudeHistorySession[] 
           lastUpdated: new Date(lastUpdated).toISOString(),
           messages: convertedMessages
         };
-        
-        console.log(`✅ [DEBUG] Created session:`, {
-          id: sessionData.id,
-          title: sessionData.title,
-          messageCount: sessionData.messages.length,
-          createdAt: sessionData.createdAt,
-          lastUpdated: sessionData.lastUpdated
-        });
 
         sessions.push(sessionData);
 
@@ -408,12 +398,7 @@ function readClaudeHistorySessions(projectPath: string): ClaudeHistorySession[] 
 
     // Sort sessions by lastUpdated descending
     const sortedSessions = sessions.sort((a, b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime());
-    
-    console.log(`📊 [DEBUG] Sorted sessions by lastUpdated:`);
-    sortedSessions.forEach((session, index) => {
-      console.log(`   ${index + 1}. ID: ${session.id}, Title: "${session.title}", Last Updated: ${session.lastUpdated}`);
-    });
-    
+
     return sortedSessions;
 
   } catch (error) {
@@ -636,18 +621,6 @@ router.get('/:agentId', (req, res) => {
       const claudeSessions = readClaudeHistorySessions(projectPath);
       console.log(`📊 [DEBUG] Found ${claudeSessions.length} raw Claude sessions`);
       
-      // Log details of each session
-      claudeSessions.forEach((session, index) => {
-        console.log(`📝 [DEBUG] Session ${index + 1}:`, {
-          id: session.id,
-          title: session.title,
-          createdAt: session.createdAt,
-          lastUpdated: session.lastUpdated,
-          messageCount: session.messages.length,
-          hasSummary: !!session.messages.find((msg: ClaudeHistoryMessage) => msg.type === 'summary')
-        });
-      });
-      
       sessions = claudeSessions.map((session, index) => {
         const mappedSession = {
           id: session.id,
@@ -657,8 +630,6 @@ router.get('/:agentId', (req, res) => {
           lastUpdated: session.lastUpdated,
           messageCount: session.messages.length
         };
-        
-        console.log(`🔄 [DEBUG] Mapped session ${index + 1}:`, mappedSession);
         return mappedSession;
       });
     } else {
