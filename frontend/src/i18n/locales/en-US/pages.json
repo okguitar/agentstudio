@@ -4,6 +4,7 @@
     "projects": "Projects",
     "agents": "Agents",
     "skills": "Skills",
+    "plugins": "Plugins",
     "mcp": "MCP Services",
     "commands": "Commands",
     "subagents": "Subagents",
@@ -636,6 +637,219 @@
       "cancel": "Cancel",
       "delete": "Delete",
       "deleting": "Deleting..."
+    }
+  },
+  "plugins": {
+    "title": "Plugin Management",
+    "subtitle": "Manage plugin marketplaces and installed plugins",
+    "tabs": {
+      "marketplaces": "Marketplaces",
+      "browse": "Browse Plugins",
+      "installed": "Installed Plugins"
+    },
+    "marketplaces": {
+      "title": "Plugin Marketplaces",
+      "subtitle": "Manage plugin marketplace sources",
+      "addButton": "Add Marketplace",
+      "searchPlaceholder": "Search marketplaces...",
+      "noMarketplaces": "No marketplaces configured yet",
+      "addFirst": "Add your first plugin marketplace",
+      "table": {
+        "marketplace": "Marketplace",
+        "type": "Type",
+        "plugins": "Plugins",
+        "lastSync": "Last Sync",
+        "actions": "Actions"
+      },
+      "types": {
+        "git": "Git Repository",
+        "github": "GitHub",
+        "local": "Local Directory"
+      },
+      "actions": {
+        "sync": "Sync",
+        "syncing": "Syncing...",
+        "edit": "Edit",
+        "delete": "Delete"
+      },
+      "addModal": {
+        "title": "Add Marketplace",
+        "editTitle": "Edit Marketplace",
+        "name": "Marketplace Name",
+        "namePlaceholder": "e.g., official-plugins",
+        "type": "Source Type",
+        "typePlaceholder": "Select source type",
+        "source": "Source",
+        "sourcePlaceholderGit": "Git repository URL",
+        "sourcePlaceholderGithub": "owner/repo or full URL",
+        "sourcePlaceholderLocal": "Local directory path",
+        "branch": "Branch (Optional)",
+        "branchPlaceholder": "main",
+        "description": "Description (Optional)",
+        "descriptionPlaceholder": "Marketplace description",
+        "cancel": "Cancel",
+        "add": "Add",
+        "adding": "Adding...",
+        "save": "Save",
+        "saving": "Saving..."
+      },
+      "confirmDelete": "Are you sure you want to delete marketplace \"{{name}}\"? All plugins from this marketplace will be uninstalled."
+    },
+    "browse": {
+      "title": "Browse Plugins",
+      "subtitle": "Discover and install plugins from marketplaces",
+      "searchPlaceholder": "Search plugins...",
+      "filters": {
+        "allMarketplaces": "All Marketplaces",
+        "allTypes": "All Types",
+        "showOnlyInstalled": "Show only installed"
+      },
+      "noPlugins": "No plugins available",
+      "noMarketplaces": "No marketplaces added yet",
+      "goAddMarketplace": "Add a marketplace to browse plugins",
+      "noResults": "No plugins found",
+      "adjustSearch": "Try adjusting your search criteria",
+      "card": {
+        "from": "from",
+        "version": "v{{version}}",
+        "by": "by",
+        "installed": "Installed",
+        "install": "Install",
+        "installing": "Installing...",
+        "viewDetails": "View Details"
+      },
+      "actions": {
+        "details": "Details",
+        "install": "Install",
+        "uninstall": "Uninstall"
+      },
+      "confirmUninstall": "Are you sure you want to uninstall plugin \"{{name}}\"?",
+      "components": {
+        "commands": "{{count}} Command{{count, plural, one {} other{s}}}",
+        "agents": "{{count}} Agent{{count, plural, one {} other{s}}}",
+        "skills": "{{count}} Skill{{count, plural, one {} other{s}}}",
+        "hooks": "{{count}} Hook{{count, plural, one {} other{s}}}",
+        "mcpServers": "{{count}} MCP Server{{count, plural, one {} other{s}}}"
+      },
+      "detailModal": {
+        "title": "Plugin Details",
+        "version": "Version",
+        "author": "Author",
+        "marketplace": "Marketplace",
+        "updated": "Last Updated",
+        "components": "Components",
+        "files": "Files",
+        "readme": "README",
+        "noReadme": "No README available",
+        "install": "Install Plugin",
+        "installing": "Installing...",
+        "installed": "Installed",
+        "close": "Close"
+      }
+    },
+    "installed": {
+      "title": "Installed Plugins",
+      "subtitle": "Manage your installed plugins",
+      "searchPlaceholder": "Search installed plugins...",
+      "filters": {
+        "all": "All",
+        "enabled": "Enabled",
+        "disabled": "Disabled",
+        "allMarketplaces": "All Marketplaces"
+      },
+      "noPlugins": "No plugins installed yet",
+      "goBrowse": "Browse plugins to install",
+      "noResults": "No matching plugins found",
+      "table": {
+        "plugin": "Plugin",
+        "marketplace": "Marketplace",
+        "version": "Version",
+        "status": "Status",
+        "components": "Components",
+        "actions": "Actions"
+      },
+      "status": {
+        "enabled": "Enabled",
+        "disabled": "Disabled"
+      },
+      "actions": {
+        "details": "Details",
+        "viewDetails": "View Details",
+        "enable": "Enable",
+        "enabling": "Enabling...",
+        "disable": "Disable",
+        "disabling": "Disabling...",
+        "uninstall": "Uninstall"
+      },
+      "confirmUninstall": "Are you sure you want to uninstall plugin \"{{name}}\"?",
+      "detailModal": {
+        "title": "Plugin Details",
+        "basicInfo": "Basic Information",
+        "version": "Version",
+        "author": "Author",
+        "marketplace": "Marketplace",
+        "installedAt": "Installed",
+        "status": "Status",
+        "components": "Components",
+        "commands": "Commands",
+        "agents": "Agents",
+        "skills": "Skills",
+        "hooks": "Hooks",
+        "mcpServers": "MCP Servers",
+        "none": "None",
+        "files": "Plugin Files",
+        "viewFile": "View File",
+        "close": "Close",
+        "enable": "Enable",
+        "disable": "Disable",
+        "uninstall": "Uninstall"
+      },
+      "fileViewer": {
+        "title": "File Viewer",
+        "loading": "Loading...",
+        "error": "Failed to load file",
+        "close": "Close"
+      }
+    },
+    "messages": {
+      "installSuccess": "Plugin installed successfully. Please refresh to use the new plugin.",
+      "installError": "Failed to install plugin",
+      "enableSuccess": "Plugin enabled successfully. Please refresh to use the plugin.",
+      "enableError": "Failed to enable plugin",
+      "disableSuccess": "Plugin disabled successfully",
+      "disableError": "Failed to disable plugin",
+      "uninstallSuccess": "Plugin uninstalled successfully",
+      "uninstallError": "Failed to uninstall plugin",
+      "marketplaceAddSuccess": "Marketplace added successfully",
+      "marketplaceAddError": "Failed to add marketplace",
+      "marketplaceSyncSuccess": "Marketplace synced successfully",
+      "marketplaceSyncError": "Failed to sync marketplace",
+      "marketplaceRemoveSuccess": "Marketplace removed successfully",
+      "marketplaceRemoveError": "Failed to remove marketplace"
+    },
+    "detail": {
+      "back": "Back",
+      "root": "Root",
+      "noDescription": "No description available",
+      "version": "Version",
+      "author": "Author",
+      "license": "License",
+      "components": "Components",
+      "type": "Type",
+      "name": "Name",
+      "description": "Description",
+      "actions": "Actions",
+      "viewEntryFile": "View entry file",
+      "browseDirectory": "Browse directory",
+      "noComponents": "No components found",
+      "loadFailed": "Failed to load plugin details",
+      "componentTypes": {
+        "command": "Command",
+        "agent": "Agent",
+        "skill": "Skill",
+        "hook": "Hook",
+        "mcp": "MCP Server"
+      }
     }
   },
   "skills": {

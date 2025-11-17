@@ -4,6 +4,7 @@
     "projects": "项目管理",
     "agents": "Agent管理",
     "skills": "技能管理",
+    "plugins": "插件管理",
     "mcp": "MCP服务",
     "commands": "自定义命令",
     "subagents": "Subagent管理",
@@ -636,6 +637,219 @@
       "cancel": "取消",
       "delete": "删除",
       "deleting": "删除中..."
+    }
+  },
+  "plugins": {
+    "title": "插件管理",
+    "subtitle": "管理插件市场和已安装插件",
+    "tabs": {
+      "marketplaces": "插件市场",
+      "browse": "浏览插件",
+      "installed": "已安装插件"
+    },
+    "marketplaces": {
+      "title": "插件市场",
+      "subtitle": "管理插件市场源",
+      "addButton": "添加市场",
+      "searchPlaceholder": "搜索市场...",
+      "noMarketplaces": "还没有配置插件市场",
+      "addFirst": "添加你的第一个插件市场",
+      "table": {
+        "marketplace": "市场",
+        "type": "类型",
+        "plugins": "插件数",
+        "lastSync": "最后同步",
+        "actions": "操作"
+      },
+      "types": {
+        "git": "Git 仓库",
+        "github": "GitHub",
+        "local": "本地目录"
+      },
+      "actions": {
+        "sync": "同步",
+        "syncing": "同步中...",
+        "edit": "编辑",
+        "delete": "删除"
+      },
+      "addModal": {
+        "title": "添加市场",
+        "editTitle": "编辑市场",
+        "name": "市场名称",
+        "namePlaceholder": "例如：official-plugins",
+        "type": "来源类型",
+        "typePlaceholder": "选择来源类型",
+        "source": "来源",
+        "sourcePlaceholderGit": "Git 仓库 URL",
+        "sourcePlaceholderGithub": "owner/repo 或完整 URL",
+        "sourcePlaceholderLocal": "本地目录路径",
+        "branch": "分支（可选）",
+        "branchPlaceholder": "main",
+        "description": "描述（可选）",
+        "descriptionPlaceholder": "市场描述",
+        "cancel": "取消",
+        "add": "添加",
+        "adding": "添加中...",
+        "save": "保存",
+        "saving": "保存中..."
+      },
+      "confirmDelete": "确定要删除市场 \"{{name}}\" 吗？该市场的所有插件都会被卸载。"
+    },
+    "browse": {
+      "title": "浏览插件",
+      "subtitle": "从市场发现和安装插件",
+      "searchPlaceholder": "搜索插件...",
+      "filters": {
+        "allMarketplaces": "所有市场",
+        "allTypes": "所有类型",
+        "showOnlyInstalled": "只显示已安装"
+      },
+      "noPlugins": "没有可用插件",
+      "noMarketplaces": "还没有添加市场",
+      "goAddMarketplace": "添加市场以浏览插件",
+      "noResults": "未找到插件",
+      "adjustSearch": "尝试调整搜索条件",
+      "card": {
+        "from": "来自",
+        "version": "v{{version}}",
+        "by": "作者",
+        "installed": "已安装",
+        "install": "安装",
+        "installing": "安装中...",
+        "viewDetails": "查看详情"
+      },
+      "actions": {
+        "details": "详情",
+        "install": "安装",
+        "uninstall": "卸载"
+      },
+      "confirmUninstall": "确定要卸载插件 \"{{name}}\" 吗？",
+      "components": {
+        "commands": "{{count}} 个命令",
+        "agents": "{{count}} 个 Agent",
+        "skills": "{{count}} 个技能",
+        "hooks": "{{count}} 个钩子",
+        "mcpServers": "{{count}} 个 MCP 服务"
+      },
+      "detailModal": {
+        "title": "插件详情",
+        "version": "版本",
+        "author": "作者",
+        "marketplace": "市场",
+        "updated": "最后更新",
+        "components": "组件",
+        "files": "文件",
+        "readme": "说明文档",
+        "noReadme": "无说明文档",
+        "install": "安装插件",
+        "installing": "安装中...",
+        "installed": "已安装",
+        "close": "关闭"
+      }
+    },
+    "installed": {
+      "title": "已安装插件",
+      "subtitle": "管理已安装的插件",
+      "searchPlaceholder": "搜索已安装插件...",
+      "filters": {
+        "all": "全部",
+        "enabled": "已启用",
+        "disabled": "已禁用",
+        "allMarketplaces": "所有市场"
+      },
+      "noPlugins": "还没有安装插件",
+      "goBrowse": "浏览插件以安装",
+      "noResults": "未找到匹配的插件",
+      "table": {
+        "plugin": "插件",
+        "marketplace": "市场",
+        "version": "版本",
+        "status": "状态",
+        "components": "组件",
+        "actions": "操作"
+      },
+      "status": {
+        "enabled": "已启用",
+        "disabled": "已禁用"
+      },
+      "actions": {
+        "details": "详情",
+        "viewDetails": "查看详情",
+        "enable": "启用",
+        "enabling": "启用中...",
+        "disable": "禁用",
+        "disabling": "禁用中...",
+        "uninstall": "卸载"
+      },
+      "confirmUninstall": "确定要卸载插件 \"{{name}}\" 吗？",
+      "detailModal": {
+        "title": "插件详情",
+        "basicInfo": "基本信息",
+        "version": "版本",
+        "author": "作者",
+        "marketplace": "市场",
+        "installedAt": "安装时间",
+        "status": "状态",
+        "components": "组件",
+        "commands": "命令",
+        "agents": "Agents",
+        "skills": "技能",
+        "hooks": "钩子",
+        "mcpServers": "MCP 服务",
+        "none": "无",
+        "files": "插件文件",
+        "viewFile": "查看文件",
+        "close": "关闭",
+        "enable": "启用",
+        "disable": "禁用",
+        "uninstall": "卸载"
+      },
+      "fileViewer": {
+        "title": "文件查看器",
+        "loading": "加载中...",
+        "error": "加载文件失败",
+        "close": "关闭"
+      }
+    },
+    "messages": {
+      "installSuccess": "插件安装成功，请刷新以使用新插件",
+      "installError": "安装插件失败",
+      "enableSuccess": "插件启用成功，请刷新以使用该插件",
+      "enableError": "启用插件失败",
+      "disableSuccess": "插件已成功禁用",
+      "disableError": "禁用插件失败",
+      "uninstallSuccess": "插件已成功卸载",
+      "uninstallError": "卸载插件失败",
+      "marketplaceAddSuccess": "市场添加成功",
+      "marketplaceAddError": "添加市场失败",
+      "marketplaceSyncSuccess": "市场同步成功",
+      "marketplaceSyncError": "同步市场失败",
+      "marketplaceRemoveSuccess": "市场移除成功",
+      "marketplaceRemoveError": "移除市场失败"
+    },
+    "detail": {
+      "back": "返回",
+      "root": "根目录",
+      "noDescription": "无描述",
+      "version": "版本",
+      "author": "作者",
+      "license": "许可证",
+      "components": "组件",
+      "type": "类型",
+      "name": "名称",
+      "description": "描述",
+      "actions": "操作",
+      "viewEntryFile": "查看入口文件",
+      "browseDirectory": "浏览目录",
+      "noComponents": "未找到组件",
+      "loadFailed": "加载插件详情失败",
+      "componentTypes": {
+        "command": "命令",
+        "agent": "Agent",
+        "skill": "技能",
+        "hook": "钩子",
+        "mcp": "MCP 服务"
+      }
     }
   },
   "skills": {

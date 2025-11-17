@@ -6,7 +6,8 @@ import {
   Server,
   Settings,
   FolderOpen,
-  Home
+  Home,
+  Package
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -25,6 +26,11 @@ const getNavigationItems = (t: (key: string) => string) => [
     name: t('nav.agents'),
     href: '/agents',
     icon: Bot,
+  },
+  {
+    name: t('nav.plugins'),
+    href: '/plugins',
+    icon: Package,
   },
   {
     name: t('nav.mcp'),
