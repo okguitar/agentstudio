@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Search, Edit, Trash2 } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Eye, FolderOpen } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
   Table,
@@ -12,13 +12,22 @@ import {
 import { useSkills, useDeleteSkill } from '../../hooks/useSkills';
 import type { SkillListItem } from '../../types/skills';
 import { CreateSkillModal } from './CreateSkillModal';
+import { SkillDetailModal } from './SkillDetailModal';
+import { SkillFileBrowserModal } from './SkillFileBrowserModal';
 import { ToolsList } from '../ToolsList';
+import { authFetch } from '../../lib/authFetch';
+import { API_BASE } from '../../lib/config';
+import { SkillConfig } from '../../types/skills';
 
 export const SkillsPage: React.FC = () => {
   const { t } = useTranslation('skills');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSkill, setSelectedSkill] = useState<SkillListItem | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [detailSkill, setDetailSkill] = useState<SkillListItem | null>(null);
+  const [showFileBrowserModal, setShowFileBrowserModal] = useState(false);
+  const [fileBrowserSkill, setFileBrowserSkill] = useState<{ name: string; installPath: string } | null>(null);
   const [expandedTools, setExpandedTools] = useState<Record<string, boolean>>({});
 
   // Only get user skills for this page
@@ -35,9 +44,34 @@ export const SkillsPage: React.FC = () => {
     skill.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const handleViewSkill = (skill: SkillListItem) => {
+    setDetailSkill(skill);
+    setShowDetailModal(true);
+  };
+
   const handleEditSkill = (skill: SkillListItem) => {
     setSelectedSkill(skill);
     setShowCreateModal(true);
+  };
+
+  const handleBrowseFiles = async (skill: SkillListItem) => {
+    try {
+      // Fetch full skill data to get installPath
+      const response = await authFetch(`${API_BASE}/skills/${skill.id}?scope=${skill.scope}`);
+      if (response.ok) {
+        const data = await response.json();
+        const skillData: SkillConfig = data.skill;
+        if (skillData.installPath) {
+          setFileBrowserSkill({
+            name: skill.name,
+            installPath: skillData.installPath,
+          });
+          setShowFileBrowserModal(true);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch skill data:', error);
+    }
   };
 
   const handleDeleteSkill = async (skill: SkillListItem) => {
@@ -152,11 +186,11 @@ export const SkillsPage: React.FC = () => {
               {filteredSkills.map((skill) => (
                 <TableRow key={skill.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                   {/* Skill */}
-                  <TableCell className="px-6 py-4 whitespace-nowrap w-48">
+                  <TableCell className="px-6 py-4 max-w-xs">
                     <div className="flex items-center">
-                      <div className="text-2xl mr-4">⚡</div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
+                      <div className="text-2xl mr-4 flex-shrink-0">⚡</div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 mb-1">
                           <div className={`text-sm font-medium ${
                             skill.enabled ? 'text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'
                           } truncate`}>
@@ -165,10 +199,17 @@ export const SkillsPage: React.FC = () => {
                           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 flex-shrink-0">
                             {t('scope.user')}
                           </span>
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ${
+                            skill.source === 'plugin' 
+                              ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' 
+                              : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                          }`}>
+                            {skill.source === 'plugin' ? t('source.plugin') : t('source.local')}
+                          </span>
                         </div>
                         <div className={`text-sm ${
                           skill.enabled ? 'text-gray-500 dark:text-gray-400' : 'text-gray-400 dark:text-gray-500'
-                        } truncate`}>
+                        } line-clamp-2`}>
                           {skill.description}
                         </div>
                       </div>
@@ -176,7 +217,7 @@ export const SkillsPage: React.FC = () => {
                   </TableCell>
 
                   {/* Tools */}
-                  <TableCell className="px-6 py-4 w-96">
+                  <TableCell className="px-6 py-4">
                     <ToolsList
                       tools={skill.allowedTools || []}
                       id={skill.id}
@@ -200,20 +241,41 @@ export const SkillsPage: React.FC = () => {
                   {/* Actions */}
                   <TableCell className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium w-32">
                     <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => handleEditSkill(skill)}
-                        className="p-1 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/50 rounded transition-colors"
-                        title={t('preview.actions.edit')}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteSkill(skill)}
-                        className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/50 rounded transition-colors"
-                        title={t('preview.actions.delete')}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {skill.source === 'plugin' ? (
+                        <>
+                          <button
+                            onClick={() => handleViewSkill(skill)}
+                            className="p-1 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/50 rounded transition-colors"
+                            title={t('preview.actions.view')}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleBrowseFiles(skill)}
+                            className="p-1 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/50 rounded transition-colors"
+                            title={t('preview.actions.browseFiles')}
+                          >
+                            <FolderOpen className="w-4 h-4" />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => handleEditSkill(skill)}
+                            className="p-1 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/50 rounded transition-colors"
+                            title={t('preview.actions.edit')}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteSkill(skill)}
+                            className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/50 rounded transition-colors"
+                            title={t('preview.actions.delete')}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -236,6 +298,30 @@ export const SkillsPage: React.FC = () => {
             // Refresh data will be handled by React Query invalidation
           }}
           editSkill={selectedSkill || undefined}
+        />
+      )}
+
+      {/* Skill Detail Modal */}
+      {showDetailModal && detailSkill && (
+        <SkillDetailModal
+          skill={detailSkill}
+          onClose={() => {
+            setShowDetailModal(false);
+            setDetailSkill(null);
+          }}
+        />
+      )}
+
+      {/* File Browser Modal */}
+      {showFileBrowserModal && fileBrowserSkill && (
+        <SkillFileBrowserModal
+          isOpen={showFileBrowserModal}
+          skillName={fileBrowserSkill.name}
+          installPath={fileBrowserSkill.installPath}
+          onClose={() => {
+            setShowFileBrowserModal(false);
+            setFileBrowserSkill(null);
+          }}
         />
       )}
     </div>

@@ -24,6 +24,12 @@ export interface SkillConfig {
   scope: 'user' | 'project';
   projectId?: string; // Only for project skills
   
+  // Source: 'local' for user-created skills, 'plugin' for plugin-installed skills
+  source: 'local' | 'plugin';
+  
+  // Installation path (real path for symlinked plugin skills)
+  installPath?: string;
+  
   // Status and metadata
   enabled: boolean;
   createdAt: string;

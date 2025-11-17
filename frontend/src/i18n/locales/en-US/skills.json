@@ -12,6 +12,10 @@
   "scope": {
     "user": "User Skill"
   },
+  "source": {
+    "local": "Local",
+    "plugin": "Plugin"
+  },
   "status": {
     "enabled": "Enabled",
     "disabled": "Disabled"
@@ -29,8 +33,19 @@
     "usage": "Used {{count}} times",
     "actions": {
       "edit": "Edit",
+      "view": "View",
+      "browseFiles": "Browse Files",
       "delete": "Delete"
     }
+  },
+  "detail": {
+    "description": "Description",
+    "allowedTools": "Allowed Tools",
+    "additionalFiles": "Additional Files",
+    "browseFiles": "Browse Files",
+    "files": "Files",
+    "back": "Back",
+    "close": "Close"
   },
   "deleteConfirm": "Are you sure you want to delete the skill \"{{name}}\"? This action cannot be undone.",
   "errors": {

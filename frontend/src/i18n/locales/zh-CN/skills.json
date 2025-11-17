@@ -12,6 +12,10 @@
   "scope": {
     "user": "用户技能"
   },
+  "source": {
+    "local": "本地",
+    "plugin": "插件"
+  },
   "status": {
     "enabled": "已启用",
     "disabled": "已禁用"
@@ -29,8 +33,19 @@
     "usage": "使用 {{count}} 次",
     "actions": {
       "edit": "编辑",
+      "view": "查看",
+      "browseFiles": "浏览文件",
       "delete": "删除"
     }
+  },
+  "detail": {
+    "description": "描述",
+    "allowedTools": "允许的工具",
+    "additionalFiles": "附加文件",
+    "browseFiles": "浏览文件",
+    "files": "文件",
+    "back": "返回",
+    "close": "关闭"
   },
   "deleteConfirm": "确定要删除技能 \"{{name}}\" 吗？此操作不可撤销。",
   "errors": {
