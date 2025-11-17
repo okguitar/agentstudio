@@ -628,8 +628,13 @@
     },
     "actions": {
       "edit": "Edit",
+      "view": "View",
       "editCommand": "Edit command",
       "deleteCommand": "Delete command"
+    },
+    "source": {
+      "local": "Local",
+      "plugin": "Plugin"
     },
     "delete": {
       "title": "Delete Command",

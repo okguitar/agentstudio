@@ -628,8 +628,13 @@
     },
     "actions": {
       "edit": "编辑",
+      "view": "查看",
       "editCommand": "编辑命令",
       "deleteCommand": "删除命令"
+    },
+    "source": {
+      "local": "本地",
+      "plugin": "插件"
     },
     "delete": {
       "title": "删除命令",
