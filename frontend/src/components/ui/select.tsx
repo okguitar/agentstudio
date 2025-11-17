@@ -107,7 +107,7 @@ const SelectItem = React.forwardRef<HTMLDivElement, { value: string; children: R
       <div
         ref={ref}
         onClick={() => onSelect && onSelect(value)}
-        className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-gray-100 dark:hover:bg-gray-700"
+        className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"
         {...props}
       >
         {children}
