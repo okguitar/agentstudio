@@ -107,10 +107,10 @@ export const MarketplacesTab: React.FC<MarketplacesTabProps> = ({
                   onClick={() => onMarketplaceClick?.(marketplace.id)}
                 >
                   <div className="flex items-center space-x-3 mb-2">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white hover:text-blue-600">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400">
                       {marketplace.displayName}
                     </h3>
-                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 flex items-center space-x-1">
+                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 flex items-center space-x-1">
                       {marketplace.type === 'github' && <Github className="w-3 h-3" />}
                       {marketplace.type === 'git' && <GitBranch className="w-3 h-3" />}
                       {marketplace.type === 'local' && <FolderOpen className="w-3 h-3" />}
@@ -142,7 +142,7 @@ export const MarketplacesTab: React.FC<MarketplacesTabProps> = ({
                     onClick={() => handleDelete(marketplace.id, marketplace.displayName)}
                     disabled={isRemoving}
                   >
-                    <Trash2 className="w-4 h-4 text-red-600" />
+                    <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
                   </Button>
                 </div>
               </div>

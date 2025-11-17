@@ -72,17 +72,17 @@ export const PluginDetailModal: React.FC<PluginDetailModalProps> = ({
   const getComponentIcon = (type: string) => {
     switch (type) {
       case 'command':
-        return <Code className="w-4 h-4 text-purple-600" />;
+        return <Code className="w-4 h-4 text-purple-600 dark:text-purple-400" />;
       case 'agent':
-        return <Bot className="w-4 h-4 text-blue-600" />;
+        return <Bot className="w-4 h-4 text-blue-600 dark:text-blue-400" />;
       case 'skill':
-        return <Zap className="w-4 h-4 text-green-600" />;
+        return <Zap className="w-4 h-4 text-green-600 dark:text-green-400" />;
       case 'hook':
-        return <Webhook className="w-4 h-4 text-orange-600" />;
+        return <Webhook className="w-4 h-4 text-orange-600 dark:text-orange-400" />;
       case 'mcp':
-        return <Server className="w-4 h-4 text-red-600" />;
+        return <Server className="w-4 h-4 text-red-600 dark:text-red-400" />;
       default:
-        return <FileText className="w-4 h-4 text-gray-600" />;
+        return <FileText className="w-4 h-4 text-gray-600 dark:text-gray-400" />;
     }
   };
 
@@ -264,7 +264,7 @@ export const PluginDetailModal: React.FC<PluginDetailModalProps> = ({
             {viewMode === 'file' && (
               <div className="h-full overflow-y-auto p-6">
                 {fileContentData ? (
-                  <pre className="whitespace-pre-wrap text-sm bg-gray-50 dark:bg-gray-900 p-4 rounded-lg font-mono">
+                  <pre className="whitespace-pre-wrap text-sm bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 p-4 rounded-lg font-mono">
                     {fileContentData.content}
                   </pre>
                 ) : (
