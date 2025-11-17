@@ -232,6 +232,7 @@ export const PluginDetailModal: React.FC<PluginDetailModalProps> = ({
                                   size="sm"
                                   onClick={() => handleViewFile(component)}
                                   title={t('plugins.detail.viewEntryFile')}
+                                  className="text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30"
                                 >
                                   <Eye className="w-4 h-4" />
                                 </Button>
@@ -241,6 +242,7 @@ export const PluginDetailModal: React.FC<PluginDetailModalProps> = ({
                                     size="sm"
                                     onClick={() => handleViewDirectory(component)}
                                     title={t('plugins.detail.browseDirectory')}
+                                    className="text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30"
                                   >
                                     <FolderOpen className="w-4 h-4" />
                                   </Button>

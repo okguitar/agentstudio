@@ -212,9 +212,10 @@ export const BrowsePluginsTab: React.FC<BrowsePluginsTabProps> = ({
                     variant="outline"
                     size="sm"
                     onClick={() => setSelectedPlugin({ marketplace: plugin.marketplaceName, name: plugin.name })}
+                    className="border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
                   >
-                    <Eye className="w-4 h-4 mr-1" />
-                    {t('plugins.browse.actions.details')}
+                    <Eye className="w-4 h-4 mr-1 text-gray-700 dark:text-gray-300" />
+                    <span className="text-gray-700 dark:text-gray-300">{t('plugins.browse.actions.details')}</span>
                   </Button>
                   {plugin.installed ? (
                     <Button
@@ -222,8 +223,10 @@ export const BrowsePluginsTab: React.FC<BrowsePluginsTabProps> = ({
                       size="sm"
                       onClick={() => handleUninstall(plugin)}
                       disabled={isUninstalling}
+                      className="border-red-300 dark:border-red-700 hover:bg-red-50 dark:hover:bg-red-900/30"
                     >
                       <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
+                      <span className="ml-1 text-red-600 dark:text-red-400">{t('plugins.browse.actions.uninstall')}</span>
                     </Button>
                   ) : (
                     <Button
@@ -231,6 +234,7 @@ export const BrowsePluginsTab: React.FC<BrowsePluginsTabProps> = ({
                       size="sm"
                       disabled={isInstalling}
                       onClick={() => handleInstall(plugin)}
+                      className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600"
                     >
                       <Download className="w-4 h-4 mr-1" />
                       {t('plugins.browse.actions.install')}

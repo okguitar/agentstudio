@@ -133,14 +133,18 @@ export const MarketplacesTab: React.FC<MarketplacesTabProps> = ({
                     size="sm"
                     onClick={() => onSyncMarketplace(marketplace.id)}
                     disabled={isSyncing}
+                    className="border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
+                    title={t('plugins.marketplaces.actions.sync')}
                   >
-                    <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                    <RefreshCw className={`w-4 h-4 text-green-600 dark:text-green-400 ${isSyncing ? 'animate-spin' : ''}`} />
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => handleDelete(marketplace.id, marketplace.displayName)}
                     disabled={isRemoving}
+                    className="border-red-300 dark:border-red-700 hover:bg-red-50 dark:hover:bg-red-900/30"
+                    title={t('plugins.marketplaces.actions.delete')}
                   >
                     <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
                   </Button>
