@@ -28,7 +28,7 @@ export interface AgentConfig {
 
   // AI configuration
   systemPrompt: SystemPrompt;
-  maxTurns: number;
+  maxTurns?: number; // undefined 表示不限制
   permissionMode: PermissionMode;  // 使用 SDK 类型
   model: string;
   

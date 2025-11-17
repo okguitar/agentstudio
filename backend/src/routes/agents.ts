@@ -43,12 +43,25 @@ const globalAgentStorage = new AgentStorage();
 
 
 // Validation schemas
+// 定义 SystemPrompt schema，支持字符串或预设对象格式
+const PresetSystemPromptSchema = z.object({
+  type: z.literal('preset'),
+  preset: z.literal('claude_code'),
+  append: z.string().optional()
+});
+
+const SystemPromptSchema = z.union([
+  z.string().min(1),
+  PresetSystemPromptSchema
+]);
+
 const CreateAgentSchema = z.object({
   id: z.string().min(1).regex(/^[a-z0-9-_]+$/, 'ID must contain only lowercase letters, numbers, hyphens, and underscores'),
   name: z.string().min(1),
   description: z.string(),
-  systemPrompt: z.string().min(1),
-  maxTurns: z.number().min(1).max(100).optional().default(25),
+  systemPrompt: SystemPromptSchema,
+  // maxTurns 可以是数字（1-100）、null（不限制）或 undefined（使用默认值）
+  maxTurns: z.union([z.number().min(1).max(100), z.null()]).optional().default(25),
   permissionMode: z.enum(['default', 'acceptEdits', 'bypassPermissions', 'plan']).optional().default('acceptEdits'),
   model: z.string().min(1).optional().default('claude-3-5-sonnet-20241022'),
   allowedTools: z.array(z.object({
@@ -230,9 +243,16 @@ router.put('/:agentId', (req, res) => {
       return res.status(404).json({ error: 'Agent not found' });
     }
 
+    // 过滤并转换 validation.data，将 maxTurns: null 转换为 undefined
+    const updateData: Partial<AgentConfig> = { ...validation.data as any };
+    if (updateData.maxTurns === null) {
+      updateData.maxTurns = undefined;
+    }
+    
+    // 构建更新后的 agent
     const updatedAgent: AgentConfig = {
       ...existingAgent,
-      ...validation.data,
+      ...updateData,
       id: agentId, // Ensure ID doesn't change
       updatedAt: new Date().toISOString()
     };
