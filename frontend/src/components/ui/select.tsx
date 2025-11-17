@@ -43,14 +43,14 @@ const Select = React.forwardRef<HTMLDivElement, { children: React.ReactNode; val
 );
 Select.displayName = "Select";
 
-const SelectTrigger = React.forwardRef<HTMLButtonElement, { children: React.ReactNode; selectedValue?: string; isOpen?: boolean; setIsOpen?: (open: boolean) => void }>(
-  ({ children, selectedValue, isOpen, setIsOpen, ...props }, ref) => {
+const SelectTrigger = React.forwardRef<HTMLButtonElement, { children: React.ReactNode; selectedValue?: string; isOpen?: boolean; setIsOpen?: (open: boolean) => void; className?: string }>(
+  ({ children, selectedValue, isOpen, setIsOpen, className, ...props }, ref) => {
     return (
       <button
         ref={ref}
         type="button"
         onClick={() => setIsOpen && setIsOpen(!isOpen)}
-        className="flex h-10 w-full items-center justify-between rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className={`flex h-10 w-full items-center justify-between rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${className || ''}`}
         {...props}
       >
         <div className="flex-1 text-left flex items-center">

@@ -113,7 +113,7 @@ export const BrowsePluginsTab: React.FC<BrowsePluginsTabProps> = ({
             value={selectedMarketplace ?? 'all'}
             onValueChange={(value) => onMarketplaceChange(value === 'all' ? null : value)}
           >
-            <SelectTrigger>
+            <SelectTrigger className="text-gray-900 dark:text-gray-100">
               <SelectValue>
                 {selectedMarketplaceDisplayName}
               </SelectValue>
@@ -230,14 +230,14 @@ export const BrowsePluginsTab: React.FC<BrowsePluginsTabProps> = ({
                     </Button>
                   ) : (
                     <Button
-                      variant="default"
+                      variant="outline"
                       size="sm"
                       disabled={isInstalling}
                       onClick={() => handleInstall(plugin)}
-                      className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600"
+                      className="border-blue-300 dark:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/30"
                     >
-                      <Download className="w-4 h-4 mr-1" />
-                      {t('plugins.browse.actions.install')}
+                      <Download className="w-4 h-4 mr-1 text-blue-600 dark:text-blue-400" />
+                      <span className="text-blue-600 dark:text-blue-400">{t('plugins.browse.actions.install')}</span>
                     </Button>
                   )}
                 </div>
