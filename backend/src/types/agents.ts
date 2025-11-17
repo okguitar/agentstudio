@@ -60,6 +60,10 @@ export interface AgentConfig {
   
   // Project associations
   projects?: string[]; // Array of project paths associated with this agent
+  
+  // Plugin source tracking
+  source: 'local' | 'plugin'; // 来源：本地创建或插件安装
+  installPath?: string; // 插件 agent 的真实安装路径
 }
 
 export interface AgentSession {

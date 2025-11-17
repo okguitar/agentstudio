@@ -477,8 +477,14 @@
       },
       "actions": {
         "edit": "Edit",
+        "view": "View",
         "editTitle": "Edit Subagent",
+        "viewTitle": "View Subagent",
         "deleteTitle": "Delete Subagent"
+      },
+      "source": {
+        "local": "Local",
+        "plugin": "Plugin"
       },
       "deleteConfirm": {
         "title": "Confirm Delete",
@@ -558,7 +564,12 @@
       "validate": "Re-validate",
       "copyCommand": "Copy Command",
       "edit": "Edit",
+      "view": "View",
       "delete": "Delete configuration"
+    },
+    "source": {
+      "local": "Local",
+      "plugin": "Plugin"
     },
     "modal": {
       "addTitle": "Add MCP Service Configuration",

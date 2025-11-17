@@ -6,6 +6,8 @@ export interface Subagent {
   content: string; // System prompt content
   scope: 'user' | 'project'; // Support both user-level and project-level subagents
   tools?: string[]; // Comma-separated list of allowed tools
+  source: 'local' | 'plugin'; // 来源：本地创建或插件安装
+  installPath?: string; // 插件 subagent 的真实安装路径
   createdAt: Date;
   updatedAt: Date;
 }

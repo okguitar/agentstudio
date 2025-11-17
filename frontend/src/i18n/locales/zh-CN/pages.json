@@ -477,8 +477,14 @@
       },
       "actions": {
         "edit": "编辑",
+        "view": "查看",
         "editTitle": "编辑 Subagent",
+        "viewTitle": "查看 Subagent",
         "deleteTitle": "删除 Subagent"
+      },
+      "source": {
+        "local": "本地",
+        "plugin": "插件"
       },
       "deleteConfirm": {
         "title": "确认删除",
@@ -558,7 +564,12 @@
       "validate": "重新验证",
       "copyCommand": "复制命令",
       "edit": "编辑",
+      "view": "查看",
       "delete": "删除配置"
+    },
+    "source": {
+      "local": "本地",
+      "plugin": "插件"
     },
     "modal": {
       "addTitle": "添加MCP服务配置",
