@@ -26,6 +26,9 @@ interface McpServerConfig {
   error?: string;
   tools?: string[];
   lastValidated?: string;
+  // Plugin source tracking
+  source: 'local' | 'plugin'; // 来源：本地创建或插件安装
+  installPath?: string; // 插件 MCP 的真实安装路径
   // Allow any additional fields
   [key: string]: any;
 }
@@ -120,7 +123,8 @@ router.post('/', (req, res) => {
     // Create server config without name field, preserving all parameters
     const serverConfig: Omit<McpServerConfig, 'name'> = {
       type,
-      ...restConfig
+      ...restConfig,
+      source: restConfig.source || 'local', // Default to 'local' for newly created configs
     };
 
     config.mcpServers[name] = serverConfig;
