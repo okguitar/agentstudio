@@ -291,7 +291,10 @@ export class SkillStorage {
     try {
       const entries = await fs.readdir(directory, { withFileTypes: true });
       const skillDirs = entries
-        .filter(entry => entry.isDirectory())
+        .filter(entry => {
+          // Accept both regular directories and symbolic links (which may point to directories)
+          return entry.isDirectory() || entry.isSymbolicLink();
+        })
         .map(entry => entry.name);
 
       const skills = await Promise.all(
@@ -314,6 +317,25 @@ export class SkillStorage {
     const skillId = path.basename(skillDir);
     const skillManifestPath = path.join(skillDir, 'SKILL.md');
     
+    // Check if the skill directory is a symlink (indicating it's from a plugin)
+    let isSymlink = false;
+    let realPath = skillDir;
+    try {
+      const stats = await fs.lstat(skillDir);
+      isSymlink = stats.isSymbolicLink();
+      
+      // If it's a symlink, resolve to the real path
+      if (isSymlink) {
+        realPath = await fs.readlink(skillDir);
+        // If the symlink is relative, resolve it relative to the parent directory
+        if (!path.isAbsolute(realPath)) {
+          realPath = path.resolve(path.dirname(skillDir), realPath);
+        }
+      }
+    } catch (error) {
+      console.warn(`Failed to check if ${skillDir} is symlink:`, error);
+    }
+    
     try {
       const manifestContent = await fs.readFile(skillManifestPath, 'utf8');
       const manifest = await this.parseSkillManifest(manifestContent);
@@ -334,6 +356,8 @@ export class SkillStorage {
         })),
         allowedTools: manifest.allowedTools,
         scope,
+        source: isSymlink ? 'plugin' : 'local',
+        installPath: realPath, // Real path for plugin skills, regular path for local skills
         enabled: true,
         createdAt: '2024-01-01T00:00:00.000Z', // Would need to get from file stats
         updatedAt: new Date().toISOString(),
@@ -352,6 +376,8 @@ export class SkillStorage {
         version: '1.0.0',
         files: [],
         scope,
+        source: isSymlink ? 'plugin' : 'local',
+        installPath: realPath,
         enabled: false,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),

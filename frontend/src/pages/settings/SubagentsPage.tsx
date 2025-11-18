@@ -4,6 +4,7 @@ import {
   Search,
   Edit,
   Trash2,
+  Eye,
   AlertCircle,
   Calendar
 } from 'lucide-react';
@@ -168,8 +169,17 @@ export const SubagentsPage: React.FC = () => {
                     <div className="flex items-center">
                       <div className={`${isMobile ? 'text-lg' : 'text-xl'} mr-3`}>🤖</div>
                       <div>
-                        <div className={`${isMobile ? 'text-sm' : 'text-base'} font-medium text-gray-900 dark:text-white`}>
-                          {subagent.name}
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className={`${isMobile ? 'text-sm' : 'text-base'} font-medium text-gray-900 dark:text-white`}>
+                            {subagent.name}
+                          </div>
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                            subagent.source === 'plugin'
+                              ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300'
+                              : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                          }`}>
+                            {subagent.source === 'plugin' ? t('settings.subagents.source.plugin') : t('settings.subagents.source.local')}
+                          </span>
                         </div>
                         {subagent.description && (
                           <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -211,20 +221,32 @@ export const SubagentsPage: React.FC = () => {
 
                   {/* Actions */}
                   <div className="flex items-center justify-end space-x-2 pt-3 border-t border-gray-200 dark:border-gray-700">
-                    <button
-                      onClick={() => handleEdit(subagent)}
-                      className="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 dark:bg-blue-900/50 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/70 transition-colors"
-                    >
-                      <Edit className="w-3 h-3 mr-1" />
-                      {t('settings.subagents.actions.edit')}
-                    </button>
-                    <button
-                      onClick={() => setShowDeleteConfirm(subagent)}
-                      className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/50 rounded-lg transition-colors"
-                      title={t('settings.subagents.actions.deleteTitle')}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {subagent.source === 'plugin' ? (
+                      <button
+                        onClick={() => handleEdit(subagent)}
+                        className="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 dark:bg-blue-900/50 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/70 transition-colors"
+                      >
+                        <Eye className="w-3 h-3 mr-1" />
+                        {t('settings.subagents.actions.view')}
+                      </button>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => handleEdit(subagent)}
+                          className="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 dark:bg-blue-900/50 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/70 transition-colors"
+                        >
+                          <Edit className="w-3 h-3 mr-1" />
+                          {t('settings.subagents.actions.edit')}
+                        </button>
+                        <button
+                          onClick={() => setShowDeleteConfirm(subagent)}
+                          className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/50 rounded-lg transition-colors"
+                          title={t('settings.subagents.actions.deleteTitle')}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               ))}
@@ -259,8 +281,17 @@ export const SubagentsPage: React.FC = () => {
                         <div className="flex items-center">
                           <div className="text-xl mr-3">🤖</div>
                           <div>
-                            <div className="text-sm font-medium text-gray-900 dark:text-white">
-                              {subagent.name}
+                            <div className="flex items-center gap-2 mb-1">
+                              <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                {subagent.name}
+                              </div>
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                subagent.source === 'plugin'
+                                  ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300'
+                                  : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                              }`}>
+                                {subagent.source === 'plugin' ? t('settings.subagents.source.plugin') : t('settings.subagents.source.local')}
+                              </span>
                             </div>
                             {subagent.description && (
                               <div className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-xs">
@@ -288,21 +319,34 @@ export const SubagentsPage: React.FC = () => {
                       </TableCell>
                       <TableCell className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex items-center justify-end space-x-2">
-                          <button
-                            onClick={() => handleEdit(subagent)}
-                            className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 dark:bg-blue-900/50 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/70 transition-colors"
-                            title={t('settings.subagents.actions.editTitle')}
-                          >
-                            <Edit className="w-3 h-3 mr-1" />
-                            {t('settings.subagents.actions.edit')}
-                          </button>
-                          <button
-                            onClick={() => setShowDeleteConfirm(subagent)}
-                            className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/50 rounded-lg transition-colors"
-                            title={t('settings.subagents.actions.deleteTitle')}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {subagent.source === 'plugin' ? (
+                            <button
+                              onClick={() => handleEdit(subagent)}
+                              className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 dark:bg-blue-900/50 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/70 transition-colors"
+                              title={t('settings.subagents.actions.viewTitle')}
+                            >
+                              <Eye className="w-3 h-3 mr-1" />
+                              {t('settings.subagents.actions.view')}
+                            </button>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => handleEdit(subagent)}
+                                className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 dark:bg-blue-900/50 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/70 transition-colors"
+                                title={t('settings.subagents.actions.editTitle')}
+                              >
+                                <Edit className="w-3 h-3 mr-1" />
+                                {t('settings.subagents.actions.edit')}
+                              </button>
+                              <button
+                                onClick={() => setShowDeleteConfirm(subagent)}
+                                className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/50 rounded-lg transition-colors"
+                                title={t('settings.subagents.actions.deleteTitle')}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>

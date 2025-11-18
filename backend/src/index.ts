@@ -19,6 +19,7 @@ import authRouter from './routes/auth';
 import configRouter from './routes/config';
 import slackRouter from './routes/slack';
 import skillsRouter from './routes/skills';
+import pluginsRouter from './routes/plugins';
 import { authMiddleware } from './middleware/auth';
 import { loadConfig, getSlidesDir } from './config/index';
 
@@ -205,6 +206,7 @@ const app: express.Express = express();
   app.use('/api/subagents', authMiddleware, subagentsRouter);
   app.use('/api/projects', authMiddleware, projectsRouter);
   app.use('/api/skills', authMiddleware, skillsRouter);
+  app.use('/api/plugins', authMiddleware, pluginsRouter);
   app.use('/api/media', mediaAuthRouter); // Media auth endpoints
   app.use('/media', mediaRouter); // Remove authMiddleware - media files are now public
 

@@ -5,6 +5,7 @@ import {
   Search,
   Edit,
   Trash2,
+  Eye,
   // Globe,
   // User,
   AlertCircle,
@@ -289,16 +290,25 @@ export const CommandsPage: React.FC = () => {
                           <div className="flex items-center">
                             <div className="text-xl mr-3">⚡</div>
                             <div>
-                              <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                {command.namespace ? `/${command.namespace}:${command.name}` : `/${command.name}`}
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                  {command.namespace ? `/${command.namespace}:${command.name}` : `/${command.name}`}
+                                </span>
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                  command.source === 'plugin'
+                                    ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300'
+                                    : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                                }`}>
+                                  {command.source === 'plugin' ? t('commands.source.plugin') : t('commands.source.local')}
+                                </span>
                                 {command.argumentHint && (
-                                  <code className="ml-2 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 px-1.5 py-0.5 rounded text-xs">
+                                  <code className="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 px-1.5 py-0.5 rounded text-xs">
                                     {command.argumentHint}
                                   </code>
                                 )}
                               </div>
                               {command.description && (
-                                <div className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-xs">
+                                <div className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-xs mt-1">
                                   {command.description}
                                 </div>
                               )}
@@ -333,24 +343,40 @@ export const CommandsPage: React.FC = () => {
                         </TableCell>
                         <TableCell className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <div className="flex items-center justify-end space-x-2">
-                            <button
-                              onClick={() => {
-                                setEditingCommand(command);
-                                setShowForm(true);
-                              }}
-                              className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 dark:bg-blue-900/50 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/70 transition-colors"
-                              title={t('commands.actions.editCommand')}
-                            >
-                              <Edit className="w-3 h-3 mr-1" />
-                              {t('commands.actions.edit')}
-                            </button>
-                            <button
-                              onClick={() => setShowDeleteConfirm(command)}
-                              className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/50 rounded-lg transition-colors"
-                              title={t('commands.actions.deleteCommand')}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                            {command.source === 'plugin' ? (
+                              <button
+                                onClick={() => {
+                                  setEditingCommand(command);
+                                  setShowForm(true);
+                                }}
+                                className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 dark:bg-blue-900/50 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/70 transition-colors"
+                                title={t('commands.actions.view')}
+                              >
+                                <Eye className="w-3 h-3 mr-1" />
+                                {t('commands.actions.view')}
+                              </button>
+                            ) : (
+                              <>
+                                <button
+                                  onClick={() => {
+                                    setEditingCommand(command);
+                                    setShowForm(true);
+                                  }}
+                                  className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 dark:bg-blue-900/50 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/70 transition-colors"
+                                  title={t('commands.actions.editCommand')}
+                                >
+                                  <Edit className="w-3 h-3 mr-1" />
+                                  {t('commands.actions.edit')}
+                                </button>
+                                <button
+                                  onClick={() => setShowDeleteConfirm(command)}
+                                  className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/50 rounded-lg transition-colors"
+                                  title={t('commands.actions.deleteCommand')}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>

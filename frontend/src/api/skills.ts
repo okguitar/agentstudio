@@ -168,6 +168,7 @@ class SkillsAPI {
       description: skill.description,
       scope: skill.scope,
       projectName: skill.scope === 'project' ? 'Current Project' : undefined,
+      source: skill.source,
       enabled: skill.enabled,
       createdAt: skill.createdAt,
       updatedAt: skill.updatedAt,

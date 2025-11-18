@@ -12,6 +12,8 @@ const writeFile = promisify(fs.writeFile);
 const mkdir = promisify(fs.mkdir);
 const unlink = promisify(fs.unlink);
 const stat = promisify(fs.stat);
+const lstat = promisify(fs.lstat);
+const readlink = promisify(fs.readlink);
 
 // Get project commands directory (.claude/commands)
 const getProjectCommandsDir = (projectPath?: string) => {
@@ -131,6 +133,21 @@ async function scanCommands(dirPath: string, scope: 'project' | 'user'): Promise
           const parsed = parseCommandContent(content);
           const stats = await stat(itemPath);
           
+          // Check if this is a symlink (plugin-installed command)
+          let isSymlink = false;
+          let realPath = itemPath;
+          try {
+            const lstats = await lstat(itemPath);
+            isSymlink = lstats.isSymbolicLink();
+            
+            if (isSymlink) {
+              const linkTarget = await readlink(itemPath);
+              realPath = path.isAbsolute(linkTarget) ? linkTarget : path.resolve(path.dirname(itemPath), linkTarget);
+            }
+          } catch (error) {
+            console.warn(`Failed to check if ${itemPath} is symlink:`, error);
+          }
+          
           commands.push({
             id: `${scope}:${namespace ? namespace + '/' : ''}${commandName}`,
             name: commandName,
@@ -142,6 +159,8 @@ async function scanCommands(dirPath: string, scope: 'project' | 'user'): Promise
             allowedTools: parsed.frontmatter['allowed-tools'] ? 
               parsed.frontmatter['allowed-tools'].split(',').map((s: string) => s.trim()) : undefined,
             model: parsed.frontmatter.model,
+            source: isSymlink ? 'plugin' : 'local',
+            installPath: isSymlink ? realPath : undefined,
             createdAt: stats.birthtime,
             updatedAt: stats.mtime
           });
@@ -262,6 +281,21 @@ router.get('/:id', async (req, res) => {
       const commandName = pathParts.pop()!;
       const namespace = pathParts.length > 0 ? pathParts.join('/') : undefined;
 
+      // Check if this is a symlink (plugin-installed command)
+      let isSymlink = false;
+      let realPath = filePath;
+      try {
+        const lstats = await lstat(filePath);
+        isSymlink = lstats.isSymbolicLink();
+        
+        if (isSymlink) {
+          const linkTarget = await readlink(filePath);
+          realPath = path.isAbsolute(linkTarget) ? linkTarget : path.resolve(path.dirname(filePath), linkTarget);
+        }
+      } catch (error) {
+        console.warn(`Failed to check if ${filePath} is symlink:`, error);
+      }
+
       const command: SlashCommand = {
         id,
         name: commandName,
@@ -273,6 +307,8 @@ router.get('/:id', async (req, res) => {
         allowedTools: parsed.frontmatter['allowed-tools'] ? 
           parsed.frontmatter['allowed-tools'].split(',').map((s: string) => s.trim()) : undefined,
         model: parsed.frontmatter.model,
+        source: isSymlink ? 'plugin' : 'local',
+        installPath: isSymlink ? realPath : undefined,
         createdAt: stats.birthtime,
         updatedAt: stats.mtime
       };
@@ -334,6 +370,7 @@ router.post('/', async (req, res) => {
       argumentHint: commandData.argumentHint,
       allowedTools: commandData.allowedTools,
       model: commandData.model,
+      source: 'local', // Created commands are always local
       createdAt: stats.birthtime,
       updatedAt: stats.mtime
     };
@@ -413,6 +450,21 @@ router.put('/:id', async (req, res) => {
       const parsed = parseCommandContent(content);
       const stats = await stat(newFilePath);
 
+      // Check if this is a symlink (should not be for updated commands, but be safe)
+      let isSymlink = false;
+      let realPath = newFilePath;
+      try {
+        const lstats = await lstat(newFilePath);
+        isSymlink = lstats.isSymbolicLink();
+        
+        if (isSymlink) {
+          const linkTarget = await readlink(newFilePath);
+          realPath = path.isAbsolute(linkTarget) ? linkTarget : path.resolve(path.dirname(newFilePath), linkTarget);
+        }
+      } catch (error) {
+        console.warn(`Failed to check if ${newFilePath} is symlink:`, error);
+      }
+
       const command: SlashCommand = {
         id: newId,
         name: commandName,
@@ -424,6 +476,8 @@ router.put('/:id', async (req, res) => {
         allowedTools: parsed.frontmatter['allowed-tools'] ? 
           parsed.frontmatter['allowed-tools'].split(',').map((s: string) => s.trim()) : undefined,
         model: parsed.frontmatter.model,
+        source: isSymlink ? 'plugin' : 'local',
+        installPath: isSymlink ? realPath : undefined,
         createdAt: stats.birthtime,
         updatedAt: stats.mtime
       };

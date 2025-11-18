@@ -66,6 +66,28 @@ export class AgentStorage {
       try {
         const filePath = path.join(this.agentsDir, file);
         const agentData = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+        
+        // Check if this is a symlink (plugin-installed agent)
+        let isSymlink = false;
+        let realPath = filePath;
+        try {
+          const stats = fs.lstatSync(filePath);
+          isSymlink = stats.isSymbolicLink();
+          
+          if (isSymlink) {
+            const linkTarget = fs.readlinkSync(filePath);
+            realPath = path.isAbsolute(linkTarget) ? linkTarget : path.resolve(path.dirname(filePath), linkTarget);
+          }
+        } catch (error) {
+          console.warn(`Failed to check if ${filePath} is symlink:`, error);
+        }
+        
+        // Add source and installPath fields
+        agentData.source = isSymlink ? 'plugin' : 'local';
+        if (isSymlink) {
+          agentData.installPath = realPath;
+        }
+        
         agents.push(agentData);
       } catch (error) {
         console.error(`Failed to read agent file ${file}:`, error);
@@ -81,7 +103,31 @@ export class AgentStorage {
       if (!fs.existsSync(filePath)) {
         return null;
       }
-      return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+      
+      const agentData = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+      
+      // Check if this is a symlink (plugin-installed agent)
+      let isSymlink = false;
+      let realPath = filePath;
+      try {
+        const stats = fs.lstatSync(filePath);
+        isSymlink = stats.isSymbolicLink();
+        
+        if (isSymlink) {
+          const linkTarget = fs.readlinkSync(filePath);
+          realPath = path.isAbsolute(linkTarget) ? linkTarget : path.resolve(path.dirname(filePath), linkTarget);
+        }
+      } catch (error) {
+        console.warn(`Failed to check if ${filePath} is symlink:`, error);
+      }
+      
+      // Add source and installPath fields
+      agentData.source = isSymlink ? 'plugin' : 'local';
+      if (isSymlink) {
+        agentData.installPath = realPath;
+      }
+      
+      return agentData;
     } catch (error) {
       console.error(`Failed to read agent ${agentId}:`, error);
       return null;
@@ -147,6 +193,7 @@ export class AgentStorage {
     const now = new Date().toISOString();
     const agent: AgentConfig = {
       ...agentData,
+      source: 'local', // Created agents are always local
       createdAt: now,
       updatedAt: now
     };

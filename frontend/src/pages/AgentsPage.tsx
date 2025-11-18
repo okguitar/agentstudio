@@ -210,10 +210,11 @@ Please respond in Chinese unless the user specifically requests another language
       } else {
         if (!editingAgent) return;
         
-        const dataToSave = {
+        const dataToSave: any = {
           ...editForm,
           allowedTools,
-          maxTurns: editForm.maxTurns,
+          // 使用 null 明确表示"不限制"，而不是 undefined（后端会将其转换为 undefined）
+          maxTurns: editForm.maxTurns !== undefined ? editForm.maxTurns : null,
           enabled: editingAgent.enabled
         };
         

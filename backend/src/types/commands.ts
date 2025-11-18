@@ -8,6 +8,8 @@ export interface SlashCommand {
   argumentHint?: string;
   allowedTools?: string[];
   model?: string;
+  source: 'local' | 'plugin'; // 来源：本地创建或插件安装
+  installPath?: string; // 插件命令的真实安装路径
   createdAt: Date;
   updatedAt: Date;
 }
