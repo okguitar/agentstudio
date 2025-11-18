@@ -88,6 +88,59 @@ export interface ChatMessage {
 export interface ChatContext {
 }
 
+/**
+ * Represents a content block being actively streamed
+ * Tracks partial updates until block is complete
+ */
+export interface StreamingBlock {
+  /**
+   * Unique identifier for this content block
+   * Matches SDK block.id or generated if not provided
+   */
+  blockId: string;
+
+  /**
+   * Type of content block being streamed
+   */
+  type: 'text' | 'thinking' | 'tool_use';
+
+  /**
+   * Accumulated content fragments
+   * Grows as partial messages arrive
+   */
+  content: string;
+
+  /**
+   * Whether this block has been finalized
+   * True when complete message received or result event arrives
+   */
+  isComplete: boolean;
+
+  /**
+   * Message ID this block belongs to
+   * Links to ChatMessage.id in store
+   */
+  messageId: string;
+
+  /**
+   * Message part ID in the store
+   * Used to update the specific part during streaming
+   */
+  partId?: string;
+
+  /**
+   * Timestamp when streaming started
+   * Used for timeout detection and debugging
+   */
+  startedAt: number;
+
+  /**
+   * Last update timestamp
+   * Used for throttling and performance monitoring
+   */
+  lastUpdatedAt: number;
+}
+
 export interface AIProvider {
   provider: string;
   models: string[];

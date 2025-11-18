@@ -15,7 +15,11 @@
     "declarationMap": true,
     "sourceMap": true,
     "noEmit": false,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "*/streaming": ["../shared/types/streaming"]
+    }
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

@@ -28,9 +28,9 @@ export const WebFetchTool: React.FC<WebFetchToolProps> = ({ execution }) => {
         
         <ToolInput
           label={t('webFetchTool.analysisPromptLabel')}
-          value={input.prompt.length > 200 ?
+          value={input.prompt && input.prompt.length > 200 ?
             input.prompt.substring(0, 200) + '\n' + t('webFetchTool.truncated') :
-            input.prompt
+            input.prompt || ''
           }
           isCode={true}
         />

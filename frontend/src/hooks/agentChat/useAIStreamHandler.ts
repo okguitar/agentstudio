@@ -4,6 +4,54 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useAgentStore } from '../../stores/useAgentStore';
 import { tabManager } from '../../utils/tabManager';
 import { eventBus, EVENTS } from '../../utils/eventBus';
+import type { StreamingBlock } from '../../types/index.js';
+
+/**
+ * Container for managing streaming state
+ * Stored in React ref for performance (no re-renders on fragment updates)
+ */
+export interface StreamingState {
+  /**
+   * Map of active streaming blocks by block ID
+   * Key: blockId, Value: StreamingBlock
+   */
+  activeBlocks: Map<string, StreamingBlock>;
+
+  /**
+   * Current AI message ID being streamed
+   * Null if no active streaming
+   */
+  currentMessageId: string | null;
+
+  /**
+   * Whether streaming is currently active
+   * Used for auto-scroll and UI indicators
+   */
+  isStreaming: boolean;
+
+  /**
+   * Whether this message was processed via stream_event
+   * Set to true when first stream_event arrives, never cleared
+   * Used to prevent duplicate processing from final assistant message
+   */
+  wasStreamProcessed: boolean;
+
+  /**
+   * Pending UI update (throttling)
+   * Accumulated updates applied at next RAF
+   */
+  pendingUpdate: {
+    blockId: string;
+    content: string;
+    type: 'text' | 'thinking';
+  } | null;
+
+  /**
+   * Request animation frame ID
+   * For canceling pending updates
+   */
+  rafId: number | null;
+}
 
 export interface UseAIStreamHandlerProps {
   agentId: string;
@@ -38,6 +86,8 @@ export const useAIStreamHandler = ({
     addMessage,
     addTextPartToMessage,
     addThinkingPartToMessage,
+    updateTextPartInMessage,
+    updateThinkingPartInMessage,
     addToolPartToMessage,
     updateToolPartInMessage,
     updateMcpStatus,
@@ -46,16 +96,511 @@ export const useAIStreamHandler = ({
   // Track current AI message ID
   const aiMessageIdRef = useRef<string | null>(null);
 
+  // T023: Track active streaming blocks (character-by-character streaming)
+  const streamingStateRef = useRef<StreamingState>({
+    activeBlocks: new Map(),
+    currentMessageId: null,
+    isStreaming: false,
+    wasStreamProcessed: false,
+    pendingUpdate: null,
+    rafId: null,
+  });
+
+  // T027: Schedule UI update with requestAnimationFrame for 60fps throttling
+  const scheduleUpdate = useCallback((blockId: string, content: string, type: 'text' | 'thinking') => {
+    const state = streamingStateRef.current;
+
+    // Store pending update
+    state.pendingUpdate = { blockId, content, type };
+
+    // If RAF already scheduled, return (batch updates)
+    if (state.rafId !== null) {
+      return;
+    }
+
+    // Schedule RAF
+    state.rafId = requestAnimationFrame(() => {
+      const pending = state.pendingUpdate;
+      const messageId = aiMessageIdRef.current;
+      if (!pending || !messageId) {
+        state.rafId = null;
+        return;
+      }
+
+      // Get the streaming block to find the part ID
+      const streamingBlock = state.activeBlocks.get(pending.blockId);
+      if (!streamingBlock || !streamingBlock.partId) {
+        console.warn('🌊 [STREAMING] No partId found for block:', pending.blockId);
+        state.rafId = null;
+        return;
+      }
+
+      // Apply the update (UPDATE existing part, not add new)
+      if (pending.type === 'text') {
+        updateTextPartInMessage(messageId, streamingBlock.partId, pending.content);
+      } else if (pending.type === 'thinking') {
+        updateThinkingPartInMessage(messageId, streamingBlock.partId, pending.content);
+      }
+
+      // Clear state
+      state.pendingUpdate = null;
+      state.rafId = null;
+    });
+  }, [updateTextPartInMessage, updateThinkingPartInMessage]);
+
+  // T026: Generate block ID for blocks without SDK-provided IDs
+  const generateBlockId = useCallback((type: string, index: number): string => {
+    return `${type}-${Date.now()}-${index}`;
+  }, []);
+
   const handleStreamMessage = useCallback((data: any) => {
-    const eventData = data as {
-      type: string;
-      sessionId?: string;
-      session_id?: string;
-      subtype?: string;
-      message?: { content: unknown[] } | string;
-      permission_denials?: Array<{ tool_name: string; tool_input: Record<string, unknown> }>;
-      error?: string;
-    };
+    try {
+      const eventData = data as {
+        type: string;
+        sessionId?: string;
+        session_id?: string;
+        subtype?: string;
+        message?: { content: unknown[]; role?: string } | string;
+        permission_denials?: Array<{ tool_name: string; tool_input: Record<string, unknown> }>;
+        error?: string;
+        event?: any; // Nested event object for stream_event type
+      };
+
+      // T024: Detect partial message streaming (SDKPartialAssistantMessage)
+      // New format: eventData.type === 'stream_event' with nested eventData.event
+      if (eventData.type === 'stream_event' && eventData.event) {
+        const streamEvent = eventData.event;
+        console.log('🌊 [STREAMING] Detected stream_event:', streamEvent.type, 'Full event:', JSON.stringify(eventData).substring(0, 200));
+        
+        // ⚡ Mark that this message is being processed via streaming
+        // This flag persists even after message_stop to prevent duplicate processing from assistant message
+        streamingStateRef.current.wasStreamProcessed = true;
+
+      // Handle message_start: Initialize AI message
+      if (streamEvent.type === 'message_start') {
+        if (!aiMessageIdRef.current) {
+          const message = {
+            content: '',
+            role: 'assistant' as const,
+          };
+          addMessage(message);
+          const state = useAgentStore.getState();
+          aiMessageIdRef.current = state.messages[state.messages.length - 1].id;
+          streamingStateRef.current.currentMessageId = aiMessageIdRef.current;
+          streamingStateRef.current.isStreaming = true;
+          console.log('🌊 [STREAMING] message_start: Created new AI message with ID:', aiMessageIdRef.current);
+        } else {
+          console.log('🌊 [STREAMING] message_start: AI message already exists, skipping:', aiMessageIdRef.current);
+        }
+        return;
+      }
+
+      // Handle content_block_start: Prepare for new content block
+      if (streamEvent.type === 'content_block_start') {
+        const blockIndex = streamEvent.index;
+        const contentBlock = streamEvent.content_block;
+        
+        if (!aiMessageIdRef.current) {
+          // Create AI message if not exists
+          const message = {
+            content: '',
+            role: 'assistant' as const,
+          };
+          addMessage(message);
+          const state = useAgentStore.getState();
+          aiMessageIdRef.current = state.messages[state.messages.length - 1].id;
+          streamingStateRef.current.currentMessageId = aiMessageIdRef.current;
+          streamingStateRef.current.isStreaming = true;
+        }
+
+        // Initialize streaming block for this content block
+        const blockId = `block-${aiMessageIdRef.current}-${blockIndex}`;
+        const currentTime = Date.now();
+        
+        // ⚡ CRITICAL: Check if block already exists to prevent duplicates
+        if (streamingStateRef.current.activeBlocks.has(blockId)) {
+          console.warn('🌊 [STREAMING] content_block_start: Block already exists, skipping:', blockId);
+          return;
+        }
+        
+        if (contentBlock.type === 'text') {
+          // Create initial text part with empty content
+          addTextPartToMessage(aiMessageIdRef.current, '');
+          
+          // Get the part ID of the newly created part
+          const state = useAgentStore.getState();
+          const currentMessage = state.messages.find(m => m.id === aiMessageIdRef.current);
+          const latestPart = currentMessage?.messageParts?.[currentMessage.messageParts.length - 1];
+          const partId = latestPart?.id;
+          
+          const streamingBlock: StreamingBlock = {
+            blockId,
+            type: 'text',
+            content: '',
+            isComplete: false,
+            messageId: aiMessageIdRef.current,
+            partId, // Store the part ID for updates
+            startedAt: currentTime,
+            lastUpdatedAt: currentTime,
+          };
+          streamingStateRef.current.activeBlocks.set(blockId, streamingBlock);
+          console.log('🌊 [STREAMING] content_block_start: Initialized text block', blockId, 'partId:', partId);
+        } else if (contentBlock.type === 'thinking') {
+          // Create initial thinking part with empty content
+          addThinkingPartToMessage(aiMessageIdRef.current, '');
+          
+          // Get the part ID of the newly created part
+          const state = useAgentStore.getState();
+          const currentMessage = state.messages.find(m => m.id === aiMessageIdRef.current);
+          const latestPart = currentMessage?.messageParts?.[currentMessage.messageParts.length - 1];
+          const partId = latestPart?.id;
+          
+          const streamingBlock: StreamingBlock = {
+            blockId,
+            type: 'thinking',
+            content: '',
+            isComplete: false,
+            messageId: aiMessageIdRef.current,
+            partId, // Store the part ID for updates
+            startedAt: currentTime,
+            lastUpdatedAt: currentTime,
+          };
+          streamingStateRef.current.activeBlocks.set(blockId, streamingBlock);
+          console.log('🤔 [STREAMING] content_block_start: Initialized thinking block', blockId, 'partId:', partId);
+        } else if (contentBlock.type === 'tool_use') {
+          // Initialize tool use block with empty/initial input
+          console.log('🔧 [STREAMING] content_block_start: Processing tool_use', {
+            toolName: contentBlock.name,
+            claudeId: contentBlock.id,
+            blockId,
+            messageId: aiMessageIdRef.current
+          });
+          
+          const toolData = {
+            toolName: contentBlock.name,
+            toolInput: {},  // Start with empty input, will be updated by deltas
+            isExecuting: true,
+            claudeId: contentBlock.id,
+          };
+          
+          try {
+            addToolPartToMessage(aiMessageIdRef.current, toolData);
+            console.log('🔧 [STREAMING] content_block_start: addToolPartToMessage completed');
+            
+            // Get the part ID of the newly created tool part
+            const state = useAgentStore.getState();
+            console.log('🔧 [STREAMING] content_block_start: Got store state, messages count:', state.messages.length);
+            
+            const currentMessage = state.messages.find(m => m.id === aiMessageIdRef.current);
+            console.log('🔧 [STREAMING] content_block_start: Found current message:', !!currentMessage, 'parts count:', currentMessage?.messageParts?.length);
+            
+            const latestPart = currentMessage?.messageParts?.[currentMessage.messageParts.length - 1];
+            console.log('🔧 [STREAMING] content_block_start: Latest part:', {
+              exists: !!latestPart,
+              type: latestPart?.type,
+              hasToolData: !!latestPart?.toolData,
+              toolDataId: latestPart?.toolData?.id
+            });
+            
+            const partId = latestPart?.toolData?.id;  // Tool part stores ID in toolData
+            
+            if (!partId) {
+              console.error('🔧 [STREAMING] content_block_start: ⚠️ partId is undefined! Latest part:', latestPart);
+            }
+            
+            const streamingBlock: StreamingBlock = {
+              blockId,
+              type: 'tool_use',
+              content: '',  // Will store partial JSON string
+              isComplete: false,
+              messageId: aiMessageIdRef.current,
+              partId,  // Store the tool part ID for updates
+              startedAt: currentTime,
+              lastUpdatedAt: currentTime,
+            };
+            streamingStateRef.current.activeBlocks.set(blockId, streamingBlock);
+            console.log('🔧 [STREAMING] content_block_start: ✅ Initialized tool_use block', contentBlock.name, 'blockId:', blockId, 'partId:', partId, 'claudeId:', contentBlock.id);
+          } catch (toolError) {
+            console.error('🔧 [STREAMING] content_block_start: ❌ Error processing tool_use:', toolError);
+            throw toolError;  // Re-throw to be caught by outer try-catch
+          }
+        }
+        return;
+      }
+
+      // Handle content_block_delta: Accumulate content deltas
+      if (streamEvent.type === 'content_block_delta' && aiMessageIdRef.current) {
+        const blockIndex = streamEvent.index;
+        const delta = streamEvent.delta;
+        const blockId = `block-${aiMessageIdRef.current}-${blockIndex}`;
+        const currentTime = Date.now();
+
+        if (delta.type === 'text_delta' && delta.text !== undefined) {
+          // T025: Partial text block handling
+          let streamingBlock = streamingStateRef.current.activeBlocks.get(blockId);
+
+          if (!streamingBlock) {
+            // Create new streaming block if not exists (fallback - missed content_block_start)
+            console.warn(`🌊 [STREAMING] content_block_delta: Missing content_block_start for text block, creating fallback`);
+            
+            // Create initial text part with empty content
+            addTextPartToMessage(aiMessageIdRef.current, '');
+            
+            // Get the part ID of the newly created part
+            const state = useAgentStore.getState();
+            const currentMessage = state.messages.find(m => m.id === aiMessageIdRef.current);
+            const latestPart = currentMessage?.messageParts?.[currentMessage.messageParts.length - 1];
+            const partId = latestPart?.id;
+            
+            streamingBlock = {
+              blockId,
+              type: 'text',
+              content: delta.text,
+              isComplete: false,
+              messageId: aiMessageIdRef.current,
+              partId,
+              startedAt: currentTime,
+              lastUpdatedAt: currentTime,
+            };
+            streamingStateRef.current.activeBlocks.set(blockId, streamingBlock);
+            console.log(`🌊 [STREAMING] content_block_delta: Created text block ${blockId} (fallback) with partId: ${partId}, content: "${delta.text}"`);
+          } else {
+            // Accumulate delta content (character-by-character)
+            streamingBlock.content += delta.text;
+            streamingBlock.lastUpdatedAt = currentTime;
+            console.log(`🌊 [STREAMING] content_block_delta: Accumulated text delta "${delta.text}" to block ${blockId}, total: "${streamingBlock.content.substring(0, 50)}..."`);
+          }
+
+          // T028: Schedule UI update with RAF throttling
+          scheduleUpdate(blockId, streamingBlock.content, 'text');
+        } else if (delta.type === 'thinking_delta' && delta.thinking !== undefined) {
+          // T035: Partial thinking block handling
+          let streamingBlock = streamingStateRef.current.activeBlocks.get(blockId);
+
+          if (!streamingBlock) {
+            // Create new streaming block if not exists (fallback - missed content_block_start)
+            console.warn(`🤔 [STREAMING] content_block_delta: Missing content_block_start for thinking block, creating fallback`);
+            
+            // Create initial thinking part with empty content
+            addThinkingPartToMessage(aiMessageIdRef.current, '');
+            
+            // Get the part ID of the newly created part
+            const state = useAgentStore.getState();
+            const currentMessage = state.messages.find(m => m.id === aiMessageIdRef.current);
+            const latestPart = currentMessage?.messageParts?.[currentMessage.messageParts.length - 1];
+            const partId = latestPart?.id;
+            
+            streamingBlock = {
+              blockId,
+              type: 'thinking',
+              content: delta.thinking,
+              isComplete: false,
+              messageId: aiMessageIdRef.current,
+              partId,
+              startedAt: currentTime,
+              lastUpdatedAt: currentTime,
+            };
+            streamingStateRef.current.activeBlocks.set(blockId, streamingBlock);
+            console.log(`🤔 [STREAMING] content_block_delta: Created thinking block ${blockId} (fallback) with partId: ${partId}, content: "${delta.thinking}"`);
+          } else {
+            // Accumulate delta content (character-by-character)
+            streamingBlock.content += delta.thinking;
+            streamingBlock.lastUpdatedAt = currentTime;
+            console.log(`🤔 [STREAMING] content_block_delta: Accumulated thinking delta "${delta.thinking}" to block ${blockId}, total: "${streamingBlock.content.substring(0, 50)}..."`);
+          }
+
+          // T036: Schedule UI update with RAF throttling
+          scheduleUpdate(blockId, streamingBlock.content, 'thinking');
+        } else if (delta.type === 'input_json_delta') {
+          // T041: Handle partial tool input updates
+          const partialJson = delta.partial_json;
+          
+          let streamingBlock = streamingStateRef.current.activeBlocks.get(blockId);
+          
+          if (!streamingBlock) {
+            // Fallback: Create tool if content_block_start was missed
+            console.warn(`🔧 [STREAMING] content_block_delta: Missing content_block_start for tool block, creating fallback`);
+            
+            // Need content_block info for fallback
+            if (!streamEvent.content_block || streamEvent.content_block.type !== 'tool_use') {
+              console.error('🔧 [STREAMING] content_block_delta: Missing content_block info for tool, cannot create fallback');
+              return;
+            }
+            
+            const toolName = streamEvent.content_block.name;
+            const claudeId = streamEvent.content_block.id;
+            
+            // Create tool with initial partial input
+            try {
+              const toolInput = JSON.parse(partialJson || '{}');
+              addToolPartToMessage(aiMessageIdRef.current, {
+                toolName,
+                toolInput,
+                isExecuting: true,
+                claudeId,
+              });
+              
+              // Get the part ID of the newly created tool part
+              const state = useAgentStore.getState();
+              const currentMessage = state.messages.find(m => m.id === aiMessageIdRef.current);
+              const latestPart = currentMessage?.messageParts?.[currentMessage.messageParts.length - 1];
+              const partId = latestPart?.toolData?.id;
+              
+              streamingBlock = {
+                blockId,
+                type: 'tool_use',
+                content: partialJson,
+                isComplete: false,
+                messageId: aiMessageIdRef.current,
+                partId,
+                startedAt: currentTime,
+                lastUpdatedAt: currentTime,
+              };
+              streamingStateRef.current.activeBlocks.set(blockId, streamingBlock);
+              console.log(`🔧 [STREAMING] content_block_delta: Created tool_use block (fallback)`, toolName, 'blockId:', blockId, 'partId:', partId, 'partial input:', partialJson);
+            } catch (e) {
+              console.warn('🔧 [STREAMING] Failed to parse partial JSON for tool:', partialJson, e);
+            }
+          } else {
+            // Update existing tool block
+            streamingBlock.content = partialJson;
+            streamingBlock.lastUpdatedAt = currentTime;
+            
+            // Update tool input with latest partial
+            if (streamingBlock.partId) {
+              try {
+                const toolInput = JSON.parse(partialJson || '{}');
+                updateToolPartInMessage(aiMessageIdRef.current, streamingBlock.partId, {
+                  toolInput,
+                });
+                console.log(`🔧 [STREAMING] content_block_delta: Updated tool_use block ${blockId}, partId: ${streamingBlock.partId}, partial input:`, partialJson);
+              } catch (e) {
+                console.warn('🔧 [STREAMING] Failed to parse partial JSON for tool:', partialJson, e);
+              }
+            } else {
+              console.warn('🔧 [STREAMING] content_block_delta: No partId found for tool block:', blockId);
+            }
+          }
+        }
+        return;
+      }
+
+      // Handle content_block_stop: Finalize content block
+      if (streamEvent.type === 'content_block_stop' && aiMessageIdRef.current) {
+        const blockIndex = streamEvent.index;
+        const blockId = `block-${aiMessageIdRef.current}-${blockIndex}`;
+        const streamingBlock = streamingStateRef.current.activeBlocks.get(blockId);
+        
+        if (streamingBlock) {
+          streamingBlock.isComplete = true;
+          console.log(`🌊 [STREAMING] content_block_stop: Block ${blockId} complete, type: ${streamingBlock.type}, content length: ${streamingBlock.content.length}`);
+          
+          // ⚡ CRITICAL: Immediately flush any pending RAF update for THIS block
+          // This ensures all accumulated content is saved before we delete the block
+          const state = streamingStateRef.current;
+          if (state.pendingUpdate?.blockId === blockId) {
+            console.log(`🌊 [STREAMING] content_block_stop: Flushing pending RAF for ${blockId} immediately`);
+            
+            // Cancel the RAF
+            if (state.rafId !== null) {
+              cancelAnimationFrame(state.rafId);
+              state.rafId = null;
+            }
+            
+            // Execute the pending update NOW
+            const pending = state.pendingUpdate;
+            if (streamingBlock.partId) {
+              if (pending.type === 'text') {
+                updateTextPartInMessage(aiMessageIdRef.current, streamingBlock.partId, pending.content);
+              } else if (pending.type === 'thinking') {
+                updateThinkingPartInMessage(aiMessageIdRef.current, streamingBlock.partId, pending.content);
+              }
+              console.log(`🌊 [STREAMING] content_block_stop: Flushed ${pending.type} content for ${blockId}, length: ${pending.content.length}`);
+            }
+            
+            state.pendingUpdate = null;
+          } else if ((streamingBlock.type === 'text' || streamingBlock.type === 'thinking') && streamingBlock.partId) {
+            // No pending RAF, but ensure final content is in store
+            // (This handles the case where RAF already executed but we want to be sure)
+            console.log(`🌊 [STREAMING] content_block_stop: Final check - ensuring ${streamingBlock.type} content saved, length: ${streamingBlock.content.length}`);
+            if (streamingBlock.type === 'text') {
+              updateTextPartInMessage(aiMessageIdRef.current, streamingBlock.partId, streamingBlock.content);
+            } else if (streamingBlock.type === 'thinking') {
+              updateThinkingPartInMessage(aiMessageIdRef.current, streamingBlock.partId, streamingBlock.content);
+            }
+          }
+          
+          // Now safe to delete block
+          streamingStateRef.current.activeBlocks.delete(blockId);
+          console.log(`🌊 [STREAMING] content_block_stop: Cleaned up block ${blockId}`);
+        }
+        return;
+      }
+
+      // Handle message_delta: Message-level updates (e.g., stop_reason)
+      if (streamEvent.type === 'message_delta') {
+        console.log('🌊 [STREAMING] message_delta:', streamEvent.delta);
+        // Usually contains stop_reason or usage updates - can be handled if needed
+        return;
+      }
+
+      // Handle message_stop: Finalize entire message
+      if (streamEvent.type === 'message_stop') {
+        if (streamingStateRef.current.isStreaming) {
+          console.log('🌊 [STREAMING] message_stop: Finalizing all streaming blocks, count:', streamingStateRef.current.activeBlocks.size);
+          
+          const messageId = aiMessageIdRef.current;
+          const state = streamingStateRef.current;
+          
+          // ⚡ CRITICAL: Flush pending RAF immediately if exists
+          if (state.pendingUpdate && state.rafId !== null) {
+            console.log(`🌊 [STREAMING] message_stop: Flushing pending RAF for ${state.pendingUpdate.blockId}`);
+            cancelAnimationFrame(state.rafId);
+            state.rafId = null;
+            
+            const pending = state.pendingUpdate;
+            const block = state.activeBlocks.get(pending.blockId);
+            if (block && block.partId && messageId) {
+              if (pending.type === 'text') {
+                updateTextPartInMessage(messageId, block.partId, pending.content);
+              } else if (pending.type === 'thinking') {
+                updateThinkingPartInMessage(messageId, block.partId, pending.content);
+              }
+              console.log(`🌊 [STREAMING] message_stop: Flushed ${pending.type} content, length: ${pending.content.length}`);
+            }
+            state.pendingUpdate = null;
+          }
+          
+          // Final pass: ensure all blocks have their content saved
+          if (messageId) {
+            state.activeBlocks.forEach((block) => {
+              block.isComplete = true;
+              
+              if ((block.type === 'text' || block.type === 'thinking') && block.partId) {
+                console.log(`🌊 [STREAMING] message_stop: Final check for ${block.type} block ${block.blockId}, length: ${block.content.length}`);
+                if (block.type === 'text') {
+                  updateTextPartInMessage(messageId, block.partId, block.content);
+                } else if (block.type === 'thinking') {
+                  updateThinkingPartInMessage(messageId, block.partId, block.content);
+                }
+              } else if (!block.partId) {
+                console.error(`❌ [STREAMING] message_stop: Missing partId for block ${block.blockId}, content LOST:`, block.content.substring(0, 100));
+              }
+            });
+          }
+          
+          state.isStreaming = false;
+          state.currentMessageId = null;
+          state.activeBlocks.clear();
+          console.log('🌊 [STREAMING] message_stop: All blocks finalized and cleared');
+        }
+        return;
+      }
+
+      // Unknown stream_event type - log for debugging
+      console.warn('🌊 [STREAMING] Unknown stream_event type:', streamEvent.type);
+      return;
+    }
 
     // Handle direct error messages from Claude Code SDK
     if (eventData.type === 'error') {
@@ -231,6 +776,16 @@ export const useAIStreamHandler = ({
 
     // Handle assistant messages
     if (eventData.type === 'assistant') {
+      // ⚡ CRITICAL: Skip if this message was already processed via stream_event
+      // When includePartialMessages is true, we receive both stream_event AND a final assistant message
+      // We should only process the stream_event messages to avoid duplicates
+      // Use wasStreamProcessed flag instead of isStreaming because message_stop clears isStreaming
+      // but the assistant message arrives AFTER message_stop
+      if (streamingStateRef.current.wasStreamProcessed) {
+        console.log('📝 [ASSISTANT] Skipping assistant message - already processed via stream_event (prevents duplicates)');
+        return;
+      }
+      
       // Add AI message placeholder if not added yet
       if (!aiMessageIdRef.current) {
         const message = {
@@ -436,6 +991,27 @@ export const useAIStreamHandler = ({
       const isSideChain = (eventData as any).isSideChain;
       if (!isSideChain) {
         console.log('Main task result received, stopping AI typing...');
+
+        // T029: Mark all active streaming blocks as complete
+        if (streamingStateRef.current.isStreaming) {
+          console.log('🌊 [STREAMING] Finalizing all streaming blocks');
+          streamingStateRef.current.activeBlocks.forEach((block) => {
+            block.isComplete = true;
+            console.log(`🌊 [STREAMING] Marked block ${block.blockId} as complete`);
+          });
+          streamingStateRef.current.isStreaming = false;
+          streamingStateRef.current.currentMessageId = null;
+
+          // Cancel any pending RAF updates
+          if (streamingStateRef.current.rafId !== null) {
+            cancelAnimationFrame(streamingStateRef.current.rafId);
+            streamingStateRef.current.rafId = null;
+          }
+
+          // Clear active blocks after finalization
+          streamingStateRef.current.activeBlocks.clear();
+        }
+
         // Clear the abort controller and immediately stop typing
         abortControllerRef.current = null;
         setAiTyping(false);
@@ -541,6 +1117,28 @@ export const useAIStreamHandler = ({
       }
       return;
     }
+    } catch (error) {
+      console.error('❌ [STREAMING] Error in handleStreamMessage:', error);
+      console.error('❌ [STREAMING] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+      console.error('❌ [STREAMING] Event data:', JSON.stringify(data).substring(0, 500));
+      
+      // Try to show error to user
+      try {
+        if (aiMessageIdRef.current) {
+          addTextPartToMessage(aiMessageIdRef.current, `\n\n❌ **Streaming Error**: ${error instanceof Error ? error.message : String(error)}\n\nPlease refresh the page and try again.`);
+        } else {
+          addMessage({
+            content: `❌ **Streaming Error**: ${error instanceof Error ? error.message : String(error)}\n\nPlease refresh the page and try again.`,
+            role: 'assistant'
+          });
+        }
+      } catch (innerError) {
+        console.error('❌ [STREAMING] Failed to display error message:', innerError);
+      }
+      
+      // Stop AI typing indicator
+      setAiTyping(false);
+    }
   }, [
     agentId,
     currentSessionId,
@@ -558,9 +1156,13 @@ export const useAIStreamHandler = ({
     addMessage,
     addTextPartToMessage,
     addThinkingPartToMessage,
+    updateTextPartInMessage,
+    updateThinkingPartInMessage,
     addToolPartToMessage,
     updateToolPartInMessage,
     updateMcpStatus,
+    scheduleUpdate,
+    generateBlockId,
   ]);
 
   const handleStreamError = useCallback((error: unknown) => {
@@ -611,6 +1213,10 @@ export const useAIStreamHandler = ({
   // Reset AI message ID when starting new message
   const resetMessageId = useCallback(() => {
     aiMessageIdRef.current = null;
+    // Also reset the streaming flags for the next message
+    streamingStateRef.current.wasStreamProcessed = false;
+    streamingStateRef.current.isStreaming = false;
+    streamingStateRef.current.currentMessageId = null;
   }, []);
 
   return {

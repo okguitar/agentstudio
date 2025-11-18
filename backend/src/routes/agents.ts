@@ -12,6 +12,8 @@ import { AgentConfig } from '../types/agents';
 import { sessionManager } from '../services/sessionManager';
 import { buildQueryOptions } from '../utils/claudeUtils.js';
 import { handleSessionManagement, buildUserMessageContent } from '../utils/sessionUtils.js';
+import type { ChannelType } from '../types/streaming.js';
+import { DEFAULT_CHANNEL } from '../types/streaming.js';
 
 // 类型守卫函数
 function isSDKSystemMessage(message: any): message is SDKSystemMessage {
@@ -282,6 +284,7 @@ const ChatRequestSchema = z.object({
   permissionMode: z.enum(['default', 'acceptEdits', 'bypassPermissions', 'plan']).optional(),
   model: z.string().optional(),
   claudeVersion: z.string().optional(), // Claude版本ID
+  channel: z.enum(['web', 'slack']).optional().default('web'), // Channel for streaming control
   context: z.object({
     currentSlide: z.number().optional().nullable(),
     slideContent: z.string().optional(),
@@ -425,8 +428,12 @@ router.post('/chat', async (req, res) => {
       return res.status(400).json({ error: 'Invalid request body', details: validation.error });
     }
 
-    const { message, images, agentId, sessionId: initialSessionId, projectPath, mcpTools, permissionMode, model, claudeVersion } = validation.data;
+    const { message, images, agentId, sessionId: initialSessionId, projectPath, mcpTools, permissionMode, model, claudeVersion, channel } = validation.data;
     let sessionId = initialSessionId;
+    
+    // Configure partial message streaming based on channel
+    const includePartialMessages = channel === 'web';
+    console.log(`📡 Channel: ${channel}, includePartialMessages: ${includePartialMessages}`);
 
     // 获取 agent 配置
     const agent = globalAgentStorage.getAgent(agentId);
@@ -455,6 +462,12 @@ router.post('/chat', async (req, res) => {
         // 构建查询选项
       const queryOptions = await buildQueryOptions(agent, projectPath, mcpTools, permissionMode, model, claudeVersion);
 
+      // ⚡ CRITICAL: Add includePartialMessages BEFORE creating session
+      // This must be set before handleSessionManagement because ClaudeSession
+      // stores options in constructor and uses them in initializeClaudeStream
+      queryOptions.includePartialMessages = includePartialMessages;
+      console.log(`🌊 [STREAMING] Set includePartialMessages=${includePartialMessages} in queryOptions BEFORE session creation`);
+
       // 处理会话管理
       const { claudeSession, actualSessionId: initialSessionId } = await handleSessionManagement(agentId, sessionId || null, projectPath, queryOptions, claudeVersion);
       let actualSessionId = initialSessionId;
@@ -470,13 +483,6 @@ router.post('/chat', async (req, res) => {
 
       // 为这个特定请求创建一个独立的query调用，但复用session context
       const currentSessionId = claudeSession.getClaudeSessionId();
-      
-      // 构建完整的query options，如果有现有session则使用resume
-      const requestQueryOptions = { ...queryOptions };
-      if (currentSessionId) {
-        requestQueryOptions.resume = currentSessionId;
-        console.log(`🔄 Using resume sessionId: ${currentSessionId} for this request`);
-      }
       
       // 使用会话的 sendMessage 方法发送消息
       let compactMessageBuffer: any[] = []; // 缓存 compact 相关消息

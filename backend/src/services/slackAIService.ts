@@ -1186,6 +1186,9 @@ Feel free to organize your files here as needed. This directory is managed by Ag
         claudeConfig.versionId, // claudeVersion - use system default version
         claudeConfig.env || undefined // defaultEnv
       );
+      
+      // Slack uses block-based streaming (no partial messages)
+      queryOptions.includePartialMessages = false;
 
       // Step 5: Get or create Claude session
       const sessionId = slackThreadMapper.getSessionId(threadTs, event.channel);

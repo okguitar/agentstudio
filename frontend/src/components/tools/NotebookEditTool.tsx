@@ -42,9 +42,9 @@ export const NotebookEditTool: React.FC<NotebookEditToolProps> = ({ execution })
         {input.edit_mode !== 'delete' && (
           <ToolInput
             label={t('notebookEditTool.newContent')}
-            value={input.new_source.length > 300 ?
+            value={input.new_source && input.new_source.length > 300 ?
               input.new_source.substring(0, 300) + '\n' + t('notebookEditTool.truncated') :
-              input.new_source
+              input.new_source || ''
             }
             isCode={true}
           />

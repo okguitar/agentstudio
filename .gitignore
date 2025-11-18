@@ -59,3 +59,6 @@ local-docs/
 .agentstudio-images/
 
 coverage/
+.cursor/
+.specify/
+specs/

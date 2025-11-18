@@ -32,6 +32,8 @@ interface AgentState {
   updateMessage: (messageId: string, updates: Partial<AgentMessage>) => void;
   addTextPartToMessage: (messageId: string, text: string) => void;
   addThinkingPartToMessage: (messageId: string, thinking: string) => void;
+  updateTextPartInMessage: (messageId: string, partId: string, text: string) => void;
+  updateThinkingPartInMessage: (messageId: string, partId: string, thinking: string) => void;
   addCompactSummaryPartToMessage: (messageId: string, content: string) => void;
   addCommandPartToMessage: (messageId: string, command: string) => void;
   addToolPartToMessage: (messageId: string, tool: Omit<ToolUsageData, 'id'>) => void;
@@ -127,6 +129,36 @@ export const useAgentStore = create<AgentState>((set) => ({
                 order: (msg.messageParts || []).length
               }
             ]
+          }
+        : msg
+    )
+  })),
+
+  updateTextPartInMessage: (messageId, partId, text) => set((state) => ({
+    messages: state.messages.map((msg) =>
+      msg.id === messageId
+        ? {
+            ...msg,
+            messageParts: msg.messageParts?.map((part: any) =>
+              part.type === 'text' && part.id === partId
+                ? { ...part, content: text }
+                : part
+            )
+          }
+        : msg
+    )
+  })),
+
+  updateThinkingPartInMessage: (messageId, partId, thinking) => set((state) => ({
+    messages: state.messages.map((msg) =>
+      msg.id === messageId
+        ? {
+            ...msg,
+            messageParts: msg.messageParts?.map((part: any) =>
+              part.type === 'thinking' && part.id === partId
+                ? { ...part, content: thinking }
+                : part
+            )
           }
         : msg
     )

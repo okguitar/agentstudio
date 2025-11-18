@@ -30,10 +30,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
   isAiTyping,
   isStopping,
   messagesContainerRef,
-  messagesEndRef,
-  isUserScrolling,
-  newMessagesCount,
-  onScrollToBottom
+  messagesEndRef
 }) => {
   const { t } = useTranslation('components');
 

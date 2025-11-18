@@ -23,13 +23,13 @@ export const TaskTool: React.FC<TaskToolProps> = ({ execution }) => {
         <ToolInput label={t('taskTool.taskDescriptionLabel')} value={input.description} />
         <ToolInput
           label={t('taskTool.taskPromptLabel')}
-          value={input.prompt.length > 300 ?
+          value={input.prompt && input.prompt.length > 300 ?
             input.prompt.substring(0, 300) + '\n' + t('taskTool.truncated') :
-            input.prompt
+            input.prompt || ''
           }
           isCode={true}
         />
-        {input.prompt.length > 300 && (
+        {input.prompt && input.prompt.length > 300 && (
           <div className="text-xs text-gray-500 mt-1">
             {t('taskTool.totalLength', { length: input.prompt.length })}
           </div>
