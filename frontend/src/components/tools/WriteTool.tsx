@@ -30,7 +30,7 @@ export const WriteTool: React.FC<WriteToolProps> = ({ execution }) => {
             filePath={input.file_path}
           />
           <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-            {t('writeTool.fileSize', { size: input.content.length })}
+            {t('writeTool.fileSize', { size: input.content?.length || 0 })}
           </div>
         </div>
       </div>
