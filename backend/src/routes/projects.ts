@@ -227,20 +227,50 @@ router.post('/:dirName/select-agent', async (req, res) => {
     const projectPath = decodeURIComponent(req.params.dirName);
     const { agentId } = req.body;
     
+    console.log(`🎯 Select agent request - encoded: ${req.params.dirName}`);
+    console.log(`🎯 Select agent request - decoded path: ${projectPath}`);
+    console.log(`🎯 Select agent request - agentId: ${agentId}`);
+    
     if (!agentId) {
       return res.status(400).json({ error: 'Agent ID is required' });
     }
     
-    // Add the agent to the project and set it as default
-    projectStorage.addAgentToProject(projectPath, agentId);
-    projectStorage.setDefaultAgent(projectPath, agentId);
+    // Check if project exists, if not create it
+    let projectMetadata = projectStorage.getProjectMetadata(projectPath);
+    if (!projectMetadata) {
+      console.log(`⚠️  Project not found in metadata, creating: ${projectPath}`);
+      
+      // Verify agent exists
+      const agent = globalAgentStorage.getAgent(agentId);
+      if (!agent) {
+        console.error(`❌ Agent not found: ${agentId}`);
+        return res.status(404).json({ error: 'Agent not found' });
+      }
+      
+      // Create the project with the selected agent
+      const projectName = path.basename(projectPath);
+      projectMetadata = projectStorage.createProject(projectPath, {
+        name: projectName,
+        agentId: agentId,
+        description: ''
+      });
+      console.log(`✅ Created project metadata with ID: ${projectMetadata.id}`);
+    } else {
+      console.log(`✅ Project found in metadata - ID: ${projectMetadata.id}, adding/updating agent`);
+      // Project exists, add the agent to the project and set it as default
+      projectStorage.addAgentToProject(projectPath, agentId);
+      projectStorage.setDefaultAgent(projectPath, agentId);
+    }
     
     const updatedProject = projectStorage.getProject(projectPath);
     
     if (!updatedProject) {
+      console.error(`❌ Failed to get project after creation/update: ${projectPath}`);
+      console.error(`❌ Available projects:`, projectStorage.getAllProjects().map(p => p.path));
       return res.status(404).json({ error: 'Project not found' });
     }
     
+    console.log(`✅ Agent selected successfully - project: ${updatedProject.name}, agent: ${agentId}`);
     res.json({ 
       success: true,
       project: updatedProject 
@@ -374,6 +404,8 @@ router.post('/import', (req, res) => {
   try {
     const { agentId, projectPath } = req.body;
     
+    console.log(`📥 Import project request - agentId: ${agentId}, projectPath: ${projectPath}`);
+    
     if (!agentId || !projectPath) {
       return res.status(400).json({ error: 'Agent ID and project path are required' });
     }
@@ -400,6 +432,8 @@ router.post('/import', (req, res) => {
       agent.projects = [];
     }
     const normalizedPath = path.resolve(projectPath);
+    console.log(`📁 Normalized path: ${normalizedPath}`);
+    
     if (!agent.projects.includes(normalizedPath)) {
       agent.projects.unshift(normalizedPath); // Add to beginning for most recent
       agent.updatedAt = new Date().toISOString();
@@ -409,24 +443,39 @@ router.post('/import', (req, res) => {
     // Extract project name from path
     const projectName = path.basename(normalizedPath);
 
-    // Return project info that matches frontend interface
-    const projectId = `${agentId}-${Buffer.from(normalizedPath).toString('base64').replace(/[+/=]/g, '').slice(-8)}`;
+    // Create or update project metadata in projectStorage
+    // This ensures the project exists when user selects agent later
+    let projectMetadata = projectStorage.getProjectMetadata(normalizedPath);
+    if (!projectMetadata) {
+      console.log(`✨ Creating new project metadata for: ${normalizedPath}`);
+      // Project doesn't exist in metadata storage, create it
+      projectMetadata = projectStorage.createProject(normalizedPath, {
+        name: projectName,
+        agentId: agentId,
+        description: ''
+      });
+      console.log(`✅ Project metadata created with ID: ${projectMetadata.id}`);
+    } else {
+      console.log(`♻️  Project already exists, updating agent association`);
+      // Project already exists, just add the agent if not already added
+      if (!projectMetadata.agents[agentId]) {
+        projectStorage.addAgentToProject(normalizedPath, agentId);
+      }
+      // Set as default agent
+      projectStorage.setDefaultAgent(normalizedPath, agentId);
+    }
+    
+    // Get the full project info with agent details
+    const project = projectStorage.getProject(normalizedPath);
+    if (!project) {
+      console.error(`❌ Failed to get project after creation: ${normalizedPath}`);
+      return res.status(500).json({ error: 'Failed to create project metadata' });
+    }
 
+    console.log(`✅ Import successful - project ID: ${project.id}, path: ${project.path}`);
     res.json({
       success: true,
-      project: {
-        id: projectId,
-        name: projectName,
-        dirName: projectName,
-        path: normalizedPath,
-        agents: [agentId],
-        defaultAgent: agentId,
-        defaultAgentName: agent.name,
-        defaultAgentIcon: agent.ui.icon,
-        createdAt: stats.birthtime.toISOString(),
-        lastAccessed: new Date().toISOString(),
-        description: ''
-      },
+      project: project,
       message: `Project "${projectName}" imported successfully`
     });
     
