@@ -242,10 +242,10 @@ export const mockToolExecutions = {
 
   // 特定结果类型
   bashWithOutput: (input: BashInput, output: string): BaseToolExecution =>
-    createToolExecution({ toolName: 'Bash', toolInput: input as any, toolResult: output, isExecuting: false }),
+    createToolExecution({ toolName: 'Bash', toolInput: input, toolResult: output, isExecuting: false }),
 
   editWithPatch: (input: FileEditInput, patch: EditToolResult): BaseToolExecution =>
-    createToolExecution({ toolName: 'Edit', toolInput: input as any, toolUseResult: patch, isExecuting: false }),
+    createToolExecution({ toolName: 'Edit', toolInput: input, toolUseResult: patch, isExecuting: false }),
 
   bashOutput: (input: any, output: BashOutputToolResult): BaseToolExecution =>
     createToolExecution({ toolName: 'BashOutput', toolInput: input, toolUseResult: output, isExecuting: false })

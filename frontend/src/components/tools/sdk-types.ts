@@ -54,10 +54,6 @@ export type {
 };
 
 // 项目特定的基础接口
-export interface BaseToolInput {
-  [key: string]: unknown;
-}
-
 export interface BaseToolResult {
   content?: string;
   is_error?: boolean;
@@ -68,7 +64,7 @@ export interface BaseToolResult {
 export interface BaseToolExecution {
   id: string;
   toolName: string;
-  toolInput: BaseToolInput;
+  toolInput: ToolInputSchemas | MultiEditInput | LSToolInput | NotebookReadToolInput;
   toolResult?: string;
   toolUseResult?: EditToolResult | any;
   isExecuting: boolean;

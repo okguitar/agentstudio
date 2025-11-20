@@ -19,29 +19,38 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-// 等待列表状态
-export const Pending: Story = {
+export const LSStates: Story = {
   args: {
     execution: mockToolExecutions.pending('LS', mockToolInputs.lsTool())
-  }
-};
+  },
+  render: () => (
+    <div className="space-y-6">
+      <h3 className="text-lg font-semibold mb-4">目录列表状态</h3>
 
-// 列表中状态
-export const Executing: Story = {
-  args: {
-    execution: mockToolExecutions.executing('LS', mockToolInputs.lsTool({
-      path: '/Users/kongjie/slides/ai-editor/src'
-    }))
-  }
-};
+      <div className="grid gap-4">
+        <div>
+          <h4 className="font-medium text-gray-700 mb-2">等待列表</h4>
+          <LSTool
+            execution={mockToolExecutions.pending('LS', mockToolInputs.lsTool())}
+          />
+        </div>
 
-// 列表成功状态
-export const Success: Story = {
-  args: {
-    execution: mockToolExecutions.success(
-      'LS',
-      mockToolInputs.lsTool(),
-      `📁 components/
+        <div>
+          <h4 className="font-medium text-gray-700 mb-2">列表中</h4>
+          <LSTool
+            execution={mockToolExecutions.executing('LS', mockToolInputs.lsTool({
+              path: '/Users/kongjie/slides/ai-editor/src'
+            }))}
+          />
+        </div>
+
+        <div>
+          <h4 className="font-medium text-gray-700 mb-2">列表成功</h4>
+          <LSTool
+            execution={mockToolExecutions.success(
+              'LS',
+              mockToolInputs.lsTool(),
+              `📁 components/
 📁 hooks/
 📁 pages/
 📁 stores/
@@ -51,52 +60,73 @@ export const Success: Story = {
 📄 App.tsx
 📄 main.tsx
 📄 index.css`
-    )
-  }
-};
+            )}
+          />
+        </div>
 
-// 目录不存在
-export const DirectoryNotFound: Story = {
-  args: {
-    execution: mockToolExecutions.error(
-      'LS',
-      mockToolInputs.lsTool({ path: '/nonexistent/directory' }),
-      'Error: Directory not found'
-    )
-  }
+        <div>
+          <h4 className="font-medium text-gray-700 mb-2">目录不存在</h4>
+          <LSTool
+            execution={mockToolExecutions.error(
+              'LS',
+              mockToolInputs.lsTool({ path: '/nonexistent/directory' }),
+              'Error: Directory not found'
+            )}
+          />
+        </div>
+      </div>
+    </div>
+  )
 };
 
 export const ListOptions: Story = {
   args: {
-    execution: mockToolExecutions.pending('LS', mockToolInputs.lsTool({
-      path: '/Users/kongjie/slides/ai-editor',
-      ignore: ['node_modules', '.git', 'dist', '.next']
-    }))
-  }
-};
+    execution: mockToolExecutions.pending('LS', mockToolInputs.lsTool())
+  },
+  render: () => (
+    <div className="space-y-6">
+      <h3 className="text-lg font-semibold mb-4">不同列表选项</h3>
 
-export const ComponentDirectory: Story = {
-  args: {
-    execution: mockToolExecutions.pending('LS', mockToolInputs.lsTool({
-      path: '/Users/kongjie/slides/ai-editor/frontend/src/components',
-      ignore: ['*.test.tsx', '*.stories.tsx']
-    }))
-  }
-};
+      <div className="grid gap-4">
+        <div>
+          <h4 className="font-medium text-gray-700 mb-2">项目根目录</h4>
+          <LSTool
+            execution={mockToolExecutions.pending('LS', mockToolInputs.lsTool({
+              path: '/Users/kongjie/slides/ai-editor',
+              ignore: ['node_modules', '.git', 'dist', '.next']
+            }))}
+          />
+        </div>
 
-export const ToolsDirectory: Story = {
-  args: {
-    execution: mockToolExecutions.pending('LS', mockToolInputs.lsTool({
-      path: '/Users/kongjie/slides/ai-editor/frontend/src/components/tools'
-    }))
-  }
-};
+        <div>
+          <h4 className="font-medium text-gray-700 mb-2">组件目录</h4>
+          <LSTool
+            execution={mockToolExecutions.pending('LS', mockToolInputs.lsTool({
+              path: '/Users/kongjie/slides/ai-editor/frontend/src/components',
+              ignore: ['*.test.tsx', '*.stories.tsx']
+            }))}
+          />
+        </div>
 
-export const IgnoreFileTypes: Story = {
-  args: {
-    execution: mockToolExecutions.pending('LS', mockToolInputs.lsTool({
-      path: '/Users/kongjie/slides/ai-editor/frontend/src',
-      ignore: ['*.js', '*.css', '*.md', 'package.json']
-    }))
-  }
+        <div>
+          <h4 className="font-medium text-gray-700 mb-2">工具目录</h4>
+          <LSTool
+            execution={mockToolExecutions.pending('LS', mockToolInputs.lsTool({
+              path: '/Users/kongjie/slides/ai-editor/frontend/src/components/tools'
+            }))}
+          />
+        </div>
+
+        <div>
+          <h4 className="font-medium text-gray-700 mb-2">忽略所有文件类型</h4>
+          <LSTool
+            execution={mockToolExecutions.pending('LS', mockToolInputs.lsTool({
+              path: '/Users/kongjie/slides/ai-editor/frontend/src',
+              ignore: ['*.js', '*.css', '*.md', 'package.json']
+            }))}
+          />
+        </div>
+      </div>
+    </div>
+  )
 };

@@ -19,65 +19,91 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-// 等待编辑状态
-export const Pending: Story = {
+export const EditStates: Story = {
   args: {
     execution: mockToolExecutions.pending('Edit', mockToolInputs.fileEdit())
-  }
+  },
+  render: () => (
+    <div className="space-y-6">
+      <h3 className="text-lg font-semibold mb-4">文件编辑状态</h3>
+
+      <div className="grid gap-4">
+        <div>
+          <h4 className="font-medium text-gray-700 mb-2">等待编辑</h4>
+          <EditTool
+            execution={mockToolExecutions.pending('Edit', mockToolInputs.fileEdit())}
+          />
+        </div>
+
+        <div>
+          <h4 className="font-medium text-gray-700 mb-2">编辑中</h4>
+          <EditTool
+            execution={mockToolExecutions.executing('Edit', mockToolInputs.fileEdit({
+              file_path: '/Users/kongjie/slides/ai-editor/src/App.tsx',
+              old_string: 'const App = () => {',
+              new_string: 'const App: React.FC = () => {'
+            }))}
+          />
+        </div>
+
+        <div>
+          <h4 className="font-medium text-gray-700 mb-2">编辑成功（显示 diff）</h4>
+          <EditTool
+            execution={mockToolExecutions.editWithPatch(
+              mockToolInputs.fileEdit(),
+              mockResults.edit.patch
+            )}
+          />
+        </div>
+
+        <div>
+          <h4 className="font-medium text-gray-700 mb-2">编辑失败</h4>
+          <EditTool
+            execution={mockToolExecutions.error(
+              'Edit',
+              mockToolInputs.fileEdit(),
+              'Error: Could not find old_string in file'
+            )}
+          />
+        </div>
+      </div>
+    </div>
+  )
 };
 
-// 编辑中状态
-export const Executing: Story = {
+export const DifferentEdits: Story = {
   args: {
-    execution: mockToolExecutions.executing('Edit', mockToolInputs.fileEdit({
-      file_path: '/Users/kongjie/slides/ai-editor/src/App.tsx',
-      old_string: 'const App = () => {',
-      new_string: 'const App: React.FC = () => {'
-    }))
-  }
-};
+    execution: mockToolExecutions.pending('Edit', mockToolInputs.fileEdit())
+  },
+  render: () => (
+    <div className="space-y-6">
+      <h3 className="text-lg font-semibold mb-4">不同类型的编辑</h3>
 
-// 编辑成功状态（显示 diff）
-export const Success: Story = {
-  args: {
-    execution: mockToolExecutions.editWithPatch(
-      mockToolInputs.fileEdit(),
-      mockResults.edit.patch
-    )
-  }
-};
+      <div className="grid gap-4">
+        <div>
+          <h4 className="font-medium text-gray-700 mb-2">单行替换</h4>
+          <EditTool
+            execution={mockToolExecutions.pending('Edit', mockToolInputs.fileEdit({
+              file_path: 'config.ts',
+              old_string: 'port: 3000',
+              new_string: 'port: 4936',
+              replace_all: false
+            }))}
+          />
+        </div>
 
-// 编辑失败状态
-export const Error: Story = {
-  args: {
-    execution: mockToolExecutions.error(
-      'Edit',
-      mockToolInputs.fileEdit(),
-      'Error: Could not find old_string in file'
-    )
-  }
-};
-
-// 单行替换
-export const SingleReplacement: Story = {
-  args: {
-    execution: mockToolExecutions.pending('Edit', mockToolInputs.fileEdit({
-      file_path: 'config.ts',
-      old_string: 'port: 3000',
-      new_string: 'port: 4936',
-      replace_all: false
-    }))
-  }
-};
-
-// 全局替换
-export const GlobalReplacement: Story = {
-  args: {
-    execution: mockToolExecutions.pending('Edit', mockToolInputs.fileEdit({
-      file_path: 'src/utils/api.ts',
-      old_string: 'http://localhost',
-      new_string: 'https://api.example.com',
-      replace_all: true
-    }))
-  }
+        <div>
+          <h4 className="font-medium text-gray-700 mb-2">全局替换</h4>
+          <EditTool
+            execution={mockToolExecutions.pending('Edit', mockToolInputs.fileEdit({
+              file_path: 'src/utils/api.ts',
+              old_string: 'http://localhost',
+              new_string: 'https://api.example.com',
+              replace_all: true
+            }))}
+          />
+        </div>
+      </div>
+    </div>
+  )
 };

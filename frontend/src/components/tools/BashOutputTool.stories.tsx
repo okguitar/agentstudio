@@ -19,8 +19,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-// 成功输出
-export const Success: Story = {
+export const BasicOutput: Story = {
   args: {
     execution: mockToolExecutions.bashOutput(
       { bash_id: 'shell-123' },
@@ -36,45 +35,72 @@ export const Success: Story = {
         timestamp: new Date().toISOString()
       }
     )
-  }
-};
+  },
+  render: () => (
+    <div className="space-y-6">
+      <h3 className="text-lg font-semibold mb-4">Bash 输出显示</h3>
 
-// 错误输出
-export const Error: Story = {
-  args: {
-    execution: mockToolExecutions.bashOutput(
-      { bash_id: 'shell-456' },
-      {
-        shellId: 'shell-456',
-        command: 'npm run invalid',
-        status: 'completed',
-        exitCode: 1,
-        stdout: '',
-        stderr: 'Error: Module not found\n  at require (internal/modules/cjs/loader.js:892:15)',
-        stdoutLines: 0,
-        stderrLines: 2,
-        timestamp: new Date().toISOString()
-      }
-    )
-  }
-};
+      <div className="grid gap-4">
+        <div>
+          <h4 className="font-medium text-gray-700 mb-2">成功输出</h4>
+          <BashOutputTool
+            execution={mockToolExecutions.bashOutput(
+              { bash_id: 'shell-123' },
+              {
+                shellId: 'shell-123',
+                command: 'npm run build',
+                status: 'completed',
+                exitCode: 0,
+                stdout: 'Build completed successfully!\nAll tests passed.',
+                stderr: '',
+                stdoutLines: 2,
+                stderrLines: 0,
+                timestamp: new Date().toISOString()
+              }
+            )}
+          />
+        </div>
 
-// 运行中
-export const Running: Story = {
-  args: {
-    execution: mockToolExecutions.bashOutput(
-      { bash_id: 'shell-789' },
-      {
-        shellId: 'shell-789',
-        command: 'npm run dev',
-        status: 'running',
-        exitCode: null,
-        stdout: 'Starting development server...\nCompiling...',
-        stderr: '',
-        stdoutLines: 2,
-        stderrLines: 0,
-        timestamp: new Date().toISOString()
-      }
-    )
-  }
+        <div>
+          <h4 className="font-medium text-gray-700 mb-2">错误输出</h4>
+          <BashOutputTool
+            execution={mockToolExecutions.bashOutput(
+              { bash_id: 'shell-456' },
+              {
+                shellId: 'shell-456',
+                command: 'npm test',
+                status: 'completed',
+                exitCode: 1,
+                stdout: '',
+                stderr: 'Error: Module not found\n  at require (internal/modules/cjs/loader.js:892:15)',
+                stdoutLines: 0,
+                stderrLines: 2,
+                timestamp: new Date().toISOString()
+              }
+            )}
+          />
+        </div>
+
+        <div>
+          <h4 className="font-medium text-gray-700 mb-2">运行中</h4>
+          <BashOutputTool
+            execution={mockToolExecutions.bashOutput(
+              { bash_id: 'shell-789' },
+              {
+                shellId: 'shell-789',
+                command: 'npm run dev',
+                status: 'running',
+                exitCode: null,
+                stdout: 'Starting development server...\nCompiling...',
+                stderr: '',
+                stdoutLines: 2,
+                stderrLines: 0,
+                timestamp: new Date().toISOString()
+              }
+            )}
+          />
+        </div>
+      </div>
+    </div>
+  )
 };
