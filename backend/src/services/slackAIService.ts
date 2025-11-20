@@ -414,10 +414,18 @@ Feel free to organize your files here as needed. This directory is managed by Ag
     // Start with the cleaned text from agent parsing (if available)
     let cleanText = agentSelection ? agentSelection.cleanText : event.text;
 
-    // Parse project from message (only for new threads)
+    // Check if this thread already has a session with project info
+    const existingSessionId = slackThreadMapper.getSessionId(threadTs, event.channel);
+    const existingMapping = existingSessionId 
+      ? slackThreadMapper.getThreadForSession(existingSessionId)
+      : null;
+    const hasExistingProject = existingMapping && existingMapping.projectPath;
+
+    // Parse project from message
+    // Parse for: new threads OR threads without existing project
     let selectedProject: ProjectWithAgentInfo | null = null;
 
-    if (isNewThread) {
+    if (isNewThread || !hasExistingProject) {
       // Parse project from the already-cleaned text
       const projectSelection = parseProjectFromMessage(cleanText);
       if (projectSelection) {
@@ -466,6 +474,22 @@ Feel free to organize your files here as needed. This directory is managed by Ag
           console.log(`✅ Using default project: ${selectedProject.name} at ${selectedProject.realPath || selectedProject.path}`);
         } else {
           console.warn(`⚠️ Failed to get default project`);
+        }
+      }
+    } else {
+      // Thread already has a project, use it from existing mapping
+      if (existingMapping && existingMapping.projectPath) {
+        console.log(`♻️  Reusing project from existing thread: ${existingMapping.projectPath}`);
+        // Find the project in allProjects
+        const existingProject = allProjects.find(p => 
+          p.realPath === existingMapping.projectPath || 
+          p.path === existingMapping.projectPath
+        );
+        if (existingProject) {
+          selectedProject = existingProject;
+          console.log(`✅ Found existing project: ${existingProject.name} (${existingProject.dirName})`);
+        } else {
+          console.warn(`⚠️ Existing project path not found in projects list: ${existingMapping.projectPath}`);
         }
       }
     }

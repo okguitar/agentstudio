@@ -23,7 +23,7 @@ import {
   Plug,  // 用于MCP工具
   AlertCircle  // 用于中断状态
 } from 'lucide-react';
-import type { ToolExecution } from './types';
+import type { BaseToolExecution } from './sdk-types';
 
 // 工具图标映射
 const TOOL_ICONS = {
@@ -68,7 +68,7 @@ const TOOL_COLORS = {
 };
 
 interface BaseToolProps {
-  execution: ToolExecution;
+  execution: BaseToolExecution;
   children?: React.ReactNode;
   subtitle?: string; // 显示关键信息的副标题
   showResult?: boolean; // 是否显示工具结果，默认true

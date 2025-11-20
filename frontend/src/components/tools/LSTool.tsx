@@ -1,15 +1,15 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { BaseToolComponent, ToolInput } from './BaseToolComponent';
-import type { ToolExecution, LSToolInput } from './types';
+import type { BaseToolExecution, LSToolInput } from './sdk-types';
 
 interface LSToolProps {
-  execution: ToolExecution;
+  execution: BaseToolExecution;
 }
 
 export const LSTool: React.FC<LSToolProps> = ({ execution }) => {
   const { t } = useTranslation('components');
-  const input = execution.toolInput as LSToolInput;
+  const input = execution.toolInput as unknown as LSToolInput;
 
   // 提取相对路径作为副标题
   const getSubtitle = () => {

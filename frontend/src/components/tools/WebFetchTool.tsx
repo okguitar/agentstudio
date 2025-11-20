@@ -1,15 +1,16 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { BaseToolComponent, ToolInput } from './BaseToolComponent';
-import type { ToolExecution, WebFetchToolInput } from './types';
+import type { BaseToolExecution } from './sdk-types';
+import type { WebFetchInput } from '@anthropic-ai/claude-agent-sdk/sdk-tools';
 
 interface WebFetchToolProps {
-  execution: ToolExecution;
+  execution: BaseToolExecution;
 }
 
 export const WebFetchTool: React.FC<WebFetchToolProps> = ({ execution }) => {
   const { t } = useTranslation('components');
-  const input = execution.toolInput as WebFetchToolInput;
+  const input = execution.toolInput as unknown as WebFetchInput;
 
   return (
     <BaseToolComponent execution={execution} hideToolName={true} subtitle={input.url}>

@@ -2,15 +2,15 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { BaseToolComponent, ToolInput } from './BaseToolComponent';
 import { DiffViewer } from '../DiffViewer';
-import type { ToolExecution, MultiEditToolInput } from './types';
+import type { BaseToolExecution, MultiEditInput } from './sdk-types';
 
 interface MultiEditToolProps {
-  execution: ToolExecution;
+  execution: BaseToolExecution;
 }
 
 export const MultiEditTool: React.FC<MultiEditToolProps> = ({ execution }) => {
   const { t } = useTranslation('components');
-  const input = execution.toolInput as MultiEditToolInput;
+  const input = execution.toolInput as unknown as MultiEditInput;
 
   // 防御性检查：确保 edits 存在且是数组
   const edits = Array.isArray(input?.edits) ? input.edits : [];
@@ -29,7 +29,7 @@ export const MultiEditTool: React.FC<MultiEditToolProps> = ({ execution }) => {
           </p>
 
           <div className="space-y-4 max-h-96 overflow-y-auto">
-            {edits.map((edit, index) => (
+            {edits.map((edit: any, index: number) => (
               <div key={index} className="border border-gray-200 rounded-md bg-white">
                 <div className="px-3 py-2 bg-gray-50 border-b border-gray-200 rounded-t-md">
                   <div className="text-xs font-medium text-gray-600">

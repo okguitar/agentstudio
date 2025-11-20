@@ -1,15 +1,15 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { BaseToolComponent, ToolInput } from './BaseToolComponent';
-import type { ToolExecution, NotebookReadToolInput } from './types';
+import type { BaseToolExecution, NotebookReadToolInput } from './sdk-types';
 
 interface NotebookReadToolProps {
-  execution: ToolExecution;
+  execution: BaseToolExecution;
 }
 
 export const NotebookReadTool: React.FC<NotebookReadToolProps> = ({ execution }) => {
   const { t } = useTranslation('components');
-  const input = execution.toolInput as NotebookReadToolInput;
+  const input = execution.toolInput as unknown as NotebookReadToolInput;
 
   return (
     <BaseToolComponent execution={execution}>

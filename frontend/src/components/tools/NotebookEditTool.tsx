@@ -1,15 +1,16 @@
 import React from 'react';
 import { BaseToolComponent, ToolInput } from './BaseToolComponent';
-import type { ToolExecution, NotebookEditToolInput } from './types';
+import type { BaseToolExecution } from './sdk-types';
+import type { NotebookEditInput } from '@anthropic-ai/claude-agent-sdk/sdk-tools';
 import { useTranslation } from 'react-i18next';
 
 interface NotebookEditToolProps {
-  execution: ToolExecution;
+  execution: BaseToolExecution;
 }
 
 export const NotebookEditTool: React.FC<NotebookEditToolProps> = ({ execution }) => {
   const { t } = useTranslation('components');
-  const input = execution.toolInput as NotebookEditToolInput;
+  const input = execution.toolInput as unknown as NotebookEditInput;
 
   return (
     <BaseToolComponent execution={execution}>

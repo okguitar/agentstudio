@@ -1,15 +1,16 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { BaseToolComponent, ToolInput } from './BaseToolComponent';
-import type { ToolExecution, GlobToolInput } from './types';
+import type { BaseToolExecution } from './sdk-types';
+import type { GlobInput } from '@anthropic-ai/claude-agent-sdk/sdk-tools';
 
 interface GlobToolProps {
-  execution: ToolExecution;
+  execution: BaseToolExecution;
 }
 
 export const GlobTool: React.FC<GlobToolProps> = ({ execution }) => {
   const { t } = useTranslation('components');
-  const input = execution.toolInput as GlobToolInput;
+  const input = execution.toolInput as unknown as GlobInput;
 
   // 显示模式作为副标题
   const getSubtitle = () => {

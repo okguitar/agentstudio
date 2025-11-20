@@ -1,16 +1,17 @@
 import React from 'react';
 import { BaseToolComponent } from './BaseToolComponent';
-import type { ToolExecution, TodoWriteToolInput } from './types';
+import type { BaseToolExecution } from './sdk-types';
+import type { TodoWriteInput } from '@anthropic-ai/claude-agent-sdk/sdk-tools';
 import { CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 interface TodoWriteToolProps {
-  execution: ToolExecution;
+  execution: BaseToolExecution;
 }
 
 export const TodoWriteTool: React.FC<TodoWriteToolProps> = ({ execution }) => {
   const { t } = useTranslation('components');
-  const input = execution.toolInput as TodoWriteToolInput;
+  const input = execution.toolInput as unknown as TodoWriteInput;
 
   // 防御性检查：确保 todos 存在且是数组
   const todos = Array.isArray(input?.todos) ? input.todos : [];

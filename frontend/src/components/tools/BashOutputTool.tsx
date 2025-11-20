@@ -1,16 +1,17 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { BaseToolComponent } from './BaseToolComponent';
-import type { ToolExecution, BashOutputToolInput, BashOutputToolResult } from './types';
+import type { BaseToolExecution, BashOutputToolResult } from './sdk-types';
+import type { BashOutputInput } from '@anthropic-ai/claude-agent-sdk/sdk-tools';
 import { Terminal, AlertCircle, CheckCircle, XCircle, Clock } from 'lucide-react';
 
 interface BashOutputToolProps {
-  execution: ToolExecution;
+  execution: BaseToolExecution;
 }
 
 export const BashOutputTool: React.FC<BashOutputToolProps> = ({ execution }) => {
   const { t } = useTranslation('components');
-  const input = execution.toolInput as BashOutputToolInput;
+  const input = execution.toolInput as unknown as BashOutputInput;
 
   // Debug logging
   console.log('🐚 [BashOutputTool] Rendering with execution:', {

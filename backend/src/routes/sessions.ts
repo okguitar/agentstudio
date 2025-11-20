@@ -191,7 +191,8 @@ function readClaudeHistorySessions(projectPath: string): ClaudeHistorySession[] 
 
     const jsonlFiles = fs.readdirSync(historyDir)
       .filter(file => file.endsWith('.jsonl'))
-      .filter(file => !file.startsWith('.'));
+      .filter(file => !file.startsWith('.'))
+      .filter(file => !file.startsWith('agent-')); // 过滤掉 agent-xxx.jsonl 文件
 
     console.log(`📁 [DEBUG] Found ${jsonlFiles.length} JSONL files:`, jsonlFiles);
 

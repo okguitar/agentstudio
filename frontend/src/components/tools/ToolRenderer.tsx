@@ -1,5 +1,5 @@
 import React from 'react';
-import type { ToolExecution } from './types';
+import type { BaseToolExecution } from './sdk-types';
 import { useTranslation } from 'react-i18next';
 
 // 导入所有工具组件
@@ -17,6 +17,10 @@ import { MultiEditTool } from './MultiEditTool';
 import { WriteTool } from './WriteTool';
 import { NotebookReadTool } from './NotebookReadTool';
 import { NotebookEditTool } from './NotebookEditTool';
+import { ListMcpResourcesTool } from './ListMcpResourcesTool';
+import { ReadMcpResourceTool } from './ReadMcpResourceTool';
+import { TimeMachineTool } from './TimeMachineTool';
+import { AskUserQuestionTool } from './AskUserQuestionTool';
 import { WebFetchTool } from './WebFetchTool';
 import { TodoWriteTool } from './TodoWriteTool';
 import { WebSearchTool } from './WebSearchTool';
@@ -25,7 +29,7 @@ import { parseMcpToolName } from './mcpUtils';
 import { BaseToolComponent } from './BaseToolComponent';
 
 interface ToolRendererProps {
-  execution: ToolExecution;
+  execution: BaseToolExecution;
 }
 
 /**
@@ -78,16 +82,28 @@ export const ToolRenderer: React.FC<ToolRendererProps> = ({ execution }) => {
     
     case 'NotebookRead':
       return <NotebookReadTool execution={execution} />;
-    
+
     case 'NotebookEdit':
       return <NotebookEditTool execution={execution} />;
-    
+
+    case 'ListMcpResources':
+      return <ListMcpResourcesTool execution={execution} />;
+
+    case 'ReadMcpResource':
+      return <ReadMcpResourceTool execution={execution} />;
+
+    case 'TimeMachine':
+      return <TimeMachineTool execution={execution} />;
+
+    case 'AskUserQuestion':
+      return <AskUserQuestionTool execution={execution} />;
+
     case 'WebFetch':
       return <WebFetchTool execution={execution} />;
-    
+
     case 'TodoWrite':
       return <TodoWriteTool execution={execution} />;
-    
+
     case 'WebSearch':
       return <WebSearchTool execution={execution} />;
     

@@ -1,11 +1,11 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { BaseToolComponent, ToolInput } from './BaseToolComponent';
-import type { ToolExecution } from './types';
+import type { BaseToolExecution } from './sdk-types';
 import { parseMcpToolName } from './mcpUtils';
 
 interface McpToolProps {
-  execution: ToolExecution;
+  execution: BaseToolExecution;
 }
 
 // MCP结果内容类型

@@ -1,15 +1,16 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { BaseToolComponent, ToolInput } from './BaseToolComponent';
-import type { ToolExecution, WebSearchToolInput } from './types';
+import type { BaseToolExecution } from './sdk-types';
+import type { WebSearchInput } from '@anthropic-ai/claude-agent-sdk/sdk-tools';
 
 interface WebSearchToolProps {
-  execution: ToolExecution;
+  execution: BaseToolExecution;
 }
 
 export const WebSearchTool: React.FC<WebSearchToolProps> = ({ execution }) => {
   const { t } = useTranslation('components');
-  const input = execution.toolInput as WebSearchToolInput;
+  const input = execution.toolInput as unknown as WebSearchInput;
 
   // 防御性检查：确保域名列表是数组
   const allowedDomains = Array.isArray(input?.allowed_domains) ? input.allowed_domains : [];

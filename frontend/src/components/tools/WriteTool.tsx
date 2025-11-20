@@ -2,15 +2,16 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { BaseToolComponent, ToolInput } from './BaseToolComponent';
 import { FileContentViewer } from '../FileContentViewer';
-import type { ToolExecution, WriteToolInput } from './types';
+import type { BaseToolExecution } from './sdk-types';
+import type { FileWriteInput } from '@anthropic-ai/claude-agent-sdk/sdk-tools';
 
 interface WriteToolProps {
-  execution: ToolExecution;
+  execution: BaseToolExecution;
 }
 
 export const WriteTool: React.FC<WriteToolProps> = ({ execution }) => {
   const { t } = useTranslation('components');
-  const input = execution.toolInput as WriteToolInput;
+  const input = execution.toolInput as unknown as FileWriteInput;
 
   // 提取文件名作为副标题
   const getSubtitle = () => {
