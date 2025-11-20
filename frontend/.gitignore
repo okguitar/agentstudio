@@ -24,3 +24,5 @@ dist-ssr
 *.sw?
 local-docs
 *.backup
+*storybook.log
+storybook-static
