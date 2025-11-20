@@ -1,15 +1,16 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { BaseToolComponent, ToolInput } from './BaseToolComponent';
-import type { ToolExecution, ReadToolInput } from './types';
+import type { BaseToolExecution } from './sdk-types';
+import type { FileReadInput } from '@anthropic-ai/claude-agent-sdk/sdk-tools';
 
 interface ReadToolProps {
-  execution: ToolExecution;
+  execution: BaseToolExecution;
 }
 
 export const ReadTool: React.FC<ReadToolProps> = ({ execution }) => {
   const { t } = useTranslation('components');
-  const input = execution.toolInput as ReadToolInput;
+  const input = execution.toolInput as unknown as FileReadInput;
 
   // 提取文件名作为副标题
   const getSubtitle = () => {

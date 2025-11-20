@@ -1,16 +1,17 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { BaseToolComponent } from './BaseToolComponent';
-import type { ToolExecution, KillBashToolInput } from './types';
+import type { BaseToolExecution } from './sdk-types';
+import type { KillShellInput } from '@anthropic-ai/claude-agent-sdk/sdk-tools';
 import { Square, Zap, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface KillBashToolProps {
-  execution: ToolExecution;
+  execution: BaseToolExecution;
 }
 
 export const KillBashTool: React.FC<KillBashToolProps> = ({ execution }) => {
   const { t } = useTranslation('components');
-  const input = execution.toolInput as KillBashToolInput;
+  const input = execution.toolInput as unknown as KillShellInput;
 
   // 解析执行结果
   const parseResult = () => {

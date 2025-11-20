@@ -2,15 +2,16 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { BaseToolComponent, ToolInput } from './BaseToolComponent';
 import { DiffViewer } from '../DiffViewer';
-import type { ToolExecution, EditToolInput, EditToolResult } from './types';
+import type { BaseToolExecution, EditToolResult } from './sdk-types';
+import type { FileEditInput } from '@anthropic-ai/claude-agent-sdk/sdk-tools';
 
 interface EditToolProps {
-  execution: ToolExecution;
+  execution: BaseToolExecution;
 }
 
 export const EditTool: React.FC<EditToolProps> = ({ execution }) => {
   const { t } = useTranslation('components');
-  const input = execution.toolInput as EditToolInput;
+  const input = execution.toolInput as unknown as FileEditInput;
   const result = execution.toolUseResult as EditToolResult;
 
   // 提取文件名作为副标题

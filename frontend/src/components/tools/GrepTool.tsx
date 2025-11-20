@@ -1,15 +1,16 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { BaseToolComponent, ToolInput } from './BaseToolComponent';
-import type { ToolExecution, GrepToolInput } from './types';
+import type { BaseToolExecution } from './sdk-types';
+import type { GrepInput } from '@anthropic-ai/claude-agent-sdk/sdk-tools';
 
 interface GrepToolProps {
-  execution: ToolExecution;
+  execution: BaseToolExecution;
 }
 
 export const GrepTool: React.FC<GrepToolProps> = ({ execution }) => {
   const { t } = useTranslation('components');
-  const input = execution.toolInput as GrepToolInput;
+  const input = execution.toolInput as unknown as GrepInput;
 
   // 显示搜索模式作为副标题
   const getSubtitle = () => {

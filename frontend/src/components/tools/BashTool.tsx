@@ -1,15 +1,16 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { BaseToolComponent } from './BaseToolComponent';
-import type { ToolExecution, BashToolInput } from './types';
+import type { BaseToolExecution } from './sdk-types';
+import type { BashInput } from '@anthropic-ai/claude-agent-sdk/sdk-tools';
 
 interface BashToolProps {
-  execution: ToolExecution;
+  execution: BaseToolExecution;
 }
 
 export const BashTool: React.FC<BashToolProps> = ({ execution }) => {
   const { t } = useTranslation('components');
-  const input = execution.toolInput as BashToolInput;
+  const input = execution.toolInput as unknown as BashInput;
 
   // 显示命令作为副标题
   const getSubtitle = () => {

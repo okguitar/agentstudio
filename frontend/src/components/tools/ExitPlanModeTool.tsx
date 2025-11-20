@@ -1,15 +1,16 @@
 import React from 'react';
 import { BaseToolComponent } from './BaseToolComponent';
-import type { ToolExecution, ExitPlanModeToolInput } from './types';
+import type { BaseToolExecution } from './sdk-types';
+import type { ExitPlanModeInput } from '@anthropic-ai/claude-agent-sdk/sdk-tools';
 import { useTranslation } from 'react-i18next';
 
 interface ExitPlanModeToolProps {
-  execution: ToolExecution;
+  execution: BaseToolExecution;
 }
 
 export const ExitPlanModeTool: React.FC<ExitPlanModeToolProps> = ({ execution }) => {
   const { t } = useTranslation('components');
-  const input = execution.toolInput as ExitPlanModeToolInput;
+  const input = execution.toolInput as unknown as ExitPlanModeInput;
 
   return (
     <BaseToolComponent execution={execution}>

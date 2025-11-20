@@ -1,4 +1,8 @@
 {
+  "common": {
+    "enabled": "Enabled",
+    "disabled": "Disabled"
+  },
   "projectForm": {
     "name": "Project Name",
     "nameRequired": "Project Name *",
@@ -742,6 +746,16 @@
     "directoryPath": "Directory path",
     "ignorePatterns": "Ignore patterns",
     "directoryStructure": "Directory structure:"
+  },
+  "timeMachineTool": {
+    "title": "Time Machine",
+    "description": "Rewind to previous conversation state and apply corrections",
+    "targetMessage": "Target Message",
+    "correction": "Correction",
+    "restoreCode": "Restore Code",
+    "result": "Result",
+    "rewinding": "Rewinding...",
+    "error": "Time machine execution failed"
   },
   "multiEditTool": {
     "filePath": "File path",
