@@ -1,16 +1,18 @@
-# AgentStudio
+# Agent Studio
 
 <div align="center">
 
-![AgentStudio](./frontend/public/cc-studio.png)
+![Agent Studio](./frontend/public/cc-studio.png)
 
-**A Claude Code-powered Personal Agent Workspace Platform**
+**🤖 Your Personal AI Agent Workspace**
+
+A modern agent workspace platform built on Claude agent SDK
 
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
 [![GitHub stars](https://img.shields.io/github/stars/okguitar/agentstudio.svg)](https://github.com/okguitar/agentstudio/stargazers)
 [![GitHub issues](https://img.shields.io/github/issues/okguitar/agentstudio.svg)](https://github.com/okguitar/agentstudio/issues)
 
-[English](README.md) | [中文](README.zh-CN.md)
+[English](#english) | [中文](#中文)
 
 </div>
 
@@ -18,489 +20,226 @@
 
 ## English
 
-### Overview
+### 📖 Overview
 
-AgentStudio is a modern, web-based personal agent workspace platform built on top of Claude Code SDK. It extends Claude Code's capabilities with a professional web interface, making AI-powered development accessible to everyone.
+Agent Studio is a modern web-based personal agent workspace platform built on top of [Claude Code SDK](https://github.com/anthropics/anthropic-quickstarts/tree/main/computer-use-demo). It provides a professional interface to harness the power of AI agents for various tasks, from content editing to code assistance.
+
+Screenshot:
+
+ ![screenshot.png](./docs/images/screen-en.png)
 
 ### ✨ Key Features
 
-#### 🎨 **Modern Web Interface**
-- Professional, intuitive web UI designed for both developers and general users
-- Real-time streaming responses for immediate feedback
-- Split-panel layout with chat interface and live preview
-- Responsive design optimized for desktop and mobile
+#### 🎨 Modern Web Interface
+- **Professional UI**: Clean, intuitive interface designed for productivity
+- **Real-time Streaming**: Instant AI responses with streaming support
+- **Responsive Design**: Works seamlessly on desktop and mobile devices
+- **Dark Mode**: Eye-friendly theme for extended work sessions
+- **Multi-language**: Full support for English and Chinese
 
-#### 🤖 **Multi-LLM Support**
-- **Claude Integration**: Built on Claude Code SDK with full API support
-- **Multiple Providers**: Support for OpenAI, GLM, DeepSeek, and other popular LLMs
-- **Flexible Configuration**: Easy switching between different AI models
-- **Streaming Input**: Real-time response streaming for better user experience
+#### 🤖 Advanced Agent System
+- **Built-in Agents**: Ready-to-use agents for slides, chat, and more
+- **Custom Agents**: Create specialized agents with custom system prompts
+- **Subagents**: Configure AI subagents with specific tool permissions
+- **Plugin Architecture**: Extensible agent system with community plugins
+- **Session Management**: Persistent conversation history per agent
 
-#### 🛠️ **Advanced Agent System**
-- **Built-in Agents**: PPT Editor, Code Assistant, Document Writer
-- **Custom Agents**: Create and configure your own specialized agents
-- **Subagents**: User-defined AI agents with custom system prompts
-- **Agent Marketplace**: Extensible agent development framework
-- **Message-level Tool Customization**: Fine-grained control over agent capabilities
+#### 🔌 MCP Integration
+- **MCP Servers**: Integrate with Model Context Protocol servers
+- **Tool Discovery**: Automatic detection of available MCP tools
+- **Status Monitoring**: Real-time health checks for MCP services
+- **Flexible Configuration**: Support for both stdio and HTTP MCP servers
 
-#### 📁 **Integrated File Management**
-- **Built-in File Browser**: Navigate and manage project files seamlessly
-- **File Content Viewer**: Preview and edit files directly in the interface
-- **Project-aware Operations**: Context-sensitive file operations
-- **Version Control Integration**: Git-aware file management
+#### 📦 Plugin Marketplace
+- **Plugin System**: Install agents, commands, skills, and MCP servers as plugins
+- **Marketplace Management**: Add custom or community marketplaces
+- **One-Click Install**: Easy installation and management of plugins
+- **Version Control**: Track and update plugin versions
 
-#### 🎯 **Specialized Tools**
-- **Slide Agent**: Create and edit presentations with AI assistance
-- **Code Explorer**: Navigate codebases with intelligent search
-- **Document Outline**: Structured document editing and management
-- **Image Upload**: Support for visual content analysis
-- **Tool Renderer**: Dynamic visualization of tool usage and results
+#### 📁 Project Management
+- **Project-aware**: Organize work into separate project contexts
+- **File Browser**: Integrated file explorer for project files
+- **Git Integration**: Version control awareness
+- **Multi-project**: Switch seamlessly between different projects
 
-#### 🔧 **Developer-Friendly**
-- **TypeScript Throughout**: Full type safety for better development experience
-- **Modern Stack**: React 18, Vite, TailwindCSS, Zustand
-- **Testing Suite**: Comprehensive test coverage with Vitest
-- **Hot Reload**: Fast development with instant code updates
+#### 🛠️ Developer Tools
+- **Skills System**: Reusable code skills for agents
+- **Commands**: Custom slash commands for quick actions
+- **Tool Renderer**: Visual feedback for AI tool usage
+- **API Access**: RESTful API for programmatic integration
 
-#### 🌐 **Deployment Ready**
-- **Local Development**: Easy setup for development environments
-- **One-Click Installation**: Simplified deployment for end users
-- **Production Builds**: Optimized builds for performance
-- **Cross-Platform**: Support for Linux, macOS, and Windows
+#### 🔐 Security & Privacy
+- **Local First**: All data stored locally on your machine
+- **API Key Management**: Secure storage of API credentials
+- **Permission Control**: Fine-grained control over agent capabilities
+- **No Telemetry**: Your data never leaves your infrastructure
 
 ### 🚀 Quick Start
 
-#### 🐳 Docker Deployment (Recommended for Quick Testing)
+#### Option 1: Docker (Recommended)
 
-**One-Command Setup:**
+The fastest way to get started:
 
 ```bash
-# Build and run with docker-compose
+# Build and run with Docker Compose
 docker build -t agentstudio:latest .
 docker-compose up -d
-```
 
-Then open http://localhost in your browser.
+# Access at http://localhost
+```
 
 **What you get:**
-- ✅ **All-in-One Container**: Frontend + Backend in a single container
-- ✅ **Data Persistence**: Automatic data backup via Docker volumes
-- ✅ **Zero Configuration**: Works out of the box
-- ✅ **Easy Updates**: Simple rebuild and restart
+- ✅ All-in-one container (frontend + backend)
+- ✅ Data persistence via Docker volumes
+- ✅ Zero configuration needed
+- ✅ Easy updates and rollbacks
 
-📖 **Full Documentation:**
-- [Docker Deployment Guide](DOCKER.md) - Detailed setup and configuration
-- [Quick Start Guide](QUICKSTART.md) - Step-by-step tutorial with examples
+📖 See [DOCKER.md](DOCKER.md) for detailed Docker deployment guide.
 
----
+#### Option 2: One-Click Installation
 
-#### For End Users (One-Click Installation)
-
-**🐧 Linux & 🍎 macOS - User Installation (Recommended - No sudo required)**
+**For Linux & macOS** (User space installation, no sudo required):
 
 ```bash
-# Install Agent Studio backend in user space
-curl -fsSL https://raw.githubusercontent.com/okguitar/agentstudio/main/scripts/remote-install.sh | bash
+# Install for current user
+curl -fsSL https://raw.githubusercontent.com/okguitar/agentstudio/main/scripts/install-macos.sh | bash
+
+# Or for Linux
+curl -fsSL https://raw.githubusercontent.com/okguitar/agentstudio/main/scripts/install-linux.sh | bash
 ```
 
-The installer will:
-- ✅ **Auto-detect and install Node.js 18+** (via system package manager or NVM)
-- ✅ **Auto-install pnpm** for faster package management (optional)
-- ✅ **Handle all dependencies** automatically
-- ✅ **Support all major Linux distributions** (Ubuntu, CentOS, Fedora, Arch, etc.)
-- ✅ **Work with both root and regular users**
-
-The installer will ask if you want to start the backend immediately. If you choose not to start now, you can start it later:
-
-```bash
-# Start the backend
-~/.agent-studio/start.sh
-
-# Stop the backend
-~/.agent-studio/stop.sh
-```
-
-**🪟 Windows - PowerShell Installation**
+**For Windows** (PowerShell):
 
 ```powershell
-# Run as Administrator in PowerShell
-PowerShell -ExecutionPolicy Bypass -Command "iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/okguitar/agentstudio/main/scripts/windows-install.ps1'))"
+# Download and run installer
+irm https://raw.githubusercontent.com/okguitar/agentstudio/main/scripts/windows-install.ps1 | iex
 ```
 
-The Windows installer will:
-- ✅ **Auto-install Node.js** (via Chocolatey, winget, or direct download)
-- ✅ **Auto-install Git** if not available
-- ✅ **Handle all dependencies** automatically
-- ✅ **Create start/stop batch scripts**
-
-**Windows Alternative - Simple Batch Script**
-If you already have Node.js and Git installed:
-
-```batch
-# Download and run the simple installer
-curl -o windows-install-simple.bat https://raw.githubusercontent.com/okguitar/agentstudio/main/scripts/windows-install-simple.bat
-windows-install-simple.bat
-```
-
-**Access the application:**
-1. Open your browser and visit: **https://agentstudio-frontend.vercel.app/**
-2. In the web interface, go to **Settings → API Configuration**
-3. Enter your backend URL: `http://localhost:4936`
-4. Click "Test Connection" to verify
-
-**Option 2: System Service Installation (Requires sudo)**
-
-For production deployments with automatic startup on boot:
-
-```bash
-# Install as system service with auto-start
-curl -fsSL https://raw.githubusercontent.com/okguitar/agentstudio/main/scripts/remote-install.sh | sudo bash
-```
-
-After installation, manage the service:
-```bash
-agent-studio start    # Start the service
-agent-studio stop     # Stop the service
-agent-studio restart  # Restart the service
-agent-studio status   # Check service status
-agent-studio logs     # View logs
-agent-studio config   # Edit configuration
-```
-
-Then access the web interface at **https://agentstudio-frontend.vercel.app/** and configure the backend URL in Settings.
-
-#### For Developers (Development Setup)
+#### Option 3: Manual Development Setup
 
 **Prerequisites:**
-- Node.js 18+
-- pnpm (recommended) or npm
+- Node.js 18+ (with npm or pnpm)
 - Git
 
-**Installation:**
+**Installation Steps:**
+
 ```bash
-# Clone the repository
+# 1. Clone the repository
 git clone https://github.com/okguitar/agentstudio.git
 cd agentstudio
 
-# Install dependencies
+# 2. Install dependencies (using pnpm recommended)
 pnpm install
+# or: npm run setup
 
-# Start development servers (both frontend and backend)
+# 3. Configure environment variables
+cp backend/.env.example backend/.env
+# Edit backend/.env and add your API keys
+
+# 4. Start development servers
+pnpm run dev
+# Frontend: http://localhost:3000
+# Backend: http://localhost:4936
+```
+
+
+### 📚 Core Concepts
+
+#### Agents
+Agents are AI assistants configured with specific:
+- **System Prompts**: Define agent personality and behavior
+- **Allowed Tools**: Control what the agent can do
+- **Permission Mode**: Set approval requirements for actions
+- **Claude Version**: Choose which Claude model to use
+
+#### Projects
+Projects are workspaces containing:
+- Files and directories
+- Project-specific agents
+- Session histories
+- Custom configurations
+
+#### Plugins
+Plugins extend Agent Studio with:
+- **Agents**: Pre-configured AI agents
+- **Commands**: Slash commands for quick actions
+- **Skills**: Reusable code snippets
+- **MCP Servers**: Additional tool integrations
+
+#### MCP (Model Context Protocol)
+MCP servers provide additional capabilities to agents:
+- File system operations
+- Database access
+- API integrations
+- Custom tools
+
+### 📖 Usage Examples
+
+#### Creating a Custom Agent
+
+1. Navigate to **Agents** page
+2. Click **Create Agent**
+3. Configure agent properties:
+   - Name and description
+   - System prompt
+   - Allowed tools
+   - Permission mode
+4. Start chatting with your agent!
+
+#### Installing Plugins
+
+1. Go to **Plugins** page
+2. Add a marketplace (e.g., community marketplace)
+3. Browse available plugins
+4. Click **Install** on desired plugins
+5. Enable plugins in agent configuration
+
+#### Managing Projects
+
+1. Visit **Projects** page
+2. Create or select a project
+3. Associate agents with the project
+4. Work within project context
+
+### 🧪 Development
+
+```bash
+# Development mode (frontend + backend)
 pnpm run dev
 
-# Or start them separately
-pnpm run dev:frontend  # Frontend only (port 3000)
-pnpm run dev:backend   # Backend only (port 4936)
-```
+# Run tests
+pnpm run test
 
-**Build for production:**
-```bash
+# Type checking
+pnpm run type-check
+
+# Linting
+pnpm run lint
+
+# Build for production
 pnpm run build
-pnpm start
 ```
 
-### 📁 Project Structure
-
-```
-agentstudio/
-├── frontend/           # React frontend application
-│   ├── src/
-│   │   ├── components/ # Reusable UI components
-│   │   ├── pages/      # Page components
-│   │   ├── agents/     # Agent-specific components
-│   │   ├── hooks/      # React hooks and data fetching
-│   │   └── stores/     # State management (Zustand)
-│   └── public/         # Static assets
-├── backend/            # Node.js backend server
-│   ├── src/
-│   │   ├── routes/     # API endpoints
-│   │   ├── services/   # Business logic
-│   │   └── index.ts    # Server entry point
-│   └── dist/           # Built backend code
-├── shared/             # Shared types and utilities
-└── scripts/            # Installation and deployment scripts
-```
-
-### ⚙️ Configuration
-
-#### Environment Variables
-
-**For Development:**
-Create a `.env` file in the `backend/` directory:
-
-```env
-# AI Provider Configuration (choose one or more)
-ANTHROPIC_API_KEY=your_anthropic_api_key_here
-OPENAI_API_KEY=your_openai_api_key_here
-
-# Server Configuration
-PORT=4936
-NODE_ENV=development
-
-# File System
-SLIDES_DIR=../slides
-
-# CORS Configuration (for production)
-CORS_ORIGINS=https://your-frontend-domain.com
-```
-
-**For System Service Installation:**
-Edit the configuration file at `/etc/agent-studio/config.env`:
-
-```bash
-# Edit configuration
-agent-studio config
-```
-
-Configuration options:
-```env
-# Server configuration
-NODE_ENV=production
-PORT=4936
-SLIDES_DIR=/opt/slides
-
-# Optional: AI provider keys (configure if needed)
-# ANTHROPIC_API_KEY=your_anthropic_api_key_here
-# OPENAI_API_KEY=your_openai_api_key_here
-
-# Optional: CORS configuration for custom frontends
-# CORS_ORIGINS=https://your-frontend.vercel.app,https://custom-domain.com
-```
-
-#### API Configuration
-
-The frontend is hosted at **https://agentstudio-frontend.vercel.app/** and can connect to different backend instances:
-
-**For Local Backend:**
-1. Open **Settings → API Configuration** in the web interface
-2. Enter: `http://localhost:4936` (or your custom port)
-3. Click "Test Connection" to verify
-
-**For Remote Backend:**
-1. Deploy your backend to a server with a public IP or domain
-2. Configure the backend URL in Settings (e.g., `https://your-backend.com`)
-3. Ensure CORS is properly configured in your backend's `.env` file
-
-### 📋 Service Management
-
-#### System Service Commands (when installed with sudo)
-
-```bash
-# Basic service operations
-agent-studio start      # Start the service
-agent-studio stop       # Stop the service
-agent-studio restart    # Restart the service
-agent-studio status     # Check service status
-
-# Monitoring and logs
-agent-studio logs       # View real-time logs
-agent-studio health     # Check service health
-
-# Configuration
-agent-studio config     # Edit configuration file
-
-# Service details
-agent-studio uninstall  # Remove the service
-```
-
-#### Service Details
-
-**Installation Directories:**
-
-For user installation (no sudo):
-- Application: `~/.agent-studio`
-- Configuration: `~/.agent-studio-config/config.env`
-- Logs: `~/.agent-studio-logs/`
-- Slides: `~/slides`
-- Start script: `~/.agent-studio/start.sh`
-- Stop script: `~/.agent-studio/stop.sh`
-
-For system service installation (with sudo):
-- Application: `~/.agent-studio`
-- Configuration: `~/.agent-studio-config/config.env`
-- Logs: `~/.agent-studio-logs/`
-- Slides: `~/slides`
-
-**Log Files:**
-- Output log: `/var/log/agent-studio/output.log`
-- Error log: `/var/log/agent-studio/error.log`
-- Log rotation: Daily (30 days retention)
-
-**Service Integration:**
-- Linux: systemd service (`/etc/systemd/system/agent-studio.service`)
-- macOS: launchd service (`/Library/LaunchDaemons/com.agent-studio.backend.plist`)
-- Auto-start on boot enabled by default
-
-### 🔧 Troubleshooting
-
-#### Installation Issues
-
-**Node.js Installation Problems:**
-The installer automatically handles Node.js installation, but if you encounter issues:
-
-```bash
-# For Linux/macOS - Manual Node.js installation via NVM
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
-source ~/.bashrc
-nvm install --lts
-nvm use --lts
-
-# For Windows - Download from official website
-# Visit: https://nodejs.org/
-```
-
-**Ubuntu/Debian Specific Issues:**
-- **Root User Detection**: Fixed in latest installer - now properly supports both root and regular users
-- **TTY Issues**: Installer sets `CI=true` to handle non-interactive environments
-- **Build Failures**: Installer automatically retries with dev dependencies
-
-**Windows Installation Issues:**
-- **PowerShell Execution Policy**: Run `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`
-- **Missing Dependencies**: Installer will prompt to install Node.js, Git, and other requirements
-- **Permission Issues**: Run PowerShell as Administrator for system-wide installations
-
-#### Service Won't Start
-
-**For User Installation:**
-```bash
-# Check if backend is running
-curl http://localhost:4936/api/health
-
-# View logs
-cat ~/.agent-studio-logs/output.log
-cat ~/.agent-studio-logs/error.log
-
-# Restart backend
-~/.agent-studio/stop.sh
-~/.agent-studio/start.sh
-```
-
-**For System Service Installation:**
-```bash
-# Check service status
-agent-studio status
-
-# View logs for errors
-agent-studio logs
-
-# Verify configuration
-agent-studio config
-
-# Check if port is available
-lsof -i :4936
-```
-
-#### Common Issues
-
-**Permission Errors (User Installation):**
-```bash
-# Fix script permissions
-chmod +x ~/.agent-studio/start.sh
-chmod +x ~/.agent-studio/stop.sh
-
-# Fix directory permissions
-chmod -R 755 ~/.agent-studio
-```
-
-**Permission Errors (System Service):**
-```bash
-sudo chown -R agent-studio:agent-studio /opt/agent-studio
-sudo chown -R agent-studio:agent-studio /var/log/agent-studio
-```
-
-**Port Already in Use:**
-```bash
-# Find process using the port
-lsof -i :4936
-
-# Kill the process (replace PID with actual process ID)
-kill -9 <PID>
-
-# Or change port in configuration
-# Edit ~/.agent-studio-config/config.env and change PORT=8080
-```
-
-**Build Failures:**
-The installer now automatically handles build failures by:
-1. Installing dev dependencies
-2. Retrying the build
-3. Falling back to development mode if build still fails
-
-**Health Check:**
-```bash
-# For user installation
-curl http://localhost:4936/api/health
-
-# For system service
-agent-studio health
-```
-
-**Windows Specific Issues:**
-```batch
-REM Check if Node.js is available
-node --version
-
-REM Check if backend is running
-curl http://localhost:4936/api/health
-
-REM Start backend manually
-cd %USERPROFILE%\.agent-studio
-start.bat
-
-REM Stop backend
-stop.bat
-```
-
-### 📦 Updates
-
-To update an existing installation:
-
-```bash
-# Stop the service
-agent-studio stop
-
-# Update the code
-cd /opt/agent-studio
-git pull
-pnpm install
-pnpm run build:backend
-
-# Start the service
-agent-studio start
-```
-
-### 🧪 Testing
-
-```bash
-# Run all tests
-pnpm test
-
-# Run frontend tests only
-cd frontend && pnpm test
-
-# Run tests with coverage
-cd frontend && pnpm run test:coverage
-
-# Run tests with UI
-cd frontend && pnpm run test:ui
-```
-
-### 🛡️ Security
-
-- **API Key Protection**: Environment-based API key management
-- **CORS Configuration**: Configurable cross-origin policies
-- **Input Validation**: Comprehensive input sanitization
-- **Secure File Operations**: Sandboxed file system access
+### 📦 Tech Stack
+
+**Frontend:**
+- React 19 + TypeScript
+- Vite (build tool)
+- TailwindCSS (styling)
+- Zustand (state management)
+- React Query (server state)
+- React Router (routing)
+
+**Backend:**
+- Node.js + Express
+- TypeScript
+- Claude Agent SDK
+- JWT authentication
+- File-based storage
 
 ### 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
 
 ### 📄 License
 
@@ -508,20 +247,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ### 🙏 Acknowledgments
 
-- Built on top of [Claude Code SDK](https://claude.ai/code)
-- Inspired by modern development workflows
-- Community feedback and contributions
+- Built on [Claude Code SDK](https://github.com/anthropics/anthropic-quickstarts)
+- Inspired by the Claude Code project
+- Community plugin marketplace contributors
 
+### 📮 Support
 
-## Links
-
-| link | type | service | description |
-|:---|:---|:---|:---|
-| **[ctok.ai](https://ctok.ai/)** | 🤝 community | <small>✅ Claude Code<br>✅ Codex CLI</small> | Claude Code / Codex CLI carpool service. |
-
-
-## 中文文档
-
-请查看 [README.zh-CN.md](README.zh-CN.md) 获取中文文档。
-
----
+- 🐛 [Report Issues](https://github.com/okguitar/agentstudio/issues)
+- 💬 [Discussions](https://github.com/okguitar/agentstudio/discussions)
+- 📧 Email: okguitar@gmail.com
