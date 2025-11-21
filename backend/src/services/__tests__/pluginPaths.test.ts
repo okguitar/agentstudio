@@ -156,9 +156,12 @@ describe('PluginPaths', () => {
         // marketplace root exists
         if (pathStr.includes('test-market') && !pathStr.includes('plugin')) return true;
         // plugin manifest files exist for plugin1 and plugin2
-        if (pathStr.includes('plugin1') && pathStr.includes('.claude-plugin') && pathStr.includes('plugin.json')) return true;
-        if (pathStr.includes('plugin2') && pathStr.includes('.claude-plugin') && pathStr.includes('plugin.json')) return true;
-        // ensure directories exist
+        if (pathStr.includes('plugin1') && pathStr.includes('plugin.json')) return true;
+        if (pathStr.includes('plugin2') && pathStr.includes('plugin.json')) return true;
+        // .claude-plugin directory exists for plugin1 and plugin2
+        if (pathStr.includes('plugin1') && pathStr.includes('.claude-plugin')) return true;
+        if (pathStr.includes('plugin2') && pathStr.includes('.claude-plugin')) return true;
+        // ensure base directories exist
         if (pathStr.includes('.claude')) return true;
         return false;
       });
@@ -171,6 +174,7 @@ describe('PluginPaths', () => {
       });
       vi.mocked(fs.statSync).mockImplementation((p: any) => {
         const pathStr = p.toString();
+        // Only plugin directories should return true for isDirectory, not .git or README.md
         return {
           isDirectory: () => pathStr.includes('plugin1') || pathStr.includes('plugin2') || pathStr.includes('.git') || pathStr.includes('.claude')
         } as any;
