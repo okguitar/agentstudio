@@ -1,7 +1,8 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { BaseToolComponent, ToolInput } from './BaseToolComponent';
-import type { BaseToolExecution, ExtendedAgentInput } from './sdk-types';
+import type { BaseToolExecution } from './sdk-types';
+import type { AgentInput } from '@anthropic-ai/claude-agent-sdk/sdk-tools';
 
 interface TaskToolProps {
   execution: BaseToolExecution;
@@ -9,7 +10,7 @@ interface TaskToolProps {
 
 export const TaskTool: React.FC<TaskToolProps> = ({ execution }) => {
   const { t } = useTranslation('components');
-  const input = execution.toolInput as unknown as ExtendedAgentInput;
+  const input = execution.toolInput as unknown as AgentInput;
 
   // 显示任务描述作为副标题
   const getSubtitle = () => {
