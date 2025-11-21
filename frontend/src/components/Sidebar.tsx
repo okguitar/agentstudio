@@ -220,11 +220,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
           className="flex items-center space-x-3 w-full text-left hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-lg p-2"
         >
           <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-            <img src="/cc-studio.png" alt="CC Studio" className="w-10 h-10" />
+            <img src="/cc-studio.png" alt="Agent Studio" className="w-10 h-10" />
           </div>
-          <div className="flex flex-col">
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">CC Studio</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Claude Code Studio</p>
+          <div className="flex flex-col min-w-0">
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white whitespace-nowrap">Agent Studio</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">Your Agent Workspace</p>
           </div>
         </button>
       </div>
