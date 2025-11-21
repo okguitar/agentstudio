@@ -97,13 +97,6 @@ export interface NotebookReadToolInput {
 export type AllToolInputs = ToolInputSchemas | MultiEditInput | LSToolInput | NotebookReadToolInput;
 
 // 扩展 SDK 类型以添加项目特定功能
-export interface ExtendedAgentInput extends AgentInput {
-  // 扩展字段：模型选择
-  model?: 'sonnet' | 'opus' | 'haiku' | string;
-  // 扩展字段：恢复任务ID
-  resume?: string;
-}
-
 export interface ExtendedBashInput extends BashInput {
   // 保留项目特定的扩展字段
   enhancedDescription?: string;
