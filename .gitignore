@@ -62,3 +62,4 @@ coverage/
 .cursor/
 .specify/
 specs/
+.a2a/
