@@ -48,6 +48,32 @@ const app: express.Express = express();
   const PORT = config.port || 4936;
   const HOST = config.host || '0.0.0.0';
 
+  // Initialize system Claude version if needed
+  try {
+    const { initializeSystemVersion } = await import('./services/claudeVersionStorage.js');
+    const { exec } = await import('child_process');
+    const { promisify } = await import('util');
+    const execAsync = promisify(exec);
+
+    // Try to find Claude executable, but initialize anyway
+    let claudePath: string | null = null;
+    try {
+      const { stdout } = await execAsync('which claude');
+      if (stdout && stdout.trim()) {
+        claudePath = stdout.trim();
+        console.log(`[System] Found Claude CLI at: ${claudePath}`);
+      }
+    } catch (error) {
+      console.log('[System] Claude CLI not found in PATH, initializing without executable path');
+    }
+
+    // Initialize system version (with or without executable path)
+    await initializeSystemVersion(claudePath || '');
+    console.log(`[System] Initialized Claude version${claudePath ? ` from: ${claudePath}` : ' without executable path'}`);
+  } catch (error) {
+    console.warn('Failed to initialize system Claude version:', error);
+  }
+
   // Middleware
   app.use(helmet({
     contentSecurityPolicy: {

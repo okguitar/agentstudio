@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Bot,
   FolderOpen,
@@ -15,10 +15,6 @@ import { useAgents } from '../hooks/useAgents';
 import { SessionsDashboard } from '../components/SessionsDashboard';
 import { RecentActivity } from '../components/RecentActivity';
 import { useDashboardStats } from '../hooks/useDashboardStats';
-import { useClaudeVersions } from '../hooks/useClaudeVersions';
-import { ClaudeVersionSetupWizard } from '../components/ClaudeVersionSetupWizard';
-import { useBackendServices } from '../hooks/useBackendServices';
-import { getClaudeSetupStatus } from '../utils/onboardingStorage';
 import { useMobileContext } from '../contexts/MobileContext';
 
 export const DashboardPage: React.FC = () => {
@@ -26,9 +22,6 @@ export const DashboardPage: React.FC = () => {
   const { isMobile } = useMobileContext();
   const { data: agentsData } = useAgents();
   const { stats, isLoading } = useDashboardStats();
-  const { data: versionsData, isLoading: versionsLoading, refetch: refetchVersions } = useClaudeVersions();
-  const { currentServiceId } = useBackendServices();
-  const [showClaudeSetup, setShowClaudeSetup] = useState(false);
 
   const agents = agentsData?.agents || [];
 
@@ -36,28 +29,6 @@ export const DashboardPage: React.FC = () => {
   const displayAgents = agents.filter(agent => agent.enabled);
 
   const enabledAgents = displayAgents;
-
-  // Check if Claude setup is needed
-  const needsClaudeSetup = !versionsLoading && versionsData && (!versionsData.versions || versionsData.versions.length === 0);
-
-  React.useEffect(() => {
-    // Only show Claude wizard if backend needs setup (no versions)
-    if (needsClaudeSetup && currentServiceId) {
-      const alreadyCompleted = getClaudeSetupStatus(currentServiceId);
-      if (!alreadyCompleted) {
-        setShowClaudeSetup(true);
-      }
-    }
-  }, [needsClaudeSetup, currentServiceId]);
-
-  const handleClaudeSetupComplete = () => {
-    setShowClaudeSetup(false);
-    refetchVersions();
-  };
-
-  const handleClaudeSetupSkip = () => {
-    setShowClaudeSetup(false);
-  };
 
   const statCards = [
     {
@@ -96,14 +67,6 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <div className={`${isMobile ? 'p-4' : 'p-8'}`}>
-      {/* Claude 版本初始化引导（模态窗口） */}
-      {showClaudeSetup && (
-        <ClaudeVersionSetupWizard
-          onComplete={handleClaudeSetupComplete}
-          onSkip={handleClaudeSetupSkip}
-        />
-      )}
-
       {/* Header */}
       <div className="mb-6">
         <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold text-gray-900 dark:text-white`}>{t('dashboard.title')}</h1>

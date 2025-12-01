@@ -309,12 +309,13 @@ export async function deleteVersion(versionId: string): Promise<void> {
 }
 
 // 初始化系统版本（在启动时调用）
+
 export async function initializeSystemVersion(executablePath: string): Promise<ClaudeVersion> {
   const storage = await loadClaudeVersions();
-  
-  // 检查是否已存在系统版本
-  let systemVersion = storage.versions.find(v => v.isSystem);
-  
+
+  // 检查是否已存在系统供应商
+  let systemVersion = storage.versions.find(v => v.id === 'claude' && v.isSystem);
+
   if (systemVersion) {
     // 更新系统版本的路径（如果有变化）
     if (systemVersion.executablePath !== executablePath) {
@@ -324,15 +325,18 @@ export async function initializeSystemVersion(executablePath: string): Promise<C
     }
     return systemVersion;
   }
-  
-  // 创建系统版本
+
+  // 创建系统供应商
   const now = new Date().toISOString();
+  const hasExecutable = !!executablePath;
   systemVersion = {
-    id: 'system',
-    name: 'System Claude',
+    id: 'claude',
+    name: 'claude',
     alias: 'system',
-    description: '系统默认的 Claude Code 版本（通过 which claude 查找）',
-    executablePath,
+    description: hasExecutable
+      ? '系统默认的 Claude Code 版本（通过 which claude 查找）'
+      : '系统默认的 Claude 供应商（需要配置 API 密钥）',
+    executablePath: hasExecutable ? executablePath : undefined,
     isDefault: storage.versions.length === 0,
     isSystem: true,
     environmentVariables: {},
@@ -340,14 +344,14 @@ export async function initializeSystemVersion(executablePath: string): Promise<C
     createdAt: now,
     updatedAt: now
   };
-  
+
   storage.versions.unshift(systemVersion); // 系统版本放在最前面
-  
+
   // 如果这是第一个版本，设置为默认版本
   if (storage.versions.length === 1) {
     storage.defaultVersionId = systemVersion.id;
   }
-  
+
   await saveClaudeVersions(storage);
   return systemVersion;
 }

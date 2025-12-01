@@ -4,16 +4,17 @@ import { join } from 'path';
 import { homedir } from 'os';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { 
-  getAllVersions, 
-  getDefaultVersionId, 
-  setDefaultVersion, 
-  createVersion, 
-  updateVersion, 
-  deleteVersion, 
-  initializeSystemVersion 
+import {
+  getAllVersions,
+  getDefaultVersionId,
+  setDefaultVersion,
+  createVersion,
+  updateVersion,
+  deleteVersion,
+  initializeSystemVersion
 } from '../services/claudeVersionStorage';
 import { ClaudeVersionCreate, ClaudeVersionUpdate } from '../types/claude-versions';
+import { loadConfig } from '../config';
 
 const router: Router = express.Router();
 const execAsync = promisify(exec);
@@ -516,199 +517,5 @@ router.put('/claude-versions/:id/set-default', async (req, res) => {
   }
 });
 
-// POST /api/settings/claude-versions/detect - 检测 Claude CLI 安装
-router.post('/claude-versions/detect', async (req, res) => {
-  try {
-    const result = {
-      userInstalled: false,
-      systemInstalled: false,
-      userPath: null as string | null,
-      systemPath: null as string | null,
-      version: null as string | null,
-      packageManager: null as string | null
-    };
-
-    // 检测用户自己安装的 Claude CLI (全局安装)
-    try {
-      const { stdout: claudePath } = await execAsync('which claude');
-      if (claudePath && claudePath.trim()) {
-        const cleanPath = claudePath.trim();
-
-        // 检测是否是系统 npm 包自带的 (在项目 node_modules 中)
-        const projectRoot = process.cwd();
-        const isSystemPackage = cleanPath.includes(`${projectRoot}/node_modules`);
-
-        if (isSystemPackage) {
-          result.systemInstalled = true;
-          result.systemPath = cleanPath;
-        } else {
-          result.userInstalled = true;
-          result.userPath = cleanPath;
-        }
-
-        // 获取版本
-        try {
-          const { stdout: version } = await execAsync(`"${cleanPath}" --version`);
-          result.version = version.trim();
-        } catch (error) {
-          console.error('Failed to get Claude version:', error);
-        }
-
-        // 检测包管理器
-        if (result.userInstalled) {
-          result.packageManager = await detectClaudeCodeInstallationSource();
-        }
-      }
-    } catch (error) {
-      // Claude not in PATH, this is normal when running as npm package
-      console.log('Claude CLI not found in PATH, checking node_modules');
-    }
-
-    // 如果没有找到全局安装的，检查系统 npm 包（在多个可能的 node_modules 位置）
-    if (!result.systemInstalled) {
-      const projectRoot = process.cwd();
-      const possiblePaths = [
-        join(projectRoot, 'node_modules', '.bin', 'claude'),
-        join(projectRoot, 'backend', 'node_modules', '.bin', 'claude'),
-        join(projectRoot, '..', 'node_modules', '.bin', 'claude')
-      ];
-
-      for (const systemClaudePath of possiblePaths) {
-        try {
-          // 检查文件是否存在（.bin/claude 是符号链接，用 -e 而不是 -f）
-          const { stdout } = await execAsync(`test -e "${systemClaudePath}" && echo "exists"`);
-          if (stdout.trim() === 'exists') {
-            result.systemInstalled = true;
-            result.systemPath = systemClaudePath;
-
-            // 尝试获取版本
-            if (!result.version) {
-              try {
-                const { stdout: version } = await execAsync(`"${systemClaudePath}" --version`);
-                result.version = version.trim();
-              } catch (error) {
-                console.error('Failed to get system package version:', error);
-              }
-            }
-
-            console.log('Found Claude in node_modules:', systemClaudePath);
-            break; // Found it, stop searching
-          }
-        } catch (error) {
-          // Try next path
-          continue;
-        }
-      }
-
-      if (!result.systemInstalled) {
-        console.log('Claude not found in any node_modules location');
-      }
-    }
-
-    res.json(result);
-  } catch (error) {
-    console.error('Error detecting Claude CLI:', error);
-    res.status(500).json({
-      error: 'Failed to detect Claude CLI',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    });
-  }
-});
-
-// POST /api/settings/claude-versions/init-system - 初始化系统版本
-router.post('/claude-versions/init-system', async (req, res) => {
-  try {
-    const {
-      useUserInstalled,
-      authToken,
-      skipAuthToken
-    } = req.body;
-
-    let claudePath: string | null = null;
-
-    // 根据用户选择获取 Claude 路径
-    if (useUserInstalled) {
-      // 使用用户自己安装的
-      try {
-        const { stdout } = await execAsync('which claude');
-        const cleanPath = stdout.trim();
-        const projectRoot = process.cwd();
-
-        // 确保不是项目内的
-        if (!cleanPath.includes(`${projectRoot}/node_modules`)) {
-          claudePath = cleanPath;
-        } else {
-          return res.status(400).json({
-            error: 'Invalid selection',
-            message: '未找到用户全局安装的 Claude CLI'
-          });
-        }
-      } catch (error) {
-        return res.status(400).json({
-          error: 'Claude CLI not found',
-          message: '未找到用户安装的 Claude CLI'
-        });
-      }
-    } else {
-      // 使用系统 npm 包自带的（在 backend/node_modules 中）
-      try {
-        const projectRoot = process.cwd();
-        const systemClaudePath = join(projectRoot, 'backend', 'node_modules', '.bin', 'claude');
-        const { stdout } = await execAsync(`test -e "${systemClaudePath}" && echo "exists"`);
-
-        if (stdout.trim() === 'exists') {
-          claudePath = systemClaudePath;
-        } else {
-          return res.status(400).json({
-            error: 'System Claude not found',
-            message: '系统 npm 包中未找到 Claude CLI'
-          });
-        }
-      } catch (error) {
-        return res.status(400).json({
-          error: 'System Claude not found',
-          message: '系统 npm 包中未找到 Claude CLI'
-        });
-      }
-    }
-
-    if (!claudePath) {
-      return res.status(400).json({
-        error: 'No Claude CLI found',
-        message: '未找到可用的 Claude CLI'
-      });
-    }
-
-    // 准备环境变量
-    const environmentVariables: Record<string, string> = {};
-
-    if (authToken && !skipAuthToken) {
-      environmentVariables.ANTHROPIC_AUTH_TOKEN = authToken;
-    }
-
-    // 创建或更新系统版本
-    const { initializeSystemVersion, updateVersion } = await import('../services/claudeVersionStorage.js');
-    let systemVersion = await initializeSystemVersion(claudePath);
-
-    // 更新环境变量
-    if (Object.keys(environmentVariables).length > 0) {
-      systemVersion = await updateVersion(systemVersion.id, {
-        environmentVariables
-      });
-    }
-
-    res.json({
-      success: true,
-      version: systemVersion,
-      message: '系统版本初始化成功'
-    });
-  } catch (error) {
-    console.error('Error initializing system version:', error);
-    res.status(500).json({
-      error: 'Failed to initialize system version',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    });
-  }
-});
 
 export default router;
