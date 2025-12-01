@@ -116,7 +116,45 @@ export interface MessagePart {
   originalContent?: string; // For commands that need to preserve original content
 }
 
-// Built-in agents will be loaded from configuration files during initialization
-// No hardcoded agents - all agent data should be stored in configuration files
-// Example: ~/.claude-agent/agents/claude-code.json
-export const BUILTIN_AGENTS: Partial<AgentConfig>[] = [];
+// Built-in agents - these will be automatically created during initialization
+export const BUILTIN_AGENTS: Partial<AgentConfig>[] = [
+  {
+    id: 'claude-code',
+    name: 'Claude Code',
+    description: 'Claude Code 系统默认助手，基于 Claude Code SDK 的全功能开发助手',
+    systemPrompt: {
+      type: 'preset',
+      preset: 'claude_code'
+    },
+    permissionMode: 'acceptEdits',
+    model: 'sonnet',
+    maxTurns: undefined, // 不限制轮次
+    allowedTools: [
+      { name: 'Write', enabled: true },
+      { name: 'Read', enabled: true },
+      { name: 'Edit', enabled: true },
+      { name: 'Glob', enabled: true },
+      { name: 'Bash', enabled: true },
+      { name: 'Task', enabled: true },
+      { name: 'WebFetch', enabled: true },
+      { name: 'WebSearch', enabled: true },
+      { name: 'TodoWrite', enabled: true },
+      { name: 'NotebookEdit', enabled: true },
+      { name: 'KillShell', enabled: true },
+      { name: 'BashOutput', enabled: true },
+      { name: 'SlashCommand', enabled: true },
+      { name: 'ExitPlanMode', enabled: true },
+      { name: 'AskUserQuestion', enabled: true },
+      { name: 'Skill', enabled: true }
+    ],
+    ui: {
+      icon: '🔧',
+      headerTitle: 'Claude Code',
+      headerDescription: '基于 Claude Code SDK 的系统默认助手'
+    },
+    author: 'AgentStudio System',
+    tags: ['development', 'code', 'system'],
+    enabled: true,
+    source: 'local'
+  }
+];
