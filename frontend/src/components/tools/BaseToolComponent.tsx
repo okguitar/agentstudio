@@ -74,17 +74,28 @@ interface BaseToolProps {
   showResult?: boolean; // 是否显示工具结果，默认true
   isMcpTool?: boolean; // 标识是否为MCP工具
   hideToolName?: boolean; // 是否隐藏工具名称，仅显示图标和副标题
+  customIcon?: React.ReactNode; // 自定义图标
+  overrideToolName?: string; // 覆盖显示的工具名称
 }
 
-export const BaseToolComponent: React.FC<BaseToolProps> = ({ execution, children, subtitle, showResult = true, isMcpTool = false, hideToolName = true }) => {
+export const BaseToolComponent: React.FC<BaseToolProps> = ({
+  execution,
+  children,
+  subtitle,
+  showResult = true,
+  isMcpTool = false,
+  hideToolName = true,
+  customIcon,
+  overrideToolName
+}) => {
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
-  
+
   // 为MCP工具使用不同的图标和颜色
-  const Icon = isMcpTool 
-    ? Plug 
+  const Icon = isMcpTool
+    ? Plug
     : TOOL_ICONS[execution.toolName as keyof typeof TOOL_ICONS] || Terminal;
-  
+
   const colorClass = isMcpTool
     ? 'text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30'
     : TOOL_COLORS[execution.toolName as keyof typeof TOOL_COLORS] || 'text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700';
@@ -101,35 +112,34 @@ export const BaseToolComponent: React.FC<BaseToolProps> = ({ execution, children
       <div className="border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 max-w-full">
         {/* 可点击的工具头部 */}
         <div
-          className={`flex items-center justify-between cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
-            hideToolName ? 'p-2' : 'p-4'
-          }`}
+          className={`flex items-center justify-between cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${hideToolName ? 'p-2' : 'p-4'
+            }`}
           onClick={() => setIsExpanded(!isExpanded)}
         >
           <div className={`flex items-center space-x-2 flex-1 min-w-0`}>
-            <div className={`${hideToolName ? 'p-1.5' : 'p-2'} rounded-full ${
-              execution.isInterrupted
+            <div className={`${hideToolName ? 'p-1.5' : 'p-2'} rounded-full ${execution.isInterrupted
                 ? 'text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/30'
                 : colorClass
-            }`}>
+              }`}>
               {execution.isExecuting ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : execution.isInterrupted ? (
                 <AlertCircle className="w-4 h-4" />
+              ) : customIcon ? (
+                customIcon
               ) : (
                 <Icon className="w-4 h-4" />
               )}
             </div>
             <div className="min-w-0 flex-1">
               {!hideToolName && (
-                <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200">{execution.toolName}</h4>
+                <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200">{overrideToolName || execution.toolName}</h4>
               )}
               {subtitle && (
-                <p className={`text-xs truncate ${
-                  execution.isInterrupted
+                <p className={`text-xs truncate ${execution.isInterrupted
                     ? 'text-orange-600 dark:text-orange-400'
                     : 'text-gray-500 dark:text-gray-400'
-                }`}>
+                  }`}>
                   {execution.isInterrupted ? t('baseToolComponent.interrupted') : subtitle}
                 </p>
               )}
@@ -149,7 +159,7 @@ export const BaseToolComponent: React.FC<BaseToolProps> = ({ execution, children
           <div className="px-4 pb-4 border-t border-gray-200 dark:border-gray-700">
             <div className="pt-3">
               {children}
-              
+
               {/* 显示工具结果 */}
               {showResult && execution.toolResult && !execution.isError && (
                 <ToolOutput result={execution.toolResult} />
@@ -164,16 +174,16 @@ export const BaseToolComponent: React.FC<BaseToolProps> = ({ execution, children
 };
 
 // 输入参数显示组件
-export const ToolInput: React.FC<{ 
-  label: string; 
-  value: unknown; 
+export const ToolInput: React.FC<{
+  label: string;
+  value: unknown;
   className?: string;
   isCode?: boolean;
 }> = ({ label, value, className = '', isCode = false }) => {
   if (value === undefined || value === null || value === '') return null;
-  
+
   const displayValue = typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value);
-  
+
   return (
     <div className={`mb-2 ${className}`}>
       <span className="text-xs font-medium text-gray-600 dark:text-gray-400">{label}:</span>
@@ -200,11 +210,10 @@ export const ToolOutput: React.FC<{
   return (
     <div className={`mt-3 ${className}`}>
       <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">{t('baseToolComponent.executionResult')}</p>
-      <div className={`p-3 rounded-md border text-sm font-mono whitespace-pre-wrap break-words ${
-        isError
+      <div className={`p-3 rounded-md border text-sm font-mono whitespace-pre-wrap break-words ${isError
           ? 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800 text-red-700 dark:text-red-300'
           : 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800 text-green-700 dark:text-green-300'
-      }`}>
+        }`}>
         {result}
       </div>
     </div>

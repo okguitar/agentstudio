@@ -20,8 +20,13 @@ import configRouter from './routes/config';
 import slackRouter from './routes/slack';
 import skillsRouter from './routes/skills';
 import pluginsRouter from './routes/plugins';
+import a2aRouter from './routes/a2a';
+import a2aManagementRouter from './routes/a2aManagement';
 import { authMiddleware } from './middleware/auth';
+import { httpsOnly } from './middleware/httpsOnly';
 import { loadConfig, getSlidesDir } from './config/index';
+import { cleanupOrphanedTasks } from './services/a2a/taskCleanup';
+import { startTaskTimeoutMonitor, stopTaskTimeoutMonitor } from './jobs/taskTimeoutMonitor';
 
 dotenv.config();
 
@@ -154,6 +159,27 @@ const app: express.Express = express();
   const slidesDir = await getSlidesDir();
   app.use('/slides', express.static(slidesDir));
 
+  // A2A Task Lifecycle: Clean up orphaned tasks on startup
+  console.info('[A2A] Running orphaned task cleanup...');
+  try {
+    const cleanedCount = await cleanupOrphanedTasks();
+    if (cleanedCount > 0) {
+      console.info(`[A2A] Cleaned up ${cleanedCount} orphaned tasks`);
+    } else {
+      console.info('[A2A] No orphaned tasks found');
+    }
+  } catch (error) {
+    console.error('[A2A] Error during orphaned task cleanup:', error);
+  }
+
+  // A2A Task Lifecycle: Start task timeout monitor
+  console.info('[A2A] Starting task timeout monitor...');
+  try {
+    startTaskTimeoutMonitor();
+  } catch (error) {
+    console.error('[A2A] Error starting task timeout monitor:', error);
+  }
+
   // Static files - serve frontend in production
   if (process.env.NODE_ENV === 'production') {
     // Check if frontend build exists
@@ -195,20 +221,8 @@ const app: express.Express = express();
     slackRouter
   );
 
-  // Protected routes - Require authentication
-  app.use('/api/files', authMiddleware, filesRouter);
-  app.use('/api/agents', authMiddleware, agentsRouter);
-  app.use('/api/mcp', authMiddleware, mcpRouter);
-  app.use('/api/sessions', authMiddleware, sessionsRouter);
-  app.use('/api/settings', authMiddleware, settingsRouter);
-  app.use('/api/config', authMiddleware, configRouter);
-  app.use('/api/commands', authMiddleware, commandsRouter);
-  app.use('/api/subagents', authMiddleware, subagentsRouter);
-  app.use('/api/projects', authMiddleware, projectsRouter);
-  app.use('/api/skills', authMiddleware, skillsRouter);
-  app.use('/api/plugins', authMiddleware, pluginsRouter);
-  app.use('/api/media', mediaAuthRouter); // Media auth endpoints
-  app.use('/media', mediaRouter); // Remove authMiddleware - media files are now public
+  // A2A Protocol routes - Public but require API key authentication and HTTPS in production
+  app.use('/a2a/:a2aAgentId', httpsOnly, a2aRouter);
 
   // Health check
   app.get('/api/health', (req, res) => {
@@ -219,6 +233,39 @@ const app: express.Express = express();
       name: 'agentstudio-backend'
     });
   });
+
+  // A2A Health check (public endpoint, no authentication required)
+  app.get('/api/a2a/health', (req, res) => {
+    res.json({
+      status: 'ok',
+      version: '1.0.0',
+      protocol: 'A2A',
+      timestamp: new Date().toISOString(),
+      features: {
+        agentCard: true,
+        syncMessages: true,
+        asyncTasks: true,
+        taskManagement: true,
+        apiKeyAuth: true,
+      },
+    });
+  });
+
+  // Protected routes - Require authentication
+  app.use('/api/files', authMiddleware, filesRouter);
+  app.use('/api/agents', authMiddleware, agentsRouter);
+  app.use('/api/mcp', authMiddleware, mcpRouter);
+  app.use('/api/sessions', authMiddleware, sessionsRouter);
+  app.use('/api/settings', authMiddleware, settingsRouter);
+  app.use('/api/config', authMiddleware, configRouter);
+  app.use('/api/commands', authMiddleware, commandsRouter);
+  app.use('/api/subagents', authMiddleware, subagentsRouter);
+  app.use('/api/projects', authMiddleware, projectsRouter);
+  app.use('/api/a2a', authMiddleware, a2aManagementRouter); // A2A management routes with user auth
+  app.use('/api/skills', authMiddleware, skillsRouter);
+  app.use('/api/plugins', authMiddleware, pluginsRouter);
+  app.use('/api/media', mediaAuthRouter); // Media auth endpoints
+  app.use('/media', mediaRouter); // Remove authMiddleware - media files are now public
 
   // Error handling
   app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -233,6 +280,25 @@ const app: express.Express = express();
   app.use('*', (req, res) => {
     res.status(404).json({ error: 'Route not found' });
   });
+
+  // Graceful shutdown handler
+  const gracefulShutdown = () => {
+    console.info('[A2A] Shutting down gracefully...');
+
+    // Stop task timeout monitor
+    try {
+      stopTaskTimeoutMonitor();
+    } catch (error) {
+      console.error('[A2A] Error stopping task timeout monitor:', error);
+    }
+
+    // Exit process
+    process.exit(0);
+  };
+
+  // Register shutdown handlers
+  process.on('SIGTERM', gracefulShutdown);
+  process.on('SIGINT', gracefulShutdown);
 
   // Check if this file is being run directly (CommonJS way)
   if (require.main === module) {

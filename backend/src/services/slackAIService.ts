@@ -41,7 +41,7 @@ function parseAgentFromMessage(text: string, allAgents: any[]): { agentId: strin
     // Then try name match
     if (!agent) {
       agent = allAgents.find(a => a.name.toLowerCase().includes(potentialAgentId.toLowerCase()) ||
-                                     potentialAgentId.toLowerCase().includes(a.name.toLowerCase()));
+        potentialAgentId.toLowerCase().includes(a.name.toLowerCase()));
     }
 
     // Finally try to match with common aliases
@@ -176,9 +176,9 @@ function matchProject(
     const realPathBasename = project.realPath ? path.basename(project.realPath).toLowerCase() : '';
 
     return pathBasename.includes(identifierLower) ||
-           identifierLower.includes(pathBasename) ||
-           realPathBasename.includes(identifierLower) ||
-           identifierLower.includes(realPathBasename);
+      identifierLower.includes(pathBasename) ||
+      realPathBasename.includes(identifierLower) ||
+      identifierLower.includes(realPathBasename);
   });
 
   // Combine all partial matches and remove duplicates, then prioritize
@@ -273,7 +273,7 @@ export class SlackAIService {
     // Check if already cached
     if (this.defaultProjectPath) {
       const allProjects = this.projectStorage.getAllProjects();
-      const cachedProject = allProjects.find(p => 
+      const cachedProject = allProjects.find(p =>
         p.realPath === this.defaultProjectPath || p.path === this.defaultProjectPath
       );
       if (cachedProject) {
@@ -285,13 +285,13 @@ export class SlackAIService {
     const { defaultProject: envProjectPath } = await getSlackConfig();
     if (envProjectPath) {
       console.log(`📂 Found SLACK_DEFAULT_PROJECT config: ${envProjectPath}`);
-      
+
       // Check if this path exists in projects
       const allProjects = this.projectStorage.getAllProjects();
-      const envProject = allProjects.find(p => 
+      const envProject = allProjects.find(p =>
         p.realPath === envProjectPath || p.path === envProjectPath
       );
-      
+
       if (envProject) {
         this.defaultProjectPath = envProject.realPath || envProject.path;
         console.log(`✅ Using default project from config: ${envProject.name}`);
@@ -316,7 +316,7 @@ export class SlackAIService {
     if (!fs.existsSync(slackAppPath)) {
       console.log(`📁 Creating default Slack project: ${slackAppPath}`);
       fs.mkdirSync(slackAppPath, { recursive: true });
-      
+
       // Create a README.md to explain this directory
       const readmePath = path.join(slackAppPath, 'README.md');
       const readmeContent = `# Slack App Default Project
@@ -350,7 +350,7 @@ Feel free to organize your files here as needed. This directory is managed by Ag
 
     // Check if slack-app exists in projects metadata
     const allProjects = this.projectStorage.getAllProjects();
-    let slackAppProject = allProjects.find(p => 
+    let slackAppProject = allProjects.find(p =>
       p.realPath === slackAppPath || p.path === slackAppPath || p.dirName === 'slack-app'
     );
 
@@ -390,7 +390,7 @@ Feel free to organize your files here as needed. This directory is managed by Ag
 
     this.defaultProjectPath = slackAppProject.realPath || slackAppProject.path;
     console.log(`✅ Using default Slack project: ${slackAppProject.name} at ${this.defaultProjectPath}`);
-    
+
     return slackAppProject;
   }
 
@@ -416,7 +416,7 @@ Feel free to organize your files here as needed. This directory is managed by Ag
 
     // Check if this thread already has a session with project info
     const existingSessionId = slackThreadMapper.getSessionId(threadTs, event.channel);
-    const existingMapping = existingSessionId 
+    const existingMapping = existingSessionId
       ? slackThreadMapper.getThreadForSession(existingSessionId)
       : null;
     const hasExistingProject = existingMapping && existingMapping.projectPath;
@@ -469,7 +469,7 @@ Feel free to organize your files here as needed. This directory is managed by Ag
         // No project specified, use default project
         console.log(`📂 No project specified, using default project`);
         selectedProject = await this.getDefaultProject();
-        
+
         if (selectedProject) {
           console.log(`✅ Using default project: ${selectedProject.name} at ${selectedProject.realPath || selectedProject.path}`);
         } else {
@@ -481,8 +481,8 @@ Feel free to organize your files here as needed. This directory is managed by Ag
       if (existingMapping && existingMapping.projectPath) {
         console.log(`♻️  Reusing project from existing thread: ${existingMapping.projectPath}`);
         // Find the project in allProjects
-        const existingProject = allProjects.find(p => 
-          p.realPath === existingMapping.projectPath || 
+        const existingProject = allProjects.find(p =>
+          p.realPath === existingMapping.projectPath ||
           p.path === existingMapping.projectPath
         );
         if (existingProject) {
@@ -565,9 +565,9 @@ Feel free to organize your files here as needed. This directory is managed by Ag
    */
   private async processSlackFiles(files: SlackFile[]): Promise<any[]> {
     const images: any[] = [];
-    
+
     // Filter for image files only
-    const imageFiles = files.filter(file => 
+    const imageFiles = files.filter(file =>
       file.mimetype.startsWith('image/')
     );
 
@@ -580,13 +580,13 @@ Feel free to organize your files here as needed. This directory is managed by Ag
     for (const file of imageFiles) {
       try {
         console.log(`📥 Downloading image: ${file.name} (${file.mimetype}, ${file.size} bytes)`);
-        
+
         // Download file from Slack
         const fileData = await this.slackClient.downloadFile(file.url_private_download);
-        
+
         // Convert to base64
         const base64Data = fileData.toString('base64');
-        
+
         images.push({
           id: file.id,
           mediaType: file.mimetype,
@@ -702,10 +702,10 @@ Feel free to organize your files here as needed. This directory is managed by Ag
     // Extract key parameters (limit to avoid too long output)
     const params: string[] = [];
     const keys = Object.keys(input);
-    
+
     // Check if this tool has large content parameters
     const largeParams = largeContentParams[toolName] || [];
-    
+
     // Filter out large content params if they exceed threshold
     const displayKeys: string[] = [];
     for (const key of keys) {
@@ -722,11 +722,11 @@ Feel free to organize your files here as needed. This directory is managed by Ag
       displayKeys.push(key);
       if (displayKeys.length >= 3) break; // Limit to 3 displayed params
     }
-    
+
     // Format the displayed parameters
     for (const key of displayKeys) {
       let value = input[key];
-      
+
       // Simplify long values
       if (typeof value === 'string') {
         if (value.length > 50) {
@@ -741,7 +741,7 @@ Feel free to organize your files here as needed. This directory is managed by Ag
           value = jsonStr;
         }
       }
-      
+
       params.push(`${key}=${value}`);
     }
 
@@ -764,10 +764,10 @@ Feel free to organize your files here as needed. This directory is managed by Ag
       }
     }
 
-    const moreParamsInfo = hiddenLargeParams.length > 0 
+    const moreParamsInfo = hiddenLargeParams.length > 0
       ? `, ${hiddenLargeParams.join(', ')}`
       : (Object.keys(input).length > displayKeys.length ? ', ...' : '');
-    
+
     return `🔧 ${toolName}(${params.join(', ')}${moreParamsInfo})`;
   }
 
@@ -779,7 +779,7 @@ Feel free to organize your files here as needed. This directory is managed by Ag
     fullResponse: string
   ): string {
     let statusText = '';
-    
+
     // Add thinking content if exists
     if (thinkingContent) {
       statusText += `💭 **思考中...**\n${thinkingContent}\n\n`;
@@ -821,7 +821,7 @@ Feel free to organize your files here as needed. This directory is managed by Ag
   ) {
     return async (force: boolean = false) => {
       const now = Date.now();
-      
+
       // Throttle updates unless forced
       if (!force && now - stateRef.lastUpdateTime < updateThrottleMs) {
         stateRef.pendingUpdate = true;
@@ -979,22 +979,22 @@ Feel free to organize your files here as needed. This directory is managed by Ag
     if (sdkMessage.type === 'tool_use' && sdkMessage.subtype === 'start') {
       const toolName = sdkMessage.tool_use?.name || 'unknown';
       const toolInput = sdkMessage.tool_use?.input || {};
-      
+
       const formattedTool = this.formatToolCall(toolName, toolInput);
-      
+
       // Append to fullResponse to maintain chronological order
       stateRef.fullResponse += `${stateRef.fullResponse ? '\n' : ''}${formattedTool}\n`;
-      
+
       // Clear thinking when tool starts
       if (stateRef.thinkingContent) {
         stateRef.thinkingContent = '';
       }
-      
+
       console.log(`🔧 Tool started: ${toolName}, formatted: ${formattedTool}`);
       console.log(`📝 Current fullResponse: ${stateRef.fullResponse}`);
       return true; // Trigger update
     }
-    
+
     // Also check for assistant message with tool_use content
     if (sdkMessage.type === 'assistant' && sdkMessage.message?.content) {
       const content = sdkMessage.message.content;
@@ -1003,17 +1003,17 @@ Feel free to organize your files here as needed. This directory is managed by Ag
           if (block.type === 'tool_use') {
             const toolName = block.name || 'unknown';
             const toolInput = block.input || {};
-            
+
             const formattedTool = this.formatToolCall(toolName, toolInput);
-            
+
             // Append to fullResponse to maintain chronological order
             stateRef.fullResponse += `${stateRef.fullResponse ? '\n' : ''}${formattedTool}\n`;
-            
+
             // Clear thinking when tool starts
             if (stateRef.thinkingContent) {
               stateRef.thinkingContent = '';
             }
-            
+
             console.log(`🔧 Tool found in assistant content: ${toolName}, formatted: ${formattedTool}`);
             console.log(`📝 Current fullResponse: ${stateRef.fullResponse}`);
             return true; // Trigger update
@@ -1021,7 +1021,7 @@ Feel free to organize your files here as needed. This directory is managed by Ag
         }
       }
     }
-    
+
     return false;
   }
 
@@ -1043,7 +1043,7 @@ Feel free to organize your files here as needed. This directory is managed by Ag
       lastUpdateTime: 0,
       pendingUpdate: false
     };
-    
+
     let hasError = false;
     let isResponseComplete = false;
     const updateThrottleMs = 1000;
@@ -1081,10 +1081,10 @@ Feel free to organize your files here as needed. This directory is managed by Ag
             console.log('⏰ Response timeout, treating as complete');
             isResponseComplete = true;
             clearInterval(updateIntervalId);
-            resolve({ 
-              fullResponse: stateRef.fullResponse, 
+            resolve({
+              fullResponse: stateRef.fullResponse,
               toolUsageInfo: '', // No longer used, kept for interface compatibility
-              hasError 
+              hasError
             });
           }
         }, 30000); // 30 second timeout
@@ -1114,14 +1114,14 @@ Feel free to organize your files here as needed. This directory is managed by Ag
           isResponseComplete = true;
           clearTimeout(timeoutId);
           clearInterval(updateIntervalId);
-          
+
           // Final update with error
           await updateSlackMessage(true);
-          
-          resolve({ 
-            fullResponse: stateRef.fullResponse, 
+
+          resolve({
+            fullResponse: stateRef.fullResponse,
             toolUsageInfo: '', // No longer used, kept for interface compatibility
-            hasError 
+            hasError
           });
         }
 
@@ -1131,32 +1131,32 @@ Feel free to organize your files here as needed. This directory is managed by Ag
           isResponseComplete = true;
           clearTimeout(timeoutId);
           clearInterval(updateIntervalId);
-          
+
           // Final update
           await updateSlackMessage(true);
-          
-          resolve({ 
-            fullResponse: stateRef.fullResponse, 
+
+          resolve({
+            fullResponse: stateRef.fullResponse,
             toolUsageInfo: '', // No longer used, kept for interface compatibility
-            hasError 
+            hasError
           });
         }
       }).catch((error: unknown) => {
         console.error('❌ Error in sendMessage:', error);
         hasError = true;
         isResponseComplete = true;
-        
+
         if (timeoutId) {
           clearTimeout(timeoutId);
         }
         if (updateIntervalId) {
           clearInterval(updateIntervalId);
         }
-        
-        resolve({ 
-          fullResponse: stateRef.fullResponse, 
+
+        resolve({
+          fullResponse: stateRef.fullResponse,
           toolUsageInfo: '', // No longer used, kept for interface compatibility
-          hasError: true 
+          hasError: true
         });
       });
     });
@@ -1203,14 +1203,16 @@ Feel free to organize your files here as needed. This directory is managed by Ag
       const projectPath = selectedProject ? (selectedProject.realPath || selectedProject.path) : undefined;
       const queryOptions = await buildQueryOptions(
         agent,
-        projectPath,
+        selectedProject?.realPath || selectedProject?.path,
         undefined, // mcpTools
         undefined, // permissionMode
-        claudeConfig.model, // model - use first model from default version
-        claudeConfig.versionId, // claudeVersion - use system default version
+        claudeConfig.model,
+        claudeConfig.versionId,
         claudeConfig.env || undefined // defaultEnv
       );
-      
+
+
+
       // Slack uses block-based streaming (no partial messages)
       queryOptions.includePartialMessages = false;
 
@@ -1249,7 +1251,7 @@ Feel free to organize your files here as needed. This directory is managed by Ag
         let images: any[] = [];
         if (event.files && event.files.length > 0) {
           images = await this.processSlackFiles(event.files);
-          
+
           if (images.length > 0) {
             console.log(`📸 Processed ${images.length} image(s) for Claude`);
           }

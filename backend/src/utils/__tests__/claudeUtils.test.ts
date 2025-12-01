@@ -36,6 +36,11 @@ vi.mock('../../services/claudeVersionStorage', () => ({
   getVersionByIdInternal: vi.fn()
 }));
 
+// Mock a2aIntegration
+vi.mock('../../services/a2a/a2aIntegration', () => ({
+  integrateA2AMcpServer: vi.fn()
+}));
+
 describe('claudeUtils', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -62,9 +67,9 @@ describe('claudeUtils', () => {
           callback(null, { stdout: './node_modules/.bin/claude\n', stderr: '' });
         } else {
           // Second call (which -a) returns multiple paths
-          callback(null, { 
-            stdout: './node_modules/.bin/claude\n/usr/local/bin/claude\n', 
-            stderr: '' 
+          callback(null, {
+            stdout: './node_modules/.bin/claude\n/usr/local/bin/claude\n',
+            stderr: ''
           });
         }
         return {} as any;

@@ -961,5 +961,143 @@
         "invalidSkillName": "技能名称无效"
       }
     }
+  },
+  "a2a": {
+    "title": "A2A Protocol 管理",
+    "subtitle": "管理 Agent-to-Agent 通信协议",
+    "tabs": {
+      "overview": "概览",
+      "keys": "API密钥",
+      "external": "外部Agent",
+      "tasks": "任务监控"
+    },
+    "overview": {
+      "agentIdentity": "Agent Identity",
+      "a2aAgentId": "A2A Agent ID",
+      "copy": "复制",
+      "projectId": "项目ID",
+      "agentType": "Agent类型",
+      "notEnabled": "此项目尚未启用A2A功能",
+      "enableHint": "创建API密钥后自动启用",
+      "agentCard": "Agent Card",
+      "quickStats": "快速统计",
+      "apiKeys": "API密钥",
+      "externalAgents": "外部Agent",
+      "activeTasks": "活跃任务"
+    },
+    "keys": {
+      "title": "API密钥管理",
+      "createButton": "创建密钥",
+      "noKeys": "还没有API密钥",
+      "createFirst": "创建第一个API密钥",
+      "active": "Active",
+      "description": "描述",
+      "createdAt": "创建时间",
+      "lastUsed": "最后使用",
+      "usageCount": "使用次数",
+      "show": "显示",
+      "hide": "隐藏",
+      "delete": "删除",
+      "deleteConfirm": "确定要删除这个API密钥吗？此操作不可撤销。",
+      "createModal": {
+        "title": "创建API密钥",
+        "descriptionLabel": "描述 *",
+        "descriptionPlaceholder": "例如：生产环境密钥",
+        "descriptionHint": "用于标识此API密钥的用途，最多100个字符",
+        "descriptionRequired": "描述不能为空",
+        "descriptionTooLong": "描述不能超过100个字符",
+        "importantNote": "重要提示:",
+        "importantHint": "API密钥创建后只会完整显示一次，请妥善保存。",
+        "cancel": "取消",
+        "creating": "创建中...",
+        "createKey": "创建密钥"
+      },
+      "copySuccess": "已复制到剪贴板",
+      "copyFailed": "复制失败"
+    },
+    "external": {
+      "title": "外部Agent配置",
+      "addButton": "添加Agent",
+      "noAgents": "还没有配置外部Agent",
+      "addFirst": "添加第一个外部Agent",
+      "name": "Agent名称",
+      "url": "URL",
+      "apiKey": "API密钥",
+      "description": "描述",
+      "enabled": "启用",
+      "disabled": "禁用",
+      "enable": "启用",
+      "disable": "禁用",
+      "edit": "编辑",
+      "delete": "删除",
+      "deleteConfirm": "确定要删除这个外部Agent吗？此操作不可撤销。",
+      "addModal": {
+        "title": "添加外部Agent",
+        "editTitle": "编辑外部Agent",
+        "nameLabel": "Agent名称 *",
+        "namePlaceholder": "例如：数据分析Agent",
+        "nameRequired": "Agent名称不能为空",
+        "nameTooLong": "Agent名称不能超过50个字符",
+        "urlLabel": "URL *",
+        "urlPlaceholder": "https://agent.example.com/a2a/uuid",
+        "urlRequired": "URL不能为空",
+        "urlInvalid": "URL格式无效",
+        "urlHint": "必须是完整的HTTP或HTTPS URL",
+        "apiKeyLabel": "API密钥 *",
+        "apiKeyRequired": "API密钥不能为空",
+        "apiKeyPlaceholder": "agt_proj_external_key_here",
+        "descriptionLabel": "描述",
+        "descriptionPlaceholder": "可选的Agent功能描述",
+        "enabledLabel": "启用此Agent",
+        "cancel": "取消",
+        "addAgent": "添加Agent",
+        "saveChanges": "保存修改"
+      },
+      "errors": {
+        "createFailed": "创建外部Agent失败",
+        "updateFailed": "更新外部Agent失败",
+        "deleteFailed": "删除外部Agent失败"
+      },
+      "success": {
+        "create": "外部Agent创建成功",
+        "update": "外部Agent更新成功",
+        "delete": "外部Agent删除成功"
+      }
+    },
+    "tasks": {
+      "title": "任务监控",
+      "noTasks": "还没有任务记录",
+      "notEnabled": "需要先启用A2A功能",
+      "refresh": "刷新",
+      "status": {
+        "pending": "等待中",
+        "running": "运行中",
+        "completed": "已完成",
+        "failed": "失败",
+        "canceled": "已取消"
+      },
+      "taskId": "任务ID",
+      "createdAt": "创建时间",
+      "startedAt": "开始时间",
+      "completedAt": "完成时间",
+      "cancel": "取消任务",
+      "cancelConfirm": "确定要取消这个任务吗？",
+      "cancelSuccess": "任务已取消",
+      "cancelFailed": "取消任务失败"
+    },
+    "errors": {
+      "createKeyFailed": "创建API密钥失败",
+      "deleteKeyFailed": "删除API密钥失败",
+      "loadConfigFailed": "加载A2A配置失败",
+      "updateConfigFailed": "更新A2A配置失败",
+      "loadMappingFailed": "加载Agent映射失败",
+      "loadCardFailed": "加载Agent Card失败",
+      "loadTasksFailed": "加载任务列表失败"
+    },
+    "success": {
+      "createKey": "API密钥创建成功",
+      "deleteKey": "API密钥删除成功",
+      "updateConfig": "A2A配置更新成功"
+    }
   }
 }

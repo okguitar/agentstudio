@@ -13,6 +13,7 @@ import * as os from 'os';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { getDefaultVersionId, getAllVersionsInternal, getVersionByIdInternal } from '../services/claudeVersionStorage.js';
+import { integrateA2AMcpServer } from '../services/a2a/a2aIntegration.js';
 
 const execAsync = promisify(exec);
 
@@ -24,15 +25,15 @@ export async function getClaudeExecutablePath(): Promise<string | null> {
   try {
     const { stdout: claudePath } = await execAsync('which claude');
     if (!claudePath) return null;
-    
+
     const cleanPath = claudePath.trim();
-    
+
     // Skip local node_modules paths - we want global installation
     if (cleanPath.includes('node_modules/.bin')) {
       try {
         const { stdout: allClaudes } = await execAsync('which -a claude');
         const claudes = allClaudes.trim().split('\n');
-        
+
         // Find the first non-local installation
         for (const claudePathOption of claudes) {
           if (!claudePathOption.includes('node_modules/.bin')) {
@@ -43,7 +44,7 @@ export async function getClaudeExecutablePath(): Promise<string | null> {
         // Fallback to the first path found
       }
     }
-    
+
     return cleanPath;
   } catch (error) {
     console.error('Failed to get claude executable path:', error);
@@ -85,7 +86,7 @@ export async function getDefaultClaudeVersionEnv(): Promise<Record<string, strin
         // Log all environment variables
         const envKeys = Object.keys(defaultVersion.environmentVariables);
         console.log(`📝 Environment variables from default version:`, envKeys);
-        
+
         // Log proxy-related variables
         const proxyVars = ['HTTP_PROXY', 'HTTPS_PROXY', 'http_proxy', 'https_proxy', 'NO_PROXY', 'no_proxy', 'ALL_PROXY', 'all_proxy'];
         const configuredProxyVars = proxyVars.filter(key => defaultVersion.environmentVariables![key]);
@@ -98,8 +99,8 @@ export async function getDefaultClaudeVersionEnv(): Promise<Record<string, strin
 
         // Check if this version has API keys configured
         const hasApiKey = defaultVersion.environmentVariables.ANTHROPIC_API_KEY ||
-                         defaultVersion.environmentVariables.OPENAI_API_KEY ||
-                         defaultVersion.environmentVariables.ANTHROPIC_AUTH_TOKEN;
+          defaultVersion.environmentVariables.OPENAI_API_KEY ||
+          defaultVersion.environmentVariables.ANTHROPIC_AUTH_TOKEN;
 
         if (hasApiKey) {
           console.log(`✅ Default Claude version has API key configured`);
@@ -146,7 +147,7 @@ export async function buildQueryOptions(
   } else if (agent.workingDirectory) {
     cwd = path.resolve(process.cwd(), agent.workingDirectory);
   }
-  
+
   // Determine permission mode: request > agent config > default
   let finalPermissionMode = 'default';
   if (permissionMode) {
@@ -154,7 +155,7 @@ export async function buildQueryOptions(
   } else if (agent.permissionMode) {
     finalPermissionMode = agent.permissionMode;
   }
-  
+
   // Determine model: request > agent config > default (sonnet)
   let finalModel = 'sonnet';
   if (model) {
@@ -176,11 +177,11 @@ export async function buildQueryOptions(
   // Get Claude executable path and environment variables based on version
   let executablePath: string | null = null;
   let environmentVariables: Record<string, string> = {};
-  
+
   try {
     // First check if agent has a specific Claude version
     const agentClaudeVersion = claudeVersion || agent.claudeVersionId;
-    
+
     if (agentClaudeVersion) {
       // Use specified version
       const selectedVersion = await getVersionByIdInternal(agentClaudeVersion);
@@ -216,7 +217,7 @@ export async function buildQueryOptions(
             }
             environmentVariables = defaultVersion.environmentVariables || {};
             console.log(`🎯 Using default Claude version: ${defaultVersion.alias} (${executablePath})`);
-            
+
             // Log environment variables details
             const envVarKeys = Object.keys(environmentVariables);
             if (envVarKeys.length > 0) {
@@ -249,7 +250,7 @@ export async function buildQueryOptions(
   }
 
   console.log(`🎯 Using Claude executable path: ${executablePath}`);
-  
+
   const queryOptions: Options = {
     systemPrompt: agent.systemPrompt, // 直接使用 Agent 配置中的 systemPrompt
     allowedTools,
@@ -264,11 +265,11 @@ export async function buildQueryOptions(
   if (executablePath) {
     queryOptions.pathToClaudeCodeExecutable = executablePath;
   }
-  
+
   // Always merge environment variables with process.env
   // This ensures critical variables like PATH, etc. are available
   queryOptions.env = { ...process.env, ...environmentVariables };
-  
+
   // Normalize proxy variables: if uppercase is set, also set lowercase (and vice versa)
   // This ensures proxy settings work regardless of which form the client library checks first
   const proxyNormalizations = [
@@ -277,7 +278,7 @@ export async function buildQueryOptions(
     ['NO_PROXY', 'no_proxy'],
     ['ALL_PROXY', 'all_proxy']
   ];
-  
+
   for (const [upper, lower] of proxyNormalizations) {
     if (environmentVariables[upper] && !environmentVariables[lower]) {
       // If uppercase is configured but lowercase isn't, set lowercase to match
@@ -292,7 +293,7 @@ export async function buildQueryOptions(
     // Log final proxy configuration that will be used
     const proxyVars = ['HTTP_PROXY', 'HTTPS_PROXY', 'http_proxy', 'https_proxy', 'NO_PROXY', 'no_proxy', 'ALL_PROXY', 'all_proxy'];
     const finalProxyVars = proxyVars.filter(key => queryOptions.env?.[key]);
-    
+
     // Log API keys presence (but not values)
     const apiKeys = ['ANTHROPIC_API_KEY', 'OPENAI_API_KEY', 'ANTHROPIC_AUTH_TOKEN'];
     const configuredApiKeys = apiKeys.filter(key => queryOptions.env?.[key]);
@@ -307,7 +308,7 @@ export async function buildQueryOptions(
   if (mcpTools && mcpTools.length > 0) {
     try {
       const mcpConfigContent = readMcpConfig();
-        
+
       // Extract unique server names from mcpTools
       const serverNames = new Set<string>();
       for (const tool of mcpTools) {
@@ -317,7 +318,7 @@ export async function buildQueryOptions(
           serverNames.add(parts[1]);
         }
       }
-      
+
       // Build mcpServers configuration
       const mcpServers: Record<string, any> = {};
       for (const serverName of serverNames) {
@@ -338,7 +339,7 @@ export async function buildQueryOptions(
           }
         }
       }
-      
+
       if (Object.keys(mcpServers).length > 0) {
         queryOptions.mcpServers = mcpServers;
         console.log('🔧 MCP Servers configured:', Object.keys(mcpServers));
@@ -347,6 +348,11 @@ export async function buildQueryOptions(
       console.error('Failed to parse MCP configuration:', error);
     }
   }
+
+  // Integrate A2A SDK MCP server
+  // We use the determined project path or current working directory
+  const currentProjectId = projectPath || cwd;
+  await integrateA2AMcpServer(queryOptions, currentProjectId);
 
   return queryOptions;
 }

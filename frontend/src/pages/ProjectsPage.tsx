@@ -16,6 +16,7 @@ import { FileBrowser } from '../components/FileBrowser';
 import { ProjectMemoryModal } from '../components/ProjectMemoryModal';
 import { ProjectCommandsModal } from '../components/ProjectCommandsModal';
 import { ProjectSubAgentsModal } from '../components/ProjectSubAgentsModal';
+import { ProjectA2AModal } from '../components/ProjectA2AModal';
 
 interface Project {
   id: string;
@@ -252,6 +253,7 @@ export const ProjectsPage: React.FC = () => {
   const [memoryProject, setMemoryProject] = useState<Project | null>(null);
   const [commandsProject, setCommandsProject] = useState<Project | null>(null);
   const [subAgentsProject, setSubAgentsProject] = useState<Project | null>(null);
+  const [a2aProject, setA2aProject] = useState<Project | null>(null);
   const [agentSelectProject, setAgentSelectProject] = useState<Project | null>(null);
   const [showImportModal, setShowImportModal] = useState(false);
   const [importProjectPath, setImportProjectPath] = useState('');
@@ -397,6 +399,10 @@ export const ProjectsPage: React.FC = () => {
 
   const handleSubAgentManagement = (project: Project) => {
     setSubAgentsProject(project);
+  };
+
+  const handleA2AManagement = (project: Project) => {
+    setA2aProject(project);
   };
 
   const handleAgentChanged = (projectId: string, newAgent: any) => {
@@ -606,6 +612,7 @@ export const ProjectsPage: React.FC = () => {
           onMemoryManagement={handleMemoryManagement}
           onCommandManagement={handleCommandManagement}
           onSubAgentManagement={handleSubAgentManagement}
+          onA2AManagement={handleA2AManagement}
           onDeleteProject={handleDeleteProject}
           onAgentChanged={handleAgentChanged}
         />
@@ -715,6 +722,14 @@ export const ProjectsPage: React.FC = () => {
         <ProjectSubAgentsModal
           project={subAgentsProject}
           onClose={() => setSubAgentsProject(null)}
+        />
+      )}
+
+      {/* A2A Management Modal */}
+      {a2aProject && (
+        <ProjectA2AModal
+          project={a2aProject}
+          onClose={() => setA2aProject(null)}
         />
       )}
 

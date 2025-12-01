@@ -932,5 +932,113 @@
       "back": "上一步",
       "create": "创建版本"
     }
+  },
+  "a2aManagement": {
+    "title": "A2A协议管理",
+    "project": "项目",
+    "selectedProject": "项目: {{project}}",
+    "noProjectSelected": "未选择项目",
+    "tabs": {
+      "overview": "概览",
+      "apiKeys": "API密钥",
+      "external": "外部Agent",
+      "tasks": "任务"
+    },
+    "actions": {
+      "copy": "复制",
+      "createKey": "创建密钥",
+      "cancel": "取消",
+      "delete": "删除",
+      "edit": "编辑",
+      "enable": "启用",
+      "disable": "禁用",
+      "hide": "隐藏",
+      "show": "显示",
+      "addAgent": "添加Agent"
+    },
+    "overview": {
+      "agentIdentity": "Agent身份",
+      "a2aAgentId": "A2A Agent ID",
+      "projectId": "项目ID",
+      "agentType": "Agent类型",
+      "agentCard": "Agent卡片",
+      "apiKeys": "API密钥",
+      "externalAgents": "外部Agent",
+      "activeTasks": "活跃任务",
+      "notEnabled": "此项目尚未启用A2A功能",
+      "enableAfterCreatingKey": "创建API密钥后自动启用"
+    },
+    "agentCard": {
+      "context": "Agent上下文",
+      "skills": "可用技能",
+      "security": "安全认证"
+    },
+    "apiKeys": {
+      "title": "API密钥管理",
+      "noKeys": "还没有API密钥",
+      "createFirstKey": "创建第一个API密钥",
+      "createdAt": "创建时间",
+      "lastUsed": "最后使用",
+      "usageCount": "使用次数",
+      "keyHidden": "完整密钥仅在创建时显示一次，出于安全考虑现已隐藏"
+    },
+    "external": {
+      "title": "外部Agent配置",
+      "noAgents": "还没有配置外部Agent",
+      "addFirstAgent": "添加第一个外部Agent",
+      "enabled": "启用",
+      "disabled": "禁用",
+      "form": {
+        "name": "Agent名称",
+        "namePlaceholder": "例如：数据分析Agent",
+        "url": "URL",
+        "urlPlaceholder": "https://agent.example.com/a2a/uuid",
+        "apiKey": "API密钥",
+        "apiKeyPlaceholder": "agt_proj_external_key_here",
+        "description": "描述",
+        "descriptionPlaceholder": "可选的Agent功能描述",
+        "enableThisAgent": "启用此Agent",
+        "urlHelp": "必须是完整的HTTP或HTTPS URL"
+      },
+      "modal": {
+        "addTitle": "添加外部Agent",
+        "editTitle": "编辑外部Agent",
+        "saveChanges": "保存修改",
+        "addAgent": "添加Agent"
+      }
+    },
+    "tasks": {
+      "title": "任务监控",
+      "needA2AEnabled": "需要先启用A2A功能",
+      "noTasks": "还没有任务记录",
+      "createdAt": "创建时间",
+      "startedAt": "开始时间",
+      "completedAt": "完成时间"
+    },
+    "modals": {
+      "createKey": {
+        "title": "创建API密钥",
+        "description": "描述",
+        "descriptionPlaceholder": "例如：生产环境密钥",
+        "descriptionHelp": "用于标识此API密钥的用途，最多100个字符",
+        "important": "重要提示",
+        "securityNote": "API密钥创建后只会完整显示一次，请妥善保存。",
+        "creating": "创建中..."
+      }
+    },
+    "validation": {
+      "descriptionRequired": "描述不能为空",
+      "descriptionTooLong": "描述不能超过100个字符",
+      "agentNameRequired": "Agent名称不能为空",
+      "agentNameTooLong": "Agent名称不能超过50个字符",
+      "urlRequired": "URL不能为空",
+      "invalidUrl": "URL格式无效",
+      "apiKeyRequired": "API密钥不能为空",
+      "required": "此字段为必填项"
+    },
+    "confirmations": {
+      "deleteApiKey": "确定要删除这个API密钥吗？此操作不可撤销。",
+      "deleteExternalAgent": "确定要删除这个外部Agent吗？此操作不可撤销。"
+    }
   }
 }
