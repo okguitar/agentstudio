@@ -1,7 +1,6 @@
 import { readFile, writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
-import { homedir } from 'os';
 import { ClaudeVersion, ClaudeVersionCreate, ClaudeVersionUpdate, ModelConfig } from '../types/claude-versions';
+import { CLAUDE_AGENT_DIR, CLAUDE_VERSIONS_FILE } from '../config/paths.js';
 
 // 默认模型配置（用于Claude系统版本）
 const DEFAULT_MODELS: ModelConfig[] = [
@@ -19,8 +18,7 @@ const DEFAULT_MODELS: ModelConfig[] = [
   }
 ];
 
-const CLAUDE_AGENT_DIR = join(homedir(), '.claude-agent');
-const VERSIONS_FILE = join(CLAUDE_AGENT_DIR, 'claude-versions.json');
+const VERSIONS_FILE = CLAUDE_VERSIONS_FILE;
 
 interface VersionStorage {
   versions: ClaudeVersion[];

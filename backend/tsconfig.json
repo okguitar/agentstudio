@@ -10,7 +10,6 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "outDir": "./dist",
-    "rootDir": "./src",
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
@@ -21,6 +20,6 @@
       "*/streaming": ["../shared/types/streaming"]
     }
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "../shared/**/*"],
   "exclude": ["node_modules", "dist"]
 }

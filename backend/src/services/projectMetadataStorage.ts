@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as os from 'os';
 import { ProjectMetadata, ProjectWithAgentInfo } from '../types/projects';
 import { AgentStorage } from './agentStorage';
+import { CLAUDE_AGENT_DIR, PROJECTS_METADATA_FILE } from '../config/paths.js';
 
 interface ProjectMetadataStore {
   [projectPath: string]: ProjectMetadata;
@@ -16,8 +17,7 @@ export class ProjectMetadataStorage {
   private metadataCache: ProjectMetadataStore | null = null;
 
   constructor() {
-    const baseDir = path.join(os.homedir(), '.claude-agent');
-    this.metadataFilePath = path.join(baseDir, 'projects.json');
+    this.metadataFilePath = PROJECTS_METADATA_FILE;
     this.projectsDir = path.join(os.homedir(), '.claude', 'projects');
     this.claudeConfigPath = path.join(os.homedir(), '.claude.json');
     this.agentStorage = new AgentStorage();
@@ -27,9 +27,8 @@ export class ProjectMetadataStorage {
   }
 
   private ensureDirectoriesExist(): void {
-    const baseDir = path.dirname(this.metadataFilePath);
-    if (!fs.existsSync(baseDir)) {
-      fs.mkdirSync(baseDir, { recursive: true });
+    if (!fs.existsSync(CLAUDE_AGENT_DIR)) {
+      fs.mkdirSync(CLAUDE_AGENT_DIR, { recursive: true });
     }
     if (!fs.existsSync(this.projectsDir)) {
       fs.mkdirSync(this.projectsDir, { recursive: true });

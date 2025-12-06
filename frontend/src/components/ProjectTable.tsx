@@ -9,7 +9,8 @@ import {
   Command,
   Bot,
   Trash2,
-  ChevronDown
+  ChevronDown,
+  Shield
 } from 'lucide-react';
 import { formatRelativeTime } from '../utils';
 import { API_BASE } from '../lib/config';
@@ -48,6 +49,7 @@ interface ProjectTableProps {
   onMemoryManagement: (project: Project) => void;
   onCommandManagement: (project: Project) => void;
   onSubAgentManagement: (project: Project) => void;
+  onA2AManagement: (project: Project) => void;
   onDeleteProject: (project: Project) => void;
   onAgentChanged?: (projectId: string, newAgent: Agent) => void;
   className?: string;
@@ -60,6 +62,7 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({
   onMemoryManagement,
   onCommandManagement,
   onSubAgentManagement,
+  onA2AManagement,
   onDeleteProject,
   onAgentChanged,
   className = '',
@@ -195,6 +198,13 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({
         <Bot className="w-3.5 h-3.5" />
       </button>
       <button
+        onClick={() => onA2AManagement(project)}
+        className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/50 rounded-md transition-colors"
+        title="A2A Protocol 管理"
+      >
+        <Shield className="w-3.5 h-3.5" />
+      </button>
+      <button
         onClick={() => onDeleteProject(project)}
         className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/50 rounded-md transition-colors"
         title={t('projects.actions.delete')}
@@ -275,6 +285,13 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({
                     title={t('components:projectSubAgents.title')}
                   >
                     <Bot className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => onA2AManagement(project)}
+                    className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/50 rounded-md transition-colors"
+                    title="A2A Protocol 管理"
+                  >
+                    <Shield className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => onDeleteProject(project)}

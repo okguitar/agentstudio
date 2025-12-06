@@ -930,5 +930,113 @@
       "back": "Back",
       "create": "Create Version"
     }
+  },
+  "a2aManagement": {
+    "title": "A2A Protocol Management",
+    "project": "Project",
+    "selectedProject": "Project: {{project}}",
+    "noProjectSelected": "No project selected",
+    "tabs": {
+      "overview": "Overview",
+      "apiKeys": "API Keys",
+      "external": "External Agents",
+      "tasks": "Tasks"
+    },
+    "actions": {
+      "copy": "Copy",
+      "createKey": "Create Key",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "edit": "Edit",
+      "enable": "Enable",
+      "disable": "Disable",
+      "hide": "Hide",
+      "show": "Show",
+      "addAgent": "Add Agent"
+    },
+    "overview": {
+      "agentIdentity": "Agent Identity",
+      "a2aAgentId": "A2A Agent ID",
+      "projectId": "Project ID",
+      "agentType": "Agent Type",
+      "agentCard": "Agent Card",
+      "apiKeys": "API Keys",
+      "externalAgents": "External Agents",
+      "activeTasks": "Active Tasks",
+      "notEnabled": "A2A functionality is not enabled for this project",
+      "enableAfterCreatingKey": "Automatically enabled after creating API key"
+    },
+    "agentCard": {
+      "context": "Agent Context",
+      "skills": "Available Skills",
+      "security": "Security Authentication"
+    },
+    "apiKeys": {
+      "title": "API Key Management",
+      "noKeys": "No API keys yet",
+      "createFirstKey": "Create First API Key",
+      "createdAt": "Created",
+      "lastUsed": "Last Used",
+      "usageCount": "Usage Count",
+      "keyHidden": "Complete key is only shown once during creation for security reasons"
+    },
+    "external": {
+      "title": "External Agent Configuration",
+      "noAgents": "No external agents configured yet",
+      "addFirstAgent": "Add First External Agent",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "form": {
+        "name": "Agent Name",
+        "namePlaceholder": "e.g., Data Analysis Agent",
+        "url": "URL",
+        "urlPlaceholder": "https://agent.example.com/a2a/uuid",
+        "apiKey": "API Key",
+        "apiKeyPlaceholder": "agt_proj_external_key_here",
+        "description": "Description",
+        "descriptionPlaceholder": "Optional description of agent functionality",
+        "enableThisAgent": "Enable this agent",
+        "urlHelp": "Must be a complete HTTP or HTTPS URL"
+      },
+      "modal": {
+        "addTitle": "Add External Agent",
+        "editTitle": "Edit External Agent",
+        "saveChanges": "Save Changes",
+        "addAgent": "Add Agent"
+      }
+    },
+    "tasks": {
+      "title": "Task Monitoring",
+      "needA2AEnabled": "A2A functionality needs to be enabled first",
+      "noTasks": "No task records yet",
+      "createdAt": "Created",
+      "startedAt": "Started",
+      "completedAt": "Completed"
+    },
+    "modals": {
+      "createKey": {
+        "title": "Create API Key",
+        "description": "Description",
+        "descriptionPlaceholder": "e.g., Production environment key",
+        "descriptionHelp": "Used to identify the purpose of this API key, max 100 characters",
+        "important": "Important",
+        "securityNote": "API keys are only shown in full once after creation. Please save them securely.",
+        "creating": "Creating..."
+      }
+    },
+    "validation": {
+      "descriptionRequired": "Description cannot be empty",
+      "descriptionTooLong": "Description cannot exceed 100 characters",
+      "agentNameRequired": "Agent name cannot be empty",
+      "agentNameTooLong": "Agent name cannot exceed 50 characters",
+      "urlRequired": "URL cannot be empty",
+      "invalidUrl": "Invalid URL format",
+      "apiKeyRequired": "API key cannot be empty",
+      "required": "This field is required"
+    },
+    "confirmations": {
+      "deleteApiKey": "Are you sure you want to delete this API key? This action cannot be undone.",
+      "deleteExternalAgent": "Are you sure you want to delete this external agent? This action cannot be undone."
+    }
   }
 }

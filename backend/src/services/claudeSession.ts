@@ -34,13 +34,13 @@ export class ClaudeSession {
     this.claudeVersionId = claudeVersionId;
     // 从 options.cwd 获取项目路径
     this.projectPath = options.cwd || null;
-    
+
     // 如果提供了 resumeSessionId，设置为当前 claudeSessionId
     if (this.resumeSessionId) {
       this.claudeSessionId = this.resumeSessionId;
       console.log(`🔧 [DEBUG] Set claudeSessionId to resumeSessionId: ${this.claudeSessionId}`);
     }
-    
+
     console.log(`🔧 [DEBUG] About to call initializeClaudeStream for agent: ${agentId}`);
     // 立即初始化 Claude 流（Streaming Input Mode）
     this.initializeClaudeStream();
@@ -81,14 +81,6 @@ export class ClaudeSession {
   getClaudeVersionId(): string | undefined {
     return this.claudeVersionId;
   }
-
-  /**
-   * 检查会话是否活跃
-   */
-  isSessionActive(): boolean {
-    return this.isActive;
-  }
-
 
   /**
    * 初始化 Claude 流 - 只调用一次，启动持续会话
@@ -143,7 +135,7 @@ export class ClaudeSession {
    */
   async sendMessage(message: any, responseCallback: (response: SDKMessage) => void): Promise<string> {
     console.log(`🔧 [DEBUG] sendMessage called for agent: ${this.agentId}, isActive: ${this.isActive}, isBackgroundRunning: ${this.isBackgroundRunning}`);
-    
+
     if (!this.isActive) {
       throw new Error('Session is not active');
     }
@@ -193,12 +185,12 @@ export class ClaudeSession {
         // 简单的响应分发：只使用第一个回调（因为我们现在保证了没有并发）
         const requestIds = Array.from(this.responseCallbacks.keys());
         const currentRequestId = requestIds.length > 0 ? requestIds[0] : null;
-        
+
         console.log(`🔧 [DEBUG] Current pending requests: ${requestIds.length}, processing: ${currentRequestId}`);
-        
+
         // 分发响应给对应的请求
         if (currentRequestId && this.responseCallbacks.has(currentRequestId)) {
-          const callback = this.responseCallbacks.get(currentRequestId)!;          
+          const callback = this.responseCallbacks.get(currentRequestId)!;
           callback(sdkMessage);
 
           // 如果是 result 事件，该请求完成，从队列中移除
@@ -215,7 +207,7 @@ export class ClaudeSession {
       this.isBackgroundRunning = false;
     }
   }
-  
+
   /**
    * 取消指定请求的回调
    */
@@ -234,10 +226,29 @@ export class ClaudeSession {
   }
 
   /**
+   * 检查会话是否仍然活跃
+   */
+  public isSessionActive(): boolean {
+    return this.isActive;
+  }
+
+  /**
    * 获取最后活动时间
    */
-  getLastActivity(): number {
+  public getLastActivity(): number {
     return this.lastActivity;
+  }
+
+  /**
+   * Get current Claude session ID
+   * 
+   * Used by SDK MCP tools to automatically inject sessionId when calling
+   * external A2A agents, maintaining conversation context across agent boundaries.
+   * 
+   * @returns Current session ID or null if not yet initialized
+   */
+  public getSessionId(): string | null {
+    return this.claudeSessionId;
   }
 
   /**

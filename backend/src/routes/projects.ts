@@ -5,6 +5,15 @@ import * as os from 'os';
 import { promisify } from 'util';
 import { ProjectMetadataStorage } from '../services/projectMetadataStorage';
 import { AgentStorage } from '../services/agentStorage';
+import { loadA2AConfig, saveA2AConfig, validateA2AConfig } from '../services/a2a/a2aConfigService.js';
+import {
+  generateApiKey,
+  listApiKeys,
+  revokeApiKey,
+  rotateApiKey,
+  getApiKey,
+} from '../services/a2a/apiKeyService.js';
+import { A2AConfigSchema, GenerateApiKeyRequestSchema, validateSafe } from '../schemas/a2a.js';
 
 const router: express.Router = express.Router();
 const readFile = promisify(fs.readFile);
@@ -743,6 +752,222 @@ router.delete('/by-id/:projectId', (req, res) => {
   } catch (error) {
     console.error('Failed to delete project:', error);
     res.status(500).json({ error: 'Failed to delete project' });
+  }
+});
+
+// ========== A2A CONFIGURATION ENDPOINTS ==========
+
+// GET /api/projects/:projectId/a2a-config - Get project A2A configuration
+router.get('/:projectId/a2a-config', async (req, res) => {
+  try {
+    const { projectId: projectPath } = req.params;
+
+    // Load A2A configuration using project path
+    const config = await loadA2AConfig(projectPath);
+
+    if (!config) {
+      return res.status(500).json({
+        error: 'Failed to load A2A configuration',
+        code: 'CONFIG_LOAD_ERROR'
+      });
+    }
+
+    res.json({ config });
+  } catch (error) {
+    console.error('Error loading A2A configuration:', error);
+    res.status(500).json({
+      error: 'Failed to load A2A configuration',
+      details: error instanceof Error ? error.message : String(error)
+    });
+  }
+});
+
+// PUT /api/projects/:projectId/a2a-config - Update project A2A configuration
+router.put('/:projectId/a2a-config', async (req, res) => {
+  try {
+    const { projectId: projectPath } = req.params;
+    const config = req.body;
+
+    // Convert project path to project ID for storage
+    // Create a deterministic project ID from path
+    const projectId = `proj_${Buffer.from(projectPath).toString('base64').replace(/[+/=]/g, '').slice(-12)}`;
+
+    // Validate configuration using Zod schema
+    const validation = validateSafe(A2AConfigSchema, config);
+
+    if (!validation.success) {
+      return res.status(400).json({
+        error: 'Invalid A2A configuration',
+        code: 'VALIDATION_ERROR',
+        details: validation.errors
+      });
+    }
+
+    // Additional validation using service validator
+    const serviceValidation = validateA2AConfig(validation.data);
+
+    if (!serviceValidation.valid) {
+      return res.status(400).json({
+        error: 'Invalid A2A configuration',
+        code: 'VALIDATION_ERROR',
+        details: serviceValidation.errors
+      });
+    }
+
+    // Save configuration using project path
+    await saveA2AConfig(projectPath, validation.data);
+
+    res.json({
+      success: true,
+      config: validation.data,
+      message: 'A2A configuration updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating A2A configuration:', error);
+    res.status(500).json({
+      error: 'Failed to update A2A configuration',
+      details: error instanceof Error ? error.message : String(error)
+    });
+  }
+});
+
+// ========== A2A API KEY MANAGEMENT ENDPOINTS ==========
+
+// POST /api/projects/:projectId/api-keys - Generate new API key
+router.post('/:projectId/api-keys', async (req, res) => {
+  try {
+    const { projectId: projectPath } = req.params;
+    const body = req.body;
+
+    // Validate request body
+    const validation = validateSafe(GenerateApiKeyRequestSchema, body);
+
+    if (!validation.success) {
+      return res.status(400).json({
+        error: 'Invalid request',
+        code: 'VALIDATION_ERROR',
+        details: validation.errors,
+      });
+    }
+
+    const { description } = validation.data;
+
+    // Use the actual project path for storage
+    // Generate new API key
+    const { key, keyData } = await generateApiKey(projectPath, description);
+
+    res.json({
+      success: true,
+      key, // Plaintext key - shown only once!
+      keyId: keyData.id,
+      createdAt: keyData.createdAt,
+      description: keyData.description,
+      message: 'API key generated successfully. Save it now - it will not be shown again.',
+    });
+  } catch (error) {
+    console.error('Error generating API key:', error);
+    res.status(500).json({
+      error: 'Failed to generate API key',
+      details: error instanceof Error ? error.message : String(error),
+    });
+  }
+});
+
+// GET /api/projects/:projectId/api-keys - List all API keys
+router.get('/:projectId/api-keys', async (req, res) => {
+  try {
+    const { projectId: projectPath } = req.params;
+    const includeRevoked = req.query.includeRevoked === 'true';
+
+    // List API keys (hashes only, never plaintext)
+    const keys = await listApiKeys(projectPath, includeRevoked);
+
+    // Remove keyHash from response for security
+    const sanitizedKeys = keys.map(({ keyHash, ...rest }) => rest);
+
+    res.json({
+      keys: sanitizedKeys,
+      count: sanitizedKeys.length,
+    });
+  } catch (error) {
+    console.error('Error listing API keys:', error);
+    res.status(500).json({
+      error: 'Failed to list API keys',
+      details: error instanceof Error ? error.message : String(error),
+    });
+  }
+});
+
+// DELETE /api/projects/:projectId/api-keys/:keyId - Revoke API key
+router.delete('/:projectId/api-keys/:keyId', async (req, res) => {
+  try {
+    const { projectId: projectPath, keyId } = req.params;
+
+    // Revoke the key using project path
+    const success = await revokeApiKey(projectPath, keyId);
+
+    if (!success) {
+      return res.status(404).json({
+        error: 'API key not found',
+        code: 'KEY_NOT_FOUND',
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'API key revoked successfully',
+      keyId,
+      revokedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Error revoking API key:', error);
+    res.status(500).json({
+      error: 'Failed to revoke API key',
+      details: error instanceof Error ? error.message : String(error),
+    });
+  }
+});
+
+// POST /api/projects/:projectId/api-keys/:keyId/rotate - Rotate API key
+router.post('/:projectId/api-keys/:keyId/rotate', async (req, res) => {
+  try {
+    const { projectId, keyId } = req.params;
+    const { description, gracePeriodMs } = req.body;
+
+    // Verify old key exists
+    const oldKey = await getApiKey(projectId, keyId);
+
+    if (!oldKey) {
+      return res.status(404).json({
+        error: 'API key not found',
+        code: 'KEY_NOT_FOUND',
+      });
+    }
+
+    // Rotate the key with optional grace period
+    const { key, keyData, oldKeyId } = await rotateApiKey(
+      projectId,
+      keyId,
+      description || oldKey.description,
+      gracePeriodMs
+    );
+
+    res.json({
+      success: true,
+      key, // New plaintext key - shown only once!
+      keyId: keyData.id,
+      oldKeyId,
+      createdAt: keyData.createdAt,
+      description: keyData.description,
+      gracePeriodMs: gracePeriodMs || 5 * 60 * 1000,
+      message: 'API key rotated successfully. Old key will be revoked after grace period.',
+    });
+  } catch (error) {
+    console.error('Error rotating API key:', error);
+    res.status(500).json({
+      error: 'Failed to rotate API key',
+      details: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 
