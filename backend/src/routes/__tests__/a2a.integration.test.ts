@@ -8,18 +8,40 @@
  * 3. Retrieve Agent Card using A2A ID and API key
  */
 
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
 import express from 'express';
 import request from 'supertest';
 import { join } from 'path';
 import { mkdirSync, rmSync, writeFileSync, existsSync } from 'fs';
+import os from 'os';
+
+// Mock the paths module before importing services
+// Note: vi.mock is hoisted, so we use inline values instead of referencing testDataDir
+vi.mock('../../config/paths', () => {
+  const tmpDir = require('os').tmpdir();
+  const pathJoin = require('path').join;
+  const mockTestDataDir = pathJoin(tmpDir, 'a2a-integration-test');
+  return {
+    CLAUDE_AGENT_DIR: mockTestDataDir,
+    A2A_AGENT_MAPPINGS_FILE: pathJoin(mockTestDataDir, 'a2a-agent-mappings.json'),
+    getProjectA2ADir: (projectPath: string) => pathJoin(projectPath, '.a2a'),
+    getProjectTasksDir: (projectPath: string) => pathJoin(projectPath, '.a2a', 'tasks'),
+    getProjectA2AConfigFile: (projectPath: string) => pathJoin(projectPath, '.a2a', 'config.json'),
+    getProjectApiKeysFile: (projectPath: string) => pathJoin(projectPath, '.a2a', 'api-keys.json'),
+  };
+});
+
+// Import services after mocking
 import * as agentMappingService from '../../services/a2a/agentMappingService';
 import * as apiKeyService from '../../services/a2a/apiKeyService';
 
+// Use temp directory for test isolation (match the mocked value)
+const testDataDir = join(os.tmpdir(), 'a2a-integration-test');
+
 describe('A2A Agent Discovery Workflow (Integration)', () => {
   let app: express.Express;
-  const testDataDir = join(__dirname, '../../../test-data-a2a-integration');
   const testProjectId = 'test-integration-project';
+  const testWorkingDir = join(testDataDir, 'projects', testProjectId);
   const testAgentType = 'ppt-editor';
   let a2aAgentId: string;
   let apiKey: string;
@@ -29,10 +51,15 @@ describe('A2A Agent Discovery Workflow (Integration)', () => {
     if (!existsSync(testDataDir)) {
       mkdirSync(testDataDir, { recursive: true });
     }
+    
+    // Create test working directory
+    if (!existsSync(testWorkingDir)) {
+      mkdirSync(testWorkingDir, { recursive: true });
+    }
 
     // Initialize test data files
     const mappingsFile = join(testDataDir, 'a2a-agent-mappings.json');
-    writeFileSync(mappingsFile, JSON.stringify({ mappings: {} }, null, 2));
+    writeFileSync(mappingsFile, JSON.stringify({ version: '1.0.0', mappings: {} }, null, 2));
 
     // Set up environment for services
     process.env.A2A_DATA_DIR = testDataDir;
@@ -70,7 +97,7 @@ describe('A2A Agent Discovery Workflow (Integration)', () => {
           });
         }
 
-        const isValid = await apiKeyService.validateApiKey(mapping.projectId, key);
+        const isValid = await apiKeyService.validateApiKey(mapping.workingDirectory, key);
 
         if (!isValid.valid) {
           return res.status(401).json({
@@ -147,7 +174,10 @@ describe('A2A Agent Discovery Workflow (Integration)', () => {
   beforeEach(async () => {
     // Reset mappings file
     const mappingsFile = join(testDataDir, 'a2a-agent-mappings.json');
-    writeFileSync(mappingsFile, JSON.stringify({ mappings: {} }, null, 2));
+    writeFileSync(mappingsFile, JSON.stringify({ version: '1.0.0', mappings: {} }, null, 2));
+    
+    // Invalidate cache in services
+    agentMappingService.invalidateCache();
   });
 
   // ============================================================================
@@ -159,7 +189,7 @@ describe('A2A Agent Discovery Workflow (Integration)', () => {
       a2aAgentId = await agentMappingService.getOrCreateA2AId(
         testProjectId,
         testAgentType,
-        '/test/working/dir'
+        testWorkingDir
       );
 
       expect(a2aAgentId).toBeDefined();
@@ -174,9 +204,9 @@ describe('A2A Agent Discovery Workflow (Integration)', () => {
       expect(mapping?.agentType).toBe(testAgentType);
       expect(mapping?.a2aAgentId).toBe(a2aAgentId);
 
-      // Step 3: Generate API key for project
+      // Step 3: Generate API key for project (use workingDirectory as path)
       const keyData = await apiKeyService.generateApiKey(
-        testProjectId,
+        testWorkingDir,
         'Test integration key'
       );
 
@@ -188,7 +218,7 @@ describe('A2A Agent Discovery Workflow (Integration)', () => {
       apiKey = keyData.key;
 
       // Step 4: Validate API key works
-      const isValid = await apiKeyService.validateApiKey(testProjectId, apiKey);
+      const isValid = await apiKeyService.validateApiKey(testWorkingDir, apiKey);
       expect(isValid.valid).toBe(true);
 
       // Step 5: Retrieve Agent Card using A2A ID and API key
@@ -210,7 +240,7 @@ describe('A2A Agent Discovery Workflow (Integration)', () => {
       expect(response.body.context.a2aAgentId).toBe(a2aAgentId);
       expect(response.body.context.projectId).toBe(testProjectId);
       expect(response.body.context.agentType).toBe(testAgentType);
-      expect(response.body.context.workingDirectory).toBe('/test/working/dir');
+      expect(response.body.context.workingDirectory).toBe(testWorkingDir);
     });
 
     it('should reject Agent Card request with invalid API key', async () => {
@@ -218,7 +248,7 @@ describe('A2A Agent Discovery Workflow (Integration)', () => {
       a2aAgentId = await agentMappingService.getOrCreateA2AId(
         testProjectId,
         testAgentType,
-        '/test/working/dir'
+        testWorkingDir
       );
 
       // Try to access with invalid API key
@@ -236,7 +266,7 @@ describe('A2A Agent Discovery Workflow (Integration)', () => {
       a2aAgentId = await agentMappingService.getOrCreateA2AId(
         testProjectId,
         testAgentType,
-        '/test/working/dir'
+        testWorkingDir
       );
 
       // Try to access without API key
@@ -270,14 +300,14 @@ describe('A2A Agent Discovery Workflow (Integration)', () => {
       const firstId = await agentMappingService.getOrCreateA2AId(
         testProjectId,
         testAgentType,
-        '/test/working/dir'
+        testWorkingDir
       );
 
       // Create A2A ID second time (should return same ID)
       const secondId = await agentMappingService.getOrCreateA2AId(
         testProjectId,
         testAgentType,
-        '/test/working/dir'
+        testWorkingDir
       );
 
       expect(firstId).toBe(secondId);
@@ -296,14 +326,14 @@ describe('A2A Agent Discovery Workflow (Integration)', () => {
       const pptEditorId = await agentMappingService.getOrCreateA2AId(
         testProjectId,
         'ppt-editor',
-        '/test/working/dir'
+        testWorkingDir
       );
 
       // Create A2A ID for second agent type
       const codeAssistantId = await agentMappingService.getOrCreateA2AId(
         testProjectId,
         'code-assistant',
-        '/test/working/dir'
+        testWorkingDir
       );
 
       expect(pptEditorId).not.toBe(codeAssistantId);
@@ -318,14 +348,14 @@ describe('A2A Agent Discovery Workflow (Integration)', () => {
       a2aAgentId = await agentMappingService.getOrCreateA2AId(
         testProjectId,
         testAgentType,
-        '/test/working/dir'
+        testWorkingDir
       );
 
       // Generate first API key
-      const key1 = await apiKeyService.generateApiKey(testProjectId, 'Key 1');
+      const key1 = await apiKeyService.generateApiKey(testWorkingDir, 'Key 1');
 
       // Generate second API key
-      const key2 = await apiKeyService.generateApiKey(testProjectId, 'Key 2');
+      const key2 = await apiKeyService.generateApiKey(testWorkingDir, 'Key 2');
 
       expect(key1.key).not.toBe(key2.key);
 

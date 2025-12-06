@@ -7,7 +7,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import * as os from 'os';
+import { SLACK_SESSION_LOCKS_DIR } from '../config/paths.js';
 
 export interface SessionLockInfo {
   sessionId: string;
@@ -26,8 +26,7 @@ export class SlackSessionLock {
 
   constructor(dataDir?: string) {
     // 使用与 SlackThreadMapper 相同的目录
-    const baseDir = dataDir || path.join(os.homedir(), '.claude-agent');
-    const locksDir = path.join(baseDir, 'slack-session-locks');
+    const locksDir = dataDir ? path.join(dataDir, 'slack-session-locks') : SLACK_SESSION_LOCKS_DIR;
 
     if (!fs.existsSync(locksDir)) {
       fs.mkdirSync(locksDir, { recursive: true });

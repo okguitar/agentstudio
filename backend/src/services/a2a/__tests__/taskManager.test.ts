@@ -7,12 +7,14 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'fs/promises';
 import path from 'path';
+import os from 'os';
 import { TaskManager } from '../taskManager';
 import { TaskStatus } from '../../../types/a2a';
 
-// Test configuration
+// Test configuration - use temp directory for test isolation
 const TEST_PROJECT_ID = 'test-project-task-manager';
-const TEST_TASKS_DIR = path.join(process.cwd(), 'projects', TEST_PROJECT_ID, '.a2a', 'tasks');
+const TEST_WORKING_DIR = path.join(os.tmpdir(), 'a2a-test', TEST_PROJECT_ID);
+const TEST_TASKS_DIR = path.join(TEST_WORKING_DIR, '.a2a', 'tasks');
 
 describe('TaskManager', () => {
   let taskManager: TaskManager;
@@ -24,7 +26,7 @@ describe('TaskManager', () => {
   afterEach(async () => {
     // Clean up test tasks directory
     try {
-      await fs.rm(path.join(process.cwd(), 'projects', TEST_PROJECT_ID), {
+      await fs.rm(TEST_WORKING_DIR, {
         recursive: true,
         force: true,
       });
@@ -36,6 +38,7 @@ describe('TaskManager', () => {
   describe('createTask', () => {
     it('should create a task with pending status', async () => {
       const task = await taskManager.createTask({
+        workingDirectory: TEST_WORKING_DIR,
         projectId: TEST_PROJECT_ID,
         agentId: 'test-agent',
         a2aAgentId: 'a2a-test-agent-id',
@@ -57,6 +60,7 @@ describe('TaskManager', () => {
 
     it('should create a task with custom timeout', async () => {
       const task = await taskManager.createTask({
+        workingDirectory: TEST_WORKING_DIR,
         projectId: TEST_PROJECT_ID,
         agentId: 'test-agent',
         a2aAgentId: 'a2a-test-agent-id',
@@ -71,6 +75,7 @@ describe('TaskManager', () => {
 
     it('should persist task to file system', async () => {
       const task = await taskManager.createTask({
+        workingDirectory: TEST_WORKING_DIR,
         projectId: TEST_PROJECT_ID,
         agentId: 'test-agent',
         a2aAgentId: 'a2a-test-agent-id',
@@ -100,6 +105,7 @@ describe('TaskManager', () => {
   describe('getTask', () => {
     it('should retrieve an existing task', async () => {
       const createdTask = await taskManager.createTask({
+        workingDirectory: TEST_WORKING_DIR,
         projectId: TEST_PROJECT_ID,
         agentId: 'test-agent',
         a2aAgentId: 'a2a-test-agent-id',
@@ -108,7 +114,7 @@ describe('TaskManager', () => {
         },
       });
 
-      const retrievedTask = await taskManager.getTask(TEST_PROJECT_ID, createdTask.id);
+      const retrievedTask = await taskManager.getTask(TEST_WORKING_DIR, createdTask.id);
 
       expect(retrievedTask).not.toBeNull();
       expect(retrievedTask?.id).toBe(createdTask.id);
@@ -116,7 +122,7 @@ describe('TaskManager', () => {
     });
 
     it('should return null for non-existent task', async () => {
-      const task = await taskManager.getTask(TEST_PROJECT_ID, 'non-existent-task-id');
+      const task = await taskManager.getTask(TEST_WORKING_DIR, 'non-existent-task-id');
 
       expect(task).toBeNull();
     });
@@ -125,6 +131,7 @@ describe('TaskManager', () => {
   describe('updateTaskStatus', () => {
     it('should update task status from pending to running', async () => {
       const task = await taskManager.createTask({
+        workingDirectory: TEST_WORKING_DIR,
         projectId: TEST_PROJECT_ID,
         agentId: 'test-agent',
         a2aAgentId: 'a2a-test-agent-id',
@@ -134,7 +141,7 @@ describe('TaskManager', () => {
       });
 
       const updatedTask = await taskManager.updateTaskStatus(
-        TEST_PROJECT_ID,
+        TEST_WORKING_DIR,
         task.id,
         'running',
         {
@@ -149,6 +156,7 @@ describe('TaskManager', () => {
 
     it('should update task status from running to completed', async () => {
       const task = await taskManager.createTask({
+        workingDirectory: TEST_WORKING_DIR,
         projectId: TEST_PROJECT_ID,
         agentId: 'test-agent',
         a2aAgentId: 'a2a-test-agent-id',
@@ -158,13 +166,13 @@ describe('TaskManager', () => {
       });
 
       // First update to running
-      await taskManager.updateTaskStatus(TEST_PROJECT_ID, task.id, 'running', {
+      await taskManager.updateTaskStatus(TEST_WORKING_DIR, task.id, 'running', {
         startedAt: new Date().toISOString(),
       });
 
       // Then update to completed
       const completedTask = await taskManager.updateTaskStatus(
-        TEST_PROJECT_ID,
+        TEST_WORKING_DIR,
         task.id,
         'completed',
         {
@@ -183,6 +191,7 @@ describe('TaskManager', () => {
 
     it('should update task status from running to failed', async () => {
       const task = await taskManager.createTask({
+        workingDirectory: TEST_WORKING_DIR,
         projectId: TEST_PROJECT_ID,
         agentId: 'test-agent',
         a2aAgentId: 'a2a-test-agent-id',
@@ -192,13 +201,13 @@ describe('TaskManager', () => {
       });
 
       // First update to running
-      await taskManager.updateTaskStatus(TEST_PROJECT_ID, task.id, 'running', {
+      await taskManager.updateTaskStatus(TEST_WORKING_DIR, task.id, 'running', {
         startedAt: new Date().toISOString(),
       });
 
       // Then update to failed
       const failedTask = await taskManager.updateTaskStatus(
-        TEST_PROJECT_ID,
+        TEST_WORKING_DIR,
         task.id,
         'failed',
         {
@@ -218,6 +227,7 @@ describe('TaskManager', () => {
 
     it('should throw error for invalid state transition (pending to completed)', async () => {
       const task = await taskManager.createTask({
+        workingDirectory: TEST_WORKING_DIR,
         projectId: TEST_PROJECT_ID,
         agentId: 'test-agent',
         a2aAgentId: 'a2a-test-agent-id',
@@ -227,12 +237,13 @@ describe('TaskManager', () => {
       });
 
       await expect(
-        taskManager.updateTaskStatus(TEST_PROJECT_ID, task.id, 'completed')
+        taskManager.updateTaskStatus(TEST_WORKING_DIR, task.id, 'completed')
       ).rejects.toThrow('Invalid state transition');
     });
 
     it('should throw error for invalid state transition (completed to running)', async () => {
       const task = await taskManager.createTask({
+        workingDirectory: TEST_WORKING_DIR,
         projectId: TEST_PROJECT_ID,
         agentId: 'test-agent',
         a2aAgentId: 'a2a-test-agent-id',
@@ -242,23 +253,24 @@ describe('TaskManager', () => {
       });
 
       // Update to running then completed
-      await taskManager.updateTaskStatus(TEST_PROJECT_ID, task.id, 'running', {
+      await taskManager.updateTaskStatus(TEST_WORKING_DIR, task.id, 'running', {
         startedAt: new Date().toISOString(),
       });
 
-      await taskManager.updateTaskStatus(TEST_PROJECT_ID, task.id, 'completed', {
+      await taskManager.updateTaskStatus(TEST_WORKING_DIR, task.id, 'completed', {
         completedAt: new Date().toISOString(),
       });
 
       // Try to transition from completed to running (invalid)
       await expect(
-        taskManager.updateTaskStatus(TEST_PROJECT_ID, task.id, 'running')
+        taskManager.updateTaskStatus(TEST_WORKING_DIR, task.id, 'running')
       ).rejects.toThrow('Invalid state transition');
     });
 
     it('should throw error for non-existent task', async () => {
       // First create a task to ensure directory exists
       await taskManager.createTask({
+        workingDirectory: TEST_WORKING_DIR,
         projectId: TEST_PROJECT_ID,
         agentId: 'test-agent',
         a2aAgentId: 'a2a-test-agent-id',
@@ -267,7 +279,7 @@ describe('TaskManager', () => {
 
       // Now try to update non-existent task
       await expect(
-        taskManager.updateTaskStatus(TEST_PROJECT_ID, 'non-existent-task', 'running')
+        taskManager.updateTaskStatus(TEST_WORKING_DIR, 'non-existent-task', 'running')
       ).rejects.toThrow('Task not found');
     });
   });
@@ -275,6 +287,7 @@ describe('TaskManager', () => {
   describe('cancelTask', () => {
     it('should cancel a pending task', async () => {
       const task = await taskManager.createTask({
+        workingDirectory: TEST_WORKING_DIR,
         projectId: TEST_PROJECT_ID,
         agentId: 'test-agent',
         a2aAgentId: 'a2a-test-agent-id',
@@ -283,7 +296,7 @@ describe('TaskManager', () => {
         },
       });
 
-      const canceledTask = await taskManager.cancelTask(TEST_PROJECT_ID, task.id);
+      const canceledTask = await taskManager.cancelTask(TEST_WORKING_DIR, task.id);
 
       expect(canceledTask.status).toBe('canceled');
       expect(canceledTask.completedAt).toBeDefined();
@@ -291,6 +304,7 @@ describe('TaskManager', () => {
 
     it('should cancel a running task', async () => {
       const task = await taskManager.createTask({
+        workingDirectory: TEST_WORKING_DIR,
         projectId: TEST_PROJECT_ID,
         agentId: 'test-agent',
         a2aAgentId: 'a2a-test-agent-id',
@@ -300,17 +314,18 @@ describe('TaskManager', () => {
       });
 
       // Update to running
-      await taskManager.updateTaskStatus(TEST_PROJECT_ID, task.id, 'running', {
+      await taskManager.updateTaskStatus(TEST_WORKING_DIR, task.id, 'running', {
         startedAt: new Date().toISOString(),
       });
 
-      const canceledTask = await taskManager.cancelTask(TEST_PROJECT_ID, task.id);
+      const canceledTask = await taskManager.cancelTask(TEST_WORKING_DIR, task.id);
 
       expect(canceledTask.status).toBe('canceled');
     });
 
     it('should throw error when canceling a completed task', async () => {
       const task = await taskManager.createTask({
+        workingDirectory: TEST_WORKING_DIR,
         projectId: TEST_PROJECT_ID,
         agentId: 'test-agent',
         a2aAgentId: 'a2a-test-agent-id',
@@ -320,17 +335,17 @@ describe('TaskManager', () => {
       });
 
       // Complete the task
-      await taskManager.updateTaskStatus(TEST_PROJECT_ID, task.id, 'running', {
+      await taskManager.updateTaskStatus(TEST_WORKING_DIR, task.id, 'running', {
         startedAt: new Date().toISOString(),
       });
 
-      await taskManager.updateTaskStatus(TEST_PROJECT_ID, task.id, 'completed', {
+      await taskManager.updateTaskStatus(TEST_WORKING_DIR, task.id, 'completed', {
         completedAt: new Date().toISOString(),
       });
 
       // Try to cancel
       await expect(
-        taskManager.cancelTask(TEST_PROJECT_ID, task.id)
+        taskManager.cancelTask(TEST_WORKING_DIR, task.id)
       ).rejects.toThrow('Cannot cancel task');
     });
   });
@@ -339,6 +354,7 @@ describe('TaskManager', () => {
     it('should list all tasks for a project', async () => {
       // Create multiple tasks
       const task1 = await taskManager.createTask({
+        workingDirectory: TEST_WORKING_DIR,
         projectId: TEST_PROJECT_ID,
         agentId: 'test-agent-1',
         a2aAgentId: 'a2a-test-agent-id',
@@ -349,13 +365,14 @@ describe('TaskManager', () => {
       await new Promise(resolve => setTimeout(resolve, 10));
 
       const task2 = await taskManager.createTask({
+        workingDirectory: TEST_WORKING_DIR,
         projectId: TEST_PROJECT_ID,
         agentId: 'test-agent-2',
         a2aAgentId: 'a2a-test-agent-id',
         input: { message: 'Task 2' },
       });
 
-      const tasks = await taskManager.listTasks(TEST_PROJECT_ID);
+      const tasks = await taskManager.listTasks(TEST_WORKING_DIR);
 
       expect(tasks).toHaveLength(2);
 
@@ -373,6 +390,7 @@ describe('TaskManager', () => {
     it('should filter tasks by status', async () => {
       // Create tasks with different statuses
       const task1 = await taskManager.createTask({
+        workingDirectory: TEST_WORKING_DIR,
         projectId: TEST_PROJECT_ID,
         agentId: 'test-agent-1',
         a2aAgentId: 'a2a-test-agent-id',
@@ -380,6 +398,7 @@ describe('TaskManager', () => {
       });
 
       const task2 = await taskManager.createTask({
+        workingDirectory: TEST_WORKING_DIR,
         projectId: TEST_PROJECT_ID,
         agentId: 'test-agent-2',
         a2aAgentId: 'a2a-test-agent-id',
@@ -387,25 +406,26 @@ describe('TaskManager', () => {
       });
 
       // Update task2 to running
-      await taskManager.updateTaskStatus(TEST_PROJECT_ID, task2.id, 'running', {
+      await taskManager.updateTaskStatus(TEST_WORKING_DIR, task2.id, 'running', {
         startedAt: new Date().toISOString(),
       });
 
       // List only pending tasks
-      const pendingTasks = await taskManager.listTasks(TEST_PROJECT_ID, 'pending');
+      const pendingTasks = await taskManager.listTasks(TEST_WORKING_DIR, 'pending');
 
       expect(pendingTasks).toHaveLength(1);
       expect(pendingTasks[0].id).toBe(task1.id);
 
       // List only running tasks
-      const runningTasks = await taskManager.listTasks(TEST_PROJECT_ID, 'running');
+      const runningTasks = await taskManager.listTasks(TEST_WORKING_DIR, 'running');
 
       expect(runningTasks).toHaveLength(1);
       expect(runningTasks[0].id).toBe(task2.id);
     });
 
     it('should return empty array for project with no tasks', async () => {
-      const tasks = await taskManager.listTasks('non-existent-project');
+      const nonExistentDir = path.join(os.tmpdir(), 'a2a-test', 'non-existent-project');
+      const tasks = await taskManager.listTasks(nonExistentDir);
 
       expect(tasks).toEqual([]);
     });
@@ -425,6 +445,7 @@ describe('TaskManager', () => {
         toStatuses.forEach((toStatus) => {
           it(`should allow transition to ${toStatus}`, async () => {
             const task = await taskManager.createTask({
+              workingDirectory: TEST_WORKING_DIR,
               projectId: TEST_PROJECT_ID,
               agentId: 'test-agent',
               a2aAgentId: 'a2a-test-agent-id',
@@ -433,20 +454,20 @@ describe('TaskManager', () => {
 
             // Set initial status to reach fromStatus via valid path
             if (fromStatus === 'running') {
-              await taskManager.updateTaskStatus(TEST_PROJECT_ID, task.id, 'running');
+              await taskManager.updateTaskStatus(TEST_WORKING_DIR, task.id, 'running');
             } else if (fromStatus === 'completed') {
-              await taskManager.updateTaskStatus(TEST_PROJECT_ID, task.id, 'running');
-              await taskManager.updateTaskStatus(TEST_PROJECT_ID, task.id, 'completed');
+              await taskManager.updateTaskStatus(TEST_WORKING_DIR, task.id, 'running');
+              await taskManager.updateTaskStatus(TEST_WORKING_DIR, task.id, 'completed');
             } else if (fromStatus === 'failed') {
-              await taskManager.updateTaskStatus(TEST_PROJECT_ID, task.id, 'running');
-              await taskManager.updateTaskStatus(TEST_PROJECT_ID, task.id, 'failed');
+              await taskManager.updateTaskStatus(TEST_WORKING_DIR, task.id, 'running');
+              await taskManager.updateTaskStatus(TEST_WORKING_DIR, task.id, 'failed');
             } else if (fromStatus === 'canceled') {
-              await taskManager.updateTaskStatus(TEST_PROJECT_ID, task.id, 'canceled');
+              await taskManager.updateTaskStatus(TEST_WORKING_DIR, task.id, 'canceled');
             }
 
             // Test transition
             await expect(
-              taskManager.updateTaskStatus(TEST_PROJECT_ID, task.id, toStatus as TaskStatus)
+              taskManager.updateTaskStatus(TEST_WORKING_DIR, task.id, toStatus as TaskStatus)
             ).resolves.not.toThrow();
           });
         });
@@ -458,6 +479,7 @@ describe('TaskManager', () => {
         invalidStatuses.forEach((toStatus) => {
           it(`should reject transition to ${toStatus}`, async () => {
             const task = await taskManager.createTask({
+              workingDirectory: TEST_WORKING_DIR,
               projectId: TEST_PROJECT_ID,
               agentId: 'test-agent',
               a2aAgentId: 'a2a-test-agent-id',
@@ -466,20 +488,20 @@ describe('TaskManager', () => {
 
             // Set initial status to reach fromStatus via valid path
             if (fromStatus === 'running') {
-              await taskManager.updateTaskStatus(TEST_PROJECT_ID, task.id, 'running');
+              await taskManager.updateTaskStatus(TEST_WORKING_DIR, task.id, 'running');
             } else if (fromStatus === 'completed') {
-              await taskManager.updateTaskStatus(TEST_PROJECT_ID, task.id, 'running');
-              await taskManager.updateTaskStatus(TEST_PROJECT_ID, task.id, 'completed');
+              await taskManager.updateTaskStatus(TEST_WORKING_DIR, task.id, 'running');
+              await taskManager.updateTaskStatus(TEST_WORKING_DIR, task.id, 'completed');
             } else if (fromStatus === 'failed') {
-              await taskManager.updateTaskStatus(TEST_PROJECT_ID, task.id, 'running');
-              await taskManager.updateTaskStatus(TEST_PROJECT_ID, task.id, 'failed');
+              await taskManager.updateTaskStatus(TEST_WORKING_DIR, task.id, 'running');
+              await taskManager.updateTaskStatus(TEST_WORKING_DIR, task.id, 'failed');
             } else if (fromStatus === 'canceled') {
-              await taskManager.updateTaskStatus(TEST_PROJECT_ID, task.id, 'canceled');
+              await taskManager.updateTaskStatus(TEST_WORKING_DIR, task.id, 'canceled');
             }
 
             // Test invalid transition
             await expect(
-              taskManager.updateTaskStatus(TEST_PROJECT_ID, task.id, toStatus as TaskStatus)
+              taskManager.updateTaskStatus(TEST_WORKING_DIR, task.id, toStatus as TaskStatus)
             ).rejects.toThrow('Invalid state transition');
           });
         });

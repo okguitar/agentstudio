@@ -4,7 +4,7 @@
  * Maps A2A agent IDs (UUID v4) to internal project/agent identifiers.
  * Provides bidirectional resolution and lazy generation of A2A IDs.
  *
- * Storage: backend/data/a2a-agent-mappings.json (global registry)
+ * Storage: ~/.claude-agent/a2a-agent-mappings.json (global registry)
  * Format: { version: "1.0.0", mappings: { [a2aAgentId]: AgentMapping } }
  */
 
@@ -12,9 +12,10 @@ import fs from 'fs/promises';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import lockfile from 'proper-lockfile';
-import type { AgentMapping, AgentMappingRegistry } from '../../types/a2a';
+import type { AgentMapping, AgentMappingRegistry } from '../../types/a2a.js';
+import { A2A_AGENT_MAPPINGS_FILE } from '../../config/paths.js';
 
-const MAPPINGS_FILE = path.join(process.cwd(), 'data', 'a2a-agent-mappings.json');
+const MAPPINGS_FILE = A2A_AGENT_MAPPINGS_FILE;
 const LOCK_OPTIONS = {
   retries: { retries: 5, minTimeout: 100, maxTimeout: 500 },
 };

@@ -5,48 +5,45 @@
  * Orphaned tasks are tasks with status='running' that were left
  * in that state due to server crash or restart.
  *
- * This service scans all projects' task directories and marks
+ * This service scans all registered projects' task directories and marks
  * any running tasks as 'failed' with an appropriate error message.
  */
 
 import fs from 'fs/promises';
-import path from 'path';
-import { A2ATask } from '../../types/a2a.js';
 import { taskManager } from './taskManager.js';
-
-// ============================================================================
-// Constants
-// ============================================================================
-
-const PROJECTS_BASE_DIR = path.join(process.cwd(), 'projects');
+import { listAgentMappings } from './agentMappingService.js';
+import { getProjectTasksDir } from '../../config/paths.js';
 
 // ============================================================================
 // Helper Functions
 // ============================================================================
 
 /**
- * Get all project directories
+ * Get all unique working directories from agent mappings
  */
-async function getAllProjectDirs(): Promise<string[]> {
+async function getAllWorkingDirectories(): Promise<string[]> {
   try {
-    const entries = await fs.readdir(PROJECTS_BASE_DIR, { withFileTypes: true });
-    return entries
-      .filter(entry => entry.isDirectory())
-      .map(entry => entry.name);
-  } catch (error: any) {
-    if (error.code === 'ENOENT') {
-      return []; // Projects directory doesn't exist yet
+    const mappings = await listAgentMappings();
+    // Extract unique working directories
+    const workingDirs = new Set<string>();
+    for (const mapping of mappings) {
+      if (mapping.workingDirectory) {
+        workingDirs.add(mapping.workingDirectory);
+      }
     }
-    throw error;
+    return Array.from(workingDirs);
+  } catch (error: any) {
+    console.warn('[TaskCleanup] Failed to get agent mappings:', error.message);
+    return [];
   }
 }
 
 /**
  * Check if a task directory exists for a project
  */
-async function taskDirectoryExists(projectId: string): Promise<boolean> {
+async function taskDirectoryExists(workingDirectory: string): Promise<boolean> {
   try {
-    const tasksDir = path.join(PROJECTS_BASE_DIR, projectId, '.a2a', 'tasks');
+    const tasksDir = getProjectTasksDir(workingDirectory);
     await fs.access(tasksDir);
     return true;
   } catch {
@@ -61,7 +58,7 @@ async function taskDirectoryExists(projectId: string): Promise<boolean> {
 /**
  * Clean up orphaned tasks across all projects
  *
- * Scans all projects' .a2a/tasks/ directories and marks any tasks
+ * Scans all registered projects' .a2a/tasks/ directories and marks any tasks
  * with status='running' as 'failed' (indicating they were orphaned
  * due to server restart).
  *
@@ -74,15 +71,15 @@ export async function cleanupOrphanedTasks(): Promise<number> {
   const startTime = Date.now();
 
   try {
-    // Get all project directories
-    const projectIds = await getAllProjectDirs();
+    // Get all unique working directories from agent mappings
+    const workingDirectories = await getAllWorkingDirectories();
 
-    console.info(`[TaskCleanup] Scanning ${projectIds.length} projects...`);
+    console.info(`[TaskCleanup] Scanning ${workingDirectories.length} project directories...`);
 
     // Process each project
-    for (const projectId of projectIds) {
+    for (const workingDirectory of workingDirectories) {
       // Check if project has tasks directory
-      const hasTasksDir = await taskDirectoryExists(projectId);
+      const hasTasksDir = await taskDirectoryExists(workingDirectory);
 
       if (!hasTasksDir) {
         continue; // No tasks for this project
@@ -90,18 +87,18 @@ export async function cleanupOrphanedTasks(): Promise<number> {
 
       try {
         // Get all running tasks for this project
-        const runningTasks = await taskManager.listTasks(projectId, 'running');
+        const runningTasks = await taskManager.listTasks(workingDirectory, 'running');
 
         if (runningTasks.length === 0) {
           continue; // No orphaned tasks
         }
 
-        console.info(`[TaskCleanup] Found ${runningTasks.length} orphaned tasks in project ${projectId}`);
+        console.info(`[TaskCleanup] Found ${runningTasks.length} orphaned tasks in ${workingDirectory}`);
 
         // Mark each running task as failed
         for (const task of runningTasks) {
           try {
-            await taskManager.updateTaskStatus(projectId, task.id, 'failed', {
+            await taskManager.updateTaskStatus(workingDirectory, task.id, 'failed', {
               errorDetails: {
                 message: 'Task was orphaned due to server restart',
                 code: 'TASK_ORPHANED',
@@ -117,7 +114,7 @@ export async function cleanupOrphanedTasks(): Promise<number> {
           }
         }
       } catch (error) {
-        console.error(`[TaskCleanup] Error processing project ${projectId}:`, error);
+        console.error(`[TaskCleanup] Error processing ${workingDirectory}:`, error);
       }
     }
 
@@ -135,7 +132,7 @@ export async function cleanupOrphanedTasks(): Promise<number> {
 /**
  * Clean up timed-out tasks across all projects
  *
- * Scans all projects and marks tasks that have exceeded their timeout
+ * Scans all registered projects and marks tasks that have exceeded their timeout
  * as 'failed'. This is called periodically by the timeout monitor.
  *
  * @returns Count of tasks marked as timed out
@@ -145,13 +142,13 @@ export async function cleanupTimedOutTasks(): Promise<number> {
   const now = Date.now();
 
   try {
-    // Get all project directories
-    const projectIds = await getAllProjectDirs();
+    // Get all unique working directories from agent mappings
+    const workingDirectories = await getAllWorkingDirectories();
 
     // Process each project
-    for (const projectId of projectIds) {
+    for (const workingDirectory of workingDirectories) {
       // Check if project has tasks directory
-      const hasTasksDir = await taskDirectoryExists(projectId);
+      const hasTasksDir = await taskDirectoryExists(workingDirectory);
 
       if (!hasTasksDir) {
         continue;
@@ -159,7 +156,7 @@ export async function cleanupTimedOutTasks(): Promise<number> {
 
       try {
         // Get all running tasks for this project
-        const runningTasks = await taskManager.listTasks(projectId, 'running');
+        const runningTasks = await taskManager.listTasks(workingDirectory, 'running');
 
         // Check each task for timeout
         for (const task of runningTasks) {
@@ -169,7 +166,7 @@ export async function cleanupTimedOutTasks(): Promise<number> {
           if (elapsedMs > task.timeoutMs) {
             // Task has timed out
             try {
-              await taskManager.updateTaskStatus(projectId, task.id, 'failed', {
+              await taskManager.updateTaskStatus(workingDirectory, task.id, 'failed', {
                 errorDetails: {
                   message: `Task timed out after ${task.timeoutMs}ms (elapsed: ${elapsedMs}ms)`,
                   code: 'TASK_TIMEOUT',
@@ -186,7 +183,7 @@ export async function cleanupTimedOutTasks(): Promise<number> {
           }
         }
       } catch (error) {
-        console.error(`[TaskCleanup] Error checking timeouts for project ${projectId}:`, error);
+        console.error(`[TaskCleanup] Error checking timeouts for ${workingDirectory}:`, error);
       }
     }
 

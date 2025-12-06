@@ -7,13 +7,13 @@
 
 import { Options } from '@anthropic-ai/claude-agent-sdk';
 import { SystemPrompt, PresetSystemPrompt } from '../types/agents.js';
-import * as path from 'path';
 import * as fs from 'fs';
-import * as os from 'os';
+import * as path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { getDefaultVersionId, getAllVersionsInternal, getVersionByIdInternal } from '../services/claudeVersionStorage.js';
 import { integrateA2AMcpServer } from '../services/a2a/a2aIntegration.js';
+import { MCP_SERVER_CONFIG_FILE } from '../config/paths.js';
 
 const execAsync = promisify(exec);
 
@@ -56,10 +56,9 @@ export async function getClaudeExecutablePath(): Promise<string | null> {
  * Read MCP (Model Context Protocol) configuration
  */
 export function readMcpConfig(): { mcpServers: Record<string, any> } {
-  const mcpConfigPath = path.join(os.homedir(), '.claude-agent', 'mcp-server.json');
-  if (fs.existsSync(mcpConfigPath)) {
+  if (fs.existsSync(MCP_SERVER_CONFIG_FILE)) {
     try {
-      return JSON.parse(fs.readFileSync(mcpConfigPath, 'utf-8'));
+      return JSON.parse(fs.readFileSync(MCP_SERVER_CONFIG_FILE, 'utf-8'));
     } catch (error) {
       console.error('Failed to parse MCP configuration:', error);
       return { mcpServers: {} };

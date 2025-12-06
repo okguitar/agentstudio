@@ -7,11 +7,13 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'fs/promises';
 import path from 'path';
+import os from 'os';
 import { TaskManager } from '../taskManager';
 
-// Test configuration
+// Test configuration - use temp directory for test isolation
 const TEST_PROJECT_ID = 'test-project-task-integration';
-const TEST_TASKS_DIR = path.join(process.cwd(), 'projects', TEST_PROJECT_ID, '.a2a', 'tasks');
+const TEST_WORKING_DIR = path.join(os.tmpdir(), 'a2a-test-integration', TEST_PROJECT_ID);
+const TEST_TASKS_DIR = path.join(TEST_WORKING_DIR, '.a2a', 'tasks');
 
 describe('TaskManager Integration Tests', () => {
   let taskManager: TaskManager;
@@ -23,7 +25,7 @@ describe('TaskManager Integration Tests', () => {
   afterEach(async () => {
     // Clean up test tasks directory
     try {
-      await fs.rm(path.join(process.cwd(), 'projects', TEST_PROJECT_ID), {
+      await fs.rm(TEST_WORKING_DIR, {
         recursive: true,
         force: true,
       });
@@ -36,6 +38,7 @@ describe('TaskManager Integration Tests', () => {
     it('should handle concurrent status updates without data corruption', async () => {
       // Create a task
       const task = await taskManager.createTask({
+        workingDirectory: TEST_WORKING_DIR,
         projectId: TEST_PROJECT_ID,
         agentId: 'test-agent',
         a2aAgentId: 'a2a-test-agent-id',
@@ -45,20 +48,20 @@ describe('TaskManager Integration Tests', () => {
       });
 
       // First update to running
-      await taskManager.updateTaskStatus(TEST_PROJECT_ID, task.id, 'running', {
+      await taskManager.updateTaskStatus(TEST_WORKING_DIR, task.id, 'running', {
         startedAt: new Date().toISOString(),
       });
 
       // Simulate concurrent updates (both trying to complete/fail)
       // Due to file locking, one will complete, the other will fail
       const updatePromises = [
-        taskManager.updateTaskStatus(TEST_PROJECT_ID, task.id, 'completed', {
+        taskManager.updateTaskStatus(TEST_WORKING_DIR, task.id, 'completed', {
           completedAt: new Date().toISOString(),
           output: {
             result: 'Completed from update 1',
           },
         }),
-        taskManager.updateTaskStatus(TEST_PROJECT_ID, task.id, 'failed', {
+        taskManager.updateTaskStatus(TEST_WORKING_DIR, task.id, 'failed', {
           completedAt: new Date().toISOString(),
           errorDetails: {
             message: 'Failed from update 2',
@@ -78,7 +81,7 @@ describe('TaskManager Integration Tests', () => {
       expect(succeeded.length + failed.length).toBe(2);
 
       // Verify final task state is consistent
-      const finalTask = await taskManager.getTask(TEST_PROJECT_ID, task.id);
+      const finalTask = await taskManager.getTask(TEST_WORKING_DIR, task.id);
 
       expect(finalTask).not.toBeNull();
       expect(['completed', 'failed'].includes(finalTask!.status)).toBe(true);
@@ -95,6 +98,7 @@ describe('TaskManager Integration Tests', () => {
       // Create multiple tasks concurrently
       const createPromises = Array.from({ length: 5 }, (_, i) =>
         taskManager.createTask({
+          workingDirectory: TEST_WORKING_DIR,
           projectId: TEST_PROJECT_ID,
           agentId: `test-agent-${i}`,
           a2aAgentId: 'a2a-test-agent-id',
@@ -122,13 +126,14 @@ describe('TaskManager Integration Tests', () => {
       }
 
       // Verify all tasks are retrievable
-      const retrievedTasks = await taskManager.listTasks(TEST_PROJECT_ID);
+      const retrievedTasks = await taskManager.listTasks(TEST_WORKING_DIR);
       expect(retrievedTasks.length).toBe(5);
     });
 
     it('should handle concurrent cancellation attempts', async () => {
       // Create a task
       const task = await taskManager.createTask({
+        workingDirectory: TEST_WORKING_DIR,
         projectId: TEST_PROJECT_ID,
         agentId: 'test-agent',
         a2aAgentId: 'a2a-test-agent-id',
@@ -138,13 +143,13 @@ describe('TaskManager Integration Tests', () => {
       });
 
       // Update to running
-      await taskManager.updateTaskStatus(TEST_PROJECT_ID, task.id, 'running', {
+      await taskManager.updateTaskStatus(TEST_WORKING_DIR, task.id, 'running', {
         startedAt: new Date().toISOString(),
       });
 
       // Try to cancel multiple times concurrently
       const cancelPromises = Array.from({ length: 3 }, () =>
-        taskManager.cancelTask(TEST_PROJECT_ID, task.id)
+        taskManager.cancelTask(TEST_WORKING_DIR, task.id)
       );
 
       const results = await Promise.allSettled(cancelPromises);
@@ -163,13 +168,14 @@ describe('TaskManager Integration Tests', () => {
       });
 
       // Verify final state is canceled
-      const finalTask = await taskManager.getTask(TEST_PROJECT_ID, task.id);
+      const finalTask = await taskManager.getTask(TEST_WORKING_DIR, task.id);
       expect(finalTask?.status).toBe('canceled');
     });
 
     it('should maintain data integrity during rapid sequential updates', async () => {
       // Create a task
       const task = await taskManager.createTask({
+        workingDirectory: TEST_WORKING_DIR,
         projectId: TEST_PROJECT_ID,
         agentId: 'test-agent',
         a2aAgentId: 'a2a-test-agent-id',
@@ -179,11 +185,11 @@ describe('TaskManager Integration Tests', () => {
       });
 
       // Perform rapid sequential valid updates
-      await taskManager.updateTaskStatus(TEST_PROJECT_ID, task.id, 'running', {
+      await taskManager.updateTaskStatus(TEST_WORKING_DIR, task.id, 'running', {
         startedAt: new Date().toISOString(),
       });
 
-      await taskManager.updateTaskStatus(TEST_PROJECT_ID, task.id, 'completed', {
+      await taskManager.updateTaskStatus(TEST_WORKING_DIR, task.id, 'completed', {
         completedAt: new Date().toISOString(),
         output: {
           result: 'Task completed',
@@ -191,7 +197,7 @@ describe('TaskManager Integration Tests', () => {
       });
 
       // Verify final state
-      const finalTask = await taskManager.getTask(TEST_PROJECT_ID, task.id);
+      const finalTask = await taskManager.getTask(TEST_WORKING_DIR, task.id);
 
       expect(finalTask?.status).toBe('completed');
       expect(finalTask?.startedAt).toBeDefined();
@@ -209,6 +215,7 @@ describe('TaskManager Integration Tests', () => {
     it('should handle file locking when reading and writing simultaneously', async () => {
       // Create a task
       const task = await taskManager.createTask({
+        workingDirectory: TEST_WORKING_DIR,
         projectId: TEST_PROJECT_ID,
         agentId: 'test-agent',
         a2aAgentId: 'a2a-test-agent-id',
@@ -218,12 +225,12 @@ describe('TaskManager Integration Tests', () => {
       });
 
       // Start an update (which acquires lock)
-      const updatePromise = taskManager.updateTaskStatus(TEST_PROJECT_ID, task.id, 'running', {
+      const updatePromise = taskManager.updateTaskStatus(TEST_WORKING_DIR, task.id, 'running', {
         startedAt: new Date().toISOString(),
       });
 
       // Try to read while update is in progress
-      const readPromise = taskManager.getTask(TEST_PROJECT_ID, task.id);
+      const readPromise = taskManager.getTask(TEST_WORKING_DIR, task.id);
 
       // Both should complete without error
       const [updatedTask, readTask] = await Promise.all([updatePromise, readPromise]);
@@ -232,7 +239,7 @@ describe('TaskManager Integration Tests', () => {
       expect(readTask).toBeDefined();
 
       // Final state should be consistent
-      const finalTask = await taskManager.getTask(TEST_PROJECT_ID, task.id);
+      const finalTask = await taskManager.getTask(TEST_WORKING_DIR, task.id);
       expect(finalTask?.status).toBe('running');
     });
   });
@@ -246,6 +253,7 @@ describe('TaskManager Integration Tests', () => {
 
     it('should create task directory if it does not exist', async () => {
       const task = await taskManager.createTask({
+        workingDirectory: TEST_WORKING_DIR,
         projectId: TEST_PROJECT_ID,
         agentId: 'test-agent',
         a2aAgentId: 'a2a-test-agent-id',
@@ -275,6 +283,7 @@ describe('TaskManager Integration Tests', () => {
     it('should handle corrupted task file gracefully', async () => {
       // Create a task
       const task = await taskManager.createTask({
+        workingDirectory: TEST_WORKING_DIR,
         projectId: TEST_PROJECT_ID,
         agentId: 'test-agent',
         a2aAgentId: 'a2a-test-agent-id',
@@ -288,7 +297,7 @@ describe('TaskManager Integration Tests', () => {
       await fs.writeFile(taskFilePath, 'INVALID JSON{{{', 'utf-8');
 
       // Try to read the task (should throw error)
-      await expect(taskManager.getTask(TEST_PROJECT_ID, task.id)).rejects.toThrow();
+      await expect(taskManager.getTask(TEST_WORKING_DIR, task.id)).rejects.toThrow();
     });
   });
 
@@ -296,6 +305,7 @@ describe('TaskManager Integration Tests', () => {
     it('should support complete task lifecycle from creation to completion', async () => {
       // Create task
       const task = await taskManager.createTask({
+        workingDirectory: TEST_WORKING_DIR,
         projectId: TEST_PROJECT_ID,
         agentId: 'test-agent',
         a2aAgentId: 'a2a-test-agent-id',
@@ -308,7 +318,7 @@ describe('TaskManager Integration Tests', () => {
       expect(task.status).toBe('pending');
 
       // Start task
-      const runningTask = await taskManager.updateTaskStatus(TEST_PROJECT_ID, task.id, 'running', {
+      const runningTask = await taskManager.updateTaskStatus(TEST_WORKING_DIR, task.id, 'running', {
         startedAt: new Date().toISOString(),
       });
 
@@ -317,7 +327,7 @@ describe('TaskManager Integration Tests', () => {
 
       // Complete task
       const completedTask = await taskManager.updateTaskStatus(
-        TEST_PROJECT_ID,
+        TEST_WORKING_DIR,
         task.id,
         'completed',
         {
@@ -341,7 +351,7 @@ describe('TaskManager Integration Tests', () => {
       expect(completedTask.output?.artifacts).toHaveLength(1);
 
       // Verify persisted state
-      const finalTask = await taskManager.getTask(TEST_PROJECT_ID, task.id);
+      const finalTask = await taskManager.getTask(TEST_WORKING_DIR, task.id);
 
       expect(finalTask?.status).toBe('completed');
       expect(finalTask?.output?.result).toBe('Task completed successfully');
@@ -350,6 +360,7 @@ describe('TaskManager Integration Tests', () => {
     it('should support task failure with error details', async () => {
       // Create and start task
       const task = await taskManager.createTask({
+        workingDirectory: TEST_WORKING_DIR,
         projectId: TEST_PROJECT_ID,
         agentId: 'test-agent',
         a2aAgentId: 'a2a-test-agent-id',
@@ -358,12 +369,12 @@ describe('TaskManager Integration Tests', () => {
         },
       });
 
-      await taskManager.updateTaskStatus(TEST_PROJECT_ID, task.id, 'running', {
+      await taskManager.updateTaskStatus(TEST_WORKING_DIR, task.id, 'running', {
         startedAt: new Date().toISOString(),
       });
 
       // Fail the task
-      const failedTask = await taskManager.updateTaskStatus(TEST_PROJECT_ID, task.id, 'failed', {
+      const failedTask = await taskManager.updateTaskStatus(TEST_WORKING_DIR, task.id, 'failed', {
         completedAt: new Date().toISOString(),
         errorDetails: {
           message: 'Task failed due to test error',
@@ -382,6 +393,7 @@ describe('TaskManager Integration Tests', () => {
     it('should support early task cancellation', async () => {
       // Create task
       const task = await taskManager.createTask({
+        workingDirectory: TEST_WORKING_DIR,
         projectId: TEST_PROJECT_ID,
         agentId: 'test-agent',
         a2aAgentId: 'a2a-test-agent-id',
@@ -391,14 +403,14 @@ describe('TaskManager Integration Tests', () => {
       });
 
       // Cancel immediately (while still pending)
-      const canceledTask = await taskManager.cancelTask(TEST_PROJECT_ID, task.id);
+      const canceledTask = await taskManager.cancelTask(TEST_WORKING_DIR, task.id);
 
       expect(canceledTask.status).toBe('canceled');
       expect(canceledTask.completedAt).toBeDefined();
 
       // Verify cannot transition from canceled
       await expect(
-        taskManager.updateTaskStatus(TEST_PROJECT_ID, task.id, 'running')
+        taskManager.updateTaskStatus(TEST_WORKING_DIR, task.id, 'running')
       ).rejects.toThrow('Invalid state transition');
     });
   });

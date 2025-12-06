@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import { spawn, exec } from 'child_process';
 import { promisify } from 'util';
+import { MCP_SERVER_CONFIG_FILE, CLAUDE_AGENT_DIR } from '../config/paths.js';
 
 const router: express.Router = express.Router();
 const execAsync = promisify(exec);
@@ -39,14 +40,13 @@ interface McpConfigFile {
 
 // Helper function to get MCP config file path
 const getMcpConfigPath = (): string => {
-  return path.join(os.homedir(), '.claude-agent', 'mcp-server.json');
+  return MCP_SERVER_CONFIG_FILE;
 };
 
 // Helper function to ensure config directory exists
 const ensureConfigDirectory = (): void => {
-  const configDir = path.dirname(getMcpConfigPath());
-  if (!fs.existsSync(configDir)) {
-    fs.mkdirSync(configDir, { recursive: true });
+  if (!fs.existsSync(CLAUDE_AGENT_DIR)) {
+    fs.mkdirSync(CLAUDE_AGENT_DIR, { recursive: true });
   }
 };
 

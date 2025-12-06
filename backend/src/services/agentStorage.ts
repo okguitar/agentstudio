@@ -1,16 +1,15 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import * as os from 'os';
 import { AgentConfig, AgentSession, AgentMessage, BUILTIN_AGENTS } from '../types/agents';
 import { Options, query } from '@anthropic-ai/claude-agent-sdk';
+import { AGENTS_DIR } from '../config/paths.js';
 
 export class AgentStorage {
   private agentsDir: string;
   private workingDir: string;
 
   constructor(workingDir: string = process.cwd()) {
-    const baseDir = path.join(os.homedir(), '.claude-agent');
-    this.agentsDir = path.join(baseDir, 'agents');
+    this.agentsDir = AGENTS_DIR;
     this.workingDir = workingDir;
     
       // Ensure directories exist

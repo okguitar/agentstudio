@@ -2,7 +2,7 @@
  * A2A Task Manager Service
  *
  * Manages the lifecycle of A2A asynchronous tasks with file-based persistence.
- * Tasks are stored as JSON files in projects/:projectId/.a2a/tasks/:taskId.json
+ * Tasks are stored as JSON files in {workingDirectory}/.a2a/tasks/{taskId}.json
  *
  * State Transitions:
  * - pending → running
@@ -13,10 +13,10 @@
  */
 
 import fs from 'fs/promises';
-import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import lockfile from 'proper-lockfile';
 import { A2ATask, TaskStatus, TaskInput, TaskOutput, TaskError } from '../../types/a2a.js';
+import { getProjectTasksDir } from '../../config/paths.js';
 
 // ============================================================================
 // Constants
@@ -37,7 +37,8 @@ const LOCK_OPTIONS = {
 // ============================================================================
 
 interface CreateTaskParams {
-  projectId: string;
+  workingDirectory: string;  // Absolute path to project working directory
+  projectId: string;         // Project identifier for task metadata
   agentId: string;
   a2aAgentId: string;
   input: TaskInput;
@@ -57,16 +58,19 @@ interface UpdateTaskParams {
 
 /**
  * Get the directory path for tasks in a project
+ * @param workingDirectory - Absolute path to project working directory
  */
-function getTasksDirectory(projectId: string): string {
-  return path.join(process.cwd(), 'projects', projectId, '.a2a', 'tasks');
+function getTasksDirectory(workingDirectory: string): string {
+  return getProjectTasksDir(workingDirectory);
 }
 
 /**
  * Get the file path for a specific task
+ * @param workingDirectory - Absolute path to project working directory
+ * @param taskId - Task ID
  */
-function getTaskFilePath(projectId: string, taskId: string): string {
-  return path.join(getTasksDirectory(projectId), `${taskId}.json`);
+function getTaskFilePath(workingDirectory: string, taskId: string): string {
+  return `${getTasksDirectory(workingDirectory)}/${taskId}.json`;
 }
 
 /**
@@ -94,9 +98,10 @@ function validateStateTransition(currentStatus: TaskStatus, newStatus: TaskStatu
 
 /**
  * Ensure tasks directory exists
+ * @param workingDirectory - Absolute path to project working directory
  */
-async function ensureTasksDirectory(projectId: string): Promise<void> {
-  const tasksDir = getTasksDirectory(projectId);
+async function ensureTasksDirectory(workingDirectory: string): Promise<void> {
+  const tasksDir = getTasksDirectory(workingDirectory);
   await fs.mkdir(tasksDir, { recursive: true });
 }
 
@@ -118,13 +123,13 @@ export class TaskManager {
    * @throws Error if task creation fails
    */
   async createTask(params: CreateTaskParams): Promise<A2ATask> {
-    const { projectId, agentId, a2aAgentId, input, timeoutMs = DEFAULT_TIMEOUT_MS } = params;
+    const { workingDirectory, projectId, agentId, a2aAgentId, input, timeoutMs = DEFAULT_TIMEOUT_MS } = params;
 
     // Generate unique task ID
     const taskId = uuidv4();
 
     // Ensure directory exists
-    await ensureTasksDirectory(projectId);
+    await ensureTasksDirectory(workingDirectory);
 
     // Create task object
     const now = new Date().toISOString();
@@ -140,8 +145,8 @@ export class TaskManager {
       updatedAt: now,
     };
 
-    // Write task file with locking
-    const taskFilePath = getTaskFilePath(projectId, taskId);
+    // Write task file
+    const taskFilePath = getTaskFilePath(workingDirectory, taskId);
     const taskContent = JSON.stringify(task, null, 2);
 
     await fs.writeFile(taskFilePath, taskContent, 'utf-8');
@@ -149,6 +154,7 @@ export class TaskManager {
     console.info('[TaskManager] Task created:', {
       taskId,
       projectId,
+      workingDirectory,
       agentId,
       timeoutMs,
     });
@@ -159,13 +165,13 @@ export class TaskManager {
   /**
    * Get task by ID
    *
-   * @param projectId - Project ID
+   * @param workingDirectory - Absolute path to project working directory
    * @param taskId - Task ID
    * @returns Task object or null if not found
    */
-  async getTask(projectId: string, taskId: string): Promise<A2ATask | null> {
+  async getTask(workingDirectory: string, taskId: string): Promise<A2ATask | null> {
     try {
-      const taskFilePath = getTaskFilePath(projectId, taskId);
+      const taskFilePath = getTaskFilePath(workingDirectory, taskId);
       const taskContent = await fs.readFile(taskFilePath, 'utf-8');
       const task: A2ATask = JSON.parse(taskContent);
       return task;
@@ -181,22 +187,22 @@ export class TaskManager {
    * Update task status and related fields
    * Validates state transitions and uses file locking for atomicity
    *
-   * @param projectId - Project ID
+   * @param workingDirectory - Absolute path to project working directory
    * @param taskId - Task ID
    * @param newStatus - New task status
    * @param updates - Additional fields to update
    * @throws Error if task not found or invalid transition
    */
   async updateTaskStatus(
-    projectId: string,
+    workingDirectory: string,
     taskId: string,
     newStatus: TaskStatus,
     updates?: UpdateTaskParams
   ): Promise<A2ATask> {
-    const taskFilePath = getTaskFilePath(projectId, taskId);
+    const taskFilePath = getTaskFilePath(workingDirectory, taskId);
 
     // First check if task exists before trying to lock
-    const task = await this.getTask(projectId, taskId);
+    const task = await this.getTask(workingDirectory, taskId);
 
     if (!task) {
       throw new Error(`Task not found: ${taskId}`);
@@ -226,7 +232,8 @@ export class TaskManager {
 
       console.info('[TaskManager] Task status updated:', {
         taskId,
-        projectId,
+        projectId: task.projectId,
+        workingDirectory,
         oldStatus: task.status,
         newStatus,
       });
@@ -244,13 +251,13 @@ export class TaskManager {
    * Cancel a task
    * Only pending or running tasks can be canceled
    *
-   * @param projectId - Project ID
+   * @param workingDirectory - Absolute path to project working directory
    * @param taskId - Task ID
    * @returns Updated task object
    * @throws Error if task cannot be canceled
    */
-  async cancelTask(projectId: string, taskId: string): Promise<A2ATask> {
-    const task = await this.getTask(projectId, taskId);
+  async cancelTask(workingDirectory: string, taskId: string): Promise<A2ATask> {
+    const task = await this.getTask(workingDirectory, taskId);
 
     if (!task) {
       throw new Error(`Task not found: ${taskId}`);
@@ -264,7 +271,7 @@ export class TaskManager {
     }
 
     // Update status to canceled
-    return this.updateTaskStatus(projectId, taskId, 'canceled', {
+    return this.updateTaskStatus(workingDirectory, taskId, 'canceled', {
       completedAt: new Date().toISOString(),
     });
   }
@@ -272,13 +279,13 @@ export class TaskManager {
   /**
    * List all tasks for a project
    *
-   * @param projectId - Project ID
+   * @param workingDirectory - Absolute path to project working directory
    * @param statusFilter - Optional status filter
    * @returns Array of tasks
    */
-  async listTasks(projectId: string, statusFilter?: TaskStatus): Promise<A2ATask[]> {
+  async listTasks(workingDirectory: string, statusFilter?: TaskStatus): Promise<A2ATask[]> {
     try {
-      const tasksDir = getTasksDirectory(projectId);
+      const tasksDir = getTasksDirectory(workingDirectory);
       const files = await fs.readdir(tasksDir);
 
       const tasks: A2ATask[] = [];
@@ -287,7 +294,7 @@ export class TaskManager {
         if (!file.endsWith('.json')) continue;
 
         const taskId = file.replace('.json', '');
-        const task = await this.getTask(projectId, taskId);
+        const task = await this.getTask(workingDirectory, taskId);
 
         if (task && (!statusFilter || task.status === statusFilter)) {
           tasks.push(task);

@@ -365,6 +365,7 @@ router.post('/tasks', a2aStrictRateLimiter, async (req: A2ARequest, res: Respons
 
     // Create task using TaskManager
     const task = await taskManager.createTask({
+      workingDirectory: a2aContext.workingDirectory,
       projectId: a2aContext.projectId,
       agentId: a2aContext.agentType,
       a2aAgentId: a2aContext.a2aAgentId,
@@ -424,7 +425,7 @@ router.get('/tasks/:taskId', async (req: A2ARequest, res: Response) => {
     });
 
     // Get task from TaskManager
-    const task = await taskManager.getTask(a2aContext.projectId, taskId);
+    const task = await taskManager.getTask(a2aContext.workingDirectory, taskId);
 
     if (!task) {
       return res.status(404).json({
@@ -517,7 +518,7 @@ router.delete('/tasks/:taskId', async (req: A2ARequest, res: Response) => {
 
     // Cancel task using TaskManager
     try {
-      const task = await taskManager.cancelTask(a2aContext.projectId, taskId);
+      const task = await taskManager.cancelTask(a2aContext.workingDirectory, taskId);
 
       res.json({
         taskId: task.id,

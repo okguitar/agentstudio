@@ -2,6 +2,9 @@ import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { config } from 'dotenv';
 
+// Re-export path constants for convenient access
+export * from './paths.js';
+
 export interface AgentStudioConfig {
   port?: number;
   host?: string;

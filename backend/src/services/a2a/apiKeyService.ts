@@ -4,7 +4,7 @@
  * Manages inbound API keys for authenticating external callers to AgentStudio agents.
  * Keys are stored hashed with bcrypt (salt rounds 10) for security.
  *
- * Storage: projects/:projectId/.a2a/api-keys.json
+ * Storage: {projectPath}/.a2a/api-keys.json
  * Format: { version: "1.0.0", keys: [A2AApiKey[]] }
  *
  * Key Format: agt_proj_{projectId}_{32-hex-chars}
@@ -17,7 +17,8 @@ import bcrypt from 'bcrypt';
 // Temporary fix for bcrypt compilation issues
 import { v4 as uuidv4 } from 'uuid';
 import lockfile from 'proper-lockfile';
-import type { A2AApiKey, A2AApiKeyRegistry } from '../../types/a2a';
+import type { A2AApiKey, A2AApiKeyRegistry } from '../../types/a2a.js';
+import { getProjectApiKeysFile } from '../../config/paths.js';
 
 const SALT_ROUNDS = 10;
 
@@ -34,16 +35,10 @@ const LOCK_OPTIONS = {
 
 /**
  * Get path to project's API keys file
+ * @param projectPath - Absolute path to the project working directory
  */
-function getApiKeysPath(projectId: string): string {
-  // Check if the projectId looks like an absolute path
-  if (path.isAbsolute(projectId)) {
-    return path.join(projectId, '.a2a', 'api-keys.json');
-  }
-
-  // If projectId is a relative path, resolve it relative to the current working directory
-  // In most cases, projectId should be an absolute path to the project directory
-  return path.resolve(projectId, '.a2a', 'api-keys.json');
+function getApiKeysPath(projectPath: string): string {
+  return getProjectApiKeysFile(projectPath);
 }
 
 /**
