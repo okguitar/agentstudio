@@ -306,20 +306,53 @@ export async function deleteVersion(versionId: string): Promise<void> {
   await saveClaudeVersions(storage);
 }
 
+// 清理重复的系统版本（保留第一个，删除其他的）
+async function cleanupDuplicateSystemVersions(): Promise<boolean> {
+  const storage = await loadClaudeVersions();
+  
+  // 查找所有系统版本
+  const systemVersions = storage.versions.filter(v => v.isSystem);
+  
+  if (systemVersions.length <= 1) {
+    return false; // 没有重复，不需要清理
+  }
+  
+  console.log(`⚠️ Found ${systemVersions.length} system versions, cleaning up duplicates...`);
+  
+  // 保留第一个系统版本，删除其他的
+  const keepVersion = systemVersions[0];
+  const removeIds = systemVersions.slice(1).map(v => v.id);
+  
+  // 从数组中移除重复的系统版本
+  storage.versions = storage.versions.filter(v => !removeIds.includes(v.id));
+  
+  console.log(`✅ Kept system version: ${keepVersion.alias} (${keepVersion.id})`);
+  console.log(`🗑️ Removed duplicate system versions: ${removeIds.join(', ')}`);
+  
+  await saveClaudeVersions(storage);
+  return true;
+}
+
 // 初始化系统版本（在启动时调用）
 
 export async function initializeSystemVersion(executablePath: string): Promise<ClaudeVersion> {
   const storage = await loadClaudeVersions();
 
-  // 检查是否已存在系统供应商
-  let systemVersion = storage.versions.find(v => v.id === 'claude' && v.isSystem);
+  // 首先清理可能存在的重复系统版本
+  await cleanupDuplicateSystemVersions();
+  
+  // 重新加载 storage（清理后可能已更新）
+  const updatedStorage = await loadClaudeVersions();
+
+  // 检查是否已存在系统供应商（使用更严格的检查：只要 isSystem 为 true）
+  let systemVersion = updatedStorage.versions.find(v => v.isSystem === true);
 
   if (systemVersion) {
     // 更新系统版本的路径（如果有变化）
     if (systemVersion.executablePath !== executablePath) {
       systemVersion.executablePath = executablePath;
       systemVersion.updatedAt = new Date().toISOString();
-      await saveClaudeVersions(storage);
+      await saveClaudeVersions(updatedStorage);
     }
     return systemVersion;
   }
@@ -335,7 +368,7 @@ export async function initializeSystemVersion(executablePath: string): Promise<C
       ? '系统默认的 Claude Code 版本（通过 which claude 查找）'
       : '系统默认的 Claude 供应商（需要配置 API 密钥）',
     executablePath: hasExecutable ? executablePath : undefined,
-    isDefault: storage.versions.length === 0,
+    isDefault: updatedStorage.versions.length === 0,
     isSystem: true,
     environmentVariables: {},
     models: DEFAULT_MODELS, // 系统版本使用默认模型
@@ -343,13 +376,14 @@ export async function initializeSystemVersion(executablePath: string): Promise<C
     updatedAt: now
   };
 
-  storage.versions.unshift(systemVersion); // 系统版本放在最前面
+  updatedStorage.versions.unshift(systemVersion); // 系统版本放在最前面
 
   // 如果这是第一个版本，设置为默认版本
-  if (storage.versions.length === 1) {
-    storage.defaultVersionId = systemVersion.id;
+  if (updatedStorage.versions.length === 1) {
+    updatedStorage.defaultVersionId = systemVersion.id;
   }
 
-  await saveClaudeVersions(storage);
+  await saveClaudeVersions(updatedStorage);
+  console.log(`✅ Created new system version: ${systemVersion.alias} (${systemVersion.id})`);
   return systemVersion;
 }

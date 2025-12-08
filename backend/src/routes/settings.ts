@@ -384,38 +384,8 @@ router.get('/versions', async (req, res) => {
 // GET /api/settings/claude-versions - 获取所有 Claude 版本
 router.get('/claude-versions', async (req, res) => {
   try {
-    // 首先确保系统版本存在
-    try {
-      const { stdout: claudePath } = await execAsync('which claude');
-      if (claudePath && claudePath.trim()) {
-        await initializeSystemVersion(claudePath.trim());
-      }
-    } catch (error) {
-      // Claude not found in PATH, try project node_modules
-      try {
-        const projectRoot = process.cwd();
-        const paths = [
-          join(projectRoot, 'node_modules', '.bin', 'claude'),
-          join(projectRoot, 'backend', 'node_modules', '.bin', 'claude'),
-          join(projectRoot, '..', 'node_modules', '.bin', 'claude')
-        ];
-
-        for (const claudePath of paths) {
-          try {
-            const { stdout } = await execAsync(`test -e "${claudePath}" && echo "exists"`);
-            if (stdout.trim() === 'exists') {
-              await initializeSystemVersion(claudePath);
-              console.log('Initialized system version from:', claudePath);
-              break;
-            }
-          } catch {
-            // Try next path
-          }
-        }
-      } catch (nodeModulesError) {
-        console.warn('No claude found in PATH or node_modules');
-      }
-    }
+    // 注意：系统版本已在服务器启动时初始化，这里不再重复初始化
+    // 避免并发问题导致创建重复的系统版本
     
     const versions = await getAllVersions();
     const defaultVersionId = await getDefaultVersionId();
