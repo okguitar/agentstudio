@@ -21,7 +21,8 @@ import {
   Activity,  // 用于BashOutput，表示活动/输出监控
   Square,  // 用于KillBash，表示终止/停止操作
   Plug,  // 用于MCP工具
-  AlertCircle  // 用于中断状态
+  AlertCircle,  // 用于中断状态
+  Sparkles  // 用于Skill工具
 } from 'lucide-react';
 import type { BaseToolExecution } from './sdk-types';
 
@@ -43,7 +44,8 @@ const TOOL_ICONS = {
   NotebookEdit: BookMarked,
   WebFetch: Globe,
   TodoWrite: CheckSquare,
-  WebSearch: Globe
+  WebSearch: Globe,
+  Skill: Sparkles
 };
 
 // 工具颜色映射
@@ -64,7 +66,8 @@ const TOOL_COLORS = {
   NotebookEdit: 'text-rose-600 dark:text-rose-400 bg-rose-100 dark:bg-rose-900/30',
   WebFetch: 'text-teal-600 dark:text-teal-400 bg-teal-100 dark:bg-teal-900/30',
   TodoWrite: 'text-violet-600 dark:text-violet-400 bg-violet-100 dark:bg-violet-900/30',
-  WebSearch: 'text-sky-600 dark:text-sky-400 bg-sky-100 dark:bg-sky-900/30'
+  WebSearch: 'text-sky-600 dark:text-sky-400 bg-sky-100 dark:bg-sky-900/30',
+  Skill: 'text-fuchsia-600 dark:text-fuchsia-400 bg-fuchsia-100 dark:bg-fuchsia-900/30'
 };
 
 interface BaseToolProps {

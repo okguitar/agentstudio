@@ -67,6 +67,9 @@ export interface ClaudeHistoryMessage {
   isCompactSummary?: boolean;
   isCompactCommand?: boolean;
   isVisibleInTranscriptOnly?: boolean;
+  
+  // Skill/command tool use marker - messages with this field are internal tool messages
+  sourceToolUseID?: string;
 }
 
 export interface ClaudeHistorySession {

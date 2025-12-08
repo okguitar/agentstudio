@@ -26,6 +26,7 @@ import { TodoWriteTool } from './TodoWriteTool';
 import { WebSearchTool } from './WebSearchTool';
 import { McpTool } from './McpTool';
 import { A2ACallTool } from './A2ACallTool';
+import { SkillTool } from './SkillTool';
 import { parseMcpToolName } from './mcpUtils';
 import { BaseToolComponent } from './BaseToolComponent';
 import { CUSTOM_MCP_TOOLS } from './customMcpTools';
@@ -119,6 +120,9 @@ export const ToolRenderer: React.FC<ToolRendererProps> = ({ execution }) => {
 
     case 'call_external_agent':
       return <A2ACallTool execution={execution} />;
+
+    case 'Skill':
+      return <SkillTool execution={execution} />;
 
     default:
       // 对于未知工具，使用基础组件显示

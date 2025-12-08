@@ -700,6 +700,14 @@
     "truncated": "...(已截断)",
     "totalLength": "总长度: {{length}} 字符"
   },
+  "skillTool": {
+    "toolName": "技能",
+    "skillName": "技能名称",
+    "commandName": "命令名称",
+    "unknownSkill": "未知技能",
+    "loading": "正在加载技能...",
+    "launched": "技能已启动"
+  },
   "todoWriteTool": {
     "allTasksCompleted": "所有任务已完成",
     "currentTaskProgress": "{{completed}}/{{total}} {{task}}",

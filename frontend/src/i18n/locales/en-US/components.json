@@ -700,6 +700,14 @@
     "truncated": "...(truncated)",
     "totalLength": "Total length: {{length}} characters"
   },
+  "skillTool": {
+    "toolName": "Skill",
+    "skillName": "Skill Name",
+    "commandName": "Command Name",
+    "unknownSkill": "Unknown Skill",
+    "loading": "Loading skill...",
+    "launched": "Skill launched"
+  },
   "todoWriteTool": {
     "allTasksCompleted": "All tasks completed",
     "currentTaskProgress": "{{completed}}/{{total}} {{task}}",

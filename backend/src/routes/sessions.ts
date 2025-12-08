@@ -218,9 +218,15 @@ function readClaudeHistorySessions(projectPath: string): ClaudeHistorySession[] 
         const processedMessages = processCompactContextMessages(messages);
 
         // Filter user and assistant messages, but exclude tool_result-only user messages, isMeta messages, 
+        // and internal tool messages with sourceToolUseID
         const conversationMessages = processedMessages.filter(msg => {
           // Filter out isMeta messages (rule 1)
           if ((msg as any).isMeta === true) {
+            return false;
+          }
+          
+          // Filter out internal tool messages with sourceToolUseID (e.g., Skill command loading messages)
+          if ((msg as any).sourceToolUseID) {
             return false;
           }
           
