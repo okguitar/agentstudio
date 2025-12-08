@@ -104,7 +104,7 @@ export const useAgentSessions = (agentId: string, searchTerm?: string, projectPa
         searchTerm,
         projectPath
       });
-      
+
       const url = new URL(`${API_BASE}/sessions/${agentId}`);
       if (searchTerm && searchTerm.trim()) {
         url.searchParams.append('search', searchTerm.trim());
@@ -112,15 +112,15 @@ export const useAgentSessions = (agentId: string, searchTerm?: string, projectPa
       if (projectPath) {
         url.searchParams.set('projectPath', projectPath);
       }
-      
+
       console.log(`🌐 [FRONTEND DEBUG] Fetching sessions from: ${url.toString()}`);
-      
+
       const response = await authFetch(url.toString());
       if (!response.ok) {
         console.error(`❌ [FRONTEND DEBUG] Failed to fetch sessions: ${response.status} ${response.statusText}`);
         throw new Error('Failed to fetch agent sessions');
       }
-      
+
       const data = await response.json();
       console.log(`📋 [FRONTEND DEBUG] Received sessions data:`, {
         sessionCount: data.sessions?.length || 0,
@@ -132,7 +132,7 @@ export const useAgentSessions = (agentId: string, searchTerm?: string, projectPa
           messageCount: s.messageCount
         }))
       });
-      
+
       return data;
     },
     enabled: !!agentId
@@ -148,12 +148,12 @@ export const useAgentSessionMessages = (agentId: string, sessionId: string | nul
     projectPath,
     enabled: !!agentId && !!sessionId
   });
-  
+
   return useQuery({
     queryKey: ['agent-session-messages', agentId, sessionId, projectPath],
     queryFn: async () => {
       console.log('🎣 Fetching session messages for:', { agentId, sessionId, projectPath });
-      
+
       if (!sessionId) {
         return { messages: [] };
       }
@@ -162,9 +162,9 @@ export const useAgentSessionMessages = (agentId: string, sessionId: string | nul
       if (projectPath) {
         url.searchParams.set('projectPath', projectPath);
       }
-      
+
       console.log('🎣 Fetching from URL:', url.toString());
-      
+
       const response = await authFetch(url.toString());
 
       if (!response.ok) {
@@ -173,17 +173,17 @@ export const useAgentSessionMessages = (agentId: string, sessionId: string | nul
       }
 
       const data = await response.json();
-      
+
       console.log('🎣 Raw API response:', { messageCount: data.messages?.length });
-      
+
       // Convert timestamps from number to Date objects to match ChatMessage interface
       const convertedMessages = data.messages.map((msg: any) => ({
         ...msg,
         timestamp: new Date(msg.timestamp)
       }));
-      
+
       console.log('🎣 Converted messages:', { messageCount: convertedMessages.length });
-      
+
       return {
         ...data,
         messages: convertedMessages
@@ -196,31 +196,35 @@ export const useAgentSessionMessages = (agentId: string, sessionId: string | nul
 // Agent-specific AI chat hook
 export const useAgentChat = () => {
   return {
-    mutateAsync: async ({ 
+    mutateAsync: async ({
       agentId,
-      message, 
+      message,
       images,
-      context, 
+      context,
       sessionId,
       projectPath,
       mcpTools,
       permissionMode,
       model,
       claudeVersion,
+      envVars,
+      channel,
       abortController,
-      onMessage, 
-      onError 
-    }: { 
+      onMessage,
+      onError
+    }: {
       agentId: string;
-      message: string; 
+      message: string;
       images?: ImageData[];
-      context?: ChatContext; 
+      context?: ChatContext;
       sessionId?: string | null;
       projectPath?: string;
       mcpTools?: string[];
       permissionMode?: 'default' | 'acceptEdits' | 'bypassPermissions' | 'plan';
       model?: string;
       claudeVersion?: string;
+      envVars?: Record<string, string>;
+      channel?: string;
       abortController?: AbortController;
       onMessage?: (data: unknown) => void;
       onError?: (error: unknown) => void;
@@ -232,7 +236,7 @@ export const useAgentChat = () => {
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ agentId, message, images, context, sessionId, projectPath, mcpTools, permissionMode, model, claudeVersion, channel: 'web' }),
+          body: JSON.stringify({ agentId, message, images, context, sessionId, projectPath, mcpTools, permissionMode, model, claudeVersion, envVars, channel: channel || 'web' }),
           signal: abortController?.signal
         });
 
@@ -262,7 +266,7 @@ export const useAgentChat = () => {
             reader.cancel();
             throw new DOMException('Request aborted', 'AbortError');
           }
-          
+
           const { done, value } = await reader.read();
           if (done) break;
 

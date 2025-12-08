@@ -170,18 +170,30 @@
       "opus": "Opus"
     },
     "claudeVersion": {
-      "title": "选择Claude版本",
+      "title": "选择供应商",
       "default": "默认",
       "custom": "自定义",
       "system": "系统",
-      "locked": "版本已锁定（活跃会话）"
+      "locked": "供应商已锁定（活跃会话）"
     },
     "settings": {
       "title": "设置",
       "permissionMode": "权限模式",
-      "claudeVersion": "Claude版本",
+      "claudeVersion": "供应商",
       "model": "模型",
+      "modelAndVersion": "供应商与模型",
       "noSettings": "暂无可用设置"
+    },
+    "envVars": {
+      "title": "环境变量",
+      "add": "添加变量",
+      "key": "键",
+      "value": "值",
+      "save": "保存",
+      "cancel": "取消",
+      "edit": "编辑",
+      "delete": "删除",
+      "noVars": "暂无环境变量"
     },
     "commandWarning": "未知命令: {{command}}。可用命令: {{commands}}",
     "navigateTo": "导航到: {{path}}",

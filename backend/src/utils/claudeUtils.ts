@@ -129,6 +129,7 @@ export async function getDefaultClaudeVersionEnv(): Promise<Record<string, strin
  * @param model - Optional model override
  * @param claudeVersion - Optional Claude version ID
  * @param defaultEnv - Optional default environment variables (used by Slack integration)
+ * @param userEnv - Optional user-provided environment variables (from chat interface)
  */
 export async function buildQueryOptions(
   agent: any,
@@ -137,7 +138,8 @@ export async function buildQueryOptions(
   permissionMode?: string,
   model?: string,
   claudeVersion?: string,
-  defaultEnv?: Record<string, string>
+  defaultEnv?: Record<string, string>,
+  userEnv?: Record<string, string>
 ): Promise<Options> {
   // Determine working directory
   let cwd = process.cwd();
@@ -267,7 +269,8 @@ export async function buildQueryOptions(
 
   // Always merge environment variables with process.env
   // This ensures critical variables like PATH, etc. are available
-  queryOptions.env = { ...process.env, ...environmentVariables };
+  // Priority: userEnv > environmentVariables (from version/default) > process.env
+  queryOptions.env = { ...process.env, ...environmentVariables, ...userEnv };
 
   // Normalize proxy variables: if uppercase is set, also set lowercase (and vice versa)
   // This ensures proxy settings work regardless of which form the client library checks first

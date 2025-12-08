@@ -320,7 +320,8 @@ const ChatRequestSchema = z.object({
     currentItem: z.any().optional(),
     allItems: z.array(z.any()).optional(),
     customContext: z.record(z.any()).optional()
-  }).optional()
+  }).optional(),
+  envVars: z.record(z.string()).optional()
 }).refine(data => data.message.trim().length > 0 || (data.images && data.images.length > 0), {
   message: "Either message text or images must be provided"
 });
@@ -450,8 +451,15 @@ router.post('/chat', async (req, res) => {
       return res.status(400).json({ error: 'Invalid request body', details: validation.error });
     }
 
-    const { message, images, agentId, sessionId: initialSessionId, projectPath, mcpTools, permissionMode, model, claudeVersion, channel } = validation.data;
+    const { message, images, agentId, sessionId: initialSessionId, projectPath, mcpTools, permissionMode, model, claudeVersion, channel, envVars } = validation.data;
     let sessionId = initialSessionId;
+
+    console.log('[Backend] Received chat request:', {
+      agentId,
+      sessionId,
+      envVarsKeys: envVars ? Object.keys(envVars) : [],
+      envVars
+    });
 
     // Configure partial message streaming based on channel
     const includePartialMessages = channel === 'web';
@@ -482,7 +490,7 @@ router.post('/chat', async (req, res) => {
       try {
         console.log(`🔄 Attempt ${retryCount + 1}/${MAX_RETRIES + 1} for session: ${sessionId || 'new'}`);
         // 构建查询选项
-        const queryOptions = await buildQueryOptions(agent, projectPath, mcpTools, permissionMode, model, claudeVersion);
+        const queryOptions = await buildQueryOptions(agent, projectPath, mcpTools, permissionMode, model, claudeVersion, undefined, envVars);
 
         // ⚡ CRITICAL: Add includePartialMessages BEFORE creating session
         // This must be set before handleSessionManagement because ClaudeSession

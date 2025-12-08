@@ -21,13 +21,13 @@ export interface AgentInputAreaProps {
   isAiTyping: boolean;
   isStopping: boolean;
   isMobile: boolean;
-  
+
   // Tool state
   showToolSelector: boolean;
   selectedRegularTools: string[];
   selectedMcpTools: string[];
   mcpToolsEnabled: boolean;
-  
+
   // Command state
   showCommandSelector: boolean;
   showFileBrowser: boolean;
@@ -36,7 +36,7 @@ export interface AgentInputAreaProps {
   selectedCommandIndex: number;
   atSymbolPosition: number | null;
   commandWarning: string;
-  
+
   // Settings state
   permissionMode: string;
   selectedModel: string;
@@ -47,25 +47,25 @@ export interface AgentInputAreaProps {
   showMobileSettings: boolean;
   isCompactMode: boolean;
   isVersionLocked: boolean;
-  
+
   // UI state
   isDragOver: boolean;
   previewImage: string | null;
   showConfirmDialog: boolean;
   confirmMessage: string;
   showMcpStatusModal: boolean;
-  
+
   // Data
   availableModels: any[];
   claudeVersionsData: any;
   agent: any;
   projectPath?: string;
   mcpStatus?: any;
-  
+
   // Refs
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
-  
+
   // Event handlers
   onSend: () => void;
   handleKeyDown: (e: React.KeyboardEvent) => void;
@@ -77,7 +77,7 @@ export interface AgentInputAreaProps {
   handleDragLeave: (e: React.DragEvent) => void;
   handleDrop: (e: React.DragEvent) => void;
   handleStopGeneration: () => void;
-  
+
   // Setters
   onSetInputMessage: (message: string) => void;
   onSetShowToolSelector: (show: boolean) => void;
@@ -94,7 +94,7 @@ export interface AgentInputAreaProps {
   onSetPreviewImage: (image: string | null) => void;
   onSetShowConfirmDialog: (show: boolean) => void;
   onSetShowMcpStatusModal: (show: boolean) => void;
-  
+
   // Command handlers
   onCommandSelect: (command: CommandType) => void;
   onSetShowCommandSelector: (show: boolean) => void;
@@ -103,18 +103,22 @@ export interface AgentInputAreaProps {
   onSetAtSymbolPosition: (position: number | null) => void;
   onSetCommandWarning: (warning: string | null) => void;
   onSetCommandSearch: (search: string) => void;
-  
+
   // Confirm dialog handlers
   handleConfirmDialog: () => void;
   handleCancelDialog: () => void;
-  
+
   // Utility functions
   isSendDisabled: () => boolean;
+
+  // Environment Variables
+  envVars: Record<string, string>;
+  onSetEnvVars: (envVars: Record<string, string>) => void;
 }
 
 export const AgentInputArea: React.FC<AgentInputAreaProps> = (props) => {
   const { t } = useTranslation('components');
-  
+
   const {
     inputMessage,
     selectedImages,
@@ -135,11 +139,8 @@ export const AgentInputArea: React.FC<AgentInputAreaProps> = (props) => {
     permissionMode,
     selectedModel,
     selectedClaudeVersion,
-    showPermissionDropdown,
-    showModelDropdown,
-    showVersionDropdown,
     showMobileSettings,
-    isCompactMode,
+
     isVersionLocked,
     isDragOver,
     previewImage,
@@ -171,9 +172,6 @@ export const AgentInputArea: React.FC<AgentInputAreaProps> = (props) => {
     onSetPermissionMode,
     onSetSelectedModel,
     onSetSelectedClaudeVersion,
-    onSetShowPermissionDropdown,
-    onSetShowModelDropdown,
-    onSetShowVersionDropdown,
     onSetShowMobileSettings,
     onSetPreviewImage,
     // onSetShowConfirmDialog,
@@ -187,24 +185,26 @@ export const AgentInputArea: React.FC<AgentInputAreaProps> = (props) => {
     onSetCommandSearch,
     handleConfirmDialog,
     handleCancelDialog,
-    isSendDisabled
+    isSendDisabled,
+    envVars,
+    onSetEnvVars
   } = props;
 
   // Handle input changes with command and file selection logic
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     onSetInputMessage(value);
-    
+
     // Clear command warning when input changes
     if (commandWarning) {
       onSetCommandWarning(null);
     }
-    
+
     // Check for @ symbol trigger immediately
     if (value.length > 0 && value[value.length - 1] === '@') {
       // Check if @ is at start of line or preceded by whitespace
       const textBeforeAt = value.substring(0, value.length - 1);
-      
+
       if (textBeforeAt.length === 0 || /\s$/.test(textBeforeAt)) {
         onSetAtSymbolPosition(value.length - 1);
         onSetShowFileBrowser(true);
@@ -213,7 +213,7 @@ export const AgentInputArea: React.FC<AgentInputAreaProps> = (props) => {
         return;
       }
     }
-    
+
     // Check if we should show command selector
     if (isCommandTrigger(value)) {
       // Extract command search and update state
@@ -300,6 +300,8 @@ export const AgentInputArea: React.FC<AgentInputAreaProps> = (props) => {
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
+            envVars={envVars}
+            onEnvVarsChange={onSetEnvVars}
           />
 
           {/* Tool Selector */}
@@ -331,7 +333,7 @@ export const AgentInputArea: React.FC<AgentInputAreaProps> = (props) => {
                   <X className="w-6 h-6" />
                 </button>
               </div>
-              
+
               <div className="space-y-4">
                 {/* Permission Mode */}
                 <div>
@@ -405,14 +407,14 @@ export const AgentInputArea: React.FC<AgentInputAreaProps> = (props) => {
           onSetShowFileBrowser={onSetShowFileBrowser}
           onSetAtSymbolPosition={onSetAtSymbolPosition}
         />
-        
+
         <ConfirmDialog
           isOpen={showConfirmDialog}
           message={confirmMessage}
           onConfirm={handleConfirmDialog}
           onCancel={handleCancelDialog}
         />
-        
+
         <ImagePreview
           images={previewImage ? [previewImage] : []}
           onClose={() => onSetPreviewImage(null)}
@@ -509,16 +511,11 @@ export const AgentInputArea: React.FC<AgentInputAreaProps> = (props) => {
           setSelectedModel={onSetSelectedModel}
           selectedClaudeVersion={selectedClaudeVersion}
           setSelectedClaudeVersion={onSetSelectedClaudeVersion}
-          showPermissionDropdown={showPermissionDropdown}
-          setShowPermissionDropdown={onSetShowPermissionDropdown}
-          showModelDropdown={showModelDropdown}
-          setShowModelDropdown={onSetShowModelDropdown}
-          showVersionDropdown={showVersionDropdown}
-          setShowVersionDropdown={onSetShowVersionDropdown}
+
           availableModels={availableModels}
           claudeVersionsData={claudeVersionsData}
           isVersionLocked={isVersionLocked}
-          isCompactMode={isCompactMode}
+
           agent={agent}
           textareaRef={textareaRef}
           fileInputRef={fileInputRef}
@@ -530,6 +527,8 @@ export const AgentInputArea: React.FC<AgentInputAreaProps> = (props) => {
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
+          envVars={envVars}
+          setEnvVars={onSetEnvVars}
         />
       </div>
 
@@ -551,14 +550,14 @@ export const AgentInputArea: React.FC<AgentInputAreaProps> = (props) => {
         onSetShowFileBrowser={onSetShowFileBrowser}
         onSetAtSymbolPosition={onSetAtSymbolPosition}
       />
-      
+
       <ConfirmDialog
         isOpen={showConfirmDialog}
         message={confirmMessage}
         onConfirm={handleConfirmDialog}
         onCancel={handleCancelDialog}
       />
-      
+
       <ImagePreview
         images={previewImage ? [previewImage] : []}
         onClose={() => onSetPreviewImage(null)}

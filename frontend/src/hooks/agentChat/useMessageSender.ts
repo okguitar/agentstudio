@@ -48,6 +48,7 @@ export interface UseMessageSenderProps {
   handleNewSession: () => void;
   isCommandDefined: (commandName: string) => boolean;
   getAllAvailableCommands: () => string;
+  envVars: Record<string, string>;
 }
 
 export const useMessageSender = (props: UseMessageSenderProps) => {
@@ -89,6 +90,7 @@ export const useMessageSender = (props: UseMessageSenderProps) => {
     handleNewSession,
     isCommandDefined,
     getAllAvailableCommands,
+    envVars
   } = props;
 
   const { t } = useTranslation('components');
@@ -298,6 +300,8 @@ export const useMessageSender = (props: UseMessageSenderProps) => {
         permissionMode,
         model: selectedModel,
         claudeVersion: selectedClaudeVersion,
+        envVars,
+        channel: 'web',
         abortController,
         onMessage: handleStreamMessage,
         onError: handleStreamError

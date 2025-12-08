@@ -18,16 +18,17 @@ export const useToolSelector = ({ agent }: UseToolSelectorProps) => {
   const [selectedClaudeVersion, setSelectedClaudeVersion] = useState<string | undefined>(undefined);
   const [showVersionDropdown, setShowVersionDropdown] = useState(false);
   const [isVersionLocked, setIsVersionLocked] = useState(false);
+  const [envVars, setEnvVars] = useState<Record<string, string>>({});
 
   // Initialize tool selector with agent's preset tools
   useEffect(() => {
     if (agent?.allowedTools?.length > 0) {
       const enabledTools = agent.allowedTools.filter((tool: AgentTool) => tool.enabled);
-      
+
       // Separate regular tools and MCP tools
       const regularTools: string[] = [];
       const mcpTools: string[] = [];
-      
+
       enabledTools.forEach((tool: AgentTool) => {
         if (tool.name.includes('.') && !tool.name.startsWith('mcp__')) {
           // MCP tool format: serverName.toolName -> mcp__serverName__toolName
@@ -42,7 +43,7 @@ export const useToolSelector = ({ agent }: UseToolSelectorProps) => {
           regularTools.push(tool.name);
         }
       });
-      
+
       setSelectedRegularTools(regularTools);
       setSelectedMcpTools(mcpTools);
       setMcpToolsEnabled(mcpTools.length > 0);
@@ -62,7 +63,7 @@ export const useToolSelector = ({ agent }: UseToolSelectorProps) => {
     selectedClaudeVersion,
     showVersionDropdown,
     isVersionLocked,
-    
+
     // State setters
     setShowToolSelector,
     setSelectedRegularTools,
@@ -75,5 +76,7 @@ export const useToolSelector = ({ agent }: UseToolSelectorProps) => {
     setSelectedClaudeVersion,
     setShowVersionDropdown,
     setIsVersionLocked,
+    envVars,
+    setEnvVars,
   };
 };

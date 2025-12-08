@@ -38,7 +38,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
   const { t } = useTranslation('components');
   const { isCompactMode } = useResponsiveSettings();
   const { isMobile } = useMobileContext();
-  
+
   // Refs - 需要在hooks之前定义
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -200,7 +200,9 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
     setPermissionMode,
     setShowPermissionDropdown,
     setShowModelDropdown,
-    setShowVersionDropdown
+    setShowVersionDropdown,
+    envVars,
+    setEnvVars
   } = toolSelector;
 
   const {
@@ -211,7 +213,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
     setIsUserScrolling
   } = scrollManagement;
 
-  
+
   // Get current backend service name
   const [currentServiceName, setCurrentServiceName] = useState<string>('默认服务');
   useEffect(() => {
@@ -226,7 +228,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
   const { data: sessionsData } = useAgentSessions(agent.id, searchTerm, projectPath);
   const { data: sessionMessagesData } = useAgentSessionMessages(agent.id, currentSessionId, projectPath);
   const { data: activeSessionsData } = useSessions();
-  
+
   // 会话心跳 - 基于 AI 响应成功状态
   useSessionHeartbeatOnSuccess({
     agentId: agent.id,
@@ -241,7 +243,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
   useEffect(() => {
     // 启动智能监听
     const cleanup = tabManager.startSmartMonitoring();
-    
+
     return cleanup;
   }, []); // 只在组件挂载时启动一次
 
@@ -253,8 +255,8 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
       return cleanup;
     }
   }, [currentSessionId, agent.id]);
-  
-    
+
+
 
 
   // Check if commands failed to load (likely authentication issue)
@@ -373,6 +375,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
     handleNewSession,
     isCommandDefined,
     getAllAvailableCommands,
+    envVars,
   });
 
   // 为 AgentCommandSelector 创建键盘处理器
@@ -660,13 +663,13 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
         isAiTyping={isAiTyping}
         isStopping={isStopping}
         isMobile={isMobile}
-        
+
         // Tool state
         showToolSelector={showToolSelector}
         selectedRegularTools={selectedRegularTools}
         selectedMcpTools={selectedMcpTools}
         mcpToolsEnabled={mcpToolsEnabled}
-        
+
         // Command state
         showCommandSelector={showCommandSelector}
         showFileBrowser={showFileBrowser}
@@ -675,7 +678,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
         selectedCommandIndex={selectedCommandIndex}
         atSymbolPosition={atSymbolPosition}
         commandWarning={commandWarning || ''}
-        
+
         // Settings state
         permissionMode={permissionMode}
         selectedModel={selectedModel}
@@ -686,25 +689,25 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
         showMobileSettings={showMobileSettings}
         isCompactMode={isCompactMode}
         isVersionLocked={isVersionLocked}
-        
+
         // UI state
         isDragOver={isDragOver}
         previewImage={previewImage}
         showConfirmDialog={showConfirmDialog}
         confirmMessage={confirmMessage || ''}
         showMcpStatusModal={showMcpStatusModal}
-        
+
         // Data
         availableModels={availableModels}
         claudeVersionsData={claudeVersionsData}
         agent={agent}
         projectPath={projectPath}
         mcpStatus={mcpStatus}
-        
+
         // Refs
         textareaRef={textareaRef}
         fileInputRef={fileInputRef}
-        
+
         // Event handlers
         onSend={handleSendMessage}
         handleKeyDown={agentCommandSelectorKeyHandler}
@@ -716,7 +719,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
         handleDragLeave={handleDragLeave}
         handleDrop={handleDrop}
         handleStopGeneration={handleStopGeneration}
-        
+
         // Setters
         onSetInputMessage={setInputMessage}
         onSetShowToolSelector={setShowToolSelector}
@@ -733,7 +736,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
         onSetPreviewImage={setPreviewImage}
         onSetShowConfirmDialog={setShowConfirmDialog}
         onSetShowMcpStatusModal={setShowMcpStatusModal}
-        
+
         // Command handlers
         onCommandSelect={handleCommandSelect}
         onSetShowCommandSelector={setShowCommandSelector}
@@ -742,13 +745,17 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
         onSetAtSymbolPosition={setAtSymbolPosition}
         onSetCommandWarning={setCommandWarning}
         onSetCommandSearch={setCommandSearch}
-        
+
         // Confirm dialog handlers
         handleConfirmDialog={handleConfirmDialog}
         handleCancelDialog={handleCancelDialog}
-        
+
         // Utility functions
         isSendDisabled={isSendDisabled}
+
+        // Environment Variables
+        envVars={envVars}
+        onSetEnvVars={setEnvVars}
       />
     </div>
   );

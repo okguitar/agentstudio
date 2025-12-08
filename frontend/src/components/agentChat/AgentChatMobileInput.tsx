@@ -28,6 +28,8 @@ export interface AgentChatMobileInputProps {
   availableModels: any[];
   claudeVersionsData: any;
   isVersionLocked: boolean;
+  envVars: Record<string, string>;
+  onEnvVarsChange: (envVars: Record<string, string>) => void;
   agent: any;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
@@ -65,6 +67,8 @@ export const AgentChatMobileInput: React.FC<AgentChatMobileInputProps> = ({
   availableModels,
   claudeVersionsData,
   isVersionLocked,
+  envVars,
+  onEnvVarsChange,
   agent,
   textareaRef,
   fileInputRef,
@@ -81,9 +85,8 @@ export const AgentChatMobileInput: React.FC<AgentChatMobileInputProps> = ({
 
   return (
     <div
-      className={`flex-shrink-0 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 ${
-        isDragOver ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700' : ''
-      }`}
+      className={`flex-shrink-0 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 ${isDragOver ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700' : ''
+        }`}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
@@ -98,10 +101,10 @@ export const AgentChatMobileInput: React.FC<AgentChatMobileInputProps> = ({
                   src={img.preview}
                   alt={t('agentChat.imagePreview')}
                   className="w-12 h-12 object-cover rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer hover:opacity-80 transition-opacity"
-                  onClick={() => {/* handle preview */}}
+                  onClick={() => {/* handle preview */ }}
                 />
                 <button
-                  onClick={() => {/* handle remove */}}
+                  onClick={() => {/* handle remove */ }}
                   className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs hover:bg-red-600"
                   title={t('agentChat.deleteImage')}
                 >
@@ -133,11 +136,10 @@ export const AgentChatMobileInput: React.FC<AgentChatMobileInputProps> = ({
             <div className="relative">
               <button
                 onClick={() => setShowToolSelector(!showToolSelector)}
-                className={`p-2 transition-colors rounded-lg ${
-                  selectedRegularTools.length > 0 || (mcpToolsEnabled && selectedMcpTools.length > 0)
+                className={`p-2 transition-colors rounded-lg ${selectedRegularTools.length > 0 || (mcpToolsEnabled && selectedMcpTools.length > 0)
                     ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50'
                     : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                }`}
+                  }`}
                 title={
                   selectedRegularTools.length > 0 || (mcpToolsEnabled && selectedMcpTools.length > 0)
                     ? t('agentChat.toolSelection') + ` (${t('agentChat.selectedCount', { count: selectedRegularTools.length + (mcpToolsEnabled ? selectedMcpTools.length : 0) })})`
@@ -173,11 +175,10 @@ export const AgentChatMobileInput: React.FC<AgentChatMobileInputProps> = ({
             <div className="relative">
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className={`p-2 transition-colors rounded-lg ${
-                  selectedImages.length > 0
+                className={`p-2 transition-colors rounded-lg ${selectedImages.length > 0
                     ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50'
                     : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                }`}
+                  }`}
                 title={selectedImages.length > 0 ? t('agentChat.imageSelection') + ` (${selectedImages.length})` : t('agentChat.imageSelection')}
                 disabled={isAiTyping}
               >
@@ -203,6 +204,8 @@ export const AgentChatMobileInput: React.FC<AgentChatMobileInputProps> = ({
             claudeVersionsData={claudeVersionsData}
             isVersionLocked={isVersionLocked}
             isAiTyping={isAiTyping}
+            envVars={envVars}
+            onEnvVarsChange={onEnvVarsChange}
           />
         </div>
 
@@ -237,11 +240,10 @@ export const AgentChatMobileInput: React.FC<AgentChatMobileInputProps> = ({
             <button
               onClick={onSend}
               disabled={isSendDisabled}
-              className={`px-3 py-2 rounded-lg font-medium transition-all duration-200 ${
-                isSendDisabled
+              className={`px-3 py-2 rounded-lg font-medium transition-all duration-200 ${isSendDisabled
                   ? 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
                   : 'bg-blue-600 dark:bg-blue-500 text-white hover:bg-blue-700 dark:hover:bg-blue-600 shadow-sm'
-              }`}
+                }`}
               title={t('agentChat.send')}
             >
               <Send className="w-4 h-4" />

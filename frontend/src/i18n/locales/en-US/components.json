@@ -170,18 +170,30 @@
       "opus": "Opus"
     },
     "claudeVersion": {
-      "title": "Select Claude Version",
+      "title": "Select Supplier",
       "default": "Default",
       "custom": "Custom",
       "system": "System",
-      "locked": "Version Locked (Active Session)"
+      "locked": "Supplier Locked (Active Session)"
     },
     "settings": {
       "title": "Settings",
       "permissionMode": "Permission Mode",
-      "claudeVersion": "Claude Version",
+      "claudeVersion": "Supplier",
       "model": "Model",
+      "modelAndVersion": "Supplier & Model",
       "noSettings": "No settings available"
+    },
+    "envVars": {
+      "title": "Environment Variables",
+      "add": "Add Variable",
+      "key": "Key",
+      "value": "Value",
+      "save": "Save",
+      "cancel": "Cancel",
+      "edit": "Edit",
+      "delete": "Delete",
+      "noVars": "No environment variables set"
     },
     "commandWarning": "Unknown command: {{command}}. Available commands: {{commands}}",
     "navigateTo": "Navigate to: {{path}}",
