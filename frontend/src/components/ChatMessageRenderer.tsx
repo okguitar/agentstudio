@@ -98,6 +98,7 @@ const ChatMessageRendererComponent: React.FC<ChatMessageRendererProps> = ({ mess
                 toolUseResult={part.toolData.toolUseResult}
                 isError={part.toolData.isError}
                 isExecuting={part.toolData.isExecuting}
+                claudeId={part.toolData.claudeId}
               />
             );
           } else if (part.type === 'image' && part.imageData) {
@@ -230,6 +231,7 @@ const ChatMessageRendererComponent: React.FC<ChatMessageRendererProps> = ({ mess
               toolUseResult={tool.toolUseResult}
               isError={tool.isError}
               isExecuting={tool.isExecuting}
+              claudeId={(tool as any).claudeId}
             />
           ))}
         </div>

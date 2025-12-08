@@ -698,7 +698,30 @@
     "taskDescriptionLabel": "任务描述",
     "taskPromptLabel": "任务提示",
     "truncated": "...(已截断)",
-    "totalLength": "总长度: {{length}} 字符"
+    "totalLength": "总长度: {{length}} 字符",
+    "agentType": "代理类型",
+    "model": "使用模型",
+    "resumeTask": "恢复任务",
+    "fromPreviousExecution": "从上次执行继续",
+    "executing": "子代理正在执行中...",
+    "executingWithModel": "使用 {{model}} 模型执行中...",
+    "toolCallCount": "{{count}} 次工具调用",
+    "partsReceived": "个消息部分",
+    "status": {
+      "completed": "已完成",
+      "failed": "失败",
+      "cancelled": "已取消"
+    }
+  },
+  "subAgentMessageFlow": {
+    "title": "子代理消息流",
+    "messageCount": "{{count}} 条消息",
+    "toolCount": "{{count}} 次工具调用",
+    "taskInput": "任务输入",
+    "subAgent": "子代理",
+    "thinking": "思考过程...",
+    "expand": "展开全文",
+    "collapse": "收起"
   },
   "skillTool": {
     "toolName": "技能",

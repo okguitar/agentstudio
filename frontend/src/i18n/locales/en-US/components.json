@@ -698,7 +698,30 @@
     "taskDescriptionLabel": "Task description",
     "taskPromptLabel": "Task prompt",
     "truncated": "...(truncated)",
-    "totalLength": "Total length: {{length}} characters"
+    "totalLength": "Total length: {{length}} characters",
+    "agentType": "Agent Type",
+    "model": "Model",
+    "resumeTask": "Resume Task",
+    "fromPreviousExecution": "Continue from previous execution",
+    "executing": "Sub-agent is executing...",
+    "executingWithModel": "Executing with {{model}} model...",
+    "toolCallCount": "{{count}} tool calls",
+    "partsReceived": "parts received",
+    "status": {
+      "completed": "Completed",
+      "failed": "Failed",
+      "cancelled": "Cancelled"
+    }
+  },
+  "subAgentMessageFlow": {
+    "title": "Sub-agent Message Flow",
+    "messageCount": "{{count}} messages",
+    "toolCount": "{{count}} tool calls",
+    "taskInput": "Task Input",
+    "subAgent": "Sub-agent",
+    "thinking": "Thinking...",
+    "expand": "Show more",
+    "collapse": "Show less"
   },
   "skillTool": {
     "toolName": "Skill",

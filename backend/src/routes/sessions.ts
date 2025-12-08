@@ -18,6 +18,142 @@ function convertProjectPathToClaudeFormat(projectPath: string): string {
   return projectPath.replace(/\//g, '-');
 }
 
+// SubAgent消息流中的单个消息部分
+interface SubAgentMessagePart {
+  id: string;
+  type: 'text' | 'thinking' | 'tool';
+  content?: string;
+  toolData?: {
+    id: string;
+    toolName: string;
+    toolInput: any;
+    toolResult?: string;
+    isError?: boolean;
+  };
+  order: number;
+}
+
+// SubAgent消息流中的单条消息
+interface SubAgentMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  timestamp: string;
+  messageParts: SubAgentMessagePart[];
+}
+
+// 读取子Agent的消息文件并提取完整消息流
+function readSubAgentMessageFlow(projectPath: string, agentId: string): SubAgentMessage[] {
+  try {
+    const claudeProjectPath = convertProjectPathToClaudeFormat(projectPath);
+    const historyDir = path.join(os.homedir(), '.claude', 'projects', claudeProjectPath);
+    const agentFilePath = path.join(historyDir, `agent-${agentId}.jsonl`);
+    
+    console.log(`📂 [SUBAGENT] Reading sub-agent message flow: ${agentFilePath}`);
+    
+    if (!fs.existsSync(agentFilePath)) {
+      console.log(`❌ [SUBAGENT] Sub-agent file not found: ${agentFilePath}`);
+      return [];
+    }
+
+    const content = fs.readFileSync(agentFilePath, 'utf-8');
+    const lines = content.trim().split('\n').filter(line => line.trim());
+    
+    if (lines.length === 0) return [];
+
+    const rawMessages: ClaudeHistoryMessage[] = lines.map(line => JSON.parse(line));
+    
+    // 收集所有tool_result以便后续匹配
+    const toolResultMap = new Map<string, { content: string; isError: boolean }>();
+    for (const msg of rawMessages) {
+      if (msg.type === 'user' && msg.message?.content && Array.isArray(msg.message.content)) {
+        for (const block of msg.message.content) {
+          if (block.type === 'tool_result' && block.tool_use_id) {
+            const resultContent = typeof block.content === 'string' 
+              ? block.content 
+              : Array.isArray(block.content)
+                ? block.content.map((c: any) => c.text || String(c)).join('')
+                : JSON.stringify(block.content);
+            
+            toolResultMap.set(block.tool_use_id, {
+              content: resultContent,
+              isError: block.is_error || false
+            });
+          }
+        }
+      }
+    }
+
+    // 转换为消息流格式
+    const messageFlow: SubAgentMessage[] = [];
+    
+    for (const msg of rawMessages) {
+      // 只处理assistant消息（包含文本、思考、工具调用）
+      if (msg.type === 'assistant' && msg.message?.content) {
+        const messageParts: SubAgentMessagePart[] = [];
+        let partOrder = 0;
+        
+        if (Array.isArray(msg.message.content)) {
+          for (const block of msg.message.content) {
+            if (block.type === 'text' && block.text) {
+              messageParts.push({
+                id: `part_${msg.uuid}_${partOrder}`,
+                type: 'text',
+                content: block.text,
+                order: partOrder++
+              });
+            } else if (block.type === 'thinking' && block.thinking) {
+              messageParts.push({
+                id: `part_${msg.uuid}_${partOrder}`,
+                type: 'thinking',
+                content: block.thinking,
+                order: partOrder++
+              });
+            } else if (block.type === 'tool_use' && block.name && block.id) {
+              const toolResult = toolResultMap.get(block.id);
+              messageParts.push({
+                id: `part_${msg.uuid}_${partOrder}`,
+                type: 'tool',
+                toolData: {
+                  id: block.id,
+                  toolName: block.name,
+                  toolInput: block.input || {},
+                  toolResult: toolResult?.content,
+                  isError: toolResult?.isError
+                },
+                order: partOrder++
+              });
+            }
+          }
+        } else if (typeof msg.message.content === 'string') {
+          // 处理纯文本内容
+          messageParts.push({
+            id: `part_${msg.uuid}_0`,
+            type: 'text',
+            content: msg.message.content,
+            order: 0
+          });
+        }
+        
+        if (messageParts.length > 0) {
+          messageFlow.push({
+            id: msg.uuid,
+            role: 'assistant',
+            timestamp: msg.timestamp,
+            messageParts
+          });
+        }
+      }
+    }
+
+    console.log(`✅ [SUBAGENT] Extracted ${messageFlow.length} messages with ${messageFlow.reduce((sum, m) => sum + m.messageParts.length, 0)} parts from sub-agent ${agentId}`);
+    return messageFlow;
+
+  } catch (error) {
+    console.error(`Failed to read sub-agent message flow for ${agentId}:`, error);
+    return [];
+  }
+}
+
 // Function to get AgentStorage instance for specific project directory
 const getAgentStorageForRequest = (req: express.Request): AgentStorage => {
   const projectPath = req.query.projectPath as string || req.body?.projectPath as string;
@@ -367,6 +503,23 @@ function readClaudeHistorySessions(projectPath: string): ClaudeHistorySession[] 
                       // Check if the original message has toolUseResult (from Claude Code SDK)
                       if (msg.toolUseResult) {
                         toolPart.toolData.toolUseResult = msg.toolUseResult;
+                        
+                        // If this is a Task tool, read sub-agent message flow
+                        if (toolPart.toolData.toolName === 'Task' && msg.toolUseResult.agentId) {
+                          const subAgentId = msg.toolUseResult.agentId;
+                          console.log(`🔧 [TASK] Found Task tool with sub-agent: ${subAgentId}`);
+                          
+                          const subAgentMessageFlow = readSubAgentMessageFlow(projectPath, subAgentId);
+                          
+                          if (subAgentMessageFlow.length > 0) {
+                            // Attach sub-agent message flow to toolUseResult
+                            toolPart.toolData.toolUseResult = {
+                              ...msg.toolUseResult,
+                              subAgentMessageFlow
+                            };
+                            console.log(`✅ [TASK] Attached ${subAgentMessageFlow.length} sub-agent messages`);
+                          }
+                        }
                       }
                       
                       toolPart.toolData.isError = block.is_error || false;

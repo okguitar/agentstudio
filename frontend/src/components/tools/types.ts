@@ -15,6 +15,58 @@ export interface TaskToolInput extends BaseToolInput {
   description: string;
   prompt: string;
   subagent_type: string;
+  model?: string;
+  resume?: string;
+}
+
+// 子Agent消息流中的单个消息部分
+export interface SubAgentMessagePart {
+  id: string;
+  type: 'text' | 'thinking' | 'tool';
+  content?: string;
+  toolData?: {
+    id: string;
+    toolName: string;
+    toolInput: Record<string, unknown>;
+    toolResult?: string;
+    isError?: boolean;
+  };
+  order: number;
+}
+
+// 子Agent消息流中的单条消息
+export interface SubAgentMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  timestamp: string;
+  messageParts: SubAgentMessagePart[];
+}
+
+// 子Agent工具调用（用于测试数据）
+export interface SubAgentToolCall {
+  id: string;
+  toolName: string;
+  toolInput: Record<string, unknown>;
+  toolResult?: string;
+  isError?: boolean;
+  timestamp: string;
+}
+
+// Task工具执行结果
+export interface TaskToolResult {
+  status: 'completed' | 'failed' | 'cancelled';
+  prompt: string;
+  agentId: string;
+  content?: Array<{ type: string; text: string }>;
+  totalDurationMs?: number;
+  totalTokens?: number;
+  totalToolUseCount?: number;
+  usage?: {
+    input_tokens: number;
+    output_tokens: number;
+    cache_read_input_tokens?: number;
+  };
+  subAgentMessageFlow?: SubAgentMessage[];
 }
 
 export interface BashToolInput extends BaseToolInput {

@@ -8,6 +8,7 @@ interface ToolUsageProps {
   toolUseResult?: Record<string, unknown>;
   isError?: boolean;
   isExecuting?: boolean;
+  claudeId?: string; // Claude's tool use ID for matching with sub-agent messages
 }
 
 // 将旧格式转换为新的 ToolExecution 格式
@@ -20,8 +21,9 @@ const convertToToolExecution = (props: ToolUsageProps): ToolExecution => {
     toolUseResult: props.toolUseResult,
     isExecuting: props.isExecuting || false,
     isError: props.isError || false,
-    timestamp: new Date()
-  };
+    timestamp: new Date(),
+    claudeId: props.claudeId, // Pass through claudeId
+  } as ToolExecution & { claudeId?: string };
 };
 
 export const ToolUsage: React.FC<ToolUsageProps> = (props) => {

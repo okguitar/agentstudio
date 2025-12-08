@@ -13,6 +13,7 @@ import type {
   MultiEditInput, LSToolInput, NotebookReadToolInput, BashOutputToolResult,
   EditToolResult
 } from '../sdk-types';
+import type { SubAgentMessage, SubAgentToolCall, TaskToolResult } from '../types';
 
 // 基础工具执行工厂
 export function createToolExecution(overrides: Partial<BaseToolExecution>): BaseToolExecution {
@@ -249,6 +250,257 @@ export const mockToolExecutions = {
 
   bashOutput: (input: any, output: BashOutputToolResult): BaseToolExecution =>
     createToolExecution({ toolName: 'BashOutput', toolInput: input, toolUseResult: output, isExecuting: false })
+};
+
+// 子Agent工具调用测试数据
+export const mockSubAgentToolCalls: SubAgentToolCall[] = [
+  {
+    id: 'call_read_1',
+    toolName: 'Read',
+    toolInput: { file_path: '/Users/kongjie/projects/jeff-marketplace/assistant/plugin.json' },
+    toolResult: '{\n  "name": "assistant",\n  "version": "2.2.0"\n}',
+    isError: false,
+    timestamp: '2025-12-08T07:23:28.539Z'
+  },
+  {
+    id: 'call_read_2',
+    toolName: 'Read',
+    toolInput: { file_path: '/Users/kongjie/projects/jeff-marketplace/todo_manager.py' },
+    toolResult: '#!/usr/bin/env python3\n\nclass TodoManager:\n    def __init__(self):\n        pass\n',
+    isError: false,
+    timestamp: '2025-12-08T07:23:32.523Z'
+  },
+  {
+    id: 'call_read_3',
+    toolName: 'Read',
+    toolInput: { file_path: '/Users/kongjie/projects/jeff-marketplace/slide_generator.py' },
+    toolResult: '#!/usr/bin/env python3\n\nimport os\nfrom google import genai\n',
+    isError: false,
+    timestamp: '2025-12-08T07:23:32.779Z'
+  },
+  {
+    id: 'call_bash_1',
+    toolName: 'Bash',
+    toolInput: { command: 'ls -la', description: 'List project files' },
+    toolResult: 'total 16\ndrwxr-xr-x  5 user staff 160 Dec 8 07:20 .\n-rw-r--r--  1 user staff 512 Dec 8 07:20 plugin.json',
+    isError: false,
+    timestamp: '2025-12-08T07:23:44.072Z'
+  },
+  {
+    id: 'call_grep_1',
+    toolName: 'Grep',
+    toolInput: { pattern: 'def .*\\(', path: 'src/', '-n': true },
+    toolResult: 'src/utils.py:10:def parse_config():\nsrc/main.py:5:def main():',
+    isError: false,
+    timestamp: '2025-12-08T07:23:46.065Z'
+  }
+];
+
+// 模拟子Agent消息流数据
+export const mockSubAgentMessageFlow: SubAgentMessage[] = [
+  {
+    id: 'msg_sub_1',
+    role: 'assistant',
+    timestamp: '2025-12-08T07:23:26.005Z',
+    messageParts: [
+      {
+        id: 'part_sub_1_0',
+        type: 'text',
+        content: 'I\'ll perform a comprehensive code review of the codebase. Let me start by examining the project structure.',
+        order: 0
+      }
+    ]
+  },
+  {
+    id: 'msg_sub_2',
+    role: 'assistant',
+    timestamp: '2025-12-08T07:23:30.000Z',
+    messageParts: [
+      {
+        id: 'part_sub_2_0',
+        type: 'tool',
+        toolData: {
+          id: 'call_read_1',
+          toolName: 'Read',
+          toolInput: { file_path: '/Users/kongjie/projects/example/plugin.json' },
+          toolResult: '{\n  "name": "example-plugin",\n  "version": "1.0.0"\n}',
+          isError: false
+        },
+        order: 0
+      }
+    ]
+  },
+  {
+    id: 'msg_sub_3',
+    role: 'assistant',
+    timestamp: '2025-12-08T07:23:35.000Z',
+    messageParts: [
+      {
+        id: 'part_sub_3_0',
+        type: 'thinking',
+        content: 'The plugin.json looks well-structured. Now I should check the main source files for any code quality issues or potential bugs.',
+        order: 0
+      },
+      {
+        id: 'part_sub_3_1',
+        type: 'tool',
+        toolData: {
+          id: 'call_grep_1',
+          toolName: 'Grep',
+          toolInput: { pattern: 'TODO|FIXME', path: 'src/', '-n': true },
+          toolResult: 'src/utils.ts:45:// TODO: Add error handling\nsrc/main.ts:23:// FIXME: Memory leak issue',
+          isError: false
+        },
+        order: 1
+      }
+    ]
+  },
+  {
+    id: 'msg_sub_4',
+    role: 'assistant',
+    timestamp: '2025-12-08T07:23:50.000Z',
+    messageParts: [
+      {
+        id: 'part_sub_4_0',
+        type: 'text',
+        content: '## Code Review Summary\n\n**Overall Grade: A- (85/100)**\n\n### Findings:\n\n1. **Code Quality**: Generally good structure with some minor issues\n2. **TODO Items**: Found 2 pending tasks that need attention\n3. **Documentation**: Well documented\n\n### Recommendations:\n\n- Address the FIXME in `src/main.ts` for the memory leak\n- Add proper error handling in `src/utils.ts`',
+        order: 0
+      }
+    ]
+  }
+];
+
+// Task工具结果测试数据
+export const mockTaskToolResults = {
+  completed: (subAgentMessageFlow?: SubAgentMessage[]): TaskToolResult => ({
+    status: 'completed',
+    prompt: 'Please perform a comprehensive code review of the current codebase.',
+    agentId: '6d16b542',
+    content: [{ type: 'text', text: 'Code review completed successfully.' }],
+    totalDurationMs: 84305,
+    totalTokens: 33352,
+    totalToolUseCount: 14,
+    usage: {
+      input_tokens: 3149,
+      output_tokens: 1787,
+      cache_read_input_tokens: 28416
+    },
+    subAgentMessageFlow: subAgentMessageFlow || mockSubAgentMessageFlow
+  }),
+
+  failed: (): TaskToolResult => ({
+    status: 'failed',
+    prompt: 'Execute complex analysis',
+    agentId: 'failed-agent-001',
+    content: [{ type: 'text', text: 'Analysis failed due to timeout.' }],
+    totalDurationMs: 30000,
+    totalTokens: 5000,
+    totalToolUseCount: 3,
+    usage: {
+      input_tokens: 2000,
+      output_tokens: 500
+    }
+  }),
+
+  cancelled: (): TaskToolResult => ({
+    status: 'cancelled',
+    prompt: 'Task was cancelled by user',
+    agentId: 'cancelled-agent-002',
+    totalDurationMs: 5000,
+    totalTokens: 1000,
+    totalToolUseCount: 1
+  }),
+
+  noTools: (): TaskToolResult => ({
+    status: 'completed',
+    prompt: 'Simple task without tool calls',
+    agentId: 'simple-agent-003',
+    content: [{ type: 'text', text: 'Task completed without any tool calls.' }],
+    totalDurationMs: 1500,
+    totalTokens: 500,
+    totalToolUseCount: 0,
+    subAgentMessageFlow: []
+  }),
+
+  withErrors: (): TaskToolResult => ({
+    status: 'completed',
+    prompt: 'Code review with some errors',
+    agentId: 'mixed-agent-004',
+    totalDurationMs: 45000,
+    totalTokens: 15000,
+    totalToolUseCount: 5,
+    subAgentMessageFlow: [
+      {
+        id: 'msg_err_1',
+        role: 'assistant',
+        timestamp: '2025-12-08T07:25:00.000Z',
+        messageParts: [
+          {
+            id: 'part_err_1_0',
+            type: 'text',
+            content: 'Let me check the configuration files.',
+            order: 0
+          },
+          {
+            id: 'part_err_1_1',
+            type: 'tool',
+            toolData: {
+              id: 'call_success_1',
+              toolName: 'Read',
+              toolInput: { file_path: '/src/config.ts' },
+              toolResult: 'export const config = { debug: true };',
+              isError: false
+            },
+            order: 1
+          }
+        ]
+      },
+      {
+        id: 'msg_err_2',
+        role: 'assistant',
+        timestamp: '2025-12-08T07:25:05.000Z',
+        messageParts: [
+          {
+            id: 'part_err_2_0',
+            type: 'tool',
+            toolData: {
+              id: 'call_error_1',
+              toolName: 'Read',
+              toolInput: { file_path: '/nonexistent/file.ts' },
+              toolResult: 'Error: File not found',
+              isError: true
+            },
+            order: 0
+          }
+        ]
+      },
+      {
+        id: 'msg_err_3',
+        role: 'assistant',
+        timestamp: '2025-12-08T07:25:10.000Z',
+        messageParts: [
+          {
+            id: 'part_err_3_0',
+            type: 'text',
+            content: 'The file was not found. Let me run the tests instead.',
+            order: 0
+          },
+          {
+            id: 'part_err_3_1',
+            type: 'tool',
+            toolData: {
+              id: 'call_success_2',
+              toolName: 'Bash',
+              toolInput: { command: 'npm test' },
+              toolResult: 'All tests passed',
+              isError: false
+            },
+            order: 1
+          }
+        ]
+      }
+    ]
+  })
 };
 
 // 工具结果数据

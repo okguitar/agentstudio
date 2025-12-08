@@ -736,11 +736,31 @@ router.post('/chat', async (req, res) => {
             }
           }
 
+          // 🎯 检测子Agent消息：通过 parent_tool_use_id 字段判断
+          const msgAny = sdkMessage as any;
+          const isSidechain = !!msgAny.parent_tool_use_id;
+          const parentToolUseId = msgAny.parent_tool_use_id;
+          
+          if (isSidechain) {
+            const contentBlocks = msgAny.message?.content || [];
+            const blockTypes = contentBlocks.map((b: any) => b.type);
+            console.log('🎯 [SIDECHAIN] Sub-agent message:', {
+              type: sdkMessage.type,
+              parentToolUseId,
+              blockTypes,
+              // 如果有文本内容，打印前100字符
+              textPreview: contentBlocks.find((b: any) => b.type === 'text')?.text?.substring(0, 100),
+            });
+          }
+
           const eventData = {
             ...sdkMessage,
             agentId: agentId,
             sessionId: actualSessionId || responseSessionId || currentSessionId,
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            // 🎯 添加子Agent标识
+            isSidechain,
+            parentToolUseId,
           };
 
           // 确保返回的 session_id 字段与 sessionId 一致

@@ -2,6 +2,7 @@ import { useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAgentStore } from '../../stores/useAgentStore';
+import { useSubAgentStore } from '../../stores/useSubAgentStore';
 import { tabManager } from '../../utils/tabManager';
 import { eventBus, EVENTS } from '../../utils/eventBus';
 import type { StreamingBlock } from '../../types/index.js';
@@ -96,6 +97,9 @@ export const useAIStreamHandler = ({
   // Track current AI message ID
   const aiMessageIdRef = useRef<string | null>(null);
 
+  // 🎯 Track sub-agent stream block IDs for delta updates
+  const subAgentStreamBlocksRef = useRef<Map<string, string>>(new Map());
+
   // T023: Track active streaming blocks (character-by-character streaming)
   const streamingStateRef = useRef<StreamingState>({
     activeBlocks: new Map(),
@@ -153,6 +157,9 @@ export const useAIStreamHandler = ({
     return `${type}-${Date.now()}-${index}`;
   }, []);
 
+  // 获取子Agent Store的方法
+  const { registerTaskTool, activateSubAgent, addSubAgentMessagePart } = useSubAgentStore.getState();
+
   const handleStreamMessage = useCallback((data: any) => {
     try {
       const eventData = data as {
@@ -164,7 +171,189 @@ export const useAIStreamHandler = ({
         permission_denials?: Array<{ tool_name: string; tool_input: Record<string, unknown> }>;
         error?: string;
         event?: any; // Nested event object for stream_event type
+        isSidechain?: boolean;
+        agentId?: string;
       };
+
+      // 🔧 首先处理系统初始化消息，不管是否是sidechain
+      // 这确保会话状态被正确更新
+      if (eventData.type === 'system' && eventData.subtype === 'init') {
+        console.log('📋 [INIT] Received system init message, not intercepting');
+        // 不要在这里return，让消息继续往下处理
+      }
+
+      // 🎯 检查是否是子Agent的sidechain消息（通过 isSidechain 和 parentToolUseId 字段）
+      const isSidechain = eventData.isSidechain === true;
+      const parentToolUseId = (eventData as any).parentToolUseId;
+
+      // 🎯 拦截所有sidechain消息，不让它们进入主Agent的处理流程
+      // 注意：系统消息（如init）不应该有isSidechain标记，所以会正常通过
+      if (isSidechain && parentToolUseId) {
+        console.log('🎯 [SIDECHAIN] Intercepted sub-agent message, parentToolUseId:', parentToolUseId, 'type:', eventData.type);
+        
+        const subAgentId = parentToolUseId;
+        const msgSessionId = eventData.sessionId || eventData.session_id;
+        
+        // 激活子Agent
+        if (msgSessionId) {
+          activateSubAgent(subAgentId, msgSessionId);
+        }
+        
+        // 处理stream_event类型的sidechain消息
+        if (eventData.type === 'stream_event' && eventData.event) {
+          const streamEvent = eventData.event;
+          
+          // 处理content_block_start - 初始化块
+          if (streamEvent.type === 'content_block_start' && streamEvent.content_block) {
+            const blockIndex = streamEvent.index;
+            const contentBlock = streamEvent.content_block;
+            
+            if (contentBlock.type === 'text') {
+              const partId = `part_${subAgentId}_text_${blockIndex}_${Date.now()}`;
+              addSubAgentMessagePart(subAgentId, {
+                id: partId,
+                type: 'text',
+                content: '',
+                order: blockIndex,
+              });
+              // 存储partId以便delta更新
+              subAgentStreamBlocksRef.current.set(`${subAgentId}-${blockIndex}`, partId);
+              console.log('🎯 [SIDECHAIN] Started text block:', partId);
+            } else if (contentBlock.type === 'thinking') {
+              const partId = `part_${subAgentId}_thinking_${blockIndex}_${Date.now()}`;
+              addSubAgentMessagePart(subAgentId, {
+                id: partId,
+                type: 'thinking',
+                content: '',
+                order: blockIndex,
+              });
+              subAgentStreamBlocksRef.current.set(`${subAgentId}-${blockIndex}`, partId);
+            } else if (contentBlock.type === 'tool_use') {
+              const partId = `part_${subAgentId}_tool_${blockIndex}_${Date.now()}`;
+              addSubAgentMessagePart(subAgentId, {
+                id: partId,
+                type: 'tool',
+                toolData: {
+                  id: contentBlock.id,
+                  toolName: contentBlock.name,
+                  toolInput: {},
+                  isError: false,
+                },
+                order: blockIndex,
+              });
+              subAgentStreamBlocksRef.current.set(`${subAgentId}-${blockIndex}`, partId);
+              console.log('🎯 [SIDECHAIN] Added tool_use to sub-agent:', contentBlock.name);
+            }
+          }
+          
+          // 处理content_block_delta - 累积内容
+          if (streamEvent.type === 'content_block_delta' && streamEvent.delta) {
+            const blockIndex = streamEvent.index;
+            const delta = streamEvent.delta;
+            const partId = subAgentStreamBlocksRef.current.get(`${subAgentId}-${blockIndex}`);
+            
+            if (partId) {
+              // 获取当前store中的消息流来找到对应的part
+              const store = useSubAgentStore.getState();
+              const task = store.activeTasks.get(subAgentId);
+              if (task) {
+                for (const msg of task.messageFlow) {
+                  const part = msg.messageParts.find(p => p.id === partId);
+                  if (part) {
+                    if (delta.type === 'text_delta' && delta.text) {
+                      const newContent = (part.content || '') + delta.text;
+                      addSubAgentMessagePart(subAgentId, {
+                        ...part,
+                        content: newContent,
+                      });
+                      // 只在有实际内容时打印日志
+                      if (newContent.length % 100 < 10) {
+                        console.log('🎯 [SIDECHAIN] Text accumulated:', newContent.length, 'chars');
+                      }
+                    } else if (delta.type === 'thinking_delta' && delta.thinking) {
+                      const newContent = (part.content || '') + delta.thinking;
+                      addSubAgentMessagePart(subAgentId, {
+                        ...part,
+                        content: newContent,
+                      });
+                    }
+                    break;
+                  }
+                }
+              }
+            }
+          }
+        }
+        
+        // 处理assistant类型的sidechain消息（包含tool_use）
+        if (eventData.type === 'assistant' && eventData.message) {
+          const message = eventData.message as { content?: unknown[]; role?: string };
+          console.log('🎯 [SIDECHAIN] Processing assistant message, blocks:', message.content?.length || 0);
+          
+          if (message.content && Array.isArray(message.content)) {
+            for (let i = 0; i < message.content.length; i++) {
+              const block = message.content[i] as any;
+              
+              if (block.type === 'text' && block.text) {
+                console.log('🎯 [SIDECHAIN] Adding text from assistant:', block.text.substring(0, 50));
+                addSubAgentMessagePart(subAgentId, {
+                  id: `part_${subAgentId}_text_${i}_${Date.now()}`,
+                  type: 'text',
+                  content: block.text,
+                  order: i,
+                });
+              } else if (block.type === 'thinking' && block.thinking) {
+                addSubAgentMessagePart(subAgentId, {
+                  id: `part_${subAgentId}_thinking_${i}_${Date.now()}`,
+                  type: 'thinking',
+                  content: block.thinking,
+                  order: i,
+                });
+              } else if (block.type === 'tool_use') {
+                addSubAgentMessagePart(subAgentId, {
+                  id: `part_${subAgentId}_tool_${i}_${Date.now()}`,
+                  type: 'tool',
+                  toolData: {
+                    id: block.id,
+                    toolName: block.name,
+                    toolInput: block.input || {},
+                    isError: false,
+                  },
+                  order: i,
+                });
+                console.log('🎯 [SIDECHAIN] Added tool_use from assistant:', block.name);
+              }
+            }
+          }
+        }
+        
+        // 处理user类型的sidechain消息
+        // 注意：跳过用户输入文本（任务提示），只处理tool_result
+        if (eventData.type === 'user' && eventData.message) {
+          const message = eventData.message as { content?: unknown[]; role?: string };
+          
+          if (message.content && Array.isArray(message.content)) {
+            for (const block of message.content) {
+              const b = block as any;
+              
+              // 跳过用户文本输入（任务提示），因为TaskTool已经显示了
+              if (b.type === 'text') {
+                console.log('🎯 [SIDECHAIN] Skipping user text (task prompt already shown)');
+                continue;
+              }
+              
+              // 处理tool_result - 更新对应工具的结果
+              if (b.type === 'tool_result' && b.tool_use_id) {
+                console.log('🎯 [SIDECHAIN] Tool result for:', b.tool_use_id, 'error:', b.is_error);
+                // 工具结果会在历史加载时完整显示，这里暂时跳过
+              }
+            }
+          }
+        }
+        
+        // 所有sidechain消息处理完毕，不继续处理主Agent的逻辑
+        return;
+      }
 
       // T024: Detect partial message streaming (SDKPartialAssistantMessage)
       // New format: eventData.type === 'stream_event' with nested eventData.event
@@ -275,6 +464,15 @@ export const useAIStreamHandler = ({
             blockId,
             messageId: aiMessageIdRef.current
           });
+          
+          // 🎯 如果是Task工具，注册它以便后续关联子Agent
+          if (contentBlock.name === 'Task') {
+            const taskSessionId = currentSessionId || eventData.sessionId || eventData.session_id;
+            if (taskSessionId && contentBlock.id) {
+              console.log('🎯 [TASK] Registering Task tool for sub-agent tracking:', contentBlock.id);
+              registerTaskTool(contentBlock.id, taskSessionId);
+            }
+          }
           
           const toolData = {
             toolName: contentBlock.name,
@@ -897,6 +1095,24 @@ export const useAIStreamHandler = ({
                   : JSON.stringify(block.content);
 
               console.log('🔧 Updating tool with result, setting isExecuting: false');
+              
+              // 🎯 Task工具特殊处理：追加结果文本到子Agent消息流
+              if (targetTool.toolData.toolName === 'Task' && targetTool.toolData.claudeId) {
+                const taskClaudeId = targetTool.toolData.claudeId;
+                console.log('🎯 [TASK] Task tool completed, appending result to sub-agent flow:', taskClaudeId);
+                
+                // 从结果中提取文本内容并追加到消息流
+                if (toolResult && typeof toolResult === 'string' && toolResult.trim()) {
+                  addSubAgentMessagePart(taskClaudeId, {
+                    id: `part_${taskClaudeId}_result_${Date.now()}`,
+                    type: 'text',
+                    content: toolResult,
+                    order: 9999, // 排在最后
+                  });
+                  console.log('🎯 [TASK] Appended result text to sub-agent flow, length:', toolResult.length);
+                }
+              }
+              
               // Special logging for BashOutput
               if (targetTool.toolData.toolName === 'BashOutput') {
                 console.log('🐚 [BashOutput] Updating tool result:', {
