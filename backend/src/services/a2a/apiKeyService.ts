@@ -2,7 +2,7 @@
  * API Key Service
  *
  * Manages inbound API keys for authenticating external callers to AgentStudio agents.
- * Keys are stored hashed with bcrypt (salt rounds 10) for security.
+ * Keys are stored hashed with bcryptjs (pure JavaScript, salt rounds 10) for security.
  *
  * Storage: {projectPath}/.a2a/api-keys.json
  * Format: { version: "1.0.0", keys: [A2AApiKey[]] }
@@ -13,8 +13,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
-import bcrypt from 'bcrypt';
-// Temporary fix for bcrypt compilation issues
+import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import lockfile from 'proper-lockfile';
 import type { A2AApiKey, A2AApiKeyRegistry } from '../../types/a2a.js';
