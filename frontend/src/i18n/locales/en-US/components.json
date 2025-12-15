@@ -801,6 +801,23 @@
     "rewinding": "Rewinding...",
     "error": "Time machine execution failed"
   },
+  "askUserQuestionTool": {
+    "title": "Ask User Question",
+    "description": "The AI assistant needs your input to continue. Please answer the questions below.",
+    "questionCount": "{{count}} question(s)",
+    "multiSelect": "Multi-select",
+    "userResponse": "Your Response",
+    "waitingForResponse": "Waiting for your response...",
+    "error": "Failed to submit response",
+    "interactionHint": "This interaction component requires manual input",
+    "submit": "Submit Answer",
+    "submitting": "Submitting...",
+    "completed": "Response submitted",
+    "typeSomething": "Type something...",
+    "typeSomethingPlaceholder": "Enter your custom response",
+    "yourAnswer": "Your answer",
+    "customAnswer": "Custom answer"
+  },
   "multiEditTool": {
     "filePath": "File path",
     "batchEdit": "Batch edit ({{count}} operations):",

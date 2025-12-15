@@ -801,6 +801,23 @@
     "rewinding": "正在回退...",
     "error": "时间机器执行失败"
   },
+  "askUserQuestionTool": {
+    "title": "询问用户",
+    "description": "AI 助手需要您的输入才能继续。请回答下列问题。",
+    "questionCount": "{{count}} 个问题",
+    "multiSelect": "多选",
+    "userResponse": "您的回答",
+    "waitingForResponse": "等待您的回答...",
+    "error": "提交回答失败",
+    "interactionHint": "此交互组件需要手动输入",
+    "submit": "提交回答",
+    "submitting": "正在提交...",
+    "completed": "已提交回答",
+    "typeSomething": "输入其他内容...",
+    "typeSomethingPlaceholder": "请输入您的自定义回答",
+    "yourAnswer": "您的回答",
+    "customAnswer": "自定义回答"
+  },
   "multiEditTool": {
     "filePath": "文件路径",
     "batchEdit": "批量编辑 ({{count}} 个操作):",
