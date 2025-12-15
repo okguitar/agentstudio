@@ -202,7 +202,7 @@ router.post('/messages', async (req: A2ARequest, res: Response) => {
 
     // Build query options for Claude using the shared utility
     // This automatically handles A2A SDK MCP server integration
-    const queryOptions = await buildQueryOptions(
+    const { queryOptions } = await buildQueryOptions(
       {
         systemPrompt: agentConfig.systemPrompt || undefined,
         allowedTools: agentConfig.allowedTools || [],

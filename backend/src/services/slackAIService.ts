@@ -1201,7 +1201,7 @@ Feel free to organize your files here as needed. This directory is managed by Ag
 
       // Step 4: Build query options with all necessary configurations
       const projectPath = selectedProject ? (selectedProject.realPath || selectedProject.path) : undefined;
-      const queryOptions = await buildQueryOptions(
+      const { queryOptions } = await buildQueryOptions(
         agent,
         selectedProject?.realPath || selectedProject?.path,
         undefined, // mcpTools

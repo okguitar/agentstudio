@@ -144,7 +144,7 @@ export const BUILTIN_AGENTS: Partial<AgentConfig>[] = [
       { name: 'BashOutput', enabled: true },
       { name: 'SlashCommand', enabled: true },
       { name: 'ExitPlanMode', enabled: true },
-      { name: 'AskUserQuestion', enabled: true },
+      // AskUserQuestion 通过内置 MCP server 自动提供，无需手动配置
       { name: 'Skill', enabled: true }
     ],
     ui: {

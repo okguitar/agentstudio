@@ -209,9 +209,9 @@ describe('claudeUtils', () => {
       const { getDefaultVersionId } = await import('../../services/claudeVersionStorage');
       vi.mocked(getDefaultVersionId).mockResolvedValue(null);
 
-      const options = await buildQueryOptions(mockAgent);
+      const result = await buildQueryOptions(mockAgent);
 
-      expect(options).toMatchObject({
+      expect(result.queryOptions).toMatchObject({
         systemPrompt: 'Test system prompt',
         allowedTools: ['Write', 'Read'],
         maxTurns: 10,
@@ -219,16 +219,16 @@ describe('claudeUtils', () => {
         model: 'sonnet',
         pathToClaudeCodeExecutable: '/usr/local/bin/claude'
       });
-      expect(options.env).toBeDefined();
+      expect(result.queryOptions.env).toBeDefined();
     });
 
     it('should use projectPath as cwd if provided', async () => {
       const { getDefaultVersionId } = await import('../../services/claudeVersionStorage');
       vi.mocked(getDefaultVersionId).mockResolvedValue(null);
 
-      const options = await buildQueryOptions(mockAgent, '/custom/project/path');
+      const result = await buildQueryOptions(mockAgent, '/custom/project/path');
 
-      expect(options.cwd).toBe('/custom/project/path');
+      expect(result.queryOptions.cwd).toBe('/custom/project/path');
     });
 
     it('should include MCP tools in allowed tools', async () => {
@@ -236,10 +236,10 @@ describe('claudeUtils', () => {
       vi.mocked(getDefaultVersionId).mockResolvedValue(null);
 
       const mcpTools = ['mcp__server1__tool1', 'mcp__server2__tool2'];
-      const options = await buildQueryOptions(mockAgent, undefined, mcpTools);
+      const result = await buildQueryOptions(mockAgent, undefined, mcpTools);
 
-      expect(options.allowedTools).toContain('mcp__server1__tool1');
-      expect(options.allowedTools).toContain('mcp__server2__tool2');
+      expect(result.queryOptions.allowedTools).toContain('mcp__server1__tool1');
+      expect(result.queryOptions.allowedTools).toContain('mcp__server2__tool2');
     });
 
     it('should configure MCP servers when MCP tools are provided', async () => {
@@ -261,10 +261,10 @@ describe('claudeUtils', () => {
       vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify(mockMcpConfig));
 
       const mcpTools = ['mcp__server1__tool1'];
-      const options = await buildQueryOptions(mockAgent, undefined, mcpTools);
+      const result = await buildQueryOptions(mockAgent, undefined, mcpTools);
 
-      expect(options.mcpServers).toBeDefined();
-      expect(options.mcpServers?.server1).toMatchObject({
+      expect(result.queryOptions.mcpServers).toBeDefined();
+      expect(result.queryOptions.mcpServers?.server1).toMatchObject({
         type: 'stdio',
         command: 'node',
         args: ['server1.js']
@@ -285,17 +285,17 @@ describe('claudeUtils', () => {
       const { getVersionByIdInternal } = await import('../../services/claudeVersionStorage');
       vi.mocked(getVersionByIdInternal).mockResolvedValue(mockVersion as any);
 
-      const options = await buildQueryOptions(mockAgent, undefined, undefined, undefined, undefined, 'custom-version');
+      const result = await buildQueryOptions(mockAgent, undefined, undefined, undefined, undefined, 'custom-version');
 
-      expect(options.pathToClaudeCodeExecutable).toBe('/custom/claude');
-      expect(options.env?.ANTHROPIC_API_KEY).toBe('custom-key');
+      expect(result.queryOptions.pathToClaudeCodeExecutable).toBe('/custom/claude');
+      expect(result.queryOptions.env?.ANTHROPIC_API_KEY).toBe('custom-key');
     });
 
     it('should override agent settings with request parameters', async () => {
       const { getDefaultVersionId } = await import('../../services/claudeVersionStorage');
       vi.mocked(getDefaultVersionId).mockResolvedValue(null);
 
-      const options = await buildQueryOptions(
+      const result = await buildQueryOptions(
         mockAgent,
         undefined,
         undefined,
@@ -303,8 +303,8 @@ describe('claudeUtils', () => {
         'opus'
       );
 
-      expect(options.permissionMode).toBe('bypassPermissions');
-      expect(options.model).toBe('opus');
+      expect(result.queryOptions.permissionMode).toBe('bypassPermissions');
+      expect(result.queryOptions.model).toBe('opus');
     });
   });
 });

@@ -13,6 +13,9 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import { getDefaultVersionId, getAllVersionsInternal, getVersionByIdInternal } from '../services/claudeVersionStorage.js';
 import { integrateA2AMcpServer } from '../services/a2a/a2aIntegration.js';
+import { integrateAskUserQuestionMcpServer, SessionRef } from '../services/askUserQuestion/askUserQuestionIntegration.js';
+
+export type { SessionRef };
 import { MCP_SERVER_CONFIG_FILE } from '../config/paths.js';
 
 const execAsync = promisify(exec);
@@ -130,7 +133,15 @@ export async function getDefaultClaudeVersionEnv(): Promise<Record<string, strin
  * @param claudeVersion - Optional Claude version ID
  * @param defaultEnv - Optional default environment variables (used by Slack integration)
  * @param userEnv - Optional user-provided environment variables (from chat interface)
+ * @param sessionIdForAskUser - Optional session ID for AskUserQuestion MCP tool（用于路由用户通知）
+ * @param agentIdForAskUser - Optional agent ID for AskUserQuestion MCP tool
+ * @returns Query options and optional sessionRef for dynamic session ID updates
  */
+export interface BuildQueryOptionsResult {
+  queryOptions: Options;
+  askUserSessionRef: SessionRef | null;
+}
+
 export async function buildQueryOptions(
   agent: any,
   projectPath?: string,
@@ -139,8 +150,10 @@ export async function buildQueryOptions(
   model?: string,
   claudeVersion?: string,
   defaultEnv?: Record<string, string>,
-  userEnv?: Record<string, string>
-): Promise<Options> {
+  userEnv?: Record<string, string>,
+  sessionIdForAskUser?: string,
+  agentIdForAskUser?: string
+): Promise<BuildQueryOptionsResult> {
   // Determine working directory
   let cwd = process.cwd();
   if (projectPath) {
@@ -356,6 +369,15 @@ export async function buildQueryOptions(
   const currentProjectId = projectPath || cwd;
   await integrateA2AMcpServer(queryOptions, currentProjectId);
 
-  return queryOptions;
+  // Integrate AskUserQuestion SDK MCP server
+  // This provides user interaction capability for web channel
+  // Only integrate if sessionId and agentId are provided
+  let askUserSessionRef: SessionRef | null = null;
+  if (sessionIdForAskUser && agentIdForAskUser) {
+    const integration = await integrateAskUserQuestionMcpServer(queryOptions, sessionIdForAskUser, agentIdForAskUser);
+    askUserSessionRef = integration.sessionRef;
+  }
+
+  return { queryOptions, askUserSessionRef };
 }
 

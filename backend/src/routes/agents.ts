@@ -15,6 +15,13 @@ import { handleSessionManagement, buildUserMessageContent } from '../utils/sessi
 import type { ChannelType } from '../types/streaming.js';
 import { DEFAULT_CHANNEL } from '../types/streaming.js';
 import { createA2ASdkMcpServer, getA2AToolName } from '../services/a2a/a2aSdkMcp.js';
+import { 
+  userInputRegistry,
+  notificationChannelManager,
+  SSENotificationChannel,
+  generateSSEChannelId,
+  initAskUserQuestionModule
+} from '../services/askUserQuestion/index.js';
 
 // 类型守卫函数
 function isSDKSystemMessage(message: any): message is SDKSystemMessage {
@@ -322,7 +329,10 @@ const ChatRequestSchema = z.object({
     customContext: z.record(z.any()).optional()
   }).optional(),
   envVars: z.record(z.string()).optional()
-}).refine(data => data.message.trim().length > 0 || (data.images && data.images.length > 0), {
+}).refine(data => {
+  // Either message text or images must be provided
+  return data.message.trim().length > 0 || (data.images && data.images.length > 0);
+}, {
   message: "Either message text or images must be provided"
 });
 
@@ -485,12 +495,47 @@ router.post('/chat', async (req, res) => {
     // 设置连接管理
     const connectionManager = setupSSEConnectionManagement(req, res, agentId);
 
+    // 🎤 初始化 AskUserQuestion 模块（只会初始化一次）
+    initAskUserQuestionModule();
+    
+    // 🎤 生成 SSE channel ID（用于通知渠道管理）
+    const sseChannelId = generateSSEChannelId();
+    // 注意：SSE channel 需要 sessionId，但新会话还没有 sessionId
+    // 我们使用临时 ID，稍后在收到 Claude SDK 的 sessionId 时更新
+    const tempSessionId = sessionId || `temp_${Date.now()}`;
+    
+    // 创建 SSE channel，传入 onClose 回调用于自动注销和清理
+    const sseChannel = new SSENotificationChannel(
+      sseChannelId, 
+      tempSessionId, 
+      agentId, 
+      res,
+      () => {
+        // 连接关闭时自动注销渠道，防止内存泄漏
+        notificationChannelManager.unregisterChannel(sseChannelId);
+        
+        // 🎤 取消该 session 的所有等待中的用户输入请求
+        // 使用 sseChannel.sessionId 获取最新的 sessionId（可能已从 temp 更新为真实 ID）
+        const currentSessionId = sseChannel.sessionId;
+        const cancelledCount = userInputRegistry.cancelAllBySession(
+          currentSessionId, 
+          'SSE connection closed'
+        );
+        if (cancelledCount > 0) {
+          console.log(`🎤 [AskUserQuestion] Cancelled ${cancelledCount} pending inputs for session: ${currentSessionId}`);
+        }
+      }
+    );
+    notificationChannelManager.registerChannel(sseChannel);
+    console.log(`📡 [AskUserQuestion] Registered SSE channel: ${sseChannelId}`);
+
     // 重试循环：处理会话失败的情况
     while (retryCount <= MAX_RETRIES) {
       try {
         console.log(`🔄 Attempt ${retryCount + 1}/${MAX_RETRIES + 1} for session: ${sessionId || 'new'}`);
-        // 构建查询选项
-        const queryOptions = await buildQueryOptions(agent, projectPath, mcpTools, permissionMode, model, claudeVersion, undefined, envVars);
+        // 构建查询选项（包含 AskUserQuestion MCP 工具）
+        // 使用 tempSessionId 作为 MCP 工具的 sessionId（新会话还没有真实 sessionId）
+        const { queryOptions, askUserSessionRef } = await buildQueryOptions(agent, projectPath, mcpTools, permissionMode, model, claudeVersion, undefined, envVars, tempSessionId, agentId);
 
         // ⚡ CRITICAL: Add includePartialMessages BEFORE creating session
         // This must be set before handleSessionManagement because ClaudeSession
@@ -700,6 +745,17 @@ router.post('/chat', async (req, res) => {
               claudeSession.setClaudeSessionId(responseSessionId);
               sessionManager.confirmSessionId(claudeSession, responseSessionId);
               console.log(`✅ Confirmed session ${responseSessionId} for agent: ${agentId}`);
+              
+              // 🎤 更新 NotificationChannel、UserInputRegistry 和 MCP Server 的 sessionId
+              if (tempSessionId !== responseSessionId) {
+                notificationChannelManager.updateChannelSession(sseChannelId, responseSessionId);
+                userInputRegistry.updateSessionId(tempSessionId, responseSessionId);
+                // 更新 AskUserQuestion MCP Server 使用的 session ID
+                if (askUserSessionRef) {
+                  askUserSessionRef.current = responseSessionId;
+                }
+                console.log(`📡 [AskUserQuestion] Updated session: ${tempSessionId} -> ${responseSessionId}`);
+              }
             } else if (currentSessionId && responseSessionId !== currentSessionId) {
               // Resume场景：Claude SDK返回了新的session ID，需要通知前端
               console.log(`🔄 Session resumed: ${currentSessionId} -> ${responseSessionId} for agent: ${agentId}`);
@@ -767,6 +823,14 @@ router.post('/chat', async (req, res) => {
           if (actualSessionId || currentSessionId) {
             eventData.session_id = actualSessionId || currentSessionId;
           }
+
+          // 🎤 AskUserQuestion 工具调用说明（事件驱动架构）：
+          // 1. MCP 工具调用 userInputRegistry.waitForUserInput()
+          // 2. UserInputRegistry 发出 'awaiting_input' 事件
+          // 3. NotificationChannelManager 通过活跃渠道（SSE/Slack等）发送通知
+          // 4. 用户响应后，调用 /agents/user-response API
+          // 5. MCP 工具返回，Claude 继续执行
+          // 不需要在这里检测工具调用或关闭连接
 
           try {
             if (!res.destroyed && !connectionManager.isConnectionClosed()) {
@@ -881,6 +945,68 @@ router.post('/chat', async (req, res) => {
         }
       }
     }
+  }
+});
+
+// =================================================================================
+// 🎤 AskUserQuestion: Submit User Response API
+// =================================================================================
+// 当用户在前端交互组件中提交答案时，前端调用此 API
+// 这会 resolve MCP 工具中正在等待的 Promise，使工具返回用户答案
+
+const UserResponseSchema = z.object({
+  toolUseId: z.string().min(1, 'toolUseId is required'),
+  response: z.string().min(1, 'response is required'),
+  // 可选的验证参数，用于防止伪造响应
+  sessionId: z.string().optional(),
+  agentId: z.string().optional()
+});
+
+router.post('/user-response', async (req, res) => {
+  try {
+    const validation = UserResponseSchema.safeParse(req.body);
+    
+    if (!validation.success) {
+      return res.status(400).json({
+        error: 'Invalid request body',
+        details: validation.error.errors
+      });
+    }
+    
+    const { toolUseId, response, sessionId, agentId } = validation.data;
+    
+    console.log(`🎤 [AskUserQuestion] Received user response for tool: ${toolUseId}`);
+    
+    // 使用带验证的提交方法，防止伪造响应
+    const result = userInputRegistry.validateAndSubmitUserResponse(
+      toolUseId, 
+      response,
+      sessionId,
+      agentId
+    );
+    
+    if (result.success) {
+      console.log(`✅ [AskUserQuestion] User response submitted successfully for tool: ${toolUseId}`);
+      res.json({
+        success: true,
+        message: 'User response submitted successfully'
+      });
+    } else {
+      console.warn(`⚠️ [AskUserQuestion] Failed to submit response for tool: ${toolUseId}, error: ${result.error}`);
+      
+      // 根据错误类型返回不同的状态码
+      const statusCode = result.error === 'No pending input found for this tool use ID' ? 404 : 403;
+      res.status(statusCode).json({
+        success: false,
+        error: result.error
+      });
+    }
+  } catch (error) {
+    console.error('❌ [AskUserQuestion] Error processing user response:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
   }
 });
 
