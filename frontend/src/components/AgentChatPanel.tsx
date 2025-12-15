@@ -11,6 +11,8 @@ import type { AgentConfig } from '../types/index.js';
 import { isCommandTrigger } from '../utils/commandFormatter';
 import { useTranslation } from 'react-i18next';
 import { loadBackendServices, getCurrentService } from '../utils/backendServiceStorage';
+import { authFetch } from '../lib/authFetch';
+import { API_BASE } from '../lib/config';
 import { useMobileContext } from '../contexts/MobileContext';
 import {
   useImageUpload,
@@ -55,10 +57,12 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
     isAiTyping,
     currentSessionId,
     mcpStatus,
+    pendingUserQuestion,
     addMessage,
     interruptAllExecutingTools,
     setAiTyping,
     loadSessionMessages,
+    setPendingUserQuestion,
   } = useAgentStore();
 
   // UI状态管理
@@ -378,6 +382,44 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
     envVars,
   });
 
+  // 🎤 处理 AskUserQuestion 用户回答提交
+  // 新架构：调用 HTTP API 提交用户响应，MCP 工具会自动接收并返回
+  const handleAskUserQuestionSubmit = async (toolUseId: string, response: string) => {
+    console.log('🎤 [AskUserQuestion] Submitting response for tool:', toolUseId);
+
+    try {
+      // 调用新的 API 提交用户响应
+      // 传入 sessionId 和 agentId 用于验证，防止伪造响应
+      const apiResponse = await authFetch(`${API_BASE}/agents/user-response`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          toolUseId,
+          response,
+          sessionId: currentSessionId,  // 用于验证
+          agentId: agent.id,             // 用于验证
+        }),
+      });
+
+      if (!apiResponse.ok) {
+        const errorData = await apiResponse.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${apiResponse.status}`);
+      }
+
+      console.log('✅ [AskUserQuestion] Response submitted successfully');
+      
+      // 清除待回答的问题状态
+      // MCP 工具会返回结果，Claude 会继续执行，SSE 会继续接收消息
+      setPendingUserQuestion(null);
+      
+    } catch (error) {
+      console.error('🎤 [AskUserQuestion] Submit failed:', error);
+      // 提交失败时不清除待回答状态，让用户可以重试
+    }
+  };
+
   // 为 AgentCommandSelector 创建键盘处理器
   const agentCommandSelectorKeyHandler = createAgentCommandSelectorKeyHandler({
     showCommandSelector,
@@ -631,6 +673,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
               isUserScrolling={isUserScrolling}
               newMessagesCount={newMessagesCount}
               onScrollToBottom={scrollToBottom}
+              onAskUserQuestionSubmit={handleAskUserQuestionSubmit}
             />
           )}
 
@@ -751,7 +794,8 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
         handleCancelDialog={handleCancelDialog}
 
         // Utility functions
-        isSendDisabled={isSendDisabled}
+        // 当有待回答的问题时，也禁用输入框
+        isSendDisabled={() => isSendDisabled() || !!pendingUserQuestion}
 
         // Environment Variables
         envVars={envVars}

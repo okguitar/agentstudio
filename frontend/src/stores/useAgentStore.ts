@@ -10,6 +10,22 @@ interface McpStatusData {
   lastUpdated?: number;
 }
 
+// 待回答的用户问题状态（用于 AskUserQuestion 工具）
+interface PendingUserQuestion {
+  toolUseId: string;
+  toolName: string;
+  questions: Array<{
+    question: string;
+    options: Array<{
+      label: string;
+      description?: string;
+    }>;
+    multiSelect?: boolean;
+    header?: string;
+  }>;
+  timestamp: number;
+}
+
 interface AgentState {
   // Current agent (框架层)
   currentAgent: AgentConfig | null;
@@ -21,6 +37,9 @@ interface AgentState {
   
   // MCP status (MCP工具状态)
   mcpStatus: McpStatusData;
+  
+  // AskUserQuestion 状态（等待用户回答的问题）
+  pendingUserQuestion: PendingUserQuestion | null;
   
   // UI state (框架层通用UI)
   sidebarCollapsed: boolean;
@@ -47,6 +66,9 @@ interface AgentState {
   updateMcpStatus: (status: Partial<McpStatusData>) => void;
   clearMcpStatus: () => void;
   
+  // AskUserQuestion actions
+  setPendingUserQuestion: (question: PendingUserQuestion | null) => void;
+  
   setSidebarCollapsed: (collapsed: boolean) => void;
 }
 
@@ -64,6 +86,7 @@ export const useAgentStore = create<AgentState>((set) => ({
     lastErrorDetails: undefined,
     lastUpdated: undefined
   },
+  pendingUserQuestion: null,
   sidebarCollapsed: false,
   
   // Actions
@@ -287,6 +310,9 @@ export const useAgentStore = create<AgentState>((set) => ({
       lastUpdated: undefined
     }
   }),
+  
+  // AskUserQuestion actions
+  setPendingUserQuestion: (question) => set({ pendingUserQuestion: question }),
   
   setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
 }));

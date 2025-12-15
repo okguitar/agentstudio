@@ -92,6 +92,7 @@ export const useAIStreamHandler = ({
     addToolPartToMessage,
     updateToolPartInMessage,
     updateMcpStatus,
+    setPendingUserQuestion,
   } = useAgentStore();
 
   // Track current AI message ID
@@ -907,6 +908,29 @@ export const useAIStreamHandler = ({
       return;
     }
 
+    // 🎤 处理 AskUserQuestion 等待用户输入事件
+    // 新架构：MCP 工具会阻塞等待用户输入，SSE 连接保持打开
+    // 用户提交答案后，MCP 工具返回，Claude 继续执行
+    if (eventData.type === 'awaiting_user_input') {
+      console.log('🎤 [AskUserQuestion] Received awaiting_user_input event:', eventData);
+      
+      const awaitingData = eventData as any;
+      
+      // 设置待回答的问题到 store
+      setPendingUserQuestion({
+        toolUseId: awaitingData.toolUseId,
+        toolName: awaitingData.toolName,
+        questions: awaitingData.toolInput?.questions || [],
+        timestamp: Date.now()
+      });
+      
+      // 不停止 AI 输入状态 - MCP 工具正在阻塞等待，Claude session 仍在运行
+      // 当用户提交答案后，MCP 工具会返回，Claude 会继续执行
+      
+      console.log('🎤 [AskUserQuestion] Set pending question, MCP tool is waiting for user response');
+      return;
+    }
+
     // Handle session resume notification
     if (eventData.type === 'session_resumed' && eventData.subtype === 'new_branch') {
       const resumeData = eventData as any as {
@@ -1377,6 +1401,7 @@ export const useAIStreamHandler = ({
     addToolPartToMessage,
     updateToolPartInMessage,
     updateMcpStatus,
+    setPendingUserQuestion,
     scheduleUpdate,
     generateBlockId,
   ]);

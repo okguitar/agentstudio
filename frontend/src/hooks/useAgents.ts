@@ -231,12 +231,28 @@ export const useAgentChat = () => {
     }) => {
       try {
         console.log('🚀 Starting SSE request to:', `${API_BASE}/agents/chat`);
+        
+        const requestBody: Record<string, unknown> = {
+          agentId,
+          message,
+          images,
+          context,
+          sessionId,
+          projectPath,
+          mcpTools,
+          permissionMode,
+          model,
+          claudeVersion,
+          envVars,
+          channel: channel || 'web'
+        };
+        
         const response = await authFetch(`${API_BASE}/agents/chat`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ agentId, message, images, context, sessionId, projectPath, mcpTools, permissionMode, model, claudeVersion, envVars, channel: channel || 'web' }),
+          body: JSON.stringify(requestBody),
           signal: abortController?.signal
         });
 

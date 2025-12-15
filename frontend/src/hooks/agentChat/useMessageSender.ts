@@ -382,6 +382,10 @@ export const useMessageSender = (props: UseMessageSenderProps) => {
 
   return {
     isSendDisabled,
-    handleSendMessage
+    handleSendMessage,
+    // Export stream handlers for AskUserQuestion tool_result handling
+    handleStreamMessage,
+    handleStreamError,
+    resetMessageId
   };
 };

@@ -79,6 +79,7 @@ interface BaseToolProps {
   hideToolName?: boolean; // 是否隐藏工具名称，仅显示图标和副标题
   customIcon?: React.ReactNode; // 自定义图标
   overrideToolName?: string; // 覆盖显示的工具名称
+  defaultExpanded?: boolean; // 是否默认展开，默认false
 }
 
 export const BaseToolComponent: React.FC<BaseToolProps> = ({
@@ -89,10 +90,11 @@ export const BaseToolComponent: React.FC<BaseToolProps> = ({
   isMcpTool = false,
   hideToolName = true,
   customIcon,
-  overrideToolName
+  overrideToolName,
+  defaultExpanded = false
 }) => {
   const { t } = useTranslation();
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
   // 为MCP工具使用不同的图标和颜色
   const Icon = isMcpTool

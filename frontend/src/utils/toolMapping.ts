@@ -5,7 +5,6 @@ export const TOOL_DISPLAY_MAP = {
   'BashOutput': '终端命令输出',
   'KillBash': '杀死终端命令',
   'Edit': '文件编辑', 
-  'MultiEdit': '多文件编辑',
   'Read': '读取文件',
   'Write': '写入文件',
   
@@ -24,6 +23,10 @@ export const TOOL_DISPLAY_MAP = {
   'TodoWrite': '任务管理',
   'Task': '任务执行',
   'ExitPlanMode': '退出计划模式',
+  
+  // Skills
+  'Skill': '技能调用',
+  // 注意：AskUserQuestion 通过内置 MCP server 自动提供，无需在工具选择器中显示
 } as const;
 
 // 工具描述映射
@@ -32,7 +35,6 @@ export const TOOL_DESCRIPTION_MAP = {
   'BashOutput': '获取终端命令输出',
   'KillBash': '杀死终端命令',
   'Edit': '编辑文件内容',
-  'MultiEdit': '批量编辑多个文件',
   'Read': '读取文件内容',
   'Write': '创建或覆盖文件',
   'Glob': '使用通配符搜索文件',
@@ -43,6 +45,7 @@ export const TOOL_DESCRIPTION_MAP = {
   'TodoWrite': '创建和管理待办事项',
   'Task': '执行复杂任务',
   'ExitPlanMode': '退出计划模式',
+  'Skill': '调用预定义的技能',
 } as const;
 
 /**
