@@ -193,7 +193,7 @@ describe('a2aClientTool - MCP Tool for Calling External Agents', () => {
 
     it('should call /messages endpoint for sync mode', async () => {
       vi.mocked(global.fetch).mockResolvedValue(
-        new Response(JSON.stringify({ response: 'Test response' }), {
+        new Response(JSON.stringify({ message: 'Test response', sessionId: 'test-session' }), {
           status: 200,
           headers: { 'Content-Type': 'application/json' },
         })
@@ -203,6 +203,7 @@ describe('a2aClientTool - MCP Tool for Calling External Agents', () => {
         agentUrl: 'https://test.example.com/a2a/agent-1',
         message: 'Test message',
         useTask: false,
+        stream: false,  // Explicitly disable streaming for sync mode test
       };
 
       const result = await callExternalAgent(input, 'proj-123');
@@ -453,6 +454,7 @@ describe('a2aClientTool - MCP Tool for Calling External Agents', () => {
       const input: CallExternalAgentInput = {
         agentUrl: 'https://test.example.com/a2a/agent-1',
         message: 'Test',
+        stream: false,  // Explicitly disable streaming to test sync mode error handling
       };
 
       const result = await callExternalAgent(input, 'proj-123');

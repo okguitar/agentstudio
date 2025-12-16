@@ -11,9 +11,6 @@ import { AgentConfig } from '../types/agents';
 import { sessionManager } from '../services/sessionManager';
 import { buildQueryOptions } from '../utils/claudeUtils.js';
 import { handleSessionManagement, buildUserMessageContent } from '../utils/sessionUtils.js';
-import type { ChannelType } from '../types/streaming.js';
-import { DEFAULT_CHANNEL } from '../types/streaming.js';
-import { createA2ASdkMcpServer, getA2AToolName } from '../services/a2a/a2aSdkMcp.js';
 import { 
   userInputRegistry,
   notificationChannelManager,
