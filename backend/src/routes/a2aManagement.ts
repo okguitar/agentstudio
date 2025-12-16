@@ -17,11 +17,12 @@
  */
 
 import express, { Router, Request, Response } from 'express';
-import { getOrCreateA2AId, resolveA2AId } from '../services/a2a/agentMappingService.js';
+import { getOrCreateA2AId } from '../services/a2a/agentMappingService.js';
 import { taskManager } from '../services/a2a/taskManager.js';
 import { generateAgentCard, type ProjectContext } from '../services/a2a/agentCardService.js';
 import { AgentStorage } from '../services/agentStorage.js';
 import { generateApiKey, listApiKeys, revokeApiKey } from '../services/a2a/apiKeyService.js';
+import { a2aHistoryService } from '../services/a2a/a2aHistoryService.js';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -380,3 +381,56 @@ router.put('/config/:projectPath', async (req: Request, res: Response) => {
 });
 
 export default router;
+
+// ============================================================================
+// GET /api/a2a/history/:projectPath/:sessionId - Get A2A call history
+// ============================================================================
+
+router.get('/history/:projectPath/:sessionId', async (req: Request, res: Response) => {
+  try {
+    const { projectPath, sessionId } = req.params;
+    const stream = req.query.stream === 'true';
+
+    // Decode the URL-encoded project path
+    const decodedProjectPath = decodeURIComponent(projectPath);
+
+    if (stream) {
+      // Streaming Mode (SSE)
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      res.flushHeaders();
+
+      const controller = new AbortController();
+
+      // Handle client disconnect
+      req.on('close', () => {
+        controller.abort();
+      });
+
+      try {
+        for await (const event of a2aHistoryService.tailHistory(decodedProjectPath, sessionId, controller.signal)) {
+          res.write(`data: ${JSON.stringify(event)}\n\n`);
+        }
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          console.error('Error streaming history:', error);
+          res.write(`event: error\ndata: ${JSON.stringify({ error: String(error) })}\n\n`);
+          res.end();
+        }
+      }
+    } else {
+      // Sync Mode (JSON)
+      const history = await a2aHistoryService.getHistory(decodedProjectPath, sessionId);
+      res.json({ history });
+    }
+  } catch (error) {
+    console.error('Error getting A2A history:', error);
+    if (!res.headersSent) {
+      res.status(500).json({
+        error: 'Failed to get A2A history',
+        details: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+});

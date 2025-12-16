@@ -4,7 +4,6 @@ import type {
   SDKMessage,
   SDKSystemMessage,
   SDKResultMessage,
-  SDKPartialAssistantMessage,
   SDKCompactBoundaryMessage
 } from '@anthropic-ai/claude-agent-sdk';
 import { AgentStorage } from '../services/agentStorage';
@@ -22,6 +21,7 @@ import {
   generateSSEChannelId,
   initAskUserQuestionModule
 } from '../services/askUserQuestion/index.js';
+import { a2aStreamEventEmitter, type A2AStreamStartEvent, type A2AStreamDataEvent, type A2AStreamEndEvent } from '../services/a2a/a2aStreamEvents.js';
 
 // 类型守卫函数
 function isSDKSystemMessage(message: any): message is SDKSystemMessage {
@@ -32,9 +32,7 @@ function isSDKResultMessage(message: any): message is SDKResultMessage {
   return message && message.type === 'result';
 }
 
-function isSDKPartialAssistantMessage(message: any): message is SDKPartialAssistantMessage {
-  return message && message.type === 'stream_event';
-}
+// isSDKPartialAssistantMessage removed - not currently used
 
 function isSDKCompactBoundaryMessage(message: any): message is SDKCompactBoundaryMessage {
   return message && message.type === 'system' && (message as any).subtype === 'compact_boundary';
@@ -166,7 +164,7 @@ router.post('/sessions/:sessionId/interrupt', async (req, res) => {
 // Get all agents
 router.get('/', (req, res) => {
   try {
-    const { enabled, type } = req.query;
+    const { enabled } = req.query;
     let agents = globalAgentStorage.getAllAgents();
 
     // Filter by enabled status
@@ -528,6 +526,84 @@ router.post('/chat', async (req, res) => {
     );
     notificationChannelManager.registerChannel(sseChannel);
     console.log(`📡 [AskUserQuestion] Registered SSE channel: ${sseChannelId}`);
+
+    // =================================================================================
+    // A2A Stream Event Subscription
+    // Subscribe to A2A stream events to forward sessionId to frontend
+    // This allows frontend to connect to history stream early for real-time display
+    // =================================================================================
+    const a2aStreamStartHandler = (event: A2AStreamStartEvent) => {
+      // Only forward events for the same project
+      if (event.projectId === projectPath) {
+        try {
+          if (!res.destroyed && !connectionManager.isConnectionClosed()) {
+            res.write(`data: ${JSON.stringify({
+              type: 'a2a_stream_start',
+              sessionId: event.sessionId,
+              contextId: event.contextId,  // A2A standard contextId
+              taskId: event.taskId,         // A2A standard taskId
+              agentUrl: event.agentUrl,
+              message: event.message,
+              timestamp: event.timestamp,
+            })}\n\n`);
+          }
+        } catch (writeError) {
+          console.error('Failed to write A2A stream start event:', writeError);
+        }
+      }
+    };
+
+    const a2aStreamDataHandler = (event: A2AStreamDataEvent) => {
+      // Only forward events for the same project
+      if (event.projectId === projectPath) {
+        try {
+          if (!res.destroyed && !connectionManager.isConnectionClosed()) {
+            res.write(`data: ${JSON.stringify({
+              type: 'a2a_stream_data',
+              sessionId: event.sessionId,
+              agentUrl: event.agentUrl,  // Agent URL for frontend matching
+              event: event.event,  // The actual A2A standard event
+              timestamp: event.timestamp,
+            })}\n\n`);
+          }
+        } catch (writeError) {
+          console.error('Failed to write A2A stream data event:', writeError);
+        }
+      }
+    };
+
+    const a2aStreamEndHandler = (event: A2AStreamEndEvent) => {
+      // Only forward events for the same project
+      if (event.projectId === projectPath) {
+        try {
+          if (!res.destroyed && !connectionManager.isConnectionClosed()) {
+            res.write(`data: ${JSON.stringify({
+              type: 'a2a_stream_end',
+              sessionId: event.sessionId,
+              success: event.success,
+              error: event.error,
+              finalState: event.finalState,  // A2A standard TaskState
+              timestamp: event.timestamp,
+            })}\n\n`);
+          }
+        } catch (writeError) {
+          console.error('Failed to write A2A stream end event:', writeError);
+        }
+      }
+    };
+
+    // Subscribe to A2A stream events
+    a2aStreamEventEmitter.on('a2a_stream_start', a2aStreamStartHandler);
+    a2aStreamEventEmitter.on('a2a_stream_data', a2aStreamDataHandler);
+    a2aStreamEventEmitter.on('a2a_stream_end', a2aStreamEndHandler);
+
+    // Clean up subscription when connection closes
+    res.on('close', () => {
+      a2aStreamEventEmitter.off('a2a_stream_start', a2aStreamStartHandler);
+      a2aStreamEventEmitter.off('a2a_stream_data', a2aStreamDataHandler);
+      a2aStreamEventEmitter.off('a2a_stream_end', a2aStreamEndHandler);
+    });
+    // =================================================================================
 
     // 重试循环：处理会话失败的情况
     while (retryCount <= MAX_RETRIES) {
