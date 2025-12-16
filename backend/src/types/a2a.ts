@@ -241,6 +241,7 @@ export interface AgentMappingRegistry {
 export interface A2AMessageRequest {
     message: string;
     context?: Record<string, unknown>;
+    sessionId?: string;
 }
 
 /**
@@ -307,23 +308,42 @@ export interface A2AErrorResponse {
 
 /**
  * Input for call_external_agent MCP tool
+ * 
+ * A2A Standard Protocol Fields:
+ * - contextId: Server-generated ID for contextual alignment across interactions
+ * - taskId: Unique identifier for continuing an existing task
  */
 export interface CallExternalAgentInput {
     agentUrl: string;
     message: string;
+    /** @deprecated Use contextId instead for A2A standard protocol */
     sessionId?: string;
+    /** A2A contextId for maintaining conversation context */
+    contextId?: string;
+    /** A2A taskId for continuing an existing task */
+    taskId?: string;
     useTask?: boolean;
     timeout?: number;
+    stream?: boolean;
 }
 
 /**
  * Output from call_external_agent MCP tool
+ * 
+ * A2A Standard Protocol Fields:
+ * - contextId: Server-generated ID from the external agent
+ * - taskId: Task ID if the agent returned a Task response
  */
 export interface CallExternalAgentOutput {
     success: boolean;
     data?: any;
-    taskId?: string;
+    /** @deprecated Use taskId for A2A tasks */
     status?: string;
     error?: string;
+    /** Internal session ID for history tracking */
     sessionId?: string;
+    /** A2A contextId from the external agent response */
+    contextId?: string;
+    /** A2A taskId if the agent returned a Task response */
+    taskId?: string;
 }

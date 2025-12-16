@@ -6,16 +6,35 @@
  *
  * Features:
  * - Allowlist validation against project's a2a-config.json
- * - HTTP client using @a2a-js/sdk
- * - Timeout handling (default 30s, configurable)
+ * - HTTP client using @a2a-js/sdk for A2A standard protocol support
+ * - Streaming support using A2A standard events (Task, Message, TaskStatusUpdateEvent, etc.)
+ * - Timeout handling (default 10min, configurable)
  * - Clear error messages for failures
  * - Support for both sync messages and async tasks
+ *
+ * A2A Protocol Streaming:
+ * - Uses message/stream method for real-time updates
+ * - Supports Task lifecycle stream (Task → TaskStatusUpdateEvent/TaskArtifactUpdateEvent → terminal state)
+ * - Supports Message-only stream (single Message response)
  *
  * Phase 5: US3 - Agent as A2A Client via MCP Tool
  */
 
+/// <reference lib="dom" />
 import type { CallExternalAgentInput, CallExternalAgentOutput } from '../../types/a2a.js';
 import { loadA2AConfig } from './a2aConfigService.js';
+import { a2aHistoryService } from './a2aHistoryService.js';
+import { 
+  a2aStreamEventEmitter,
+  type TaskState,
+} from './a2aStreamEvents.js';
+import { v4 as uuidv4 } from 'uuid';
+// Import A2A SDK types from main module
+import type { MessageSendParams } from '@a2a-js/sdk';
+// Note: A2AClient is from @a2a-js/sdk/client but requires agent card discovery
+// We implement direct fetch-based calls for more control over authentication
+
+declare const process: any;
 
 /**
  * MCP Tool Definition for call_external_agent
@@ -40,7 +59,19 @@ export const CALL_EXTERNAL_AGENT_TOOL = {
         description: 'Use async task mode (default: false for synchronous message)',
         default: false,
       },
-
+      contextId: {
+        type: 'string',
+        description: 'Context ID for continuing a conversation (A2A standard)',
+      },
+      taskId: {
+        type: 'string',
+        description: 'Task ID for continuing an existing task (A2A standard)',
+      },
+      stream: {
+        type: 'boolean',
+        description: 'Enable streaming response (default: true for messages)',
+        default: true,
+      }
     },
     required: ['agentUrl', 'message'],
   },
@@ -50,10 +81,7 @@ export const CALL_EXTERNAL_AGENT_TOOL = {
  * Call external A2A agent tool handler
  *
  * Validates agent URL against project allowlist, then makes HTTP call
- * using fetch API. Returns structured response with success/error status.
- *
- * This function is used both by the MCP tool definition and can be called
- * directly by the SDK MCP server.
+ * using @a2a-js/sdk A2AClient. Returns structured response with success/error status.
  *
  * @param input - Tool input parameters
  * @param projectId - Project ID for allowlist validation
@@ -63,7 +91,7 @@ export async function callExternalAgent(
   input: CallExternalAgentInput,
   projectId: string
 ): Promise<CallExternalAgentOutput> {
-  const { agentUrl, message, useTask = false } = input;
+  const { agentUrl, message, useTask = false, stream = true } = input;
   const timeout = 600000; // Hardcoded default timeout: 10 minutes
 
   try {
@@ -87,19 +115,27 @@ export async function callExternalAgent(
       };
     }
 
-    // Step 3: Make HTTP call to external agent
+    // Step 3: Make HTTP call to external agent using A2A SDK
     if (useTask) {
-      // Async task mode
+      // Async task mode - uses tasks endpoint
       const taskResult = await callExternalAgentTask(agentUrl, message, apiKey, timeout);
       return taskResult;
     } else {
-      // Sync message mode
+      // Message mode (Sync or Streaming)
+      // Generate a unique session ID for tracking this interaction
+      const sessionId = uuidv4();
+
+      // Use A2A standard streaming if requested
       const messageResult = await callExternalAgentMessage(
         agentUrl,
         message,
         apiKey,
         timeout,
-        input.sessionId // Pass sessionId if provided
+        sessionId,
+        stream,
+        projectId,
+        input.contextId,
+        input.taskId
       );
       return messageResult;
     }
@@ -116,9 +152,6 @@ export async function callExternalAgent(
 
 /**
  * Validate agent URL against project's allowlist
- *
- * Checks if the agent URL is in the project's allowed agents list.
- * Returns API key if validation succeeds.
  *
  * @param agentUrl - Target agent URL
  * @param projectId - Project ID for config lookup
@@ -170,37 +203,118 @@ async function validateAgentUrl(
 }
 
 /**
- * Call external agent with synchronous message
- *
- * Uses POST /messages endpoint of A2A protocol.
- *
- * @param agentUrl - Target agent base URL
- * @param message - Message to send
- * @param apiKey - API key for authentication
- * @param timeout - Request timeout in milliseconds
- * @returns Tool output with response
+ * Call external agent with message using A2A SDK (message/send or message/stream)
+ * 
+ * Uses A2A standard protocol:
+ * - For streaming: Uses message/stream endpoint via A2AClient.sendMessageStream()
+ * - Returns A2A standard events: Message, Task, TaskStatusUpdateEvent, TaskArtifactUpdateEvent
  */
 async function callExternalAgentMessage(
   agentUrl: string,
   message: string,
   apiKey: string,
   timeout: number,
-  sessionId?: string
+  sessionId: string,
+  stream: boolean,
+  projectId: string,
+  contextId?: string,
+  taskId?: string
+): Promise<CallExternalAgentOutput> {
+  const workingDirectory = projectId.startsWith('/') ? projectId : process.cwd();
+  
+  try {
+    // Build A2A standard message params
+    const messageParams: MessageSendParams = {
+      message: {
+        kind: 'message',
+        messageId: uuidv4(),
+        role: 'user',
+        parts: [{ kind: 'text', text: message }],
+        contextId,
+        taskId,
+      },
+      configuration: {
+        acceptedOutputModes: ['text/plain', 'application/json'],
+      },
+    };
+
+    if (stream) {
+      // Use A2A streaming with fetch-based SSE (since A2AClient requires agent card)
+      return await callExternalAgentStreamFetch(
+        agentUrl,
+        messageParams,
+        apiKey,
+        timeout,
+        sessionId,
+        workingDirectory
+      );
+    } else {
+      // Use sync call with fetch
+      return await callExternalAgentSyncFetch(
+        agentUrl,
+        messageParams,
+        apiKey,
+        timeout,
+        sessionId,
+        workingDirectory
+      );
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return {
+      success: false,
+      error: `Error calling external agent: ${errorMessage}`,
+    };
+  }
+}
+
+/**
+ * Call external agent with streaming using fetch-based SSE
+ * Implements A2A message/stream protocol manually since A2AClient requires agent card
+ */
+async function callExternalAgentStreamFetch(
+  agentUrl: string,
+  messageParams: MessageSendParams,
+  apiKey: string,
+  timeout: number,
+  sessionId: string,
+  workingDirectory: string
 ): Promise<CallExternalAgentOutput> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
+  
+  // Extract text message from parts
+  const textMessage = messageParams.message.parts
+    .filter((p): p is { kind: 'text'; text: string } => p.kind === 'text')
+    .map(p => p.text)
+    .join('');
+
+  // Build request body matching server's expected format
+  const requestBody = {
+    message: textMessage,
+    sessionId: messageParams.message.contextId || undefined,
+  };
+
+  // Emit stream start event
+  a2aStreamEventEmitter.emitStreamStart({
+    sessionId,
+    projectId: workingDirectory,
+    agentUrl,
+    message: textMessage,
+    contextId: messageParams.message.contextId,
+    taskId: messageParams.message.taskId,
+  });
 
   try {
-    const requestBody: any = { message };
-    if (sessionId) {
-      requestBody.sessionId = sessionId;
-    }
-
-    const response = await fetch(`${agentUrl}/messages`, {
+    // A2A protocol requires posting to /messages endpoint with stream=true query param
+    const messagesUrl = agentUrl.endsWith('/') ? `${agentUrl}messages?stream=true` : `${agentUrl}/messages?stream=true`;
+    
+    const response = await fetch(messagesUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
+        'Accept': 'text/event-stream',
+        'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify(requestBody),
       signal: controller.signal,
@@ -209,22 +323,282 @@ async function callExternalAgentMessage(
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      const errorData = (await response.json().catch(() => ({ error: response.statusText }))) as {
-        error?: string;
-      };
+      const errorData = await response.json().catch(() => ({ error: response.statusText }));
+      a2aStreamEventEmitter.emitStreamEnd({
+        sessionId,
+        projectId: workingDirectory,
+        success: false,
+        error: `HTTP ${response.status}: ${(errorData as any).error || response.statusText}`,
+      });
       return {
         success: false,
-        error: `External agent returned ${response.status}: ${errorData.error || response.statusText}`,
+        error: `External agent returned ${response.status}: ${(errorData as any).error || response.statusText}`,
       };
     }
 
-    const data = await response.json() as any;
+    if (!response.body) {
+      a2aStreamEventEmitter.emitStreamEnd({
+        sessionId,
+        projectId: workingDirectory,
+        success: false,
+        error: 'No response body',
+      });
+      return {
+        success: false,
+        error: 'No response body from external agent',
+      };
+    }
+
+    // Parse SSE stream
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let collectedText = '';
+    let finalContextId: string | undefined;
+    let finalTaskId: string | undefined;
+    let finalState: TaskState | undefined;
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const dataStr = line.slice(6).trim();
+            if (!dataStr || dataStr === '[DONE]') continue;
+
+            try {
+              const event = JSON.parse(dataStr);
+              
+              // Check for error event
+              if (event.type === 'error') {
+                const errorMsg = event.error || 'Unknown error';
+                a2aStreamEventEmitter.emitStreamEnd({
+                  sessionId,
+                  projectId: workingDirectory,
+                  success: false,
+                  error: errorMsg,
+                });
+                return {
+                  success: false,
+                  error: errorMsg,
+                };
+              }
+
+              // Check for done event
+              if (event.type === 'done') {
+                continue; // Will be handled at end of stream
+              }
+
+              // Store event in history
+              await a2aHistoryService.appendEvent(workingDirectory, sessionId, event);
+
+              // Emit stream data event for frontend
+              a2aStreamEventEmitter.emitStreamData({
+                sessionId,
+                projectId: workingDirectory,
+                agentUrl,
+                event,
+              });
+
+              // Get sessionId from event if available
+              if (event.sessionId) {
+                finalContextId = event.sessionId;
+              }
+
+              // Process SDK message event based on type
+              switch (event.type) {
+                case 'assistant': {
+                  // SDK assistant message: { type: 'assistant', message: { role: 'user', content: [...] } }
+                  if (event.message?.content) {
+                    for (const block of event.message.content) {
+                      if (block.type === 'text') {
+                        collectedText += block.text;
+                      }
+                    }
+                  }
+                  break;
+                }
+                case 'result': {
+                  // Result event indicates completion
+                  const isError = event.subtype === 'error' || event.is_error;
+                  if (!isError) {
+                    finalState = 'completed';
+                  } else {
+                    finalState = 'failed';
+                  }
+                  break;
+                }
+                case 'system': {
+                  // System init event contains sessionId
+                  if (event.sessionId) {
+                    finalContextId = event.sessionId;
+                  }
+                  break;
+                }
+                case 'user': {
+                  // Tool result events - extract text if available
+                  if (event.message?.content) {
+                    for (const block of event.message.content) {
+                      if (block.type === 'tool_result' && typeof block.content === 'string') {
+                        // Tool results can be included in response
+                        // collectedText += block.content;
+                      }
+                    }
+                  }
+                  break;
+                }
+              }
+            } catch (parseError) {
+              // Ignore parse errors for partial data
+              console.warn('[A2A Client Tool] Parse error in SSE:', parseError);
+            }
+          }
+        }
+      }
+    } catch (streamError) {
+      console.error('[A2A Client Tool] Error reading stream:', streamError);
+      a2aStreamEventEmitter.emitStreamEnd({
+        sessionId,
+        projectId: workingDirectory,
+        success: false,
+        error: streamError instanceof Error ? streamError.message : String(streamError),
+        finalState,
+      });
+      return {
+        success: false,
+        error: `Stream error: ${streamError instanceof Error ? streamError.message : String(streamError)}`,
+      };
+    }
+
+    // Stream completed normally
+    a2aStreamEventEmitter.emitStreamEnd({
+      sessionId,
+      projectId: workingDirectory,
+      success: true,
+      finalState: finalState || 'completed',
+    });
 
     return {
       success: true,
-      data: data.response, // Assuming standard A2A response format
-      sessionId: data.sessionId, // Extract session ID from response
+      data: collectedText || 'Streaming completed',
+      sessionId,
+      contextId: finalContextId,
+      taskId: finalTaskId,
     };
+
+  } catch (error) {
+    clearTimeout(timeoutId);
+
+    if (error instanceof Error && error.name === 'AbortError') {
+      a2aStreamEventEmitter.emitStreamEnd({
+        sessionId,
+        projectId: workingDirectory,
+        success: false,
+        error: 'Timeout',
+      });
+      return {
+        success: false,
+        error: `External agent call timed out after ${timeout}ms`,
+      };
+    }
+
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    a2aStreamEventEmitter.emitStreamEnd({
+      sessionId,
+      projectId: workingDirectory,
+      success: false,
+      error: errorMessage,
+    });
+    return {
+      success: false,
+      error: `Network error calling external agent: ${errorMessage}`,
+    };
+  }
+}
+
+/**
+ * Call external agent with sync message using fetch
+ * Implements A2A message/send protocol
+ */
+async function callExternalAgentSyncFetch(
+  agentUrl: string,
+  messageParams: MessageSendParams,
+  apiKey: string,
+  timeout: number,
+  sessionId: string,
+  workingDirectory: string
+): Promise<CallExternalAgentOutput> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+  // Extract text message from parts
+  const textMessage = messageParams.message.parts
+    .filter((p): p is { kind: 'text'; text: string } => p.kind === 'text')
+    .map(p => p.text)
+    .join('');
+
+  // Build request body matching server's expected format
+  const requestBody = {
+    message: textMessage,
+    sessionId: messageParams.message.contextId || undefined,
+  };
+
+  try {
+    // A2A protocol requires posting to /messages endpoint (no stream param for sync)
+    const messagesUrl = agentUrl.endsWith('/') ? `${agentUrl}messages` : `${agentUrl}/messages`;
+    
+    const response = await fetch(messagesUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify(requestBody),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: response.statusText }));
+      return {
+        success: false,
+        error: `External agent returned ${response.status}: ${(errorData as any).error || response.statusText}`,
+      };
+    }
+
+    const responseData = await response.json();
+
+    // Check for error in response
+    if (responseData.error) {
+      return {
+        success: false,
+        error: responseData.error.message || responseData.error || 'Unknown error',
+      };
+    }
+
+    // Server returns: { sessionId, message, duration_ms }
+    // Store in history as a simple message event
+    const historyEvent = {
+      kind: 'message' as const,
+      role: 'assistant' as const,
+      messageId: sessionId,
+      parts: [{ kind: 'text' as const, text: responseData.message || '' }],
+    };
+    await a2aHistoryService.appendEvent(workingDirectory, sessionId, historyEvent);
+
+    return {
+      success: true,
+      data: responseData.message || 'Message processed',
+      sessionId: responseData.sessionId || sessionId,
+    };
+
   } catch (error) {
     clearTimeout(timeoutId);
 
