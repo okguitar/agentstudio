@@ -93,6 +93,9 @@ export const useAIStreamHandler = ({
     updateToolPartInMessage,
     updateMcpStatus,
     setPendingUserQuestion,
+    setA2AStreamStart,
+    setA2AStreamEnd,
+    addA2AStreamEvent,
   } = useAgentStore();
 
   // Track current AI message ID
@@ -931,6 +934,63 @@ export const useAIStreamHandler = ({
       return;
     }
 
+    // 🔄 Handle A2A stream start event (real-time notification from backend)
+    // Supports A2A standard protocol with contextId and taskId
+    if (eventData.type === 'a2a_stream_start') {
+      const a2aData = eventData as any as {
+        sessionId: string;
+        contextId?: string;  // A2A standard contextId
+        taskId?: string;     // A2A standard taskId
+        agentUrl: string;
+        message: string;
+        timestamp: number;
+      };
+      setA2AStreamStart(a2aData.agentUrl, a2aData.sessionId, a2aData.message);
+      return;
+    }
+
+    // 🔄 Handle A2A stream data event (A2A standard protocol events)
+    // These events are stored in the activeA2AStreams for real-time display
+    if (eventData.type === 'a2a_stream_data') {
+      const a2aData = eventData as any as {
+        sessionId: string;
+        agentUrl: string;  // Agent URL for frontend matching
+        event: any;  // SDK message event (assistant, user, system, result)
+        timestamp: number;
+      };
+      // Store the event in activeA2AStreams for real-time display in A2ACallTool
+      if (a2aData.agentUrl) {
+        addA2AStreamEvent(a2aData.agentUrl, {
+          type: a2aData.event?.type || 'unknown',
+          sessionId: a2aData.event?.sessionId,
+          message: a2aData.event?.message,
+          timestamp: a2aData.timestamp,
+        });
+      }
+      return;
+    }
+
+    // 🔄 Handle A2A stream end event
+    // Supports A2A standard protocol with finalState
+    if (eventData.type === 'a2a_stream_end') {
+      const a2aData = eventData as any as {
+        sessionId: string;
+        success: boolean;
+        error?: string;
+        finalState?: string;  // A2A standard TaskState
+        timestamp: number;
+      };
+      // Find the agentUrl from active streams by sessionId
+      const state = useAgentStore.getState();
+      for (const [agentUrl, stream] of Object.entries(state.activeA2AStreams)) {
+        if (stream.sessionId === a2aData.sessionId) {
+          setA2AStreamEnd(agentUrl);
+          break;
+        }
+      }
+      return;
+    }
+
     // Handle session resume notification
     if (eventData.type === 'session_resumed' && eventData.subtype === 'new_branch') {
       const resumeData = eventData as any as {
@@ -1084,7 +1144,7 @@ export const useAIStreamHandler = ({
       if (eventData.message && typeof eventData.message === 'object' && 'content' in eventData.message && eventData.message.content && aiMessageIdRef.current) {
         for (const block of eventData.message.content as Array<{ type: string; content?: unknown; is_error?: boolean; tool_use_id?: string }>) {
           if (block.type === 'tool_result' && block.tool_use_id) {
-            console.log('🔧 Processing tool_result for tool_use_id:', block.tool_use_id, 'content:', block.content);
+            console.log('🔧 Processing tool_result for tool_use_id:', block.tool_use_id, 'content:', block.content, 'is_error:', block.is_error);
             // Find the tool by tool_use_id - search across ALL messages, not just current
             const state = useAgentStore.getState();
             let targetTool: any = null;
@@ -1402,6 +1462,9 @@ export const useAIStreamHandler = ({
     updateToolPartInMessage,
     updateMcpStatus,
     setPendingUserQuestion,
+    setA2AStreamStart,
+    setA2AStreamEnd,
+    addA2AStreamEvent,
     scheduleUpdate,
     generateBlockId,
   ]);

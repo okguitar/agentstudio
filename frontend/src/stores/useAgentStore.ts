@@ -26,6 +26,40 @@ interface PendingUserQuestion {
   timestamp: number;
 }
 
+/**
+ * A2A Stream Event - SDK message received from external agent
+ */
+interface A2AStreamEvent {
+  type: string;
+  sessionId?: string;
+  message?: {
+    content?: Array<{
+      type: string;
+      text?: string;
+      id?: string;
+      name?: string;
+      input?: Record<string, unknown>;
+      tool_use_id?: string;
+      content?: string | Array<unknown>;
+      is_error?: boolean;
+    }>;
+  };
+  timestamp?: number;
+}
+
+/**
+ * Active A2A Stream data
+ * Keyed by agentUrl to allow matching with A2ACallTool component
+ */
+interface A2AStreamData {
+  sessionId: string;
+  agentUrl: string;
+  message: string;
+  startedAt: number;
+  isStreaming: boolean;
+  events: A2AStreamEvent[];  // Real-time events received during streaming
+}
+
 interface AgentState {
   // Current agent (框架层)
   currentAgent: AgentConfig | null;
@@ -40,6 +74,9 @@ interface AgentState {
   
   // AskUserQuestion 状态（等待用户回答的问题）
   pendingUserQuestion: PendingUserQuestion | null;
+  
+  // A2A streaming state (keyed by agentUrl for matching with tool components)
+  activeA2AStreams: Record<string, A2AStreamData>;
   
   // UI state (框架层通用UI)
   sidebarCollapsed: boolean;
@@ -69,10 +106,16 @@ interface AgentState {
   // AskUserQuestion actions
   setPendingUserQuestion: (question: PendingUserQuestion | null) => void;
   
+  // A2A stream actions
+  setA2AStreamStart: (agentUrl: string, sessionId: string, message: string) => void;
+  setA2AStreamEnd: (agentUrl: string) => void;
+  addA2AStreamEvent: (agentUrl: string, event: A2AStreamEvent) => void;
+  getA2AStreamByUrl: (agentUrl: string) => A2AStreamData | undefined;
+  
   setSidebarCollapsed: (collapsed: boolean) => void;
 }
 
-export const useAgentStore = create<AgentState>((set) => ({
+export const useAgentStore = create<AgentState>((set, get) => ({
   // Initial state
   currentAgent: null,
   messages: [],
@@ -87,6 +130,7 @@ export const useAgentStore = create<AgentState>((set) => ({
     lastUpdated: undefined
   },
   pendingUserQuestion: null,
+  activeA2AStreams: {},
   sidebarCollapsed: false,
   
   // Actions
@@ -313,6 +357,70 @@ export const useAgentStore = create<AgentState>((set) => ({
   
   // AskUserQuestion actions
   setPendingUserQuestion: (question) => set({ pendingUserQuestion: question }),
+  
+  // A2A stream actions
+  setA2AStreamStart: (agentUrl, sessionId, message) => set((state) => ({
+    activeA2AStreams: {
+      ...state.activeA2AStreams,
+      [agentUrl]: {
+        sessionId,
+        agentUrl,
+        message,
+        startedAt: Date.now(),
+        isStreaming: true,
+        events: [],  // Initialize empty events array
+      }
+    }
+  })),
+  
+  setA2AStreamEnd: (agentUrl) => set((state) => {
+    const stream = state.activeA2AStreams[agentUrl];
+    if (stream) {
+      return {
+        activeA2AStreams: {
+          ...state.activeA2AStreams,
+          [agentUrl]: {
+            ...stream,
+            isStreaming: false,
+          }
+        }
+      };
+    }
+    return state;
+  }),
+  
+  // Add a new event to the A2A stream's events array for real-time display
+  addA2AStreamEvent: (agentUrl, event) => set((state) => {
+    const stream = state.activeA2AStreams[agentUrl];
+    if (stream) {
+      return {
+        activeA2AStreams: {
+          ...state.activeA2AStreams,
+          [agentUrl]: {
+            ...stream,
+            events: [...stream.events, event],
+          }
+        }
+      };
+    }
+    // If no stream exists yet, create one with the event
+    // This can happen if a2a_stream_data arrives before a2a_stream_start
+    return {
+      activeA2AStreams: {
+        ...state.activeA2AStreams,
+        [agentUrl]: {
+          sessionId: event.sessionId || '',
+          agentUrl,
+          message: '',
+          startedAt: Date.now(),
+          isStreaming: true,
+          events: [event],
+        }
+      }
+    };
+  }),
+  
+  getA2AStreamByUrl: (agentUrl) => get().activeA2AStreams[agentUrl],
   
   setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
 }));
