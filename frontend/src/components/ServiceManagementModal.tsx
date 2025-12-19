@@ -12,12 +12,15 @@ import {
   Save,
   CheckCircle,
   XCircle,
-  LogOut
+  LogOut,
+  Lock,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { BackendService } from '../types/backendServices';
 import { useBackendServices } from '../hooks/useBackendServices';
-import { useAuth } from '../hooks/useAuth';
+import { useAuthStore } from '../stores/authStore';
 import { showSuccess, showError } from '../utils/toast';
 
 interface ServiceManagementModalProps {
@@ -45,7 +48,7 @@ export const ServiceManagementModal: React.FC<ServiceManagementModalProps> = ({
     updateService,
     removeService
   } = useBackendServices();
-  const { logout, isAuthenticated } = useAuth();
+  const { getToken, removeToken } = useAuthStore();
 
   const [servicesWithStatus, setServicesWithStatus] = useState<ServiceWithStatus[]>([]);
   const [isAddingService, setIsAddingService] = useState(false);
@@ -53,6 +56,15 @@ export const ServiceManagementModal: React.FC<ServiceManagementModalProps> = ({
   const [newService, setNewService] = useState({ name: '', url: '' });
   const [showSwitchWarning, setShowSwitchWarning] = useState(false);
   const [pendingService, setPendingService] = useState<ServiceWithStatus | null>(null);
+  
+  // Password management state
+  const [passwordServiceId, setPasswordServiceId] = useState<string | null>(null);
+  const [passwordRequired, setPasswordRequired] = useState<boolean | null>(null);
+  const [checkingPassword, setCheckingPassword] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
 
   // Update services with status information
   const updateServicesStatus = async () => {
@@ -207,12 +219,137 @@ export const ServiceManagementModal: React.FC<ServiceManagementModalProps> = ({
     showSuccess(t('serviceManagementModal.removeSuccess'));
   };
 
-  const handleLogout = async () => {
-    await logout();
-    showSuccess(t('serviceManagementModal.logoutSuccess'));
-    onClose();
-    // Redirect to login page
-    window.location.href = '/login';
+  // Logout from a specific service
+  const handleLogoutService = async (serviceId: string) => {
+    const service = services.find(s => s.id === serviceId);
+    if (!service) return;
+
+    try {
+      // Get the token for this service
+      const tokenData = getToken(serviceId);
+
+      // Call logout endpoint if we have a token
+      if (tokenData?.token) {
+        await fetch(`${service.url}/api/auth/logout`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${tokenData.token}`,
+          },
+        }).catch(() => {
+          // Ignore errors - token might be invalid
+        });
+      }
+    } catch (err) {
+      console.error('Logout error:', err);
+    } finally {
+      // Remove token for this service
+      removeToken(serviceId);
+      showSuccess(t('serviceManagementModal.logoutSuccess'));
+      
+      // If this is the current service, redirect to login
+      if (serviceId === currentService?.id) {
+        onClose();
+        window.location.href = '/login';
+      }
+    }
+  };
+
+  // Open password management modal for a service
+  const openPasswordModal = async (serviceId: string) => {
+    const service = services.find(s => s.id === serviceId);
+    if (!service) return;
+
+    setPasswordServiceId(serviceId);
+    setNewPassword('');
+    setConfirmPassword('');
+    setShowPassword(false);
+    setPasswordRequired(null);
+    setCheckingPassword(true);
+
+    // Check if password is required for this service
+    try {
+      const response = await fetch(`${service.url}/api/auth/check-password-required`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        signal: AbortSignal.timeout(5000)
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setPasswordRequired(data.passwordRequired);
+      }
+    } catch (err) {
+      console.error('Failed to check password status:', err);
+    } finally {
+      setCheckingPassword(false);
+    }
+  };
+
+  // Save password for a service
+  const handleSavePassword = async () => {
+    if (!passwordServiceId) return;
+
+    const service = services.find(s => s.id === passwordServiceId);
+    if (!service) return;
+
+    // Validate passwords match
+    if (newPassword !== confirmPassword) {
+      showError(t('serviceManagementModal.password.mismatch'));
+      return;
+    }
+
+    // Validate password length if setting a password
+    if (newPassword && newPassword.length < 4) {
+      showError(t('serviceManagementModal.password.tooShort'));
+      return;
+    }
+
+    setSavingPassword(true);
+
+    try {
+      const tokenData = getToken(passwordServiceId);
+      const response = await fetch(`${service.url}/api/config`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(tokenData?.token && { Authorization: `Bearer ${tokenData.token}` }),
+        },
+        body: JSON.stringify({
+          adminPassword: newPassword || '',
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        showSuccess(
+          newPassword
+            ? t('serviceManagementModal.password.setSuccess')
+            : t('serviceManagementModal.password.clearSuccess')
+        );
+        // Update password status
+        setPasswordRequired(!!newPassword);
+        setNewPassword('');
+        setConfirmPassword('');
+        // Don't close the modal immediately so user can see the updated status
+      } else {
+        showError(data.error || t('serviceManagementModal.password.saveFailed'));
+      }
+    } catch (err) {
+      console.error('Failed to save password:', err);
+      showError(t('serviceManagementModal.password.saveFailed'));
+    } finally {
+      setSavingPassword(false);
+    }
+  };
+
+  // Check if a service has a logged in token
+  const isServiceLoggedIn = (serviceId: string): boolean => {
+    const tokenData = getToken(serviceId);
+    return !!tokenData?.token;
   };
 
   const startEditingService = (service: ServiceWithStatus) => {
@@ -376,6 +513,30 @@ export const ServiceManagementModal: React.FC<ServiceManagementModalProps> = ({
                           </button>
                         )}
 
+                        {/* Password management - only for online services */}
+                        {service.isOnline && (
+                          <button
+                            onClick={() => openPasswordModal(service.id)}
+                            className="p-1.5 text-gray-500 hover:text-purple-600 dark:hover:text-purple-400 
+                                     hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded transition-colors"
+                            title={t('serviceManagementModal.managePassword')}
+                          >
+                            <Lock className="w-4 h-4" />
+                          </button>
+                        )}
+
+                        {/* Logout - only for logged in services */}
+                        {isServiceLoggedIn(service.id) && (
+                          <button
+                            onClick={() => handleLogoutService(service.id)}
+                            className="p-1.5 text-gray-500 hover:text-red-600 dark:hover:text-red-400 
+                                     hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                            title={t('serviceManagementModal.logoutService')}
+                          >
+                            <LogOut className="w-4 h-4" />
+                          </button>
+                        )}
+
                         {!service.isDefault && (
                           <>
                             <button
@@ -451,30 +612,15 @@ export const ServiceManagementModal: React.FC<ServiceManagementModalProps> = ({
           {/* Quick Actions */}
           <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={updateServicesStatus}
-                  className="flex items-center space-x-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 
-                           dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 
-                           text-sm rounded-md transition-colors"
-                >
-                  <RotateCcw className="w-4 h-4" />
-                  <span>{t('serviceManagementModal.refreshStatus')}</span>
-                </button>
-
-                {/* Logout Button */}
-                {isAuthenticated && (
-                  <button
-                    onClick={handleLogout}
-                    className="flex items-center space-x-2 px-3 py-1.5 bg-red-100 hover:bg-red-200 
-                             dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-700 dark:text-red-300 
-                             text-sm rounded-md transition-colors"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    <span>{t('serviceManagementModal.logout')}</span>
-                  </button>
-                )}
-              </div>
+              <button
+                onClick={updateServicesStatus}
+                className="flex items-center space-x-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 
+                         dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 
+                         text-sm rounded-md transition-colors"
+              >
+                <RotateCcw className="w-4 h-4" />
+                <span>{t('serviceManagementModal.refreshStatus')}</span>
+              </button>
 
               <div className="text-sm text-gray-500 dark:text-gray-400">
                 {servicesWithStatus.filter(s => s.isOnline).length} {t('serviceManagementModal.servicesOnline')} / {servicesWithStatus.length}
@@ -483,6 +629,123 @@ export const ServiceManagementModal: React.FC<ServiceManagementModalProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Password Management Modal */}
+      {passwordServiceId && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-2">
+                <Lock className="w-5 h-5 text-purple-500" />
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                  {t('serviceManagementModal.password.title')}
+                </h3>
+              </div>
+              <button
+                onClick={() => setPasswordServiceId(null)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Current Password Status */}
+            <div className="flex items-center space-x-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50 mb-4">
+              {checkingPassword ? (
+                <div className="flex items-center space-x-2 text-gray-500">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-500"></div>
+                  <span className="text-sm">{t('serviceManagementModal.password.checking')}</span>
+                </div>
+              ) : passwordRequired ? (
+                <>
+                  <Lock className="w-5 h-5 text-blue-500" />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">
+                    {t('serviceManagementModal.password.currentlySet')}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">
+                    {t('serviceManagementModal.password.currentlyNotSet')}
+                  </span>
+                </>
+              )}
+            </div>
+
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              {t('serviceManagementModal.password.description')}
+            </p>
+
+            <div className="space-y-4">
+              {/* New Password */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  {t('serviceManagementModal.password.newPassword')}
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder={t('serviceManagementModal.password.newPasswordPlaceholder')}
+                    className="w-full px-4 py-2 pr-10 rounded-lg border border-gray-300 dark:border-gray-600
+                             bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                             focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Confirm Password */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  {t('serviceManagementModal.password.confirmPassword')}
+                </label>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder={t('serviceManagementModal.password.confirmPasswordPlaceholder')}
+                  className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600
+                           bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                           focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
+
+              {/* Buttons */}
+              <div className="flex justify-end space-x-3 pt-2">
+                <button
+                  onClick={() => setPasswordServiceId(null)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 
+                           hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                >
+                  {t('serviceManagementModal.cancel')}
+                </button>
+                <button
+                  onClick={handleSavePassword}
+                  disabled={savingPassword}
+                  className="px-4 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 
+                           disabled:bg-gray-400 disabled:cursor-not-allowed rounded-md flex items-center space-x-2"
+                >
+                  {savingPassword ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Check className="w-4 h-4" />
+                  )}
+                  <span>{t('serviceManagementModal.password.save')}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Switch Warning Modal */}
       {showSwitchWarning && pendingService && (
