@@ -11,11 +11,13 @@ import {
   TestTube,
   Save,
   CheckCircle,
-  XCircle
+  XCircle,
+  LogOut
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { BackendService } from '../types/backendServices';
 import { useBackendServices } from '../hooks/useBackendServices';
+import { useAuth } from '../hooks/useAuth';
 import { showSuccess, showError } from '../utils/toast';
 
 interface ServiceManagementModalProps {
@@ -43,6 +45,7 @@ export const ServiceManagementModal: React.FC<ServiceManagementModalProps> = ({
     updateService,
     removeService
   } = useBackendServices();
+  const { logout, isAuthenticated } = useAuth();
 
   const [servicesWithStatus, setServicesWithStatus] = useState<ServiceWithStatus[]>([]);
   const [isAddingService, setIsAddingService] = useState(false);
@@ -202,6 +205,14 @@ export const ServiceManagementModal: React.FC<ServiceManagementModalProps> = ({
   const handleRemoveService = (serviceId: string) => {
     removeService(serviceId);
     showSuccess(t('serviceManagementModal.removeSuccess'));
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    showSuccess(t('serviceManagementModal.logoutSuccess'));
+    onClose();
+    // Redirect to login page
+    window.location.href = '/login';
   };
 
   const startEditingService = (service: ServiceWithStatus) => {
@@ -440,15 +451,30 @@ export const ServiceManagementModal: React.FC<ServiceManagementModalProps> = ({
           {/* Quick Actions */}
           <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
             <div className="flex items-center justify-between">
-              <button
-                onClick={updateServicesStatus}
-                className="flex items-center space-x-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 
-                         dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 
-                         text-sm rounded-md transition-colors"
-              >
-                <RotateCcw className="w-4 h-4" />
-                <span>{t('serviceManagementModal.refreshStatus')}</span>
-              </button>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={updateServicesStatus}
+                  className="flex items-center space-x-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 
+                           dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 
+                           text-sm rounded-md transition-colors"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  <span>{t('serviceManagementModal.refreshStatus')}</span>
+                </button>
+
+                {/* Logout Button */}
+                {isAuthenticated && (
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center space-x-2 px-3 py-1.5 bg-red-100 hover:bg-red-200 
+                             dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-700 dark:text-red-300 
+                             text-sm rounded-md transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>{t('serviceManagementModal.logout')}</span>
+                  </button>
+                )}
+              </div>
 
               <div className="text-sm text-gray-500 dark:text-gray-400">
                 {servicesWithStatus.filter(s => s.isOnline).length} {t('serviceManagementModal.servicesOnline')} / {servicesWithStatus.length}
@@ -456,8 +482,7 @@ export const ServiceManagementModal: React.FC<ServiceManagementModalProps> = ({
             </div>
           </div>
         </div>
-
-            </div>
+      </div>
 
       {/* Switch Warning Modal */}
       {showSwitchWarning && pendingService && (

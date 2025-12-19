@@ -932,6 +932,8 @@
     "addSuccess": "Service added successfully",
     "updateSuccess": "Service updated successfully",
     "removeSuccess": "Service removed successfully",
+    "logout": "Logout",
+    "logoutSuccess": "Logged out successfully",
     "connectionTest": {
       "success": "Connection test successful",
       "failed": "Connection test failed",
