@@ -5,6 +5,39 @@ import { config } from 'dotenv';
 // Re-export path constants for convenient access
 export * from './paths.js';
 
+/**
+ * Check if a password has been explicitly configured
+ * Returns true if a non-empty password is configured
+ * Priority: Config file > Environment variable
+ * If config file has adminPassword field (even empty), it takes precedence
+ * Returns false if no password is configured (allows passwordless login)
+ */
+export async function isPasswordConfigured(): Promise<boolean> {
+  // Check config file first (it has higher priority for password settings)
+  const homeDir = process.env.HOME || process.env.USERPROFILE || '';
+  const configPath = join(homeDir, '.agent-studio', 'config', 'config.json');
+
+  try {
+    const content = await readFile(configPath, 'utf-8');
+    const configData = JSON.parse(content);
+    
+    // If adminPassword field exists in config file, use it (even if empty)
+    if ('adminPassword' in configData) {
+      return !!configData.adminPassword && configData.adminPassword.trim() !== '';
+    }
+  } catch {
+    // Config file doesn't exist or can't be read - fall through to check env var
+  }
+
+  // Fall back to environment variable only if config file doesn't have adminPassword field
+  if (process.env.ADMIN_PASSWORD && process.env.ADMIN_PASSWORD.trim() !== '') {
+    return true;
+  }
+
+  // No password configured
+  return false;
+}
+
 export interface AgentStudioConfig {
   port?: number;
   host?: string;
@@ -66,11 +99,13 @@ export async function loadConfig(): Promise<AgentStudioConfig> {
   }
 
 // Create final configuration with environment variables taking priority over config.json
-  // Priority: Environment variables > Config file > Defaults
+  // Priority: Config file > Environment variables > Defaults (for password)
+  // Note: For adminPassword, config file takes priority to allow clearing password via config
   const finalConfig: AgentStudioConfig = {
     port: parseInt(process.env.PORT || configData.port?.toString() || '4936'),
     host: process.env.HOST || configData.host || '0.0.0.0',
-    adminPassword: process.env.ADMIN_PASSWORD || configData.adminPassword || 'admin123',
+    // Password priority: config file > env var > undefined (no default password for passwordless login)
+    adminPassword: 'adminPassword' in configData ? configData.adminPassword : (process.env.ADMIN_PASSWORD || undefined),
     jwtSecret: process.env.JWT_SECRET || configData.jwtSecret || 'your-secret-key-change-this-in-production',
     jwtExpiresIn: process.env.JWT_EXPIRES_IN || configData.jwtExpiresIn || '7d',
     tokenRefreshThreshold: process.env.TOKEN_REFRESH_THRESHOLD || configData.tokenRefreshThreshold || '24h',

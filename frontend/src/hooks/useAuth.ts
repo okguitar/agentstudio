@@ -23,6 +23,106 @@ export function useAuth() {
   );
   const isAuthenticated = !!currentServiceToken;
 
+  /**
+   * Check if the backend requires a password for login
+   * @returns Object with passwordRequired flag and success status
+   */
+  const checkPasswordRequired = useCallback(async (): Promise<{
+    success: boolean;
+    passwordRequired: boolean;
+    error?: string;
+  }> => {
+    try {
+      const response = await fetch(`${API_BASE}/auth/check-password-required`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        signal: AbortSignal.timeout(5000),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return {
+          success: false,
+          passwordRequired: true, // Default to requiring password on error
+          error: data.error || 'Failed to check password requirement',
+        };
+      }
+
+      return {
+        success: true,
+        passwordRequired: data.passwordRequired,
+      };
+    } catch (err) {
+      console.error('Failed to check password requirement:', err);
+      return {
+        success: false,
+        passwordRequired: true, // Default to requiring password on error
+        error: err instanceof Error ? err.message : 'Network error',
+      };
+    }
+  }, []);
+
+  /**
+   * Login without password (only works when password is not configured)
+   */
+  const loginWithoutPassword = useCallback(async (): Promise<boolean> => {
+    setIsLoading(true);
+    setError(null);
+
+    if (!currentService) {
+      setError('No service selected');
+      setIsLoading(false);
+      return false;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}), // Empty body for password-less login
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        const loginError = new Error(data.error || 'Login failed') as Error & {
+          status?: number;
+          details?: any;
+        };
+        loginError.status = response.status;
+        loginError.details = data;
+        setError(loginError);
+        return false;
+      }
+
+      // Store token with service information
+      const tokenData = {
+        token: data.token,
+        serviceId: currentService.id,
+        serviceName: currentService.name,
+        serviceUrl: currentService.url,
+        timestamp: Date.now()
+      };
+
+      setToken(tokenData);
+      return true;
+    } catch (err) {
+      const networkError = new Error('Network error occurred during login') as Error & {
+        originalError?: any;
+      };
+      networkError.originalError = err;
+      setError(networkError);
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [currentService, setToken]);
+
   const login = useCallback(async (password: string): Promise<boolean> => {
     setIsLoading(true);
     setError(null);
@@ -345,8 +445,10 @@ export function useAuth() {
     error,
     isRefreshing,
     login,
+    loginWithoutPassword,
     logout,
     verifyToken,
     refreshToken,
+    checkPasswordRequired,
   };
 }

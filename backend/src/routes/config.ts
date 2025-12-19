@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { authMiddleware } from '../middleware/auth';
-import { loadConfig } from '../config/index';
+import { loadConfig, clearConfigCache } from '../config/index';
 
 const router: Router = Router();
 
@@ -126,9 +126,12 @@ router.post('/', authMiddleware, async (req, res) => {
     // Write updated config
     await writeFile(configPath, JSON.stringify(updatedConfig, null, 2), 'utf-8');
 
+    // Clear config cache so changes take effect immediately
+    clearConfigCache();
+
     res.json({
       success: true,
-      message: 'Configuration updated. Restart the service to apply changes.',
+      message: 'Configuration updated. Some settings may require a restart to take effect.',
       config: updatedConfig
     });
   } catch (error) {

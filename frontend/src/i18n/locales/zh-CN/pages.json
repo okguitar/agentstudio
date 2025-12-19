@@ -48,7 +48,11 @@
     "cancel": "取消",
     "add": "添加",
     "addService": "添加新服务",
-    "rerunOnboarding": "重新运行配置向导"
+    "rerunOnboarding": "重新运行配置向导",
+    "checkingConnection": "正在检查连接...",
+    "autoLoggingIn": "正在自动登录...",
+    "noPasswordRequired": "此服务未设置密码，可直接登录",
+    "enterSystem": "进入系统"
   },
   "landing": {
     "pageTitle": "AgentStudio - 智能体工作平台 | Claude Code 驱动的 AI 助手",
@@ -324,6 +328,25 @@
       "language": {
         "label": "语言",
         "description": "选择界面语言"
+      },
+      "password": {
+        "title": "访问密码",
+        "checking": "正在检查...",
+        "currentlySet": "当前已设置访问密码",
+        "currentlyNotSet": "当前未设置密码，可免密登录",
+        "description": "设置密码后，登录时需要输入密码。留空并保存可清除密码，启用免密登录。",
+        "newPassword": "新密码",
+        "newPasswordPlaceholder": "输入新密码（留空则清除密码）",
+        "confirmPassword": "确认密码",
+        "confirmPasswordPlaceholder": "再次输入密码",
+        "save": "保存密码",
+        "clear": "清除密码",
+        "mismatch": "两次输入的密码不一致",
+        "tooShort": "密码长度至少为4位",
+        "setSuccess": "密码设置成功，下次登录时生效",
+        "clearSuccess": "密码已清除，系统现在可以免密登录",
+        "saveFailed": "保存密码失败",
+        "clearFailed": "清除密码失败"
       }
     },
     "api": "API服务器设置",

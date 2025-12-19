@@ -1,16 +1,52 @@
 import express, { Request, Response, Router } from 'express';
 import { generateToken, verifyToken, shouldRefreshToken } from '../utils/jwt';
-import { loadConfig } from '../config/index';
+import { loadConfig, isPasswordConfigured } from '../config/index';
 
 const router: Router = express.Router();
 
 /**
+ * GET /api/auth/check-password-required
+ * Check if password is required for login
+ * Returns whether the system requires a password to authenticate
+ */
+router.get('/check-password-required', async (req: Request, res: Response) => {
+  try {
+    const passwordRequired = await isPasswordConfigured();
+    res.json({
+      success: true,
+      passwordRequired,
+    });
+  } catch (error) {
+    console.error('Failed to check password requirement:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to check password requirement',
+    });
+  }
+});
+
+/**
  * POST /api/auth/login
  * Authenticate with password and return JWT token
+ * If no password is configured, login succeeds without password
  */
 router.post('/login', async (req: Request, res: Response) => {
   const { password } = req.body;
 
+  const passwordRequired = await isPasswordConfigured();
+
+  // If no password is configured, allow login without password
+  if (!passwordRequired) {
+    const token = await generateToken();
+    res.json({
+      success: true,
+      token,
+      message: 'Login successful (no password required)',
+    });
+    return;
+  }
+
+  // Password is required but not provided
   if (!password) {
     res.status(400).json({ error: 'Password is required' });
     return;

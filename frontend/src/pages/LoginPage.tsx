@@ -1,16 +1,16 @@
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
 import { useBackendServices } from '../hooks/useBackendServices';
 import { resetBackendOnboarding } from '../utils/onboardingStorage';
 import { ErrorMessage } from '../components/ErrorMessage';
-import { Server, ChevronDown, ChevronUp, Settings, Trash2, Plus, CheckCircle, XCircle, AlertCircle, Rocket } from 'lucide-react';
+import { Server, ChevronDown, ChevronUp, Settings, Trash2, Plus, CheckCircle, XCircle, AlertCircle, Rocket, Unlock } from 'lucide-react';
 
 export function LoginPage() {
   const { t } = useTranslation('pages');
   const [password, setPassword] = useState('');
-  const { login, isLoading, error } = useAuth();
+  const { login, loginWithoutPassword, isLoading, error, checkPasswordRequired } = useAuth();
   const {
     services,
     currentService,
@@ -28,8 +28,65 @@ export function LoginPage() {
   const [newService, setNewService] = useState({ name: '', url: '' });
   const [testingService, setTestingService] = useState<string | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<Record<string, 'success' | 'error' | 'unknown'>>({});
+  
+  // Password requirement state
+  const [checkingPasswordRequired, setCheckingPasswordRequired] = useState(true);
+  const [passwordRequired, setPasswordRequired] = useState(true);
+  const [autoLoginAttempted, setAutoLoginAttempted] = useState(false);
 
   const from = (location.state as { from?: { pathname?: string } })?.from?.pathname || '/';
+
+  // Check if password is required on mount and when service changes
+  useEffect(() => {
+    let isMounted = true;
+
+    const checkAndAutoLogin = async () => {
+      if (!currentService) {
+        setCheckingPasswordRequired(false);
+        return;
+      }
+
+      setCheckingPasswordRequired(true);
+      setAutoLoginAttempted(false);
+
+      try {
+        const result = await checkPasswordRequired();
+        
+        if (!isMounted) return;
+
+        if (result.success) {
+          setPasswordRequired(result.passwordRequired);
+
+          // Auto login if password is not required
+          if (!result.passwordRequired && !autoLoginAttempted) {
+            setAutoLoginAttempted(true);
+            const loginSuccess = await loginWithoutPassword();
+            if (loginSuccess && isMounted) {
+              navigate(from, { replace: true });
+            }
+          }
+        } else {
+          // Default to requiring password on error
+          setPasswordRequired(true);
+        }
+      } catch (err) {
+        console.error('Failed to check password requirement:', err);
+        if (isMounted) {
+          setPasswordRequired(true);
+        }
+      } finally {
+        if (isMounted) {
+          setCheckingPasswordRequired(false);
+        }
+      }
+    };
+
+    checkAndAutoLogin();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currentService?.id]); // Only re-run when service changes
 
   const testConnection = async (serviceUrl: string, serviceId?: string) => {
     if (serviceId) {
@@ -138,53 +195,114 @@ export function LoginPage() {
             )}
           </div>
 
-          {/* Login Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-              >
-                {t('login.passwordLabel')}
-              </label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder={t('login.passwordPlaceholder')}
-                required
-                autoFocus
-                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600
-                         bg-white dark:bg-gray-700 text-gray-900 dark:text-white
-                         focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                         placeholder-gray-400 dark:placeholder-gray-500
-                         transition-colors"
-              />
+          {/* Login Form or Auto-Login Status */}
+          {checkingPasswordRequired ? (
+            // Loading state while checking password requirement
+            <div className="space-y-6 text-center">
+              <div className="flex items-center justify-center space-x-3">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                <span className="text-gray-600 dark:text-gray-400">
+                  {t('login.checkingConnection', '正在检查连接...')}
+                </span>
+              </div>
             </div>
+          ) : !passwordRequired && isLoading ? (
+            // Auto-login in progress
+            <div className="space-y-6 text-center">
+              <div className="flex items-center justify-center space-x-3">
+                <Unlock className="w-6 h-6 text-green-500" />
+                <span className="text-gray-600 dark:text-gray-400">
+                  {t('login.autoLoggingIn', '正在自动登录...')}
+                </span>
+              </div>
+            </div>
+          ) : !passwordRequired ? (
+            // No password required - show auto-login button if auto-login failed
+            <div className="space-y-6">
+              <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                <div className="flex items-center space-x-3">
+                  <Unlock className="w-5 h-5 text-green-600 dark:text-green-400" />
+                  <span className="text-sm text-green-700 dark:text-green-300">
+                    {t('login.noPasswordRequired', '此服务未设置密码，可直接登录')}
+                  </span>
+                </div>
+              </div>
 
-            {/* Error Message */}
-            {error && (
-              <ErrorMessage
-                error={error}
-                title="Login failed"
-                showDetails={true}
-              />
-            )}
+              {/* Error Message */}
+              {error && (
+                <ErrorMessage
+                  error={error}
+                  title="Login failed"
+                  showDetails={true}
+                />
+              )}
 
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={isLoading || !password}
-              className="w-full py-3 px-4 rounded-lg font-medium text-white
-                       bg-blue-600 hover:bg-blue-700
-                       disabled:bg-gray-400 disabled:cursor-not-allowed
-                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-                       transition-colors"
-            >
-              {isLoading ? t('login.loggingIn') : t('login.loginButton')}
-            </button>
-          </form>
+              <button
+                onClick={async () => {
+                  const success = await loginWithoutPassword();
+                  if (success) {
+                    navigate(from, { replace: true });
+                  }
+                }}
+                disabled={isLoading}
+                className="w-full py-3 px-4 rounded-lg font-medium text-white
+                         bg-green-600 hover:bg-green-700
+                         disabled:bg-gray-400 disabled:cursor-not-allowed
+                         focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2
+                         transition-colors"
+              >
+                {isLoading ? t('login.loggingIn') : t('login.enterSystem', '进入系统')}
+              </button>
+            </div>
+          ) : (
+            // Password required - show login form
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                >
+                  {t('login.passwordLabel')}
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder={t('login.passwordPlaceholder')}
+                  required
+                  autoFocus
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600
+                           bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                           focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                           placeholder-gray-400 dark:placeholder-gray-500
+                           transition-colors"
+                />
+              </div>
+
+              {/* Error Message */}
+              {error && (
+                <ErrorMessage
+                  error={error}
+                  title="Login failed"
+                  showDetails={true}
+                />
+              )}
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={isLoading || !password}
+                className="w-full py-3 px-4 rounded-lg font-medium text-white
+                         bg-blue-600 hover:bg-blue-700
+                         disabled:bg-gray-400 disabled:cursor-not-allowed
+                         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+                         transition-colors"
+              >
+                {isLoading ? t('login.loggingIn') : t('login.loginButton')}
+              </button>
+            </form>
+          )}
 
           {/* Footer Info */}
           <div className="mt-6 text-center">

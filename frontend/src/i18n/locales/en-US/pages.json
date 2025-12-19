@@ -48,7 +48,11 @@
     "cancel": "Cancel",
     "add": "Add",
     "addService": "Add New Service",
-    "rerunOnboarding": "Rerun Configuration Wizard"
+    "rerunOnboarding": "Rerun Configuration Wizard",
+    "checkingConnection": "Checking connection...",
+    "autoLoggingIn": "Auto signing in...",
+    "noPasswordRequired": "No password required for this service",
+    "enterSystem": "Enter System"
   },
   "landing": {
     "pageTitle": "AgentStudio - AI Agent Platform | Powered by Claude Code",
@@ -324,6 +328,25 @@
       "language": {
         "label": "Language",
         "description": "Select interface language"
+      },
+      "password": {
+        "title": "Access Password",
+        "checking": "Checking...",
+        "currentlySet": "Access password is currently set",
+        "currentlyNotSet": "No password set, passwordless login enabled",
+        "description": "Set a password to require authentication on login. Leave empty and save to clear the password and enable passwordless login.",
+        "newPassword": "New Password",
+        "newPasswordPlaceholder": "Enter new password (leave empty to clear)",
+        "confirmPassword": "Confirm Password",
+        "confirmPasswordPlaceholder": "Re-enter password",
+        "save": "Save Password",
+        "clear": "Clear Password",
+        "mismatch": "Passwords do not match",
+        "tooShort": "Password must be at least 4 characters",
+        "setSuccess": "Password set successfully. Takes effect on next login.",
+        "clearSuccess": "Password cleared. Passwordless login is now enabled.",
+        "saveFailed": "Failed to save password",
+        "clearFailed": "Failed to clear password"
       }
     },
     "api": "API Server Settings",
