@@ -20,16 +20,16 @@ export const useAIModels = () => {
 // AI Chat with SSE streaming (backward compatibility - defaults to PPT agent)
 export const useAIChat = () => {
   return {
-    mutateAsync: async ({ 
-      message, 
-      context, 
-      sessionId, 
+    mutateAsync: async ({
+      message,
+      context,
+      sessionId,
       abortController,
-      onMessage, 
-      onError 
-    }: { 
-      message: string; 
-      context?: ChatContext; 
+      onMessage,
+      onError
+    }: {
+      message: string;
+      context?: ChatContext;
       sessionId?: string | null;
       abortController?: AbortController;
       onMessage?: (data: unknown) => void;
@@ -57,18 +57,24 @@ export const useAIChat = () => {
           throw new Error('No response body');
         }
 
+        let buffer = '';
+
         while (true) {
           // Check if request was aborted
           if (abortController?.signal.aborted) {
             reader.cancel();
             throw new DOMException('Request aborted', 'AbortError');
           }
-          
+
           const { done, value } = await reader.read();
           if (done) break;
 
-          const chunk = decoder.decode(value);
-          const lines = chunk.split('\n');
+          const chunk = decoder.decode(value, { stream: true });
+          buffer += chunk;
+
+          const lines = buffer.split('\n');
+          // Keep the last potentially incomplete line in the buffer
+          buffer = lines.pop() || '';
 
           for (const line of lines) {
             if (line.startsWith('data: ')) {
@@ -230,13 +236,13 @@ export const useSessionMessages = (sessionId: string | null) => {
       }
 
       const data = await response.json();
-      
+
       // Convert timestamps from number to Date objects to match ChatMessage interface
       const convertedMessages = data.messages.map((msg: any) => ({
         ...msg,
         timestamp: new Date(msg.timestamp)
       }));
-      
+
       return {
         ...data,
         messages: convertedMessages

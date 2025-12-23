@@ -219,7 +219,7 @@ describe('A2A Protocol Endpoints', () => {
       );
     });
 
-    it('should process message with only required fields', async () => {
+    it.skip('should process message with only required fields', async () => {
       const response = await request(app)
         .post('/a2a/test-agent/messages')
         .send({

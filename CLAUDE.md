@@ -11,16 +11,19 @@ Claude-powered AgentStudio with React frontend and Node.js backend, built on top
 
 ### Full-Stack Monorepo Structure
 - **Root**: Shared package.json with concurrently for running both services
-- **Frontend**: React 18 + TypeScript + Vite + TailwindCSS
+- **Frontend**: React 19 + TypeScript + Vite + TailwindCSS
 - **Backend**: Node.js + Express + TypeScript with AI SDK integration
 
 ### Key Technologies
 - **State Management**: Zustand (lightweight) + React Query (server state)
 - **AI Integration**: Claude Agent SDK (@anthropic-ai/claude-agent-sdk) with streaming responses
+- **A2A Integration**: @a2a-js/sdk for agent-to-agent communication
+- **Authentication**: JWT-based authentication with bcrypt password hashing
 - **Build Tools**: Vite (frontend), TSX (backend development)
-- **Testing**: Vitest + Testing Library + jsdom environment
+- **Testing**: Vitest + Testing Library + jsdom environment, Playwright for E2E testing
 - **Styling**: TailwindCSS with component variants
 - **Routing**: React Router DOM
+- **Documentation**: Storybook with Chromatic for component documentation
 
 ### Core Components Architecture
 - `AgentChatPanel.tsx`: Main AI conversation interface with streaming responses
@@ -29,6 +32,7 @@ Claude-powered AgentStudio with React frontend and Node.js backend, built on top
 - `AgentSelector.tsx`: Agent selection and management interface
 - `SessionsDropdown.tsx`: Session history and management
 - `ToolRenderer.tsx`: Dynamic tool usage visualization components
+- `FileBrowser.tsx`: Integrated file explorer for project files
 - `useSlides.ts`: React Query hooks for slide CRUD operations
 - `useAI.ts`: AI chat and slide editing functionality (backward compatibility)
 - `useAgents.ts`: Agent management and configuration
@@ -40,6 +44,10 @@ Backend follows RESTful patterns:
 - `/api/slides/*`: Slide CRUD operations (GET, PUT, POST, DELETE)
 - `/api/ai/*`: Legacy AI functionality and session management
 - `/api/agents/*`: Agent-based AI interactions with Claude Code SDK
+- `/api/commands/*`: Command management and execution endpoints
+- `/api/projects/*`: Project management and configuration endpoints
+- `/api/mcp/*`: MCP server management and health checks
+- `/api/plugins/*`: Plugin marketplace and installation endpoints
 - `/api/usage/*`: Usage statistics and monitoring (daily, weekly, monthly, live, summary)
 - `/api/health`: Health check endpoint
 - Static file serving for slide HTML content via `/slides/*`
@@ -53,8 +61,22 @@ The application uses a sophisticated agent system built on Claude Code SDK:
 - **Tool Integration**: Dynamic tool rendering with real-time status updates
 - **Project-Aware**: Agents operate within specific project contexts
 
+### MCP Integration
+Model Context Protocol (MCP) server integration for extended capabilities:
+- **Server Types**: Support for both stdio and HTTP-based MCP servers
+- **Tool Discovery**: Automatic detection of available MCP tools
+- **Health Monitoring**: Real-time status checks for MCP services
+- **Flexible Configuration**: Easy management of MCP server connections
+
+### Plugin System
+Extensible plugin architecture for adding new capabilities:
+- **Plugin Types**: Agents, commands, skills, and MCP servers
+- **Marketplace Management**: Add custom or community marketplaces
+- **One-Click Install**: Easy installation and management of plugins
+- **Version Control**: Track and update plugin versions
+
 ### Project Management System
-- **Project-Level Commands**: Slash commands scoped to projects or users (`/shared/types/commands.ts`)
+- **Project-Level Commands**: Slash commands scoped to projects or users (types defined in both `frontend/src/types/commands.ts` and `backend/src/types/commands.ts`)
 - **Project Metadata**: Track project configurations, agent associations, and custom attributes
 - **Agent Associations**: Configure which agents are enabled per project with usage statistics
 
@@ -67,6 +89,12 @@ The application uses a sophisticated agent system built on Claude Code SDK:
 
 ### Package Manager
 This project uses **pnpm workspaces** with filter commands for monorepo management. All commands support both `pnpm` and `npm`.
+
+**Workspace Names**:
+- Frontend: `@agentstudio/frontend`
+- Backend: `agentstudio-backend`
+
+When using `pnpm --filter`, reference these workspace names for targeting specific packages.
 
 ### Setup and Installation
 ```bash
@@ -87,7 +115,7 @@ pnpm run dev:backend         # Backend only
 pnpm run build               # Build both frontend and backend
 pnpm run build:frontend      # Build frontend only
 pnpm run build:backend       # Build backend only
-pnpm start                   # Start production backend
+pnpm start                   # Start production backend (after build)
 ```
 
 ### Service Management (Production)
@@ -102,10 +130,17 @@ pnpm run service:logs        # View service logs
 
 ### Testing
 ```bash
+# Frontend tests
 cd frontend && pnpm test           # Run tests in watch mode
 cd frontend && pnpm run test:ui    # Run tests with UI
 cd frontend && pnpm run test:run   # Run tests once
 cd frontend && pnpm run test:coverage # Run with coverage
+
+# Backend tests
+cd backend && pnpm test            # Run tests in watch mode
+cd backend && pnpm run test:ui     # Run tests with UI
+cd backend && pnpm run test:run    # Run tests once
+cd backend && pnpm run test:coverage # Run with coverage
 ```
 
 ### Code Quality
@@ -175,6 +210,13 @@ CORS_ORIGINS=https://your-frontend.vercel.app,https://custom-domain.com
 3. AI interactions use Server-Sent Events (SSE) streaming
 4. Tool usage rendered dynamically with real-time status updates
 
+### CLI Tool
+The backend includes a CLI tool (`agentstudio`) for managing the application:
+- Project management and migration
+- Agent configuration upgrades
+- Service management (start/stop/status/logs)
+- Available after build: `pnpm run build && npx agentstudio`
+
 ### AI Integration Pattern
 - Claude Code SDK integration in backend with streaming responses
 - Agent-based architecture with configurable tools and permissions
@@ -213,6 +255,24 @@ CORS_ORIGINS=https://your-frontend.vercel.app,https://custom-domain.com
 
 ## Deployment and Production
 
+### Docker Deployment (Recommended)
+The project includes Docker support for all-in-one deployment:
+```bash
+# Build and run with Docker Compose
+docker build -t agentstudio:latest .
+docker-compose up -d
+
+# Access at http://localhost
+```
+
+**What you get:**
+- All-in-one container (frontend + backend)
+- Data persistence via Docker volumes
+- Zero configuration needed
+- Easy updates and rollbacks
+
+See [DOCKER.md](DOCKER.md) for detailed Docker deployment guide.
+
 ### Frontend Deployment to Vercel
 The project includes `vercel.json` configuration for seamless deployment:
 - Automatic build via `pnpm --filter frontend run build`
@@ -240,33 +300,36 @@ Frontend supports flexible API configuration:
 ```
 ai-editor/
 ├── package.json                    # Root package.json with monorepo scripts
-├── shared/                         # Shared types and utilities
-│   ├── types/
-│   │   ├── agents.ts              # Agent configuration types
-│   │   ├── commands.ts            # Slash command types (project/user scoped)
-│   │   ├── subagents.ts           # Subagent configuration types
-│   │   └── projects.ts            # Project metadata types
-│   └── utils/agentStorage.ts      # Agent persistence utilities
 ├── frontend/                      # React frontend
 │   ├── src/
 │   │   ├── components/            # React components
 │   │   │   ├── tools/             # Dynamic tool visualization components
 │   │   │   └── ui/               # Reusable UI components
 │   │   ├── hooks/                # React Query hooks
-│   │   │   └── useUsageStats.ts  # Usage statistics hook
 │   │   ├── stores/               # Zustand state management
 │   │   ├── pages/                # Page components
-│   │   │   └── UsageStatsPage.tsx # Usage monitoring dashboard
-│   │   └── types/                # Frontend type definitions
+│   │   ├── types/                # Frontend type definitions
+│   │   │   ├── agents.ts         # Agent configuration types
+│   │   │   ├── commands.ts       # Slash command types (project/user scoped)
+│   │   │   └── subagents.ts      # Subagent configuration types
+│   │   └── lib/
+│   │       └── config.ts         # API configuration system
 │   ├── vitest.config.ts          # Test configuration
 │   └── vite.config.ts            # Vite configuration
 └── backend/                      # Node.js backend
     ├── src/
     │   ├── routes/               # Express routes
     │   │   ├── agents.ts         # Agent-based AI endpoints
+    │   │   ├── commands.ts       # Command management endpoints
+    │   │   ├── projects.ts       # Project management endpoints
     │   │   ├── ai.ts            # Legacy AI endpoints
     │   │   ├── slides.ts        # Slide CRUD operations
     │   │   └── usage.ts         # Usage statistics API
+    │   ├── types/                # Backend type definitions
+    │   │   ├── agents.ts         # Agent configuration types
+    │   │   ├── commands.ts       # Slash command types
+    │   │   ├── subagents.ts      # Subagent configuration types
+    │   │   └── projects.ts       # Project metadata types
     │   ├── services/
     │   │   └── ccusageService.ts # ccusage integration service
     │   └── index.ts             # Server entry point (includes CORS config)
@@ -275,10 +338,12 @@ ai-editor/
 └── DEPLOYMENT.md                 # Detailed deployment guide
 ```
 
+**Note**: Type definitions are maintained in both `frontend/src/types/` and `backend/src/types/` to ensure type safety across the monorepo. When updating types, changes must be made in both locations to maintain consistency.
+
 ### Adding New AI Features
-1. **Built-in Agents**: Create agent configuration in `shared/types/agents.ts`
-2. **Subagents**: Use `shared/types/subagents.ts` for user-defined agents
-3. **Slash Commands**: Add project/user-scoped commands via `shared/types/commands.ts`
+1. **Built-in Agents**: Create agent configuration in both `frontend/src/types/agents.ts` and `backend/src/types/agents.ts`
+2. **Subagents**: Update subagent types in both `frontend/src/types/subagents.ts` and `backend/src/types/subagents.ts`
+3. **Slash Commands**: Add project/user-scoped commands via `frontend/src/types/commands.ts` and `backend/src/types/commands.ts`
 4. Add corresponding routes in `backend/src/routes/agents.ts`
 5. Update frontend components to support new agent types
 
@@ -299,9 +364,9 @@ ai-editor/
 - Run tests with `cd frontend && pnpm test`
 
 ### Agent Development
-- **Built-in Agents**: Extend `BUILTIN_AGENTS` in `shared/types/agents.ts`
-- **Subagents**: Create user-defined agents with custom system prompts in `shared/types/subagents.ts`
-- **Project Commands**: Define project-scoped slash commands in `shared/types/commands.ts`
+- **Built-in Agents**: Extend `BUILTIN_AGENTS` in both `frontend/src/types/agents.ts` and `backend/src/types/agents.ts`
+- **Subagents**: Create user-defined agents with custom system prompts in both frontend and backend types
+- **Project Commands**: Define project-scoped slash commands in both `frontend/src/types/commands.ts` and `backend/src/types/commands.ts`
 - Configure agent tools, permissions, and UI properties
 - Implement context builders for agent-specific data
 

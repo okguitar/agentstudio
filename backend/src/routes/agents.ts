@@ -612,11 +612,8 @@ router.post('/chat', async (req, res) => {
 
         // ⚡ CRITICAL: Add includePartialMessages BEFORE creating session
         // This must be set before handleSessionManagement because ClaudeSession
-        // =================================================================================
-        // A2A SDK MCP Server Integration
-        // =================================================================================
-        // Moved to buildQueryOptions in claudeUtils.ts
-        // =================================================================================
+        // uses these options to configure the Claude SDK query
+        queryOptions.includePartialMessages = includePartialMessages;
 
         // 处理会话管理
         const { claudeSession, actualSessionId: initialSessionId } = await handleSessionManagement(agentId, sessionId || null, projectPath, queryOptions, claudeVersion);
