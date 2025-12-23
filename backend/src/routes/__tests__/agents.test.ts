@@ -70,13 +70,16 @@ describe('agents.ts - Channel-Specific Streaming', () => {
 
     // Mock buildQueryOptions
     vi.mocked(buildQueryOptions).mockResolvedValue({
-      systemPrompt: 'You are a test agent',
-      allowedTools: [],
-      maxTurns: 25,
-      permissionMode: 'acceptEdits',
-      model: 'claude-3-5-sonnet-20241022',
-      pathToClaudeCodeExecutable: '/mock/claude',
-      env: {}
+      queryOptions: {
+        systemPrompt: 'You are a test agent',
+        allowedTools: [],
+        maxTurns: 25,
+        permissionMode: 'acceptEdits',
+        model: 'claude-3-5-sonnet-20241022',
+        pathToClaudeCodeExecutable: '/mock/claude',
+        env: {}
+      },
+      askUserSessionRef: null
     } as any);
 
     // Mock handleSessionManagement
@@ -163,7 +166,7 @@ describe('agents.ts - Channel-Specific Streaming', () => {
 
     // TODO: Fix mock setup for these tests. The functionality is verified through integration tests
     // and actual usage. These unit tests require complex mock setup due to SSE streaming.
-    it.skip('T010: should configure includePartialMessages=true when channel is "web"', async () => {
+    it('T010: should configure includePartialMessages=true when channel is "web"', async () => {
       // Get the current call count before our request
       const callCountBefore = mockHandleSessionManagement.mock.calls.length;
 
@@ -193,7 +196,7 @@ describe('agents.ts - Channel-Specific Streaming', () => {
       expect(response.headers['content-type']).toMatch(/text\/event-stream/);
     });
 
-    it.skip('T011: should configure includePartialMessages=false when channel is "slack"', async () => {
+    it('T011: should configure includePartialMessages=false when channel is "slack"', async () => {
       // Get the current call count before our request (includes calls from T010)
       const callCountBefore = mockHandleSessionManagement.mock.calls.length;
 

@@ -77,29 +77,29 @@ describe('PluginPaths', () => {
   describe('Directory Checking', () => {
     it('should check if marketplace exists', async () => {
       const { pluginPaths } = await import('../pluginPaths');
-      
+
       vi.mocked(fs.existsSync).mockReturnValue(true);
       vi.mocked(fs.statSync).mockReturnValue({ isDirectory: () => true } as any);
-      
+
       const exists = pluginPaths.marketplaceExists('test-market');
       expect(exists).toBe(true);
     });
 
     it('should return false if marketplace does not exist', async () => {
       const { pluginPaths } = await import('../pluginPaths');
-      
+
       vi.mocked(fs.existsSync).mockReturnValue(false);
-      
+
       const exists = pluginPaths.marketplaceExists('nonexistent');
       expect(exists).toBe(false);
     });
 
     it('should check if plugin exists', async () => {
       const { pluginPaths } = await import('../pluginPaths');
-      
+
       vi.mocked(fs.existsSync).mockReturnValue(true);
       vi.mocked(fs.statSync).mockReturnValue({ isDirectory: () => true } as any);
-      
+
       const exists = pluginPaths.pluginExists('test-market', 'test-plugin');
       expect(exists).toBe(true);
     });
@@ -108,27 +108,27 @@ describe('PluginPaths', () => {
   describe('Directory Listing', () => {
     it('should list all marketplaces', async () => {
       const { pluginPaths } = await import('../pluginPaths');
-      
+
       vi.mocked(fs.existsSync).mockReturnValue(true);
       vi.mocked(fs.readdirSync).mockReturnValue(['market1', 'market2', 'market3'] as any);
       vi.mocked(fs.statSync).mockReturnValue({ isDirectory: () => true } as any);
-      
+
       const marketplaces = pluginPaths.listMarketplaces();
       expect(marketplaces).toEqual(['market1', 'market2', 'market3']);
     });
 
     it('should return empty array if marketplaces dir does not exist', async () => {
       const { pluginPaths } = await import('../pluginPaths');
-      
+
       vi.mocked(fs.existsSync).mockReturnValue(false);
-      
+
       const marketplaces = pluginPaths.listMarketplaces();
       expect(marketplaces).toEqual([]);
     });
 
     it('should list all plugins in a marketplace with standard structure', async () => {
       const { pluginPaths } = await import('../pluginPaths');
-      
+
       vi.mocked(fs.existsSync).mockImplementation((p: any) => {
         const pathStr = p.toString();
         // plugins/ directory exists
@@ -139,12 +139,12 @@ describe('PluginPaths', () => {
       });
       vi.mocked(fs.readdirSync).mockReturnValue(['plugin1', 'plugin2'] as any);
       vi.mocked(fs.statSync).mockReturnValue({ isDirectory: () => true } as any);
-      
+
       const plugins = pluginPaths.listPlugins('test-market');
       expect(plugins).toEqual(['plugin1', 'plugin2']);
     });
 
-    it.skip('should list plugins in flat structure (no plugins/ directory)', async () => {
+    it('should list plugins in flat structure (no plugins/ directory)', async () => {
       // This test is currently skipped due to complex mock interactions
       // TODO: Revisit this test with better mock setup
       vi.mocked(fs.existsSync).mockImplementation((p: any) => {
@@ -154,20 +154,21 @@ describe('PluginPaths', () => {
         // plugins/ directory doesn't exist (this is the key check)
         if (pathStr.endsWith('/plugins') || pathStr.endsWith('\\plugins')) return false;
         // marketplace root exists
-        if (pathStr.includes('test-market') && !pathStr.includes('plugin')) return true;
+        if (pathStr.includes('test-market') && !pathStr.includes('plugin1') && !pathStr.includes('plugin2')) return true;
         // plugin manifest files exist for plugin1 and plugin2
         if (pathStr.includes('plugin1') && pathStr.includes('plugin.json')) return true;
         if (pathStr.includes('plugin2') && pathStr.includes('plugin.json')) return true;
         // .claude-plugin directory exists for plugin1 and plugin2
         if (pathStr.includes('plugin1') && pathStr.includes('.claude-plugin')) return true;
         if (pathStr.includes('plugin2') && pathStr.includes('.claude-plugin')) return true;
-        // ensure base directories exist
-        if (pathStr.includes('.claude')) return true;
+        // ensure base directories exist - BE SPECIFIC to avoid matching random files
+        if (pathStr === mockClaudeDir || pathStr === mockHomeDir) return true;
+        if (pathStr === path.join(mockClaudeDir, 'plugins', 'marketplaces')) return true;
         return false;
       });
       vi.mocked(fs.readdirSync).mockImplementation((p: any) => {
         const pathStr = p.toString();
-        if (pathStr.includes('test-market') && !pathStr.includes('plugin')) {
+        if (pathStr.includes('test-market') && !pathStr.includes('plugin1') && !pathStr.includes('plugin2')) {
           return ['plugin1', 'plugin2', '.git', 'README.md'] as any;
         }
         return [] as any;
@@ -176,10 +177,16 @@ describe('PluginPaths', () => {
         const pathStr = p.toString();
         // Only plugin directories should return true for isDirectory, not .git or README.md
         return {
-          isDirectory: () => pathStr.includes('plugin1') || pathStr.includes('plugin2') || pathStr.includes('.git') || pathStr.includes('.claude')
+          isDirectory: () => {
+            if (pathStr.endsWith('README.md')) return false;
+            return pathStr.includes('plugin1') || pathStr.includes('plugin2') || pathStr.includes('.git') ||
+              pathStr === mockClaudeDir || pathStr === mockHomeDir ||
+              pathStr === path.join(mockClaudeDir, 'plugins', 'marketplaces') ||
+              pathStr === path.join(mockClaudeDir, 'plugins', 'marketplaces', 'test-market');
+          }
         } as any;
       });
-      
+
       const { pluginPaths } = await import('../pluginPaths');
       const plugins = pluginPaths.listPlugins('test-market');
       expect(plugins).toEqual(['plugin1', 'plugin2']);
@@ -187,7 +194,7 @@ describe('PluginPaths', () => {
 
     it('should filter out non-directories when listing', async () => {
       const { pluginPaths } = await import('../pluginPaths');
-      
+
       vi.mocked(fs.existsSync).mockReturnValue(true);
       vi.mocked(fs.readdirSync).mockReturnValue(['plugin1', 'file.txt', 'plugin2'] as any);
       vi.mocked(fs.statSync).mockImplementation((p: any) => {
@@ -196,7 +203,7 @@ describe('PluginPaths', () => {
           isDirectory: () => !pathStr.includes('file.txt')
         } as any;
       });
-      
+
       const plugins = pluginPaths.listPlugins('test-market');
       expect(plugins).toEqual(['plugin1', 'plugin2']);
     });

@@ -24,7 +24,7 @@
 import type { CallExternalAgentInput, CallExternalAgentOutput } from '../../types/a2a.js';
 import { loadA2AConfig } from './a2aConfigService.js';
 import { a2aHistoryService } from './a2aHistoryService.js';
-import { 
+import {
   a2aStreamEventEmitter,
   type TaskState,
 } from './a2aStreamEvents.js';
@@ -91,8 +91,8 @@ export async function callExternalAgent(
   input: CallExternalAgentInput,
   projectId: string
 ): Promise<CallExternalAgentOutput> {
-  const { agentUrl, message, useTask = false, stream = true } = input;
-  const timeout = 600000; // Hardcoded default timeout: 10 minutes
+  const { agentUrl, message, useTask = false, stream = true, timeout: inputTimeout } = input;
+  const timeout = inputTimeout || 600000; // Use provided timeout or default to 10 minutes
 
   try {
     // Step 1: Validate agent URL against project allowlist
@@ -221,7 +221,7 @@ async function callExternalAgentMessage(
   taskId?: string
 ): Promise<CallExternalAgentOutput> {
   const workingDirectory = projectId.startsWith('/') ? projectId : process.cwd();
-  
+
   try {
     // Build A2A standard message params
     const messageParams: MessageSendParams = {
@@ -282,7 +282,7 @@ async function callExternalAgentStreamFetch(
 ): Promise<CallExternalAgentOutput> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
-  
+
   // Extract text message from parts
   const textMessage = messageParams.message.parts
     .filter((p): p is { kind: 'text'; text: string } => p.kind === 'text')
@@ -308,7 +308,7 @@ async function callExternalAgentStreamFetch(
   try {
     // A2A protocol requires posting to /messages endpoint with stream=true query param
     const messagesUrl = agentUrl.endsWith('/') ? `${agentUrl}messages?stream=true` : `${agentUrl}/messages?stream=true`;
-    
+
     const response = await fetch(messagesUrl, {
       method: 'POST',
       headers: {
@@ -374,7 +374,7 @@ async function callExternalAgentStreamFetch(
 
             try {
               const event = JSON.parse(dataStr);
-              
+
               // Check for error event
               if (event.type === 'error') {
                 const errorMsg = event.error || 'Unknown error';
@@ -552,7 +552,7 @@ async function callExternalAgentSyncFetch(
   try {
     // A2A protocol requires posting to /messages endpoint (no stream param for sync)
     const messagesUrl = agentUrl.endsWith('/') ? `${agentUrl}messages` : `${agentUrl}/messages`;
-    
+
     const response = await fetch(messagesUrl, {
       method: 'POST',
       headers: {

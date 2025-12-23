@@ -14,35 +14,14 @@ import os from 'os';
 // Mock global fetch
 global.fetch = vi.fn();
 
-describe.skip('a2aClientTool - Integration Tests', () => {
+describe('a2aClientTool - Integration Tests', () => {
   const testProjectId = 'test-integration-proj';
-  const testConfigPath = path.join(
-    os.homedir(),
-    '.claude',
-    'projects',
-    testProjectId,
-    '.a2a',
-    'config.json'
-  );
 
   beforeEach(async () => {
     vi.clearAllMocks();
-
-    // Clean up test config if exists
-    try {
-      await fs.rm(path.dirname(testConfigPath), { recursive: true, force: true });
-    } catch {
-      // Ignore errors
-    }
   });
 
   afterEach(async () => {
-    // Clean up test config
-    try {
-      await fs.rm(path.dirname(testConfigPath), { recursive: true, force: true });
-    } catch {
-      // Ignore errors
-    }
     vi.restoreAllMocks();
   });
 
@@ -68,7 +47,7 @@ describe.skip('a2aClientTool - Integration Tests', () => {
       vi.mocked(global.fetch).mockResolvedValue(
         new Response(
           JSON.stringify({
-            response: 'Analysis complete: User engagement increased by 15%',
+            message: 'Analysis complete: User engagement increased by 15%',
           }),
           {
             status: 200,
@@ -81,6 +60,7 @@ describe.skip('a2aClientTool - Integration Tests', () => {
       const input: CallExternalAgentInput = {
         agentUrl: 'https://analytics.example.com/a2a/agent-123',
         message: 'Analyze user engagement metrics for Q4',
+        stream: false,
       };
 
       const result = await callExternalAgent(input, testProjectId);
@@ -283,16 +263,25 @@ describe.skip('a2aClientTool - Integration Tests', () => {
 
       // Mock delayed response (longer than timeout)
       vi.mocked(global.fetch).mockImplementation(
-        () =>
-          new Promise((resolve) => {
-            setTimeout(() => {
+        (_url, init) =>
+          new Promise((resolve, reject) => {
+            const timeoutId = setTimeout(() => {
               resolve(
                 new Response(JSON.stringify({ response: 'Too late' }), {
                   status: 200,
                   headers: { 'Content-Type': 'application/json' },
                 })
               );
-            }, 100);
+            }, 1000); // Wait 1s
+
+            if (init?.signal) {
+              init.signal.addEventListener('abort', () => {
+                clearTimeout(timeoutId);
+                const err = new Error('The operation was aborted');
+                err.name = 'AbortError';
+                reject(err);
+              });
+            }
           })
       );
 

@@ -11,7 +11,7 @@ import { AgentConfig } from '../types/agents';
 import { sessionManager } from '../services/sessionManager';
 import { buildQueryOptions } from '../utils/claudeUtils.js';
 import { handleSessionManagement, buildUserMessageContent } from '../utils/sessionUtils.js';
-import { 
+import {
   userInputRegistry,
   notificationChannelManager,
   SSENotificationChannel,
@@ -492,28 +492,28 @@ router.post('/chat', async (req, res) => {
 
     // 🎤 初始化 AskUserQuestion 模块（只会初始化一次）
     initAskUserQuestionModule();
-    
+
     // 🎤 生成 SSE channel ID（用于通知渠道管理）
     const sseChannelId = generateSSEChannelId();
     // 注意：SSE channel 需要 sessionId，但新会话还没有 sessionId
     // 我们使用临时 ID，稍后在收到 Claude SDK 的 sessionId 时更新
     const tempSessionId = sessionId || `temp_${Date.now()}`;
-    
+
     // 创建 SSE channel，传入 onClose 回调用于自动注销和清理
     const sseChannel = new SSENotificationChannel(
-      sseChannelId, 
-      tempSessionId, 
-      agentId, 
+      sseChannelId,
+      tempSessionId,
+      agentId,
       res,
       () => {
         // 连接关闭时自动注销渠道，防止内存泄漏
         notificationChannelManager.unregisterChannel(sseChannelId);
-        
+
         // 🎤 取消该 session 的所有等待中的用户输入请求
         // 使用 sseChannel.sessionId 获取最新的 sessionId（可能已从 temp 更新为真实 ID）
         const currentSessionId = sseChannel.sessionId;
         const cancelledCount = userInputRegistry.cancelAllBySession(
-          currentSessionId, 
+          currentSessionId,
           'SSE connection closed'
         );
         if (cancelledCount > 0) {
@@ -815,7 +815,7 @@ router.post('/chat', async (req, res) => {
               claudeSession.setClaudeSessionId(responseSessionId);
               sessionManager.confirmSessionId(claudeSession, responseSessionId);
               console.log(`✅ Confirmed session ${responseSessionId} for agent: ${agentId}`);
-              
+
               // 🎤 更新 NotificationChannel、UserInputRegistry 和 MCP Server 的 sessionId
               if (tempSessionId !== responseSessionId) {
                 notificationChannelManager.updateChannelSession(sseChannelId, responseSessionId);
@@ -866,7 +866,7 @@ router.post('/chat', async (req, res) => {
           const msgAny = sdkMessage as any;
           const isSidechain = !!msgAny.parent_tool_use_id;
           const parentToolUseId = msgAny.parent_tool_use_id;
-          
+
           if (isSidechain) {
             const contentBlocks = msgAny.message?.content || [];
             const blockTypes = contentBlocks.map((b: any) => b.type);
@@ -1035,26 +1035,26 @@ const UserResponseSchema = z.object({
 router.post('/user-response', async (req, res) => {
   try {
     const validation = UserResponseSchema.safeParse(req.body);
-    
+
     if (!validation.success) {
       return res.status(400).json({
         error: 'Invalid request body',
         details: validation.error.errors
       });
     }
-    
+
     const { toolUseId, response, sessionId, agentId } = validation.data;
-    
+
     console.log(`🎤 [AskUserQuestion] Received user response for tool: ${toolUseId}`);
-    
+
     // 使用带验证的提交方法，防止伪造响应
     const result = userInputRegistry.validateAndSubmitUserResponse(
-      toolUseId, 
+      toolUseId,
       response,
       sessionId,
       agentId
     );
-    
+
     if (result.success) {
       console.log(`✅ [AskUserQuestion] User response submitted successfully for tool: ${toolUseId}`);
       res.json({
@@ -1063,7 +1063,7 @@ router.post('/user-response', async (req, res) => {
       });
     } else {
       console.warn(`⚠️ [AskUserQuestion] Failed to submit response for tool: ${toolUseId}, error: ${result.error}`);
-      
+
       // 根据错误类型返回不同的状态码
       const statusCode = result.error === 'No pending input found for this tool use ID' ? 404 : 403;
       res.status(statusCode).json({

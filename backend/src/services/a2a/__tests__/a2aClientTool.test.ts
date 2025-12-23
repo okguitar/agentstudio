@@ -275,19 +275,45 @@ describe('a2aClientTool - MCP Tool for Calling External Agents', () => {
       expect(result.error).toContain('Network error');
     });
 
-    it.skip('should handle timeout', async () => {
-      // Note: This test is skipped because mocking setTimeout and fetch interactions
-      // is complex. The timeout logic is tested via integration tests.
-      // The implementation uses AbortController which works correctly in production.
+    it('should handle timeout', async () => {
+      // Mock loadA2AConfig
+      vi.mocked(a2aConfigService.loadA2AConfig).mockResolvedValue({
+        allowedAgents: [
+          {
+            name: 'Test Agent',
+            url: 'https://test.example.com/a2a/agent-1',
+            apiKey: 'test-api-key',
+            enabled: true,
+          },
+        ],
+        taskTimeout: 300000,
+        maxConcurrentTasks: 5,
+      });
+
+      // Mock fetch to return a promise that stays pending but respects abort signal
+      vi.mocked(global.fetch).mockImplementation((_url, init) => {
+        return new Promise((_, reject) => {
+          if (init?.signal) {
+            init.signal.addEventListener('abort', () => {
+              const err = new Error('The operation was aborted');
+              err.name = 'AbortError';
+              reject(err);
+            });
+          }
+        });
+      });
 
       const input: CallExternalAgentInput = {
         agentUrl: 'https://test.example.com/a2a/agent-1',
         message: 'Test',
-        timeout: 10, // Very short timeout
+        stream: false,
+        timeout: 1, // 1ms timeout to trigger AbortController immediately
       };
 
-      // This test would need a more sophisticated mock setup
-      // to properly test AbortController behavior
+      const result = await callExternalAgent(input, 'proj-123');
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('timed out');
     });
   });
 
@@ -361,8 +387,8 @@ describe('a2aClientTool - MCP Tool for Calling External Agents', () => {
 
       const fetchCall = vi.mocked(global.fetch).mock.calls[0];
       const requestBody = JSON.parse(fetchCall[1]?.body as string);
-      // Timeout is hardcoded to 600000 (10 minutes) in the implementation
-      expect(requestBody.timeout).toBe(600000);
+      // Timeout should now use the provided input value
+      expect(requestBody.timeout).toBe(60000);
     });
 
     it('should return structured task data', async () => {
