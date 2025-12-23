@@ -238,7 +238,9 @@
     "permissionNote": "💡 某些操作需要用户权限确认才能执行。",
     "executionError": "❌ **执行过程中出现错误**\n\n请检查输入或稍后重试。",
     "processingError": "❌ **处理过程中出现错误**\n\n请稍后重试或检查输入内容。",
-    "processingComplete": "✅ **处理完成**"
+    "processingComplete": "✅ **处理完成**",
+    "maxBudgetReached": "💰 **达到预算上限**\n\n此会话的成本限制已超出。",
+    "maxRetriesReached": "🔄 **达到最大重试次数**\n\n多次尝试后未能获得有效响应。"
   },
   "systemCommands": {
     "init": {
@@ -860,7 +862,10 @@
       "networkConnectionFailed": "🌐 **网络连接失败**\n\n无法连接到服务器，请检查网络连接。",
       "connectionTimeout": "⏰ **连接超时**\n\n连接服务器超时，请稍后重试。",
       "connectionError": "连接错误",
-      "cannotConnectRetry": "无法连接到AI服务，请稍后重试。"
+      "cannotConnectRetry": "无法连接到AI服务，请稍后重试。",
+      "contextWindowError": "📏 **超过上下文窗口限制**\n\n对话过长。请新建会话或使用 /compact 命令减少上下文。",
+      "checkBudget": "检查预算设置和成本限制",
+      "increaseMaxTurns": "在代理设置中增加最大轮次"
     }
   },
   "compactSummary": {

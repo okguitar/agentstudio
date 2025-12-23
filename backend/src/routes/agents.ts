@@ -913,9 +913,35 @@ router.post('/chat', async (req, res) => {
             return;
           }
 
-          // 当收到 result 事件时，正常结束 SSE 连接
+          // 当收到 result 事件时，检查是否为错误类型
           if (isSDKResultMessage(sdkMessage)) {
-            console.log(`✅ Received result event, closing SSE connection for sessionId: ${actualSessionId || currentSessionId}`);
+            const resultMsg = sdkMessage as any; // 类型断言以访问 subtype 和 errors 字段
+
+            // 检查是否为错误类型的 result
+            if (resultMsg.subtype !== 'success') {
+              console.error(`❌ Received error result (subtype: ${resultMsg.subtype}):`, resultMsg.errors);
+
+              // 发送错误事件给前端
+              const errorEvent = {
+                type: 'error',
+                error: 'Claude API request failed',
+                message: resultMsg.errors?.join('\n') || 'Unknown error occurred',
+                subtype: resultMsg.subtype,
+                timestamp: Date.now(),
+                agentId: agentId,
+                sessionId: actualSessionId || currentSessionId
+              };
+
+              try {
+                if (!res.destroyed && !connectionManager.isConnectionClosed()) {
+                  res.write(`data: ${JSON.stringify(errorEvent)}\n\n`);
+                }
+              } catch (writeError: unknown) {
+                console.error('Failed to write error event:', writeError);
+              }
+            }
+
+            console.log(`✅ Received result event (subtype: ${resultMsg.subtype}), closing SSE connection for sessionId: ${actualSessionId || currentSessionId}`);
             connectionManager.safeCloseConnection('request completed');
           }
         });

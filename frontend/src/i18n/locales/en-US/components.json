@@ -238,7 +238,9 @@
     "permissionNote": "💡 Some operations require user permission confirmation to execute.",
     "executionError": "❌ **Error During Execution**\n\nPlease check your input or try again later.",
     "processingError": "❌ **Processing Error**\n\nPlease try again later or check your input.",
-    "processingComplete": "✅ **Processing Complete**"
+    "processingComplete": "✅ **Processing Complete**",
+    "maxBudgetReached": "💰 **Maximum Budget Reached**\n\nThe cost limit for this session has been exceeded.",
+    "maxRetriesReached": "🔄 **Maximum Retries Reached**\n\nFailed to get a valid response after multiple attempts."
   },
   "systemCommands": {
     "init": {
@@ -860,7 +862,10 @@
       "networkConnectionFailed": "🌐 **Network Connection Failed**\n\nUnable to connect to server. Please check your network connection.",
       "connectionTimeout": "⏰ **Connection Timeout**\n\nConnection to server timed out. Please try again later.",
       "connectionError": "Connection Error",
-      "cannotConnectRetry": "Unable to connect to AI service. Please try again later."
+      "cannotConnectRetry": "Unable to connect to AI service. Please try again later.",
+      "contextWindowError": "📏 **Context Window Limit Exceeded**\n\nThe conversation has become too long. Please start a new session or use the /compact command to reduce context.",
+      "checkBudget": "Check your budget settings and cost limits",
+      "increaseMaxTurns": "Increase the maximum turns in agent settings"
     }
   },
   "recentActivity": {

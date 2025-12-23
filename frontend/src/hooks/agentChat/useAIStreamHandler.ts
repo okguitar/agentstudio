@@ -811,18 +811,49 @@ export const useAIStreamHandler = ({
       setIsInitializingSession(false);
       abortControllerRef.current = null;
 
-      let errorMessage = `${t('agentChat.errorMessages.claudeCodeSDKError')}\n\n`;
+      let errorMessage = '';
 
-      if (eventData.error === 'Claude Code SDK failed' && eventData.message && typeof eventData.message === 'string') {
+      // 处理从后端传来的结构化错误（包含 subtype 和 message）
+      if (eventData.subtype && eventData.message) {
+        console.log('📋 Processing structured error with subtype:', eventData.subtype);
+
+        // 根据 subtype 生成不同的错误标题
+        const errorTitles: Record<string, string> = {
+          'error_during_execution': t('agentChat.executionError'),
+          'error_max_turns': t('agentChat.maxTurnsReached'),
+          'error_max_budget_usd': t('agentChat.maxBudgetReached'),
+          'error_max_structured_output_retries': t('agentChat.maxRetriesReached')
+        };
+
+        const errorTitle = errorTitles[eventData.subtype] || t('agentChat.processingError');
+        errorMessage = `❌ **${errorTitle}**\n\n${eventData.message}`;
+
+        // 添加建议操作
+        errorMessage += `\n\n**${t('agentChatPanel.errors.suggestedActions')}**\n`;
+        if (eventData.subtype === 'error_max_budget_usd') {
+          errorMessage += `- ${t('agentChatPanel.errors.checkBudget')}\n`;
+        } else if (eventData.subtype === 'error_max_turns') {
+          errorMessage += `- ${t('agentChatPanel.errors.increaseMaxTurns')}\n`;
+        }
+        errorMessage += `- ${t('agentChatPanel.errors.resendMessage')}\n`;
+        errorMessage += `- ${t('agentChatPanel.errors.refreshPage')}`;
+      }
+      // 处理其他类型的错误
+      else if (eventData.error === 'Claude Code SDK failed' && eventData.message && typeof eventData.message === 'string') {
+        errorMessage = `${t('agentChat.errorMessages.claudeCodeSDKError')}\n\n`;
+
         if (eventData.message.includes('not valid JSON')) {
           errorMessage += t('agentChatPanel.errors.jsonParseError');
         } else if (eventData.message.includes('timeout')) {
           errorMessage += t('agentChatPanel.errors.timeoutError');
+        } else if (eventData.message.includes('context window') || eventData.message.includes('context_window')) {
+          errorMessage += t('agentChatPanel.errors.contextWindowError');
         } else {
           errorMessage += `${eventData.message}\n\n**${t('agentChatPanel.errors.suggestedActions')}**\n- ${t('agentChatPanel.errors.resendMessage')}\n- ${t('agentChatPanel.errors.refreshPage')}`;
         }
       } else {
-        errorMessage += `${eventData.error || t('agentChatPanel.errors.unknownError')}\n\n**${t('agentChatPanel.errors.suggestedActions')}**\n- ${t('agentChatPanel.errors.resendMessage')}\n- ${t('agentChatPanel.errors.refreshPage')}`;
+        errorMessage = `${t('agentChat.errorMessages.claudeCodeSDKError')}\n\n`;
+        errorMessage += `${eventData.message || eventData.error || t('agentChatPanel.errors.unknownError')}\n\n**${t('agentChatPanel.errors.suggestedActions')}**\n- ${t('agentChatPanel.errors.resendMessage')}\n- ${t('agentChatPanel.errors.refreshPage')}`;
       }
 
       // Add error message
@@ -1398,9 +1429,29 @@ export const useAIStreamHandler = ({
           }
         } else if (eventData.subtype === 'error_during_execution') {
           finalMessage = `\n\n${t('agentChat.executionError')}`;
+          // 如果有 errors 数组，显示具体错误信息
+          if ((eventData as any).errors && Array.isArray((eventData as any).errors)) {
+            finalMessage += `\n\n${(eventData as any).errors.join('\n')}`;
+          }
+        } else if (eventData.subtype === 'error_max_budget_usd') {
+          finalMessage = `\n\n${t('agentChat.maxBudgetReached')}`;
+          // 如果有 errors 数组，显示具体错误信息
+          if ((eventData as any).errors && Array.isArray((eventData as any).errors)) {
+            finalMessage += `\n\n${(eventData as any).errors.join('\n')}`;
+          }
+        } else if (eventData.subtype === 'error_max_structured_output_retries') {
+          finalMessage = `\n\n${t('agentChat.maxRetriesReached')}`;
+          // 如果有 errors 数组，显示具体错误信息
+          if ((eventData as any).errors && Array.isArray((eventData as any).errors)) {
+            finalMessage += `\n\n${(eventData as any).errors.join('\n')}`;
+          }
         } else if (eventData.subtype === 'error') {
           // Generic error case
           finalMessage = `\n\n${t('agentChat.processingError')}`;
+          // 如果有 errors 数组，显示具体错误信息
+          if ((eventData as any).errors && Array.isArray((eventData as any).errors)) {
+            finalMessage += `\n\n${(eventData as any).errors.join('\n')}`;
+          }
         } else {
           finalMessage = `\n\n${t('agentChat.processingComplete')}`;
         }
