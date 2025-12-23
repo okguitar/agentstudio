@@ -219,7 +219,34 @@ describe('A2A Protocol Endpoints', () => {
       );
     });
 
-    it.skip('should process message with only required fields', async () => {
+    it('should process message with only required fields', async () => {
+      const { handleSessionManagement } = await import('../../utils/sessionUtils');
+      const handleSessionSpy = vi.mocked(handleSessionManagement);
+
+      // Clear previous calls to ensure clean state
+      handleSessionSpy.mockClear();
+
+      // Update the mock to return a working session
+      handleSessionSpy.mockResolvedValue({
+        claudeSession: {
+          sendMessage: vi.fn().mockImplementation((msg, callback) => {
+            // Simulate immediate response with correct message structure
+            callback({
+              type: 'assistant',
+              message: {
+                content: [
+                  { type: 'text', text: 'Processed message' }
+                ]
+              }
+            });
+            callback({ type: 'result' });
+            return Promise.resolve('req-id');
+          }),
+          getClaudeSessionId: vi.fn().mockReturnValue('test-session-id')
+        },
+        actualSessionId: 'test-session-id'
+      } as any);
+
       const response = await request(app)
         .post('/a2a/test-agent/messages')
         .send({
@@ -229,6 +256,7 @@ describe('A2A Protocol Endpoints', () => {
 
       expect(response.body).toHaveProperty('response');
       expect(response.body.response).toContain('Processed message');
+      expect(response.body).toHaveProperty('sessionId');
     });
 
     it('should return 400 for missing message field', async () => {
