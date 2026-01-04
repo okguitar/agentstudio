@@ -3,6 +3,7 @@
     "dashboard": "仪表板",
     "projects": "项目管理",
     "agents": "Agent管理",
+    "scheduledTasks": "定时任务",
     "skills": "技能管理",
     "plugins": "插件管理",
     "mcp": "MCP服务",

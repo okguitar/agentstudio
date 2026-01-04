@@ -3,6 +3,7 @@
     "dashboard": "Dashboard",
     "projects": "Projects",
     "agents": "Agents",
+    "scheduledTasks": "Scheduled Tasks",
     "skills": "Skills",
     "plugins": "Plugins",
     "mcp": "MCP Services",

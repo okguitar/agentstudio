@@ -13,7 +13,8 @@ import {
   Brain,
   Palette,
   Zap,
-  Package
+  Package,
+  Clock
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { ServiceStatusIndicator } from './ServiceStatusIndicator';
@@ -60,6 +61,11 @@ const getNavigationItems = (t: (key: string) => string) => [
     name: t('nav.subagents'),
     href: '/settings/subagents',
     icon: Bot,
+  },
+  {
+    name: t('nav.scheduledTasks'),
+    href: '/scheduled-tasks',
+    icon: Clock,
   },
   {
     name: t('nav.settings'),

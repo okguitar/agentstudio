@@ -19,6 +19,7 @@ const SubagentsPage = lazy(() => import('./pages/settings/SubagentsPage').then(m
 const CommandsPage = lazy(() => import('./pages/CommandsPage').then(module => ({ default: module.CommandsPage })));
 const SkillsPage = lazy(() => import('./pages/SkillsPage').then(module => ({ default: module.SkillsPage })));
 const PluginsPage = lazy(() => import('./pages/PluginsPage').then(module => ({ default: module.PluginsPage })));
+const ScheduledTasksPage = lazy(() => import('./pages/ScheduledTasksPage').then(module => ({ default: module.ScheduledTasksPage })));
 const ChatPage = lazy(() => import('./pages/ChatPage').then(module => ({ default: module.ChatPage })));
 const LandingPage = lazy(() => import('./pages/LandingPage').then(module => ({ default: module.default })));
 const LoginPage = lazy(() => import('./pages/LoginPage').then(module => ({ default: module.LoginPage })));
@@ -122,6 +123,11 @@ const AppContent: React.FC = () => {
           <Route path="/plugins" element={
             <ProtectedRoute>
               <Layout><PluginsPage /></Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/scheduled-tasks" element={
+            <ProtectedRoute>
+              <Layout><ScheduledTasksPage /></Layout>
             </ProtectedRoute>
           } />
           <Route path="/settings" element={

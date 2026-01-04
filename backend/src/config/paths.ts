@@ -86,3 +86,20 @@ export function getProjectApiKeysFile(projectPath: string): string {
   return join(projectPath, '.a2a', 'api-keys.json');
 }
 
+/**
+ * Directory for scheduled tasks configuration
+ * Default: ~/.claude-agent/scheduled-tasks
+ */
+export const SCHEDULED_TASKS_DIR = join(CLAUDE_AGENT_DIR, 'scheduled-tasks');
+
+/**
+ * File path for scheduled tasks list
+ * Default: ~/.claude-agent/scheduled-tasks/tasks.json
+ */
+export const SCHEDULED_TASKS_FILE = join(SCHEDULED_TASKS_DIR, 'tasks.json');
+
+/**
+ * Directory for scheduled task execution history
+ * Default: ~/.claude-agent/scheduled-tasks/history
+ */
+export const SCHEDULED_TASKS_HISTORY_DIR = join(SCHEDULED_TASKS_DIR, 'history');

@@ -22,11 +22,13 @@ import skillsRouter from './routes/skills';
 import pluginsRouter from './routes/plugins';
 import a2aRouter from './routes/a2a';
 import a2aManagementRouter from './routes/a2aManagement';
+import scheduledTasksRouter from './routes/scheduledTasks';
 import { authMiddleware } from './middleware/auth';
 import { httpsOnly } from './middleware/httpsOnly';
 import { loadConfig, getSlidesDir } from './config/index';
 import { cleanupOrphanedTasks } from './services/a2a/taskCleanup';
 import { startTaskTimeoutMonitor, stopTaskTimeoutMonitor } from './jobs/taskTimeoutMonitor';
+import { initializeScheduler, shutdownScheduler } from './services/schedulerService';
 
 dotenv.config();
 
@@ -206,6 +208,15 @@ const app: express.Express = express();
     console.error('[A2A] Error starting task timeout monitor:', error);
   }
 
+  // Scheduled Tasks: Initialize scheduler (always initialize, but enable state depends on env var)
+  const enableSchedulerInitially = process.env.ENABLE_SCHEDULER !== 'false'; // Default to true
+  console.info('[Scheduler] Initializing scheduled tasks... (ENABLE_SCHEDULER=' + process.env.ENABLE_SCHEDULER + ', initial enabled=' + enableSchedulerInitially + ')');
+  try {
+    initializeScheduler({ enabled: enableSchedulerInitially });
+  } catch (error) {
+    console.error('[Scheduler] Error initializing scheduler:', error);
+  }
+
   // Static files - serve frontend in production
   if (process.env.NODE_ENV === 'production') {
     // Check if frontend build exists
@@ -290,6 +301,7 @@ const app: express.Express = express();
   app.use('/api/a2a', authMiddleware, a2aManagementRouter); // A2A management routes with user auth
   app.use('/api/skills', authMiddleware, skillsRouter);
   app.use('/api/plugins', authMiddleware, pluginsRouter);
+  app.use('/api/scheduled-tasks', authMiddleware, scheduledTasksRouter);
   app.use('/api/media', mediaAuthRouter); // Media auth endpoints
   app.use('/media', mediaRouter); // Remove authMiddleware - media files are now public
 
@@ -309,13 +321,20 @@ const app: express.Express = express();
 
   // Graceful shutdown handler
   const gracefulShutdown = () => {
-    console.info('[A2A] Shutting down gracefully...');
+    console.info('[System] Shutting down gracefully...');
 
     // Stop task timeout monitor
     try {
       stopTaskTimeoutMonitor();
     } catch (error) {
       console.error('[A2A] Error stopping task timeout monitor:', error);
+    }
+
+    // Stop scheduler
+    try {
+      shutdownScheduler();
+    } catch (error) {
+      console.error('[Scheduler] Error shutting down scheduler:', error);
     }
 
     // Exit process
