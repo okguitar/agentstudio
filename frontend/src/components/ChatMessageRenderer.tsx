@@ -60,9 +60,22 @@ const ChatMessageRendererComponent: React.FC<ChatMessageRendererProps> = ({ mess
       <div className="space-y-3">
         {sortedParts.map((part) => {
           if (part.type === 'command' && part.content) {
+            // 分离命令名和参数
+            const commandContent = part.content.trim();
+            const spaceIndex = commandContent.indexOf(' ');
+            const commandName = spaceIndex > 0 ? commandContent.substring(0, spaceIndex) : commandContent;
+            const commandArgs = spaceIndex > 0 ? commandContent.substring(spaceIndex + 1).trim() : '';
+            
             return (
-              <div key={part.id} className="inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-purple-500/15 to-blue-500/15 dark:from-purple-500/25 dark:to-blue-500/25 text-purple-700 dark:text-purple-300 border border-purple-400/40 dark:border-purple-400/50 rounded-lg text-sm font-mono font-semibold shadow-sm">
-                {part.content}
+              <div key={part.id} className="flex items-center gap-2">
+                <span className="inline-flex items-center px-2.5 py-1 bg-gray-800 dark:bg-gray-900 text-emerald-400 dark:text-emerald-300 rounded-md text-sm font-mono font-medium">
+                  {commandName}
+                </span>
+                {commandArgs && (
+                  <span className="text-gray-100 text-sm">
+                    {commandArgs}
+                  </span>
+                )}
               </div>
             );
           } else if (part.type === 'compactSummary' && part.content) {
@@ -206,10 +219,23 @@ const ChatMessageRendererComponent: React.FC<ChatMessageRendererProps> = ({ mess
             );
             
             if (commandMatch) {
+              // 分离命令名和参数
+              const commandContent = commandMatch[1].trim();
+              const spaceIndex = commandContent.indexOf(' ');
+              const commandName = spaceIndex > 0 ? commandContent.substring(0, spaceIndex) : commandContent;
+              const commandArgs = spaceIndex > 0 ? commandContent.substring(spaceIndex + 1).trim() : '';
+              
               // Render as command block
               return (
-                <div className="inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-purple-500/15 to-blue-500/15 dark:from-purple-500/25 dark:to-blue-500/25 text-purple-700 dark:text-purple-300 border border-purple-400/40 dark:border-purple-400/50 rounded-lg text-sm font-mono font-semibold shadow-sm">
-                  {commandMatch[1]}
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center px-2.5 py-1 bg-gray-800 dark:bg-gray-900 text-emerald-400 dark:text-emerald-300 rounded-md text-sm font-mono font-medium">
+                    {commandName}
+                  </span>
+                  {commandArgs && (
+                    <span className="text-gray-100 text-sm">
+                      {commandArgs}
+                    </span>
+                  )}
                 </div>
               );
             } else {

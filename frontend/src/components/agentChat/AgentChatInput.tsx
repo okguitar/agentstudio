@@ -95,31 +95,6 @@ export const AgentChatInput: React.FC<AgentChatInputProps> = ({
       onDragLeave={onDragLeave}
       onDrop={onDrop}
     >
-      {/* Selected Images Preview */}
-      {selectedImages.length > 0 && (
-        <div className="p-4 pb-2 border-b border-gray-100 dark:border-gray-700">
-          <div className="flex flex-wrap gap-2">
-            {selectedImages.map((img) => (
-              <div key={img.id} className="relative group">
-                <img
-                  src={img.preview}
-                  alt={t('agentChat.imagePreview')}
-                  className="w-16 h-16 object-cover rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer hover:opacity-80 transition-opacity"
-                  onClick={() => {/* handle preview */ }}
-                />
-                <button
-                  onClick={() => {/* handle remove */ }}
-                  className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs hover:bg-red-600"
-                  title={t('agentChat.deleteImage')}
-                >
-                  ×
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Drag Over Indicator */}
       {isDragOver && (
         <div className="absolute inset-0 bg-blue-100 dark:bg-blue-900/50 bg-opacity-75 flex items-center justify-center z-10 pointer-events-none">
