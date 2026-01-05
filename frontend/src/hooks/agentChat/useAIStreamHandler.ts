@@ -615,7 +615,8 @@ export const useAIStreamHandler = ({
           scheduleUpdate(blockId, streamingBlock.content, 'thinking');
         } else if (delta.type === 'input_json_delta') {
           // T041: Handle partial tool input updates
-          const partialJson = delta.partial_json;
+          // CRITICAL: partial_json is an INCREMENTAL fragment, must be accumulated!
+          const partialJsonFragment = delta.partial_json || '';
           
           let streamingBlock = streamingStateRef.current.activeBlocks.get(blockId);
           
@@ -632,55 +633,53 @@ export const useAIStreamHandler = ({
             const toolName = streamEvent.content_block.name;
             const claudeId = streamEvent.content_block.id;
             
-            // Create tool with initial partial input
-            try {
-              const toolInput = JSON.parse(partialJson || '{}');
-              addToolPartToMessage(aiMessageIdRef.current, {
-                toolName,
-                toolInput,
-                isExecuting: true,
-                claudeId,
-              });
-              
-              // Get the part ID of the newly created tool part
-              const state = useAgentStore.getState();
-              const currentMessage = state.messages.find(m => m.id === aiMessageIdRef.current);
-              const latestPart = currentMessage?.messageParts?.[currentMessage.messageParts.length - 1];
-              const partId = latestPart?.toolData?.id;
-              
-              streamingBlock = {
-                blockId,
-                type: 'tool_use',
-                content: partialJson,
-                isComplete: false,
-                messageId: aiMessageIdRef.current,
-                partId,
-                startedAt: currentTime,
-                lastUpdatedAt: currentTime,
-              };
-              streamingStateRef.current.activeBlocks.set(blockId, streamingBlock);
-              console.log(`🔧 [STREAMING] content_block_delta: Created tool_use block (fallback)`, toolName, 'blockId:', blockId, 'partId:', partId, 'partial input:', partialJson);
-            } catch (e) {
-              console.warn('🔧 [STREAMING] Failed to parse partial JSON for tool:', partialJson, e);
-            }
+            // Create tool with empty input first, will be updated as JSON accumulates
+            addToolPartToMessage(aiMessageIdRef.current, {
+              toolName,
+              toolInput: {},  // Start empty, will accumulate
+              isExecuting: true,
+              claudeId,
+            });
+            
+            // Get the part ID of the newly created tool part
+            const state = useAgentStore.getState();
+            const currentMessage = state.messages.find(m => m.id === aiMessageIdRef.current);
+            const latestPart = currentMessage?.messageParts?.[currentMessage.messageParts.length - 1];
+            const partId = latestPart?.toolData?.id;
+            
+            streamingBlock = {
+              blockId,
+              type: 'tool_use',
+              content: partialJsonFragment,  // Start accumulating
+              isComplete: false,
+              messageId: aiMessageIdRef.current,
+              partId,
+              startedAt: currentTime,
+              lastUpdatedAt: currentTime,
+            };
+            streamingStateRef.current.activeBlocks.set(blockId, streamingBlock);
+            console.log(`🔧 [STREAMING] content_block_delta: Created tool_use block (fallback)`, toolName, 'blockId:', blockId, 'partId:', partId, 'initial fragment:', partialJsonFragment);
           } else {
-            // Update existing tool block
-            streamingBlock.content = partialJson;
+            // CRITICAL FIX: Accumulate partial JSON fragments with +=, not replace with =
+            streamingBlock.content += partialJsonFragment;
             streamingBlock.lastUpdatedAt = currentTime;
             
-            // Update tool input with latest partial
-            if (streamingBlock.partId) {
+            // Only try to parse and update UI when JSON looks complete (ends with })
+            // This prevents constant parsing errors during streaming
+            const accumulatedJson = streamingBlock.content;
+            const trimmed = accumulatedJson.trim();
+            
+            if (streamingBlock.partId && trimmed.endsWith('}')) {
               try {
-                const toolInput = JSON.parse(partialJson || '{}');
+                const toolInput = JSON.parse(accumulatedJson);
                 updateToolPartInMessage(aiMessageIdRef.current, streamingBlock.partId, {
                   toolInput,
                 });
-                console.log(`🔧 [STREAMING] content_block_delta: Updated tool_use block ${blockId}, partId: ${streamingBlock.partId}, partial input:`, partialJson);
+                console.log(`🔧 [STREAMING] content_block_delta: Updated tool_use block ${blockId}, parsed complete JSON`);
               } catch (e) {
-                console.warn('🔧 [STREAMING] Failed to parse partial JSON for tool:', partialJson, e);
+                // JSON not yet complete, this is normal during streaming - don't log as warning
+                console.log(`🔧 [STREAMING] content_block_delta: JSON not yet complete for ${blockId}, length: ${accumulatedJson.length}`);
               }
-            } else {
-              console.warn('🔧 [STREAMING] content_block_delta: No partId found for tool block:', blockId);
             }
           }
         }
@@ -729,6 +728,19 @@ export const useAIStreamHandler = ({
               updateTextPartInMessage(aiMessageIdRef.current, streamingBlock.partId, streamingBlock.content);
             } else if (streamingBlock.type === 'thinking') {
               updateThinkingPartInMessage(aiMessageIdRef.current, streamingBlock.partId, streamingBlock.content);
+            }
+          } else if (streamingBlock.type === 'tool_use' && streamingBlock.partId && streamingBlock.content) {
+            // ⚡ CRITICAL: Final parse of accumulated tool input JSON when block stops
+            // This ensures the complete tool parameters are saved even if they weren't parseable during streaming
+            console.log(`🔧 [STREAMING] content_block_stop: Finalizing tool_use block ${blockId}, accumulated JSON length: ${streamingBlock.content.length}`);
+            try {
+              const toolInput = JSON.parse(streamingBlock.content);
+              updateToolPartInMessage(aiMessageIdRef.current, streamingBlock.partId, {
+                toolInput,
+              });
+              console.log(`🔧 [STREAMING] content_block_stop: Successfully parsed final tool input for ${blockId}`);
+            } catch (e) {
+              console.error(`🔧 [STREAMING] content_block_stop: Failed to parse final tool JSON for ${blockId}:`, e, 'content:', streamingBlock.content.substring(0, 200));
             }
           }
           
