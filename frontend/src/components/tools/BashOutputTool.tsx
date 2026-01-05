@@ -114,7 +114,7 @@ export const BashOutputTool: React.FC<BashOutputToolProps> = ({ execution }) => 
   };
 
   return (
-    <BaseToolComponent execution={execution} subtitle={getSubtitle()} showResult={false}>
+    <BaseToolComponent execution={execution} subtitle={getSubtitle()} showResult={false} hideToolName={false}>
       <div className="space-y-4">
         {result && (
           <>

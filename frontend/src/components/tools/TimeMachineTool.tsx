@@ -23,7 +23,7 @@ export const TimeMachineTool: React.FC<TimeMachineToolProps> = ({ execution }) =
   };
 
   return (
-    <BaseToolComponent execution={execution} subtitle={getSubtitle()}>
+    <BaseToolComponent execution={execution} subtitle={getSubtitle()} hideToolName={false}>
       <div className="space-y-4">
         {/* 时间机器图标和标题 */}
         <div className="flex items-center space-x-2">

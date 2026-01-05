@@ -20,7 +20,7 @@ export const LSTool: React.FC<LSToolProps> = ({ execution }) => {
   };
 
   return (
-    <BaseToolComponent execution={execution} subtitle={getSubtitle()} hideToolName={true}>
+    <BaseToolComponent execution={execution} subtitle={getSubtitle()} hideToolName={false}>
       <div>
         <ToolInput label={t('lsTool.directoryPath')} value={input.path} />
         {input.ignore && input.ignore.length > 0 && (

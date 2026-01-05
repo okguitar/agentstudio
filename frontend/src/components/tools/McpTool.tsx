@@ -240,6 +240,7 @@ export const McpTool: React.FC<McpToolProps> = ({ execution }) => {
       subtitle={subtitle}
       showResult={false} // 我们自定义结果显示
       isMcpTool={true} // 标识为MCP工具
+      hideToolName={false}
     >
       <div className="space-y-3">
 

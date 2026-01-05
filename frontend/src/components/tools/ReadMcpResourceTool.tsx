@@ -19,7 +19,7 @@ export const ReadMcpResourceTool: React.FC<ReadMcpResourceToolProps> = ({ execut
   };
 
   return (
-    <BaseToolComponent execution={execution} subtitle={getSubtitle()}>
+    <BaseToolComponent execution={execution} subtitle={getSubtitle()} hideToolName={false}>
       <div className="space-y-3">
         {/* 工具标题和图标 */}
         <div className="flex items-center space-x-2">

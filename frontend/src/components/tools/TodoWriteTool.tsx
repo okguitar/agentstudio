@@ -44,7 +44,7 @@ export const TodoWriteTool: React.FC<TodoWriteToolProps> = ({ execution }) => {
   };
 
   return (
-    <BaseToolComponent execution={execution} subtitle={getSubtitle()} showResult={false}>
+    <BaseToolComponent execution={execution} subtitle={getSubtitle()} showResult={false} hideToolName={false}>
       <div className="space-y-1">
         {todos.map((todo, index) => (
           <div

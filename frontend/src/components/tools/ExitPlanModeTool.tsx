@@ -13,7 +13,7 @@ export const ExitPlanModeTool: React.FC<ExitPlanModeToolProps> = ({ execution })
   const input = execution.toolInput as unknown as ExitPlanModeInput;
 
   return (
-    <BaseToolComponent execution={execution}>
+    <BaseToolComponent execution={execution} hideToolName={false}>
       <div>
         <div className="mb-3">
           <p className="text-xs font-medium text-gray-600 mb-2">{t('exitPlanModeTool.implementationPlan')}</p>

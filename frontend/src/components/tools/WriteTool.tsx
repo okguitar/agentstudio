@@ -21,7 +21,7 @@ export const WriteTool: React.FC<WriteToolProps> = ({ execution }) => {
   };
 
   return (
-    <BaseToolComponent execution={execution} subtitle={getSubtitle()} showResult={false}>
+    <BaseToolComponent execution={execution} subtitle={getSubtitle()} showResult={false} hideToolName={false}>
       <div>
         <ToolInput label={t('writeTool.filePath')} value={input.file_path} />
 

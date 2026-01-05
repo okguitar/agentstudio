@@ -117,7 +117,7 @@ export const TaskTool: React.FC<TaskToolProps> = ({ execution }) => {
   const taskPrompt = input.prompt || toolUseResult?.prompt || '';
 
   return (
-    <BaseToolComponent execution={execution} subtitle={getSubtitle()} showResult={false}>
+    <BaseToolComponent execution={execution} subtitle={getSubtitle()} showResult={false} hideToolName={false}>
       <div className="space-y-3">
         <ToolInput label={t('taskTool.taskDescriptionLabel')} value={input.description} />
 

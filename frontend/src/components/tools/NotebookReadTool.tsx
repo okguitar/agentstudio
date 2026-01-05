@@ -12,7 +12,7 @@ export const NotebookReadTool: React.FC<NotebookReadToolProps> = ({ execution })
   const input = execution.toolInput as unknown as NotebookReadToolInput;
 
   return (
-    <BaseToolComponent execution={execution}>
+    <BaseToolComponent execution={execution} hideToolName={false}>
       <div>
         <ToolInput label={t('notebookReadTool.notebookPath')} value={input.notebook_path} />
         {input.cell_id && (

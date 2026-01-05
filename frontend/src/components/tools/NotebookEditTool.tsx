@@ -13,7 +13,7 @@ export const NotebookEditTool: React.FC<NotebookEditToolProps> = ({ execution })
   const input = execution.toolInput as unknown as NotebookEditInput;
 
   return (
-    <BaseToolComponent execution={execution}>
+    <BaseToolComponent execution={execution} hideToolName={false}>
       <div>
         <ToolInput label={t('notebookEditTool.notebookPath')} value={input.notebook_path} />
         

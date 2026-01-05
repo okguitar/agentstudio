@@ -45,7 +45,7 @@ export const KillBashTool: React.FC<KillBashToolProps> = ({ execution }) => {
   };
 
   return (
-    <BaseToolComponent execution={execution} subtitle={getSubtitle()} showResult={false}>
+    <BaseToolComponent execution={execution} subtitle={getSubtitle()} showResult={false} hideToolName={false}>
       <div className="space-y-3">
         {/* 操作状态指示器 */}
         <div className="flex items-center gap-3">

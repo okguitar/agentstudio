@@ -30,7 +30,7 @@ export const BashTool: React.FC<BashToolProps> = ({ execution }) => {
   };
 
   return (
-    <BaseToolComponent execution={execution} subtitle={getSubtitle()} showResult={false}>
+    <BaseToolComponent execution={execution} subtitle={getSubtitle()} showResult={false} hideToolName={false}>
       <div className="space-y-3">
         {/* 描述信息（如果有） */}
         {input.description && (

@@ -20,7 +20,7 @@ export const ListMcpResourcesTool: React.FC<ListMcpResourcesToolProps> = ({ exec
   };
 
   return (
-    <BaseToolComponent execution={execution} subtitle={getSubtitle()}>
+    <BaseToolComponent execution={execution} subtitle={getSubtitle()} hideToolName={false}>
       <div className="space-y-3">
         <div className="flex items-center space-x-2">
           <Server className="w-4 h-4 text-blue-500" />

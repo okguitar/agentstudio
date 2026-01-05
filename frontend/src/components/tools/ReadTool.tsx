@@ -21,7 +21,7 @@ export const ReadTool: React.FC<ReadToolProps> = ({ execution }) => {
   };
 
   return (
-    <BaseToolComponent execution={execution} subtitle={getSubtitle()} showResult={false}>
+    <BaseToolComponent execution={execution} subtitle={getSubtitle()} showResult={false} hideToolName={false}>
       <div>
         <ToolInput label={t('readTool.readFile')} value={input.file_path} />
         {input.offset && (

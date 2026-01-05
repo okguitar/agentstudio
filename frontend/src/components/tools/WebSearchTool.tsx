@@ -23,7 +23,7 @@ export const WebSearchTool: React.FC<WebSearchToolProps> = ({ execution }) => {
   };
 
   return (
-    <BaseToolComponent execution={execution} subtitle={getSubtitle()} showResult={false}>
+    <BaseToolComponent execution={execution} subtitle={getSubtitle()} showResult={false} hideToolName={false}>
       <div>
         <ToolInput label={t('webSearchTool.searchQueryLabel')} value={input.query} />
         

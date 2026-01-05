@@ -38,7 +38,7 @@ export const EditTool: React.FC<EditToolProps> = ({ execution }) => {
   const { oldStartLine, newStartLine } = getStartLineNumbers();
 
   return (
-    <BaseToolComponent execution={execution} subtitle={getSubtitle()} showResult={false}>
+    <BaseToolComponent execution={execution} subtitle={getSubtitle()} showResult={false} hideToolName={false}>
       <div>
         <ToolInput label={t('editTool.editFile')} value={input.file_path} />
 

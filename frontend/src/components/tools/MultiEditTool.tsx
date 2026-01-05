@@ -19,7 +19,7 @@ export const MultiEditTool: React.FC<MultiEditToolProps> = ({ execution }) => {
   const subtitle = `${input.file_path} - ${t('multiEditTool.batchEdit', { count: edits.length })}`;
 
   return (
-    <BaseToolComponent execution={execution} showResult={false} subtitle={subtitle}>
+    <BaseToolComponent execution={execution} showResult={false} subtitle={subtitle} hideToolName={false}>
       <div>
         <ToolInput label={t('multiEditTool.filePath')} value={input.file_path} />
 

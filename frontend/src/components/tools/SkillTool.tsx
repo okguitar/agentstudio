@@ -39,11 +39,12 @@ export const SkillTool: React.FC<SkillToolProps> = ({ execution }) => {
   const customIcon = <Sparkles className="w-4 h-4" />;
 
   return (
-    <BaseToolComponent 
-      execution={execution} 
+    <BaseToolComponent
+      execution={execution}
       subtitle={getSubtitle()}
       customIcon={customIcon}
       overrideToolName={t('skillTool.toolName')}
+      hideToolName={false}
     >
       <div className="space-y-3">
         {/* 技能名称 */}

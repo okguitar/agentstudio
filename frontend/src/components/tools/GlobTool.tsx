@@ -29,7 +29,7 @@ export const GlobTool: React.FC<GlobToolProps> = ({ execution }) => {
   };
 
   return (
-    <BaseToolComponent execution={execution} subtitle={getSubtitle()} hideToolName={true} showResult={false}>
+    <BaseToolComponent execution={execution} subtitle={getSubtitle()} hideToolName={false} showResult={false}>
       <div>
         <ToolInput label={t('globTool.patternLabel')} value={input.pattern} isCode={true} />
         {input.path && (
