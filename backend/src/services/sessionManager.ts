@@ -301,12 +301,35 @@ export class SessionManager {
 
   /**
    * 手动清理指定会话（提供给前端使用）
-   * @param sessionId 会话ID
+   * @param sessionId 会话ID（可能是正式sessionId或临时tempKey）
    * @returns 是否成功清理
    */
   async manualCleanupSession(sessionId: string): Promise<boolean> {
     console.log(`🧹 Manual cleanup requested for session: ${sessionId}`);
-    return await this.removeSession(sessionId);
+    
+    // 首先尝试从正式会话中清理
+    if (this.sessions.has(sessionId)) {
+      return await this.removeSession(sessionId);
+    }
+    
+    // 如果不在正式会话中，尝试从临时会话中清理（pending状态的会话）
+    if (this.tempSessions.has(sessionId)) {
+      const session = this.tempSessions.get(sessionId);
+      if (session) {
+        try {
+          await session.close();
+        } catch (error) {
+          console.warn(`⚠️  Failed to close temp session ${sessionId}:`, error);
+          // 即使关闭失败，也要从索引中移除
+        }
+        this.tempSessions.delete(sessionId);
+        console.log(`🗑️  Removed pending temp session: ${sessionId}`);
+        return true;
+      }
+    }
+    
+    console.warn(`⚠️  Session not found for cleanup: ${sessionId}`);
+    return false;
   }
 
   /**
