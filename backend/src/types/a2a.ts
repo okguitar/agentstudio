@@ -192,7 +192,8 @@ export const DEFAULT_A2A_CONFIG: A2AConfig = {
 export interface A2AApiKey {
     id: string;
     projectId: string;
-    keyHash: string; // bcrypt hash
+    keyHash: string; // bcrypt hash for validation
+    encryptedKey?: string; // AES-256-GCM encrypted original key for display
     description: string;
     createdAt: string;
     lastUsedAt?: string;

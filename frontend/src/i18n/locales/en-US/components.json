@@ -1037,7 +1037,10 @@
       "disable": "Disable",
       "hide": "Hide",
       "show": "Show",
-      "addAgent": "Add Agent"
+      "addAgent": "Add Agent",
+      "importProjects": "Import Projects",
+      "copyKey": "Copy Key",
+      "close": "Close"
     },
     "overview": {
       "agentIdentity": "Agent Identity",
@@ -1060,10 +1063,15 @@
       "title": "API Key Management",
       "noKeys": "No API keys yet",
       "createFirstKey": "Create First API Key",
+      "description": "Description",
+      "key": "Key",
       "createdAt": "Created",
       "lastUsed": "Last Used",
       "usageCount": "Usage Count",
-      "keyHidden": "Complete key is only shown once during creation for security reasons"
+      "actions": "Actions",
+      "showKey": "Show key",
+      "hideKey": "Hide key",
+      "keyCopied": "Key copied"
     },
     "external": {
       "title": "External Agent Configuration",
@@ -1088,6 +1096,14 @@
         "editTitle": "Edit External Agent",
         "saveChanges": "Save Changes",
         "addAgent": "Add Agent"
+      },
+      "importModal": {
+        "title": "Import Projects",
+        "description": "Select projects to import. The system will automatically generate API keys for these projects and add them to the current project's external agent list.",
+        "noProjects": "No projects available to import",
+        "selected": "Selected",
+        "import": "Import",
+        "importing": "Importing..."
       }
     },
     "tasks": {

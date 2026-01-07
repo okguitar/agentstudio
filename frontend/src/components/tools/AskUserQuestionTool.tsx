@@ -19,6 +19,21 @@ export const AskUserQuestionTool: React.FC<AskUserQuestionToolProps> = ({ execut
   const { t } = useTranslation('components');
   const input = execution.toolInput as unknown as AskUserQuestionInput;
   const pendingUserQuestion = useAgentStore(state => state.pendingUserQuestion);
+
+  // 安全检查：如果 input 或 questions 不存在，返回错误状态
+  if (!input || !input.questions || !Array.isArray(input.questions)) {
+    return (
+      <BaseToolComponent
+        execution={execution}
+        hideToolName={false}
+        overrideToolName={t('askUserQuestionTool.title')}
+      >
+        <div className="text-red-600 text-sm">
+          {t('askUserQuestionTool.invalidInput', 'Invalid question input')}
+        </div>
+      </BaseToolComponent>
+    );
+  }
   
   // 每个问题的选择状态
   // Map<questionIndex, selectedOptionLabels[]>

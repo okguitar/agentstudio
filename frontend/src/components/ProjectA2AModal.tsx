@@ -8,16 +8,19 @@ import {
   Copy,
   Plus,
   Trash2,
-  AlertCircle,
   Loader,
   Shield,
   Clock,
   Activity,
   Settings,
   ToggleLeft,
-  ToggleRight
+  ToggleRight,
+  Eye,
+  EyeOff,
+  FolderInput
 } from 'lucide-react';
 import { useA2AManagement } from '../hooks/useA2AManagement';
+import { useProjects } from '../hooks/useProjects';
 import { showError } from '../utils/toast';
 
 interface Project {
@@ -51,17 +54,44 @@ export const ProjectA2AModal: React.FC<ProjectA2AModalProps> = ({ project, onClo
     toggleExternalAgent,
     copyToClipboard,
     validateAgentUrl,
-    formatDate
+    formatDate,
+    importProjects
   } = useA2AManagement(project);
+
+  // Get all projects for import
+  const { data: projectsData } = useProjects();
 
   // Form states
   const [showCreateKeyModal, setShowCreateKeyModal] = useState(false);
   const [showAddAgentModal, setShowAddAgentModal] = useState(false);
+  const [showImportProjectsModal, setShowImportProjectsModal] = useState(false);
+  const [selectedProjectsForImport, setSelectedProjectsForImport] = useState<Set<string>>(new Set());
+  const [importingProjects, setImportingProjects] = useState(false);
   const [editingAgentIndex, setEditingAgentIndex] = useState<number | null>(null);
   const [newKeyDescription, setNewKeyDescription] = useState('');
   const [keyDescriptionError, setKeyDescriptionError] = useState('');
   const [showNewKeyModal, setShowNewKeyModal] = useState(false);
   const [newlyCreatedKey, setNewlyCreatedKey] = useState<string>('');
+  const [visibleKeys, setVisibleKeys] = useState<Set<string>>(new Set());
+
+  // Toggle key visibility
+  const toggleKeyVisibility = (keyId: string) => {
+    setVisibleKeys(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(keyId)) {
+        newSet.delete(keyId);
+      } else {
+        newSet.add(keyId);
+      }
+      return newSet;
+    });
+  };
+
+  // Mask API key for display
+  const maskApiKey = (key: string | null | undefined) => {
+    if (!key) return '••••••••••••••••';
+    return '•'.repeat(Math.min(key.length, 40));
+  };
 
   const [newAgent, setNewAgent] = useState({
     name: '',
@@ -134,7 +164,7 @@ export const ProjectA2AModal: React.FC<ProjectA2AModalProps> = ({ project, onClo
     if (!validateKeyDescription(newKeyDescription)) return;
 
     const result = await createApiKey(newKeyDescription);
-    if (result) {
+    if (result && result.key) {
       setNewKeyDescription('');
       setShowCreateKeyModal(false);
       setKeyDescriptionError('');
@@ -202,6 +232,40 @@ export const ProjectA2AModal: React.FC<ProjectA2AModalProps> = ({ project, onClo
     });
     setEditingAgentIndex(null);
     setAgentFormErrors({ name: '', url: '', apiKey: '' });
+  };
+
+  // Handle import projects
+  const handleImportProjects = async () => {
+    if (selectedProjectsForImport.size === 0) {
+      showError('请至少选择一个项目');
+      return;
+    }
+
+    setImportingProjects(true);
+    try {
+      const projectPaths = Array.from(selectedProjectsForImport);
+      const result = await importProjects(projectPaths);
+
+      if (result) {
+        setShowImportProjectsModal(false);
+        setSelectedProjectsForImport(new Set());
+      }
+    } finally {
+      setImportingProjects(false);
+    }
+  };
+
+  // Toggle project selection for import
+  const toggleProjectSelection = (projectPath: string) => {
+    setSelectedProjectsForImport(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(projectPath)) {
+        newSet.delete(projectPath);
+      } else {
+        newSet.add(projectPath);
+      }
+      return newSet;
+    });
   };
 
   // Generate curl command for calling this agent
@@ -449,47 +513,84 @@ export const ProjectA2AModal: React.FC<ProjectA2AModalProps> = ({ project, onClo
           </button>
         </div>
       ) : (
-        <div className="space-y-4">
-          {apiKeys.map((apiKey) => (
-            <div key={apiKey.id} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <h4 className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                      {apiKey.description}
-                    </h4>
-                    <span className="px-1.5 py-0.5 text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full">
-                      Active
-                    </span>
-                  </div>
-
-                  <div className="mb-1.5">
-                    <div className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700">
-                      <code className="text-xs text-gray-900 dark:text-white font-mono">
-                        {apiKey.key ? `${apiKey.key.slice(0, 8)}...${apiKey.key.slice(-4)}` : '••••••••'}
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-200 dark:border-gray-700">
+                <th className="text-left py-3 px-4 font-medium text-gray-700 dark:text-gray-300">
+                  {t('a2aManagement.apiKeys.description')}
+                </th>
+                <th className="text-left py-3 px-4 font-medium text-gray-700 dark:text-gray-300">
+                  {t('a2aManagement.apiKeys.key')}
+                </th>
+                <th className="text-left py-3 px-4 font-medium text-gray-700 dark:text-gray-300">
+                  {t('a2aManagement.apiKeys.createdAt')}
+                </th>
+                <th className="text-left py-3 px-4 font-medium text-gray-700 dark:text-gray-300">
+                  {t('a2aManagement.apiKeys.lastUsed')}
+                </th>
+                <th className="text-right py-3 px-4 font-medium text-gray-700 dark:text-gray-300">
+                  {t('a2aManagement.apiKeys.actions')}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {apiKeys.map((apiKey) => (
+                <tr key={apiKey.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                  <td className="py-3 px-4">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-gray-900 dark:text-white">{apiKey.description}</span>
+                      <span className="px-1.5 py-0.5 text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full">
+                        Active
+                      </span>
+                    </div>
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="flex items-center space-x-2">
+                      <code className="text-xs text-gray-700 dark:text-gray-300 font-mono bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded max-w-xs overflow-hidden">
+                        {visibleKeys.has(apiKey.id) && apiKey.key ? apiKey.key : maskApiKey(apiKey.key)}
                       </code>
+                      {apiKey.key && (
+                        <button
+                          onClick={() => toggleKeyVisibility(apiKey.id)}
+                          className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
+                          title={visibleKeys.has(apiKey.id) ? t('a2aManagement.apiKeys.hideKey') : t('a2aManagement.apiKeys.showKey')}
+                        >
+                          {visibleKeys.has(apiKey.id) ? (
+                            <EyeOff className="w-4 h-4 text-gray-500" />
+                          ) : (
+                            <Eye className="w-4 h-4 text-gray-500" />
+                          )}
+                        </button>
+                      )}
+                      <button
+                        onClick={() => apiKey.key && copyToClipboard(apiKey.key)}
+                        className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
+                        title={t('a2aManagement.actions.copy')}
+                      >
+                        <Copy className="w-4 h-4 text-gray-500" />
+                      </button>
                     </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 italic">
-                      {t('a2aManagement.apiKeys.keyHidden')}
-                    </div>
-                  </div>
-
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
-                    {t('a2aManagement.apiKeys.createdAt')}: {formatDate(apiKey.createdAt)}
-                    {apiKey.lastUsed && ` • ${t('a2aManagement.apiKeys.lastUsed')}: ${formatDate(apiKey.lastUsed)}`}
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => handleDeleteApiKey(apiKey.id)}
-                  className="ml-3 p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/50 rounded-lg transition-colors flex-shrink-0"
-                  title={t('a2aManagement.actions.delete')}
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-          ))}
+                  </td>
+                  <td className="py-3 px-4 text-gray-500 dark:text-gray-400">
+                    {formatDate(apiKey.createdAt)}
+                  </td>
+                  <td className="py-3 px-4 text-gray-500 dark:text-gray-400">
+                    {apiKey.lastUsed ? formatDate(apiKey.lastUsed) : '-'}
+                  </td>
+                  <td className="py-3 px-4 text-right">
+                    <button
+                      onClick={() => handleDeleteApiKey(apiKey.id)}
+                      className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/50 rounded-lg transition-colors"
+                      title={t('a2aManagement.actions.delete')}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 
@@ -589,20 +690,6 @@ export const ProjectA2AModal: React.FC<ProjectA2AModalProps> = ({ project, onClo
             </div>
 
             <div className="p-6">
-              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-4">
-                <div className="flex items-start">
-                  <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mt-0.5 mr-2 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200 mb-1">
-                      {t('a2aManagement.modals.newKey.warning', '⚠️ 重要：请立即复制并保存此密钥')}
-                    </p>
-                    <p className="text-xs text-yellow-700 dark:text-yellow-300">
-                      {t('a2aManagement.modals.newKey.warningDetail', '出于安全考虑，此密钥只会显示一次。关闭此窗口后将无法再次查看完整密钥。')}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   {t('a2aManagement.modals.newKey.yourKey', '您的 API 密钥')}
@@ -642,7 +729,7 @@ export const ProjectA2AModal: React.FC<ProjectA2AModalProps> = ({ project, onClo
                   }}
                   className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
                 >
-                  {t('a2aManagement.actions.close', '我已保存，关闭')}
+                  {t('a2aManagement.actions.close', '关闭')}
                 </button>
               </div>
             </div>
@@ -657,16 +744,25 @@ export const ProjectA2AModal: React.FC<ProjectA2AModalProps> = ({ project, onClo
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-medium text-gray-900 dark:text-white">{t('a2aManagement.external.title')}</h3>
-        <button
-          onClick={() => {
-            resetAgentForm();
-            setShowAddAgentModal(true);
-          }}
-          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-        >
-          <Plus className="w-4 h-4" />
-          <span>{t('a2aManagement.actions.addAgent')}</span>
-        </button>
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={() => setShowImportProjectsModal(true)}
+            className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+          >
+            <FolderInput className="w-4 h-4" />
+            <span>{t('a2aManagement.actions.importProjects')}</span>
+          </button>
+          <button
+            onClick={() => {
+              resetAgentForm();
+              setShowAddAgentModal(true);
+            }}
+            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            <Plus className="w-4 h-4" />
+            <span>{t('a2aManagement.actions.addAgent')}</span>
+          </button>
+        </div>
       </div>
 
       {loading.config ? (
@@ -891,6 +987,100 @@ export const ProjectA2AModal: React.FC<ProjectA2AModalProps> = ({ project, onClo
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {editingAgentIndex !== null ? t('a2aManagement.external.modal.saveChanges') : t('a2aManagement.external.modal.addAgent')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Import Projects Modal */}
+      {showImportProjectsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-2xl mx-4 max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
+                <FolderInput className="w-5 h-5 mr-2" />
+                {t('a2aManagement.external.importModal.title')}
+              </h3>
+              <button
+                onClick={() => {
+                  setShowImportProjectsModal(false);
+                  setSelectedProjectsForImport(new Set());
+                }}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                {t('a2aManagement.external.importModal.description')}
+              </p>
+
+              {!projectsData || projectsData.projects.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500 dark:text-gray-400">{t('a2aManagement.external.importModal.noProjects')}</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {projectsData.projects
+                    .filter(p => p.path !== project.path) // Exclude current project
+                    .map((p) => (
+                      <label
+                        key={p.path}
+                        className="flex items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedProjectsForImport.has(p.path)}
+                          onChange={() => toggleProjectSelection(p.path)}
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                        <div className="ml-3 flex-1">
+                          <div className="font-medium text-gray-900 dark:text-white">{p.name}</div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">{p.path}</div>
+                        </div>
+                      </label>
+                    ))}
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 border-t border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  {t('a2aManagement.external.importModal.selected')}: {selectedProjectsForImport.size}
+                </span>
+              </div>
+
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => {
+                    setShowImportProjectsModal(false);
+                    setSelectedProjectsForImport(new Set());
+                  }}
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                >
+                  {t('a2aManagement.actions.cancel')}
+                </button>
+                <button
+                  onClick={handleImportProjects}
+                  disabled={selectedProjectsForImport.size === 0 || importingProjects}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                >
+                  {importingProjects ? (
+                    <>
+                      <Loader className="w-4 h-4 animate-spin" />
+                      <span>{t('a2aManagement.external.importModal.importing')}</span>
+                    </>
+                  ) : (
+                    <>
+                      <FolderInput className="w-4 h-4" />
+                      <span>{t('a2aManagement.external.importModal.import')}</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>

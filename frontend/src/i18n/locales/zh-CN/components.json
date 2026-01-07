@@ -1039,7 +1039,10 @@
       "disable": "禁用",
       "hide": "隐藏",
       "show": "显示",
-      "addAgent": "添加Agent"
+      "addAgent": "添加Agent",
+      "importProjects": "导入项目",
+      "copyKey": "复制密钥",
+      "close": "关闭"
     },
     "overview": {
       "agentIdentity": "Agent身份",
@@ -1062,10 +1065,15 @@
       "title": "API密钥管理",
       "noKeys": "还没有API密钥",
       "createFirstKey": "创建第一个API密钥",
+      "description": "描述",
+      "key": "密钥",
       "createdAt": "创建时间",
       "lastUsed": "最后使用",
       "usageCount": "使用次数",
-      "keyHidden": "完整密钥仅在创建时显示一次，出于安全考虑现已隐藏"
+      "actions": "操作",
+      "showKey": "显示密钥",
+      "hideKey": "隐藏密钥",
+      "keyCopied": "密钥已复制"
     },
     "external": {
       "title": "外部Agent配置",
@@ -1090,6 +1098,14 @@
         "editTitle": "编辑外部Agent",
         "saveChanges": "保存修改",
         "addAgent": "添加Agent"
+      },
+      "importModal": {
+        "title": "导入项目",
+        "description": "选择要导入的项目,系统将自动为这些项目生成API密钥,并添加到当前项目的外部Agent列表中。",
+        "noProjects": "没有可导入的项目",
+        "selected": "已选择",
+        "import": "导入",
+        "importing": "导入中..."
       }
     },
     "tasks": {

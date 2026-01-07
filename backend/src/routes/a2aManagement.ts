@@ -21,8 +21,9 @@ import { getOrCreateA2AId } from '../services/a2a/agentMappingService.js';
 import { taskManager } from '../services/a2a/taskManager.js';
 import { generateAgentCard, type ProjectContext } from '../services/a2a/agentCardService.js';
 import { AgentStorage } from '../services/agentStorage.js';
-import { generateApiKey, listApiKeys, revokeApiKey } from '../services/a2a/apiKeyService.js';
+import { generateApiKey, listApiKeysWithDecryption, revokeApiKey } from '../services/a2a/apiKeyService.js';
 import { a2aHistoryService } from '../services/a2a/a2aHistoryService.js';
+import type { A2AConfig } from '../types/a2a.js';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -206,25 +207,19 @@ router.get('/api-keys/:projectPath', async (req: Request, res: Response) => {
     // Decode the URL-encoded project path
     const decodedProjectPath = decodeURIComponent(projectPath);
 
-    // Get all API keys for this project
-    const apiKeys = await listApiKeys(decodedProjectPath);
+    // Get all API keys with decrypted values
+    const apiKeys = await listApiKeysWithDecryption(decodedProjectPath);
 
-    // Don't return the full keys, just first 4 and last 4 characters
-    const sanitizedKeys = apiKeys.map(key => {
-      // Generate a fake preview for display purposes (format: agt_proj_{projectId}_{random-32-hex})
-      const preview = `agt_proj_${Buffer.from(key.projectId).toString('base64').slice(0, 6)}....${Buffer.from(key.id).toString('base64').slice(-6)}`;
-      return {
-        id: key.id,
-        projectId: key.projectId,
-        description: key.description,
-        createdAt: key.createdAt,
-        lastUsedAt: key.lastUsedAt,
-        revokedAt: key.revokedAt,
-        keyPreview: preview,
-        // Don't return the actual key hash
-        keyHash: undefined
-      };
-    });
+    // Return keys with full decrypted key for display
+    const sanitizedKeys = apiKeys.map(key => ({
+      id: key.id,
+      projectId: key.projectId,
+      description: key.description,
+      createdAt: key.createdAt,
+      lastUsedAt: key.lastUsedAt,
+      revokedAt: key.revokedAt,
+      key: key.decryptedKey || null, // Full key for display
+    }));
 
     res.json({ apiKeys: sanitizedKeys });
   } catch (error) {
@@ -375,6 +370,146 @@ router.put('/config/:projectPath', async (req: Request, res: Response) => {
     console.error('Error updating A2A config:', error);
     res.status(500).json({
       error: 'Failed to update A2A config',
+      details: error instanceof Error ? error.message : String(error),
+    });
+  }
+});
+
+// ============================================================================
+// POST /api/a2a/import-projects/:projectPath - Import projects as external agents
+// ============================================================================
+
+router.post('/import-projects/:projectPath', async (req: Request, res: Response) => {
+  try {
+    const { projectPath } = req.params;
+    const { projectPaths } = req.body;
+
+    // Decode the URL-encoded project path
+    const decodedProjectPath = decodeURIComponent(projectPath);
+
+    // Validate input
+    if (!projectPaths || !Array.isArray(projectPaths) || projectPaths.length === 0) {
+      return res.status(400).json({
+        error: 'projectPaths must be a non-empty array',
+        code: 'INVALID_INPUT',
+      });
+    }
+
+    // Load current project's A2A config
+    const configPath = path.join(decodedProjectPath, '.a2a', 'config.json');
+    let currentConfig: A2AConfig;
+
+    try {
+      const data = await fs.readFile(configPath, 'utf-8');
+      currentConfig = JSON.parse(data);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        // Config doesn't exist, create default
+        currentConfig = {
+          allowedAgents: [],
+          taskTimeout: 300000,
+          maxConcurrentTasks: 5,
+        };
+      } else {
+        throw error;
+      }
+    }
+
+    // Get current project name for API key descriptions
+    const currentProjectName = decodedProjectPath.split('/').pop() || decodedProjectPath;
+
+    // Process each project path
+    const successfulImports: Array<{ projectPath: string; agentName: string }> = [];
+    const failedImports: Array<{ projectPath: string; error: string }> = [];
+
+    for (const targetProjectPath of projectPaths) {
+      try {
+        // Decode target project path
+        const decodedTargetPath = decodeURIComponent(targetProjectPath);
+
+        // Convert project path to project ID
+        const projectId = `proj_${Buffer.from(decodedTargetPath).toString('base64').replace(/[+/=]/g, '').slice(-12)}`;
+        const agentType = 'claude-code';
+
+        // Get or create A2A agent ID for target project
+        const a2aAgentId = await getOrCreateA2AId(projectId, agentType, decodedTargetPath);
+
+        // Build agent card for target project
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const targetProjectName = decodedTargetPath.split('/').pop() || decodedTargetPath;
+        const projectContext: ProjectContext = {
+          projectId,
+          projectName: targetProjectName,
+          workingDirectory: decodedTargetPath,
+          a2aAgentId,
+          baseUrl,
+        };
+
+        const agentConfig = globalAgentStorage.getAgent(agentType);
+        if (!agentConfig) {
+          throw new Error(`Agent '${agentType}' not found`);
+        }
+
+        const agentCard = generateAgentCard(agentConfig, projectContext);
+
+        // Check if this agent is already in the allowed list
+        const existingAgent = currentConfig.allowedAgents.find(
+          (agent) => agent.url === agentCard.url
+        );
+
+        if (existingAgent) {
+          // Skip duplicate imports as per user requirement
+          failedImports.push({
+            projectPath: targetProjectPath,
+            error: '该项目已存在于外部 Agent 列表中',
+          });
+          continue;
+        }
+
+        // Generate API key for the target project (key created in target project)
+        const keyDescription = `用于从 ${currentProjectName} 调用`;
+        const { key } = await generateApiKey(decodedTargetPath, keyDescription);
+
+        // Add to current project's allowed agents
+        currentConfig.allowedAgents.push({
+          name: targetProjectName,
+          url: agentCard.url,
+          apiKey: key,
+          description: agentCard.description || '',
+          enabled: true,
+        });
+
+        successfulImports.push({
+          projectPath: targetProjectPath,
+          agentName: targetProjectName,
+        });
+      } catch (error) {
+        console.error(`Failed to import project ${targetProjectPath}:`, error);
+        failedImports.push({
+          projectPath: targetProjectPath,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+
+    // Save updated config
+    if (successfulImports.length > 0) {
+      const configDir = path.dirname(configPath);
+      await fs.mkdir(configDir, { recursive: true });
+      await fs.writeFile(configPath, JSON.stringify(currentConfig, null, 2), 'utf-8');
+    }
+
+    res.json({
+      successfulImports,
+      failedImports,
+      totalRequested: projectPaths.length,
+      totalSuccess: successfulImports.length,
+      totalFailed: failedImports.length,
+    });
+  } catch (error) {
+    console.error('Error importing projects:', error);
+    res.status(500).json({
+      error: 'Failed to import projects',
       details: error instanceof Error ? error.message : String(error),
     });
   }

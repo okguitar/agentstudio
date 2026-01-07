@@ -3,6 +3,7 @@
  *
  * Manages inbound API keys for authenticating external callers to AgentStudio agents.
  * Keys are stored hashed with bcryptjs (pure JavaScript, salt rounds 10) for security.
+ * Original keys are also encrypted with AES-256-GCM for display purposes.
  *
  * Storage: {projectPath}/.a2a/api-keys.json
  * Format: { version: "1.0.0", keys: [A2AApiKey[]] }
@@ -20,6 +21,53 @@ import type { A2AApiKey, A2AApiKeyRegistry } from '../../types/a2a.js';
 import { getProjectApiKeysFile } from '../../config/paths.js';
 
 const SALT_ROUNDS = 10;
+
+// AES-256-GCM encryption key derived from a stable secret
+// In production, this should come from environment variable
+const ENCRYPTION_KEY = crypto.createHash('sha256')
+  .update(process.env.API_KEY_ENCRYPTION_SECRET || 'agentstudio-api-key-encryption-secret-v1')
+  .digest();
+
+/**
+ * Encrypt a plaintext API key using AES-256-GCM
+ */
+function encryptKey(plaintext: string): string {
+  const iv = crypto.randomBytes(12); // 96-bit IV for GCM
+  const cipher = crypto.createCipheriv('aes-256-gcm', ENCRYPTION_KEY, iv);
+  
+  let encrypted = cipher.update(plaintext, 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+  
+  const authTag = cipher.getAuthTag();
+  
+  // Format: iv:authTag:encrypted
+  return `${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted}`;
+}
+
+/**
+ * Decrypt an encrypted API key
+ */
+function decryptKey(encryptedData: string): string | null {
+  try {
+    const [ivHex, authTagHex, encrypted] = encryptedData.split(':');
+    
+    if (!ivHex || !authTagHex || !encrypted) {
+      return null;
+    }
+    
+    const iv = Buffer.from(ivHex, 'hex');
+    const authTag = Buffer.from(authTagHex, 'hex');
+    const decipher = crypto.createDecipheriv('aes-256-gcm', ENCRYPTION_KEY, iv);
+    decipher.setAuthTag(authTag);
+    
+    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    
+    return decrypted;
+  } catch {
+    return null;
+  }
+}
 
 const hashKey = async (key: string): Promise<string> => {
   return bcrypt.hash(key, SALT_ROUNDS);
@@ -115,8 +163,11 @@ export async function generateApiKey(
   const random = crypto.randomBytes(16).toString('hex'); // 32 hex characters
   const key = `agt_proj_${projectIdHash}_${random}`;
 
-  // Hash the key with bcrypt
+  // Hash the key with bcrypt for validation
   const keyHash = await hashKey(key);
+  
+  // Encrypt the key for later retrieval
+  const encryptedKey = encryptKey(key);
 
   // Create key metadata
   const keyId = uuidv4();
@@ -126,6 +177,7 @@ export async function generateApiKey(
     id: keyId,
     projectId,
     keyHash,
+    encryptedKey,
     description,
     createdAt: now,
   };
@@ -135,7 +187,7 @@ export async function generateApiKey(
   registry.keys.push(keyData);
   await saveApiKeyRegistry(projectId, registry);
 
-  // Return plaintext key (only time it's shown) and metadata
+  // Return plaintext key and metadata
   return { key, keyData };
 }
 
@@ -272,4 +324,38 @@ export async function rotateApiKey(
 export async function getApiKey(projectId: string, keyId: string): Promise<A2AApiKey | null> {
   const registry = await loadApiKeyRegistry(projectId);
   return registry.keys.find((k) => k.id === keyId) || null;
+}
+
+/**
+ * Get decrypted API key by ID
+ *
+ * @param projectId - Internal project identifier
+ * @param keyId - Key ID
+ * @returns Decrypted plaintext key or null if not found
+ */
+export async function getDecryptedApiKey(projectId: string, keyId: string): Promise<string | null> {
+  const keyData = await getApiKey(projectId, keyId);
+  if (!keyData || !keyData.encryptedKey) {
+    return null;
+  }
+  return decryptKey(keyData.encryptedKey);
+}
+
+/**
+ * List all API keys with decrypted values
+ *
+ * @param projectId - Internal project identifier
+ * @param includeRevoked - Whether to include revoked keys
+ * @returns Array of API keys with decrypted key values
+ */
+export async function listApiKeysWithDecryption(
+  projectId: string,
+  includeRevoked = false
+): Promise<Array<A2AApiKey & { decryptedKey?: string }>> {
+  const keys = await listApiKeys(projectId, includeRevoked);
+  
+  return keys.map((key) => ({
+    ...key,
+    decryptedKey: key.encryptedKey ? decryptKey(key.encryptedKey) || undefined : undefined,
+  }));
 }

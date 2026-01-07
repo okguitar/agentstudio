@@ -5,7 +5,7 @@ import { showError, showSuccess } from '../utils/toast';
 
 export interface ApiKey {
   id: string;
-  key: string;
+  key: string | null;
   projectId: string;
   description: string;
   createdAt: string;
@@ -381,6 +381,50 @@ export const useA2AManagement = (project: { id: string; path: string }) => {
     return new Date(dateString).toLocaleString('zh-CN');
   };
 
+  // Import projects as external agents
+  const importProjects = async (projectPaths: string[]): Promise<{
+    successfulImports: Array<{ projectPath: string; agentName: string }>;
+    failedImports: Array<{ projectPath: string; error: string }>;
+    totalRequested: number;
+    totalSuccess: number;
+    totalFailed: number;
+  } | null> => {
+    try {
+      const response = await authFetch(`${API_BASE}/a2a/import-projects/${encodeURIComponent(project.path)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectPaths })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+
+        // Refresh config to show newly imported agents
+        const configResponse = await authFetch(`${API_BASE}/a2a/config/${encodeURIComponent(project.path)}`);
+        if (configResponse.ok) {
+          const data = await configResponse.json();
+          setConfig(data);
+        }
+
+        if (result.totalSuccess > 0) {
+          showSuccess(`成功导入 ${result.totalSuccess} 个项目`);
+        }
+        if (result.totalFailed > 0) {
+          showError(`${result.totalFailed} 个项目导入失败`);
+        }
+
+        return result;
+      } else {
+        const error = await response.json();
+        throw new Error(error.error || '导入失败');
+      }
+    } catch (error) {
+      console.error('Failed to import projects:', error);
+      showError('导入项目失败', error instanceof Error ? error.message : '未知错误');
+      return null;
+    }
+  };
+
   return {
     // State
     loading,
@@ -403,6 +447,7 @@ export const useA2AManagement = (project: { id: string; path: string }) => {
     cancelTask,
     refreshTasks,
     copyToClipboard,
+    importProjects,
 
     // Utilities
     validateAgentUrl,
