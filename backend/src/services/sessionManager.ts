@@ -20,8 +20,8 @@ export class SessionManager {
   
   private cleanupInterval: NodeJS.Timeout;
   private readonly cleanupIntervalMs = 1 * 60 * 1000; // 1 分钟检查一次
-  private readonly defaultIdleTimeoutMs = Infinity; // 无限超时，即不自动清理
-  private readonly heartbeatTimeoutMs = Infinity; // 无限心跳超时，不自动清理
+  private readonly defaultIdleTimeoutMs = 30 * 60 * 1000; // 30 分钟不活跃超时
+  private readonly heartbeatTimeoutMs = 30 * 60 * 1000; // 30 分钟心跳超时
 
   constructor() {
     // 定期清理空闲会话
