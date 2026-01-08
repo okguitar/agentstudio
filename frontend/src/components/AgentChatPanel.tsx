@@ -539,6 +539,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
   }, []);
 
   // 检查当前会话是否在活跃会话中，如果是则切换至对应版本并锁定
+  // 注意：只有当会话有明确的版本ID时才锁定，否则保持用户当前的选择
   useEffect(() => {
     if (!currentSessionId || !activeSessionsData?.sessions) {
       setIsVersionLocked(false);
@@ -551,22 +552,21 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
     if (activeSession) {
       console.log(`🔒 Found active session: ${currentSessionId}, version: ${activeSession.claudeVersionId}`);
 
-      // 如果会话有指定的版本，切换到该版本并锁定
+      // 只有当会话有指定的版本时，才切换到该版本并锁定
+      // 如果会话没有版本，保持用户当前的选择不变（不重置）
       if (activeSession.claudeVersionId) {
         setSelectedClaudeVersion(activeSession.claudeVersionId);
         setIsVersionLocked(true);
         console.log(`🔒 Locked to Claude version: ${activeSession.claudeVersionId}`);
       } else {
-        // 会话没有指定版本，清除选择状态以显示默认版本
-        setSelectedClaudeVersion(undefined);
+        // 会话没有指定版本，只解锁但不重置用户的选择
         setIsVersionLocked(false);
-        console.log(`🔓 Session has no specific version, unlocked`);
+        console.log(`🔓 Session has no specific version, unlocked but keeping user selection`);
       }
     } else {
-      // 会话不在活跃列表中，清除选择状态以显示默认版本
-      setSelectedClaudeVersion(undefined);
+      // 会话不在活跃列表中，只解锁但不重置用户的选择
       setIsVersionLocked(false);
-      console.log(`🔓 Session ${currentSessionId} not in active sessions, unlocked`);
+      console.log(`🔓 Session ${currentSessionId} not in active sessions, unlocked but keeping user selection`);
     }
   }, [currentSessionId, activeSessionsData]);
 
