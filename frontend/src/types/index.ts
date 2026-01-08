@@ -163,6 +163,7 @@ export interface AgentSession {
   messages: SharedAgentMessage[];
   claudeSessionId?: string | null;
   claudeVersionId?: string;
+  modelId?: string; // Model ID used for this session (e.g., 'sonnet', 'claude-opus-4-5-20251101')
   customData?: Record<string, unknown>;
 }
 

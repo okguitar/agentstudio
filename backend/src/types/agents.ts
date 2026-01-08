@@ -74,6 +74,7 @@ export interface AgentSession {
   lastUpdated: number;
   messages: AgentMessage[];
   claudeVersionId?: string; // Claude version ID used for this session
+  modelId?: string; // Model ID used for this session (e.g., 'sonnet', 'claude-opus-4-5-20251101')
   customData?: Record<string, unknown>;
 }
 

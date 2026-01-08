@@ -19,13 +19,15 @@ import { getAllVersions, getDefaultVersionId } from '../services/claudeVersionSt
  * @param projectPath - Optional project path for session history
  * @param queryOptions - Query options for Claude SDK
  * @param claudeVersionId - Optional Claude version ID
+ * @param modelId - Optional model ID
  */
 export async function handleSessionManagement(
   agentId: string,
   sessionId: string | null,
   projectPath: string | undefined,
   queryOptions: any,
-  claudeVersionId?: string
+  claudeVersionId?: string,
+  modelId?: string
 ): Promise<{ claudeSession: any; actualSessionId: string | null }> {
   let claudeSession: any;
   const actualSessionId: string | null = sessionId || null;
@@ -48,16 +50,16 @@ export async function handleSessionManagement(
       if (sessionExists) {
         // Session history exists, resume session
         console.log(`🔄 Found session history for ${sessionId}, resuming session for agent: ${agentId}`);
-        claudeSession = sessionManager.createNewSession(agentId, queryOptions, sessionId, claudeVersionId);
+        claudeSession = sessionManager.createNewSession(agentId, queryOptions, sessionId, claudeVersionId, modelId);
       } else {
         // Session history not found, create new session but keep original sessionId for frontend
         console.log(`⚠️  Session ${sessionId} not found in memory or project history, creating new session for agent: ${agentId}`);
-        claudeSession = sessionManager.createNewSession(agentId, queryOptions, undefined, claudeVersionId);
+        claudeSession = sessionManager.createNewSession(agentId, queryOptions, undefined, claudeVersionId, modelId);
       }
     }
   } else {
     // Create new persistent session
-    claudeSession = sessionManager.createNewSession(agentId, queryOptions, undefined, claudeVersionId);
+    claudeSession = sessionManager.createNewSession(agentId, queryOptions, undefined, claudeVersionId, modelId);
     console.log(`🆕 Created new persistent Claude session for agent: ${agentId}`);
   }
 

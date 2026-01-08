@@ -19,19 +19,21 @@ export class ClaudeSession {
   private resumeSessionId: string | null = null;
   private projectPath: string | null = null;
   private claudeVersionId: string | undefined = undefined;
+  private modelId: string | undefined = undefined;
 
   // 响应分发器相关 - 简化版本（会话级别的并发控制在 SlackAIService 中处理）
   private responseCallbacks: Map<string, (response: SDKMessage) => void> = new Map();
   private nextRequestId = 0;
   private isBackgroundRunning = false;
 
-  constructor(agentId: string, options: Options, resumeSessionId?: string, claudeVersionId?: string) {
-    console.log(`🔧 [DEBUG] ClaudeSession constructor started for agent: ${agentId}, resumeSessionId: ${resumeSessionId}, claudeVersionId: ${claudeVersionId}`);
+  constructor(agentId: string, options: Options, resumeSessionId?: string, claudeVersionId?: string, modelId?: string) {
+    console.log(`🔧 [DEBUG] ClaudeSession constructor started for agent: ${agentId}, resumeSessionId: ${resumeSessionId}, claudeVersionId: ${claudeVersionId}, modelId: ${modelId}`);
     this.agentId = agentId;
     this.options = { ...options };
     this.messageQueue = new MessageQueue();
     this.resumeSessionId = resumeSessionId || null;
     this.claudeVersionId = claudeVersionId;
+    this.modelId = modelId;
     // 从 options.cwd 获取项目路径
     this.projectPath = options.cwd || null;
 
@@ -80,6 +82,13 @@ export class ClaudeSession {
    */
   getClaudeVersionId(): string | undefined {
     return this.claudeVersionId;
+  }
+
+  /**
+   * 获取模型ID
+   */
+  getModelId(): string | undefined {
+    return this.modelId;
   }
 
   /**

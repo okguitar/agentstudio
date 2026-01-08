@@ -13,6 +13,7 @@ export interface SessionInfo {
   status: 'confirmed' | 'pending';
   projectPath: string | null;
   claudeVersionId?: string;
+  modelId?: string;
 }
 
 export interface SessionsResponse {

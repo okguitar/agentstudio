@@ -538,7 +538,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // 检查当前会话是否在活跃会话中，如果是则切换至对应版本并锁定
+  // 检查当前会话是否在活跃会话中，如果是则切换至对应版本和模型并锁定
   // 注意：只有当会话有明确的版本ID时才锁定，否则保持用户当前的选择
   useEffect(() => {
     if (!currentSessionId || !activeSessionsData?.sessions) {
@@ -550,14 +550,25 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
     const activeSession = activeSessionsData.sessions.find(s => s.sessionId === currentSessionId);
 
     if (activeSession) {
-      console.log(`🔒 Found active session: ${currentSessionId}, version: ${activeSession.claudeVersionId}`);
+      console.log(`🔒 Found active session: ${currentSessionId}, version: ${activeSession.claudeVersionId}, model: ${activeSession.modelId}`);
 
       // 只有当会话有指定的版本时，才切换到该版本并锁定
       // 如果会话没有版本，保持用户当前的选择不变（不重置）
       if (activeSession.claudeVersionId) {
-        setSelectedClaudeVersion(activeSession.claudeVersionId);
+        // 只有当版本真正改变时才更新，避免不必要的状态更新导致模型被重置
+        if (selectedClaudeVersion !== activeSession.claudeVersionId) {
+          console.log(`🔄 Changing Claude version from ${selectedClaudeVersion} to ${activeSession.claudeVersionId}`);
+          setSelectedClaudeVersion(activeSession.claudeVersionId);
+        }
+        
+        // 同时恢复模型选择（如果会话记录了模型ID）
+        if (activeSession.modelId && selectedModel !== activeSession.modelId) {
+          console.log(`🔄 Restoring model from ${selectedModel} to ${activeSession.modelId}`);
+          setSelectedModel(activeSession.modelId);
+        }
+        
         setIsVersionLocked(true);
-        console.log(`🔒 Locked to Claude version: ${activeSession.claudeVersionId}`);
+        console.log(`🔒 Locked to Claude version: ${activeSession.claudeVersionId}, model: ${activeSession.modelId}`);
       } else {
         // 会话没有指定版本，只解锁但不重置用户的选择
         setIsVersionLocked(false);
@@ -568,7 +579,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
       setIsVersionLocked(false);
       console.log(`🔓 Session ${currentSessionId} not in active sessions, unlocked but keeping user selection`);
     }
-  }, [currentSessionId, activeSessionsData]);
+  }, [currentSessionId, activeSessionsData, selectedClaudeVersion, selectedModel, setSelectedModel]);
 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-gray-900">

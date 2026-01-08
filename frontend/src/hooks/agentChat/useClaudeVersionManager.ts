@@ -25,7 +25,9 @@ export const useClaudeVersionManager = ({
     // 如果选择了版本，返回该版本的模型
     if (selectedClaudeVersion) {
       const version = claudeVersionsData.versions.find(v => v.id === selectedClaudeVersion);
-      return version?.models || [];
+      const models = version?.models || [];
+      console.log(`📦 availableModels computed: selectedClaudeVersion=${selectedClaudeVersion}, found version=${version?.name}, models=`, models.map(m => m.id));
+      return models;
     }
 
     // 如果没有选择版本，使用默认版本的模型
@@ -33,7 +35,9 @@ export const useClaudeVersionManager = ({
       v => v.id === claudeVersionsData.defaultVersionId
     ) || claudeVersionsData.versions[0];
 
-    return defaultVersion?.models || [];
+    const models = defaultVersion?.models || [];
+    console.log(`📦 availableModels computed (using default): defaultVersion=${defaultVersion?.name}, models=`, models.map(m => m.id));
+    return models;
   }, [claudeVersionsData, selectedClaudeVersion]);
 
   // 当可用模型变化时，确保当前选择的模型仍然有效
@@ -42,10 +46,13 @@ export const useClaudeVersionManager = ({
       const currentModelValid = availableModels.some(m => m.id === selectedModel);
       if (!currentModelValid) {
         // 当前选择的模型不在可用列表中，切换到第一个可用模型
+        console.log(`🔄 Model validation: selectedModel=${selectedModel} is not in availableModels:`, 
+          availableModels.map(m => m.id), 
+          `selectedClaudeVersion=${selectedClaudeVersion}, resetting to ${availableModels[0].id}`);
         setSelectedModel(availableModels[0].id);
       }
     }
-  }, [availableModels, selectedModel]);
+  }, [availableModels, selectedModel, selectedClaudeVersion]);
 
   // Version change handler
   const handleVersionChange = (versionId: string) => {

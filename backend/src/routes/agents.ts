@@ -626,7 +626,7 @@ router.post('/chat', async (req, res) => {
         queryOptions.includePartialMessages = includePartialMessages;
 
         // 处理会话管理
-        const { claudeSession, actualSessionId: initialSessionId } = await handleSessionManagement(agentId, sessionId || null, projectPath, queryOptions, claudeVersion);
+        const { claudeSession, actualSessionId: initialSessionId } = await handleSessionManagement(agentId, sessionId || null, projectPath, queryOptions, claudeVersion, model);
         let actualSessionId = initialSessionId;
 
         // 📊 输出 Session 初始化后的信息
