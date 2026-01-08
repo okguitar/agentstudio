@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { showError, showSuccess } from '../../utils/toast';
-import { useClaudeVersions, useCreateClaudeVersion, useUpdateClaudeVersion, useDeleteClaudeVersion, useSetDefaultClaudeVersion } from '../../hooks/useClaudeVersions';
+import { useClaudeVersions, useCreateClaudeVersion, useUpdateClaudeVersion, useDeleteClaudeVersion, useSetDefaultClaudeVersion, fetchClaudeVersionCommand } from '../../hooks/useClaudeVersions';
 import { ClaudeVersion, ClaudeVersionCreate, ClaudeVersionUpdate, ModelConfig } from '../../types/claude-versions';
 import { FileBrowser } from '../../components/FileBrowser';
 import { type VersionTemplate } from '../../types/versionTemplates';
-import { generateClaudeCommand, copyToClipboard } from '../../utils/commandGenerator';
+import { copyToClipboard } from '../../utils/commandGenerator';
 import { VersionTemplateSelector } from '../../components/settings/version/VersionTemplateSelector';
 import { ClaudeVersionList } from '../../components/settings/version/ClaudeVersionList';
 import { ClaudeVersionForm } from '../../components/settings/version/ClaudeVersionForm';
@@ -265,7 +265,8 @@ export const VersionSettingsPage: React.FC = () => {
 
   const handleCopyCommand = async (version: ClaudeVersion) => {
     try {
-      const command = generateClaudeCommand(version);
+      // 从后端获取完整的命令（包含未脱敏的 token）
+      const command = await fetchClaudeVersionCommand(version.id);
       const success = await copyToClipboard(command);
 
       if (success) {

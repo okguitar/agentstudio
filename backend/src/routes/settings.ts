@@ -11,7 +11,8 @@ import {
   createVersion,
   updateVersion,
   deleteVersion,
-  initializeSystemVersion
+  initializeSystemVersion,
+  getVersionByIdInternal
 } from '../services/claudeVersionStorage';
 import { ClaudeVersionCreate, ClaudeVersionUpdate } from '../types/claude-versions';
 import { loadConfig } from '../config';
@@ -482,6 +483,65 @@ router.put('/claude-versions/:id/set-default', async (req, res) => {
     const status = error instanceof Error && error.message.includes('不存在') ? 400 : 500;
     res.status(status).json({
       error: 'Failed to set default Claude version',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// GET /api/settings/claude-versions/:id/command - 生成 Claude 版本的可执行命令
+// 此端点返回完整的命令，包含完整的敏感信息（如 ANTHROPIC_AUTH_TOKEN）
+router.get('/claude-versions/:id/command', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // 使用内部函数获取完整的版本信息（包含未脱敏的敏感数据）
+    const version = await getVersionByIdInternal(id);
+    
+    if (!version) {
+      return res.status(404).json({
+        error: 'Version not found',
+        message: `Claude version with ID '${id}' not found`
+      });
+    }
+    
+    // 生成命令
+    const envVars = version.environmentVariables || {};
+    const executablePath = version.executablePath || 'claude';
+    
+    // 构建环境变量部分
+    const envVarParts: string[] = [];
+    for (const [key, value] of Object.entries(envVars)) {
+      if (value) {
+        // 如果值包含空格或特殊字符，需要用引号包围
+        const escapedValue = value.includes(' ') || value.includes('"') || value.includes("'") 
+          ? `"${value.replace(/"/g, '\\"')}"` 
+          : value;
+        envVarParts.push(`${key}=${escapedValue}`);
+      }
+    }
+    
+    // 组装完整命令
+    const parts: string[] = [];
+    
+    // 添加环境变量
+    if (envVarParts.length > 0) {
+      parts.push(envVarParts.join(' '));
+    }
+    
+    // 添加可执行文件路径
+    // 如果路径包含空格，需要用引号包围
+    const escapedPath = executablePath.includes(' ') 
+      ? `"${executablePath}"` 
+      : executablePath;
+    parts.push(escapedPath);
+    
+    const command = parts.join(' ');
+    
+    res.json({ command });
+  } catch (error) {
+    console.error('Error generating Claude version command:', error);
+    res.status(500).json({
+      error: 'Failed to generate command',
       message: error instanceof Error ? error.message : 'Unknown error'
     });
   }

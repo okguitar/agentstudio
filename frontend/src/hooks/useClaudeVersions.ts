@@ -113,3 +113,16 @@ export const useSetDefaultClaudeVersion = () => {
     },
   });
 };
+
+// 获取 Claude 版本的可执行命令（包含完整的敏感信息）
+export const fetchClaudeVersionCommand = async (versionId: string): Promise<string> => {
+  const response = await authFetch(`${API_BASE}/settings/claude-versions/${versionId}/command`);
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to get Claude version command');
+  }
+  
+  const result = await response.json();
+  return result.command;
+};
