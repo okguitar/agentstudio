@@ -30,6 +30,7 @@ import {
   updateTaskExecution,
 } from './scheduledTaskStorage.js';
 import { AgentStorage } from './agentStorage.js';
+import { buildQueryOptions } from '../utils/claudeUtils.js';
 
 // ============================================================================
 // Types
@@ -54,6 +55,41 @@ const activeJobs: Map<string, ActiveJob> = new Map();
 let runningTaskCount = 0;
 const agentStorage = new AgentStorage();
 
+// Track running executions for stop functionality
+interface RunningExecution {
+  taskId: string;
+  executionId: string;
+  abortController: AbortController;
+  startedAt: string;
+}
+const runningExecutions: Map<string, RunningExecution> = new Map();
+
+// ============================================================================
+// Orphaned Task Cleanup
+// ============================================================================
+
+/**
+ * Clean up orphaned "running" tasks from previous server runs
+ * When the server restarts, any tasks that were "running" are now orphaned
+ * since the actual execution is lost. Mark them as "error" with a clear message.
+ */
+function cleanupOrphanedRunningTasks(): void {
+  const tasks = loadScheduledTasks();
+  let cleanedCount = 0;
+
+  for (const task of tasks) {
+    if (task.lastRunStatus === 'running') {
+      console.info(`[Scheduler] Cleaning up orphaned running task: ${task.id} (${task.name})`);
+      updateTaskRunStatus(task.id, 'error', 'Server restarted while task was running');
+      cleanedCount++;
+    }
+  }
+
+  if (cleanedCount > 0) {
+    console.info(`[Scheduler] Cleaned up ${cleanedCount} orphaned running tasks`);
+  }
+}
+
 // ============================================================================
 // Initialization
 // ============================================================================
@@ -73,6 +109,9 @@ export function initializeScheduler(customConfig?: Partial<SchedulerConfig> & { 
   }
 
   console.info(`[Scheduler] Initializing with config: maxConcurrent=${config.maxConcurrent}`);
+
+  // Clean up orphaned "running" tasks from previous server runs
+  cleanupOrphanedRunningTasks();
 
   // Load and schedule all enabled tasks
   const tasks = loadScheduledTasks();
@@ -358,6 +397,9 @@ export async function executeTask(taskId: string): Promise<void> {
   const executionId = `exec_${uuidv4().slice(0, 8)}`;
   const startedAt = new Date().toISOString();
 
+  // Create AbortController for this execution
+  const abortController = new AbortController();
+
   // Create execution record (include agentId and projectPath for "continue chat" functionality)
   const execution: TaskExecution = {
     id: executionId,
@@ -372,11 +414,19 @@ export async function executeTask(taskId: string): Promise<void> {
   updateTaskRunStatus(taskId, 'running');
   runningTaskCount++;
 
+  // Track running execution
+  runningExecutions.set(executionId, {
+    taskId,
+    executionId,
+    abortController,
+    startedAt,
+  });
+
   console.info(`[Scheduler] Executing task ${taskId} (${task.name}), execution: ${executionId}`);
 
   try {
-    // Execute the agent
-    const result = await executeAgentTask(task);
+    // Execute the agent with abort signal
+    const result = await executeAgentTask(task, abortController.signal);
 
     // Update execution record with logs
     updateTaskExecution(taskId, executionId, {
@@ -418,6 +468,8 @@ export async function executeTask(taskId: string): Promise<void> {
 
   } finally {
     runningTaskCount--;
+    // Remove from running executions
+    runningExecutions.delete(executionId);
 
     // Update next run time (only for recurring tasks)
     if (task.schedule.type !== 'once') {
@@ -431,9 +483,99 @@ export async function executeTask(taskId: string): Promise<void> {
 }
 
 /**
+ * Stop a running task execution
+ * @param executionId - The execution ID to stop
+ * @returns true if stopped successfully, false if not found or already completed
+ */
+export function stopExecution(executionId: string): { success: boolean; message: string } {
+  const execution = runningExecutions.get(executionId);
+  
+  if (!execution) {
+    return { success: false, message: 'Execution not found or already completed' };
+  }
+
+  console.info(`[Scheduler] Stopping execution: ${executionId} (task: ${execution.taskId})`);
+  
+  // Abort the execution
+  execution.abortController.abort();
+  
+  // Update execution status
+  updateTaskExecution(execution.taskId, executionId, {
+    status: 'stopped',
+    completedAt: new Date().toISOString(),
+    error: 'Execution stopped by user',
+    logs: [{
+      timestamp: new Date().toISOString(),
+      level: 'warn',
+      type: 'system',
+      message: 'Execution stopped by user',
+    }],
+  });
+
+  // Update task status
+  updateTaskRunStatus(execution.taskId, 'stopped', 'Stopped by user');
+  
+  // Remove from running executions
+  runningExecutions.delete(executionId);
+  runningTaskCount--;
+
+  console.info(`[Scheduler] Execution ${executionId} stopped successfully`);
+  
+  return { success: true, message: 'Execution stopped successfully' };
+}
+
+/**
+ * Get list of currently running executions
+ */
+export function getRunningExecutions(): Array<{
+  executionId: string;
+  taskId: string;
+  startedAt: string;
+}> {
+  return Array.from(runningExecutions.values()).map(exec => ({
+    executionId: exec.executionId,
+    taskId: exec.taskId,
+    startedAt: exec.startedAt,
+  }));
+}
+
+/**
+ * Extract MCP tools from agent's allowedTools configuration
+ * Follows the same logic as frontend's useToolSelector.ts
+ */
+function extractMcpToolsFromAgent(agent: any): string[] {
+  const mcpTools: string[] = [];
+  
+  if (!agent.allowedTools || !Array.isArray(agent.allowedTools)) {
+    return mcpTools;
+  }
+  
+  for (const tool of agent.allowedTools) {
+    if (!tool.enabled) continue;
+    
+    const toolName = tool.name;
+    
+    if (toolName.includes('.') && !toolName.startsWith('mcp__')) {
+      // MCP tool format: serverName.toolName -> mcp__serverName__toolName
+      const [serverName, ...toolNameParts] = toolName.split('.');
+      const mcpToolId = `mcp__${serverName}__${toolNameParts.join('.')}`;
+      mcpTools.push(mcpToolId);
+    } else if (toolName.startsWith('mcp__')) {
+      // Already formatted MCP tool
+      mcpTools.push(toolName);
+    }
+  }
+  
+  return mcpTools;
+}
+
+/**
  * Execute agent task using Claude SDK
  */
-async function executeAgentTask(task: ScheduledTask): Promise<{
+async function executeAgentTask(
+  task: ScheduledTask,
+  abortSignal?: AbortSignal
+): Promise<{
   summary: string;
   sessionId?: string;
   logs: ExecutionLogEntry[];
@@ -462,39 +604,91 @@ async function executeAgentTask(task: ScheduledTask): Promise<{
   addLog('info', 'system', `Trigger message: ${task.triggerMessage}`);
 
   // Determine the model to use (override or agent default)
-  let modelToUse = agent.model;
+  let modelToUse = agent.model || 'sonnet';  // Default to sonnet if not specified
+  addLog('info', 'system', `Agent default model: ${agent.model || '(not specified)'}`);
+  
   if (task.modelOverride?.modelId) {
     modelToUse = task.modelOverride.modelId;
     addLog('info', 'system', `Model override applied: ${modelToUse} (from task config)`);
-    if (task.modelOverride.versionId) {
-      addLog('info', 'system', `Using supplier/version: ${task.modelOverride.versionId}`);
-    }
+  }
+  
+  addLog('info', 'system', `Final model to use: ${modelToUse}`);
+  
+  // Determine Claude version to use (from task override)
+  // Note: AgentConfig doesn't have claudeVersionId, it's only in AgentSession
+  const claudeVersionToUse = task.modelOverride?.versionId;
+  if (claudeVersionToUse) {
+    addLog('info', 'system', `Using supplier/version: ${claudeVersionToUse}`);
+  } else {
+    addLog('info', 'system', `No supplier/version specified, using default`);
   }
 
-  // Build query options
-  // NOTE: Scheduled tasks run unattended, so we MUST use bypassPermissions mode
-  // to avoid waiting for user confirmation that will never come
-  const queryOptions: ClaudeOptions = {
-    cwd: task.projectPath,
-    permissionMode: 'bypassPermissions', // Force bypass for unattended execution
-    model: modelToUse,
-    maxTurns: agent.maxTurns || 10, // Default to 10 turns to prevent infinite loops
-  };
-
-  addLog('info', 'system', `Query options: permissionMode=bypassPermissions, model=${modelToUse}, maxTurns=${queryOptions.maxTurns}`);
-
-  // Handle system prompt - SDK supports both string and preset object
-  if (agent.systemPrompt) {
-    if (typeof agent.systemPrompt === 'string') {
-      queryOptions.systemPrompt = agent.systemPrompt;
-      addLog('info', 'system', 'Using custom system prompt (string)');
-    } else if (agent.systemPrompt.type === 'preset') {
-      // Pass the preset object directly to SDK - it supports this format natively
-      queryOptions.systemPrompt = agent.systemPrompt;
-      addLog('info', 'system', `Using preset system prompt: ${agent.systemPrompt.preset}${agent.systemPrompt.append ? ' (with append)' : ''}`);
-    }
+  // Extract MCP tools from agent configuration
+  const mcpTools = extractMcpToolsFromAgent(agent);
+  if (mcpTools.length > 0) {
+    addLog('info', 'system', `MCP tools extracted from agent config: ${mcpTools.join(', ')}`);
   } else {
-    addLog('info', 'system', 'No system prompt configured, using SDK default');
+    addLog('info', 'system', 'No MCP tools configured for this agent');
+  }
+
+  // Build query options using the shared utility function
+  // This handles: MCP tools, environment variables, Claude version, A2A integration
+  // NOTE: Scheduled tasks run unattended, so we MUST use bypassPermissions mode
+  addLog('info', 'system', 'Building query options with MCP and environment support...');
+
+  // Determine permission mode based on model
+  // IMPORTANT: Some models do NOT work in scheduled tasks (unattended mode)
+  // These models require 'default' permission mode with user interaction, but scheduled tasks
+  // run unattended and require 'bypassPermissions' mode
+  const modelLower = modelToUse.toLowerCase();
+  const isGlmModel = modelLower.includes('glm') ||
+                     modelLower.includes('zhipu') ||
+                     modelLower.includes('chatglm') ||
+                     modelLower.startsWith('glm');
+  
+  addLog('info', 'system', `Model compatibility check: model="${modelToUse}", isGlmModel=${isGlmModel}`);
+
+  if (isGlmModel) {
+    // NOTE: GLM models may have limitations with bypassPermissions mode
+    // Previously this was blocked, but now we allow testing with a warning
+    addLog('warn', 'system', `GLM model detected: ${modelToUse}. GLM models may have compatibility issues with scheduled tasks.`);
+    addLog('warn', 'system', `If this task fails, consider using Claude models (Sonnet, Haiku, Opus) instead.`);
+  }
+  
+  // Additional check: some models might not support bypassPermissions mode
+  // Log a warning for unrecognized model names
+  const knownClaudeModels = ['sonnet', 'haiku', 'opus', 'claude'];
+  const isKnownClaudeModel = knownClaudeModels.some(m => modelLower.includes(m));
+  if (!isKnownClaudeModel) {
+    addLog('warn', 'system', `Warning: Model "${modelToUse}" may not support bypassPermissions mode required for scheduled tasks`);
+  }
+
+  // For Claude models, use bypassPermissions mode (unattended execution)
+  const permissionMode = 'bypassPermissions';
+  addLog('info', 'system', `Using 'bypassPermissions' mode for Claude model: ${modelToUse}`);
+
+  const { queryOptions } = await buildQueryOptions(
+    agent,
+    task.projectPath,
+    mcpTools.length > 0 ? mcpTools : undefined,
+    permissionMode,
+    modelToUse,
+    claudeVersionToUse,
+    undefined, // defaultEnv - will be loaded from Claude version config
+    undefined, // userEnv - scheduled tasks don't have user-provided env vars
+    undefined, // sessionIdForAskUser - scheduled tasks don't support user interaction
+    undefined  // agentIdForAskUser
+  );
+
+  // Override maxTurns for scheduled tasks to prevent infinite loops
+  queryOptions.maxTurns = agent.maxTurns || 10;
+
+  addLog('info', 'system', `Query options built: permissionMode=bypassPermissions, model=${modelToUse}, maxTurns=${queryOptions.maxTurns}`);
+  
+  // Log MCP servers if configured
+  if (queryOptions.mcpServers) {
+    const mcpServerNames = Object.keys(queryOptions.mcpServers);
+    addLog('info', 'system', `MCP servers configured: ${mcpServerNames.join(', ')}`);
   }
 
   // Collect response
@@ -508,6 +702,12 @@ async function executeAgentTask(task: ScheduledTask): Promise<{
       prompt: task.triggerMessage,
       options: queryOptions,
     })) {
+      // Check if execution was aborted
+      if (abortSignal?.aborted) {
+        addLog('warn', 'system', 'Execution aborted by user');
+        throw new Error('Execution aborted by user');
+      }
+
       // Capture session ID
       if (message.session_id && !sessionId) {
         sessionId = message.session_id;

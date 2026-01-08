@@ -15,6 +15,7 @@ export const ICON_COLORS = {
   html: "#e34f26",
   htm: "#e34f26",
   json: "#f9d71c",
+  jsonl: "#e6a23c", // JSONL 使用橙黄色区分于普通 JSON
   md: "#083fa1",
   csv: "#00a86b",
   pdf: "#d63031",
@@ -42,6 +43,7 @@ export const ICON_COMPONENTS = {
   html: FaHtml5,
   htm: FaHtml5,
   json: VscJson,
+  jsonl: VscJson, // JSONL 使用相同的 JSON 图标
   md: FaMarkdown,
   csv: FaFile,
   pdf: FaFilePdf,
@@ -72,7 +74,7 @@ export const getLanguageForFile = (fileName: string = ''): string => {
     case 'js': case 'jsx': return 'javascript';
     case 'ts': case 'tsx': return 'typescript';
     case 'css': case 'scss': case 'sass': case 'less': return 'css';
-    case 'json': return 'json';
+    case 'json': case 'jsonl': return 'json';
     case 'html': case 'htm': return 'html';
     case 'md': case 'markdown': return 'markdown';
     case 'csv': return 'csv';
@@ -110,7 +112,7 @@ export const getFileType = (fileName: string): 'text' | 'image' | 'binary' => {
 
   const textExtensions = [
     'js', 'jsx', 'ts', 'tsx', 'css', 'scss', 'sass', 'less',
-    'html', 'htm', 'json', 'md', 'markdown', 'txt',
+    'html', 'htm', 'json', 'jsonl', 'md', 'markdown', 'txt',
     'py', 'java', 'xml', 'yaml', 'yml',
     'sh', 'bash', 'bat', 'cmd',
     'php', 'rb', 'go', 'rs',

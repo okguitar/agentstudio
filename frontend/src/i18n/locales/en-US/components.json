@@ -339,7 +339,8 @@
       "createFolder": "Create Folder",
       "creating": "Creating...",
       "preview": "Preview",
-      "previewCSV": "Preview CSV File"
+      "previewCSV": "Preview CSV File",
+      "previewJSONL": "Preview JSONL File"
     },
     "dialog": {
       "newFolder": "New Folder",
@@ -389,6 +390,39 @@
       "unknownError": "Unknown error"
     },
     "instructions": "Arrow keys to navigate • Ctrl+F to search • ESC to close"
+  },
+  "jsonlPreview": {
+    "loading": "Loading JSONL file...",
+    "info": {
+      "recordCount": "{{count}} records total",
+      "errorCount": "{{count}} parse errors",
+      "filtered": "filtered"
+    },
+    "search": {
+      "placeholder": "Search JSONL content..."
+    },
+    "empty": {
+      "noData": "No data to display"
+    },
+    "pagination": {
+      "showing": "Showing {{start}}-{{end}} of {{total}}",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "actions": {
+      "close": "Close",
+      "download": "Download",
+      "maximize": "Maximize",
+      "minimize": "Minimize",
+      "copy": "Copy"
+    },
+    "errors": {
+      "title": "Preview Error",
+      "loadFailed": "Failed to load JSONL file",
+      "unknownError": "Unknown error",
+      "parseError": "JSON parse error"
+    },
+    "instructions": "Click to expand • Arrow keys to navigate • Ctrl+F to search • ESC to close"
   },
   "unifiedToolSelector": {
     "title": "Tool Selection",

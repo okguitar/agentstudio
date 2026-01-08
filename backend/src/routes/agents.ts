@@ -610,6 +610,16 @@ router.post('/chat', async (req, res) => {
         // 使用 tempSessionId 作为 MCP 工具的 sessionId（新会话还没有真实 sessionId）
         const { queryOptions, askUserSessionRef } = await buildQueryOptions(agent, projectPath, mcpTools, permissionMode, model, claudeVersion, undefined, envVars, tempSessionId, agentId);
 
+        // 📊 输出传到 query 中的模型参数
+        console.log('📊 [Chat API] QueryOptions 模型参数:');
+        console.log(`   请求中的 model 参数: ${model || '(未指定)'}`);
+        console.log(`   请求中的 claudeVersion: ${claudeVersion || '(未指定)'}`);
+        console.log(`   Agent 配置的 model: ${agent.model || '(未指定)'}`);
+        console.log(`   最终 queryOptions.model: ${queryOptions.model}`);
+        console.log(`   queryOptions.pathToClaudeCodeExecutable: ${queryOptions.pathToClaudeCodeExecutable || '(未指定)'}`);
+        console.log(`   queryOptions.cwd: ${queryOptions.cwd}`);
+        console.log(`   queryOptions.permissionMode: ${queryOptions.permissionMode}`);
+
         // ⚡ CRITICAL: Add includePartialMessages BEFORE creating session
         // This must be set before handleSessionManagement because ClaudeSession
         // uses these options to configure the Claude SDK query
@@ -618,6 +628,20 @@ router.post('/chat', async (req, res) => {
         // 处理会话管理
         const { claudeSession, actualSessionId: initialSessionId } = await handleSessionManagement(agentId, sessionId || null, projectPath, queryOptions, claudeVersion);
         let actualSessionId = initialSessionId;
+
+        // 📊 输出 Session 初始化后的信息
+        console.log('📊 [Chat API] Session 初始化后的信息:');
+        console.log(`   Session ID: ${claudeSession.getClaudeSessionId?.() || '(无法获取)'}`);
+        console.log(`   actualSessionId: ${actualSessionId || '(新会话)'}`);
+        console.log(`   Agent ID: ${agentId}`);
+        // 尝试获取 session 的内部配置
+        try {
+          const sessionOptions = claudeSession.getOptions?.() || claudeSession.options || queryOptions;
+          console.log(`   Session 使用的 model: ${sessionOptions?.model || '(未知)'}`);
+          console.log(`   Session pathToClaudeCodeExecutable: ${sessionOptions?.pathToClaudeCodeExecutable || '(未知)'}`);
+        } catch (e) {
+          console.log(`   无法获取 Session 内部配置`);
+        }
 
         // 设置会话到连接管理器
         connectionManager.setClaudeSession(claudeSession);
@@ -636,6 +660,10 @@ router.post('/chat', async (req, res) => {
 
         const currentRequestId = await claudeSession.sendMessage(userMessage, (sdkMessage: SDKMessage) => {
           if (isSDKSystemMessage(sdkMessage) && sdkMessage.subtype === "init") {
+            // 📊 打印完整的 system.init 消息体，用于调试模型使用情况
+            console.log('📊 [Chat API] System Init Message 完整消息体:');
+            console.log(JSON.stringify(sdkMessage, null, 2));
+            
             // 检查 MCP 服务器连接状态
             if (sdkMessage.mcp_servers && Array.isArray(sdkMessage.mcp_servers)) {
               const failedServers = sdkMessage.mcp_servers.filter(

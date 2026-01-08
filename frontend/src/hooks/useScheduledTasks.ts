@@ -261,6 +261,49 @@ export const useRunScheduledTask = () => {
 };
 
 /**
+ * Stop a running execution
+ */
+export const useStopExecution = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (executionId: string): Promise<{ success: boolean; message: string }> => {
+      const response = await authFetch(`${API_BASE}/scheduled-tasks/executions/${executionId}/stop`, {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error || 'Failed to stop execution');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      // Refetch all tasks and their histories
+      queryClient.invalidateQueries({ queryKey: scheduledTasksKeys.all });
+    },
+  });
+};
+
+/**
+ * Get running executions
+ */
+export const useRunningExecutions = () => {
+  return useQuery<{ executions: Array<{ executionId: string; taskId: string; startedAt: string }> }>({
+    queryKey: [...scheduledTasksKeys.all, 'running'],
+    queryFn: async () => {
+      const response = await authFetch(`${API_BASE}/scheduled-tasks/running`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch running executions');
+      }
+      return response.json();
+    },
+    refetchInterval: 3000, // Refresh every 3 seconds
+  });
+};
+
+/**
  * Enable the scheduler
  */
 export const useEnableScheduler = () => {

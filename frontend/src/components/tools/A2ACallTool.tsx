@@ -152,7 +152,12 @@ const getResponseFromData = (data: A2ACallResult['data']): string | undefined =>
 /**
  * Extract agent name from A2A URL
  */
-const extractAgentName = (url: string): string => {
+const extractAgentName = (url: string | undefined): string => {
+  // Handle undefined, null, or empty string
+  if (!url || typeof url !== 'string') {
+    return 'Unknown Agent';
+  }
+  
   try {
     const urlObj = new URL(url);
     const hostname = urlObj.hostname;

@@ -90,6 +90,7 @@ export function createScheduledTask(request: CreateScheduledTaskRequest): Schedu
     schedule: request.schedule,
     triggerMessage: request.triggerMessage,
     enabled: request.enabled ?? true,
+    modelOverride: request.modelOverride,  // 保存模型覆盖配置
     createdAt: now,
     updatedAt: now,
   };
@@ -177,7 +178,7 @@ export function toggleScheduledTask(taskId: string): ScheduledTask | null {
  */
 export function updateTaskRunStatus(
   taskId: string,
-  status: 'running' | 'success' | 'error',
+  status: 'running' | 'success' | 'error' | 'stopped',
   error?: string
 ): void {
   const tasks = loadScheduledTasks();

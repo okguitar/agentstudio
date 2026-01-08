@@ -23,6 +23,8 @@ import {
   getSchedulerStatus,
   enableScheduler,
   disableScheduler,
+  stopExecution,
+  getRunningExecutions,
 } from '../services/schedulerService.js';
 
 const router: IRouter = Router();
@@ -299,6 +301,44 @@ router.post('/:id/run', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('[ScheduledTasks API] Error running task:', error);
     res.status(500).json({ error: 'Failed to run scheduled task' });
+  }
+});
+
+/**
+ * POST /api/scheduled-tasks/executions/:executionId/stop
+ * Stop a running execution
+ */
+router.post('/executions/:executionId/stop', async (req: Request, res: Response) => {
+  try {
+    const { executionId } = req.params;
+    const result = stopExecution(executionId);
+    
+    if (!result.success) {
+      return res.status(404).json({ error: result.message });
+    }
+    
+    res.json({
+      success: true,
+      message: result.message,
+      executionId,
+    });
+  } catch (error) {
+    console.error('[ScheduledTasks API] Error stopping execution:', error);
+    res.status(500).json({ error: 'Failed to stop execution' });
+  }
+});
+
+/**
+ * GET /api/scheduled-tasks/running
+ * Get all currently running executions
+ */
+router.get('/running', (req: Request, res: Response) => {
+  try {
+    const running = getRunningExecutions();
+    res.json({ executions: running });
+  } catch (error) {
+    console.error('[ScheduledTasks API] Error getting running executions:', error);
+    res.status(500).json({ error: 'Failed to get running executions' });
   }
 });
 

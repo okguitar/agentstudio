@@ -2,476 +2,345 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-
 ## Project Overview
 
-Claude-powered AgentStudio with React frontend and Node.js backend, built on top of Claude Code SDK. The application features an agent-based architecture where specialized AI agents handle different types of content editing. The main interface provides a split-panel layout (chat on left, preview on right) with real-time collaboration between users and AI agents.
+AgentStudio is a modern web-based AI agent workspace platform built on Claude Agent SDK. It provides a professional interface for AI-powered content editing, code assistance, and task automation through specialized agents. The architecture features a React frontend with Node.js backend, using Server-Sent Events (SSE) for real-time streaming responses.
 
 ## Architecture
 
 ### Full-Stack Monorepo Structure
-- **Root**: Shared package.json with concurrently for running both services
-- **Frontend**: React 19 + TypeScript + Vite + TailwindCSS
-- **Backend**: Node.js + Express + TypeScript with AI SDK integration
+- **Root**: Shared package.json with pnpm workspaces
+- **Frontend**: `@agentstudio/frontend` - React 19 + TypeScript + Vite + TailwindCSS
+- **Backend**: `agentstudio-backend` - Node.js + Express + TypeScript + Claude Agent SDK
 
 ### Key Technologies
-- **State Management**: Zustand (lightweight) + React Query (server state)
-- **AI Integration**: Claude Agent SDK (@anthropic-ai/claude-agent-sdk) with streaming responses
+- **State Management**: Zustand (client state) + React Query (server state)
+- **AI Integration**: @anthropic-ai/claude-agent-sdk with streaming responses
 - **A2A Integration**: @a2a-js/sdk for agent-to-agent communication
-- **Authentication**: JWT-based authentication with bcrypt password hashing
-- **Build Tools**: Vite (frontend), TSX (backend development)
-- **Testing**: Vitest + Testing Library + jsdom environment, Playwright for E2E testing
+- **Authentication**: JWT-based with bcrypt password hashing
+- **Build Tools**: Vite (frontend), TSX (backend dev)
+- **Testing**: Vitest + Testing Library + jsdom, Playwright for E2E
 - **Styling**: TailwindCSS with component variants
 - **Routing**: React Router DOM
-- **Documentation**: Storybook with Chromatic for component documentation
+- **I18n**: react-i18next (English, Chinese)
 
-### Core Components Architecture
-- `AgentChatPanel.tsx`: Main AI conversation interface with streaming responses
-- `PreviewPanel.tsx`: Grid layout for slide thumbnails with zoom controls
-- `SlidePreview.tsx`: Individual slide renderer with edit capabilities
-- `AgentSelector.tsx`: Agent selection and management interface
-- `SessionsDropdown.tsx`: Session history and management
-- `ToolRenderer.tsx`: Dynamic tool usage visualization components
-- `FileBrowser.tsx`: Integrated file explorer for project files
-- `useSlides.ts`: React Query hooks for slide CRUD operations
-- `useAI.ts`: AI chat and slide editing functionality (backward compatibility)
-- `useAgents.ts`: Agent management and configuration
-- `useAppStore.ts`: Global application state (current slide, selection, etc.)
-- `useAgentStore.ts`: Agent-specific state management
+### Core Services Architecture
 
-### API Design
-Backend follows RESTful patterns:
-- `/api/slides/*`: Slide CRUD operations (GET, PUT, POST, DELETE)
-- `/api/ai/*`: Legacy AI functionality and session management
-- `/api/agents/*`: Agent-based AI interactions with Claude Code SDK
-- `/api/commands/*`: Command management and execution endpoints
-- `/api/projects/*`: Project management and configuration endpoints
+#### Backend Services (`backend/src/services/`)
+- **sessionManager.ts**: Manages Claude sessions with persistent conversation history and automatic cleanup
+- **schedulerService.ts**: Cron-based task scheduler for automated agent execution
+- **agentStorage.ts**: Agent configuration management with file-based persistence
+- **a2a/**: Agent-to-agent communication system
+  - `a2aClientTool.ts`: MCP tool for calling external A2A-compatible agents
+  - `apiKeyService.ts`: API key management for A2A authentication
+  - `taskManager.ts`: Async task lifecycle management
+- **askUserQuestion/**: Multi-channel user interaction system
+  - Supports SSE, Slack, and custom notification channels
+  - Real-time question-answer flow during agent execution
+- **pluginParser.ts**, **pluginInstaller.ts**: Plugin marketplace integration
+- **projectMetadataStorage.ts**: Project-level configurations and agent associations
+
+#### Frontend Architecture (`frontend/src/`)
+- **stores/useAgentStore.ts**: Zustand store for agent chat state, messages, streaming
+- **stores/useAppStore.ts**: Global application state (current slide, selection, etc.)
+- **hooks/agentChat/useAIStreamHandler.ts**: SSE stream processing with 60fps RAF throttling
+- **components/tools/**: Dynamic tool visualization components (22+ specialized tools)
+- **components/AgentChatPanel.tsx**: Main AI conversation interface
+- **types/**: TypeScript definitions mirrored in frontend and backend for type safety
+
+### API Routes (`backend/src/routes/`)
+- `/api/agents/*`: Agent CRUD and chat endpoints with SSE streaming
+- `/api/sessions/*`: Session history and management
+- `/api/a2a/*`: A2A agent discovery and streaming
+- `/api/a2aManagement/*`: A2A configuration and API key management
+- `/api/commands/*`: Slash command execution
+- `/api/projects/*`: Project management and metadata
 - `/api/mcp/*`: MCP server management and health checks
-- `/api/plugins/*`: Plugin marketplace and installation endpoints
-- `/api/usage/*`: Usage statistics and monitoring (daily, weekly, monthly, live, summary)
-- `/api/health`: Health check endpoint
-- Static file serving for slide HTML content via `/slides/*`
+- `/api/plugins/*`: Plugin marketplace operations
+- `/api/scheduledTasks/*`: Scheduled task CRUD and control
+- `/api/files/*`: File system operations
+- `/api/usage/*`: Usage statistics (daily, weekly, monthly, live)
 
 ### Agent-Based Architecture
-The application uses a sophisticated agent system built on Claude Code SDK:
-- **Built-in Agents**: PPT Editor, Code Assistant, Document Writer
-- **Custom Agents**: Configurable agents with specific tools and permissions
-- **Subagents**: User-defined AI subagents with custom system prompts and tool access
-- **Session Management**: Per-agent conversation history with automatic title generation
-- **Tool Integration**: Dynamic tool rendering with real-time status updates
-- **Project-Aware**: Agents operate within specific project contexts
 
-### MCP Integration
-Model Context Protocol (MCP) server integration for extended capabilities:
-- **Server Types**: Support for both stdio and HTTP-based MCP servers
-- **Tool Discovery**: Automatic detection of available MCP tools
-- **Health Monitoring**: Real-time status checks for MCP services
-- **Flexible Configuration**: Easy management of MCP server connections
+The application uses a sophisticated multi-tier agent system:
 
-### Plugin System
-Extensible plugin architecture for adding new capabilities:
-- **Plugin Types**: Agents, commands, skills, and MCP servers
-- **Marketplace Management**: Add custom or community marketplaces
-- **One-Click Install**: Easy installation and management of plugins
-- **Version Control**: Track and update plugin versions
+1. **Built-in Agents**: Pre-configured agents (PPT Editor, Code Assistant, Document Writer)
+2. **Custom Agents**: User-created agents with specific tools, permissions, and system prompts
+3. **Subagents**: Nested AI agents with custom capabilities
+4. **Project Commands**: Slash commands scoped to projects (defined in `types/commands.ts`)
 
-### Project Management System
-- **Project-Level Commands**: Slash commands scoped to projects or users (types defined in both `frontend/src/types/commands.ts` and `backend/src/types/commands.ts`)
-- **Project Metadata**: Track project configurations, agent associations, and custom attributes
-- **Agent Associations**: Configure which agents are enabled per project with usage statistics
+**Agent Configuration Flow**:
+- Types defined in both `frontend/src/types/agents.ts` and `backend/src/types/agents.ts`
+- When updating agent types, changes must be mirrored in both locations
+- Agent tools are configurable with individual permissions and path restrictions
 
-### File System Integration
-- Slides stored as individual HTML files in `../slides/` directory (relative to backend)
-- Compatible with existing html-slide-player framework
-- Maintains 1280x720 slide dimensions and CSS conventions
+### SSE Streaming Architecture
+
+Real-time AI responses use Server-Sent Events with sophisticated state management:
+
+**Backend** (`routes/agents.ts`):
+- Creates SSE streams for each agent conversation
+- Sends `stream_event` messages with content_block deltas
+- Tracks session state in `sessionManager` with cleanup handlers
+
+**Frontend** (`hooks/agentChat/useAIStreamHandler.ts`):
+- Uses `StreamingState` ref to track active streaming blocks
+- Implements RAF throttling (60fps) for UI updates
+- Accumulates incremental JSON fragments for tool inputs
+- Maps streaming blocks to message parts for real-time display
+
+**Critical**: Tool input JSON in SSE streams is INCREMENTAL. When handling `input_json_delta`, accumulate with `+=`, not replace with `=`. Only parse when JSON appears complete (ends with `}`).
 
 ## Development Commands
 
 ### Package Manager
-This project uses **pnpm workspaces** with filter commands for monorepo management. All commands support both `pnpm` and `npm`.
-
-**Workspace Names**:
+Uses **pnpm workspaces**. Workspace names:
 - Frontend: `@agentstudio/frontend`
 - Backend: `agentstudio-backend`
 
-When using `pnpm --filter`, reference these workspace names for targeting specific packages.
-
-### Setup and Installation
+### Common Commands
 ```bash
-pnpm install                 # Install all dependencies (recommended)
-# or
-npm run setup                # Install all dependencies (root, frontend, backend)
-```
-
-### Development
-```bash
+# Development
 pnpm run dev                 # Start both frontend (3000) and backend (4936)
 pnpm run dev:frontend        # Frontend only
 pnpm run dev:backend         # Backend only
-```
 
-### Building and Production
-```bash
+# Building
 pnpm run build               # Build both frontend and backend
-pnpm run build:frontend      # Build frontend only
-pnpm run build:backend       # Build backend only
-pnpm start                   # Start production backend (after build)
+pnpm run build:frontend      # Frontend only
+pnpm run build:backend       # Backend only
+
+# Testing (individual workspaces)
+cd frontend && pnpm test           # Watch mode
+cd frontend && pnpm run test:run   # Run once
+cd backend && pnpm test            # Watch mode
+cd backend && pnpm run test:run    # Run once
+
+# Code Quality
+pnpm run lint              # Lint all workspaces
+pnpm run type-check        # TypeScript check all workspaces
 ```
 
-### Service Management (Production)
+### Single Test Execution
 ```bash
-pnpm run install:service     # Install as system service
-pnpm run service:start       # Start service
-pnpm run service:stop        # Stop service
-pnpm run service:restart     # Restart service
-pnpm run service:status      # Check service status
-pnpm run service:logs        # View service logs
+# Frontend
+cd frontend && pnpm test path/to/test.test.ts
+
+# Backend (use vitest run to avoid watch mode)
+cd backend && npx vitest run path/to/test.test.ts
 ```
 
-### Testing
-```bash
-# Frontend tests
-cd frontend && pnpm test           # Run tests in watch mode
-cd frontend && pnpm run test:ui    # Run tests with UI
-cd frontend && pnpm run test:run   # Run tests once
-cd frontend && pnpm run test:coverage # Run with coverage
+## Important Development Patterns
 
-# Backend tests
-cd backend && pnpm test            # Run tests in watch mode
-cd backend && pnpm run test:ui     # Run tests with UI
-cd backend && pnpm run test:run    # Run tests once
-cd backend && pnpm run test:coverage # Run with coverage
+### SSE Streaming Implementation
+When working with streaming responses in `useAIStreamHandler.ts`:
+
+1. **JSON Accumulation**: Always use `+=` for `partial_json` fragments
+   ```typescript
+   streamingBlock.content += partialJsonFragment;  // Correct
+   // streamingBlock.content = partialJsonFragment;  // WRONG - loses data
+   ```
+
+2. **Parse on Complete**: Only parse when JSON looks complete
+   ```typescript
+   const trimmed = accumulatedJson.trim();
+   if (trimmed.endsWith('}')) {
+     const toolInput = JSON.parse(accumulatedJson);
+     updateToolPartInMessage(messageId, partId, { toolInput });
+   }
+   ```
+
+3. **Final Parse**: Always parse on `content_block_stop` to capture complete parameters
+
+### Type Synchronization
+Types are maintained in BOTH frontend and backend:
+- `frontend/src/types/agents.ts` ↔ `backend/src/types/agents.ts`
+- `frontend/src/types/commands.ts` ↔ `backend/src/types/commands.ts`
+- `frontend/src/types/subagents.ts` ↔ `backend/src/types/subagents.ts`
+- `frontend/src/types/a2a.ts` ↔ `backend/src/types/a2a.ts`
+
+When updating types, update BOTH locations to maintain type safety.
+
+### Tool Component Development
+Tool visualization components in `frontend/src/components/tools/`:
+- Extend `BaseToolComponent` for consistent styling
+- Set `hideToolName={false}` explicitly for tool name display
+- Use `useTranslation('components')` for i18n
+- Handle loading, executing, and completed states
+
+### Agent Context Building
+Agents receive context from multiple sources:
+- Project files and metadata
+- Session history
+- MCP server capabilities
+- Custom context builders (defined in agent config)
+
+### Session Management
+Sessions track conversation state per agent:
+- `sessionManager.ts` handles session lifecycle
+- Automatic title generation from first message
+- Cleanup on disconnect with configurable timeout
+- Support for both persistent and temporary sessions
+
+### Plugin System
+Plugins extend AgentStudio with:
+- **Agents**: Pre-configured AI agents
+- **Commands**: Slash commands for quick actions
+- **Skills**: Reusable code snippets
+- **MCP Servers**: Tool integrations
+
+Plugins are installed from marketplaces and symlinked into the project.
+
+### Internationalization
+All user-facing text must use i18n:
+```typescript
+import { useTranslation } from 'react-i18next';
+const { t } = useTranslation('components');
+t('toolRenderer.executing');  // Never hardcode strings
 ```
 
-### Code Quality
-```bash
-pnpm run lint                  # Run linting for all workspaces
-pnpm run type-check            # TypeScript type checking for all workspaces
-cd frontend && pnpm run lint   # ESLint for frontend only
-cd backend && pnpm run type-check # TypeScript check for backend only
-```
-
-## 🔧 **IMPORTANT**: Pre-Commit Build Verification
-
-**ALWAYS run build and lint checks before committing code to prevent Vercel deployment failures:**
-
-```bash
-# ✅ MANDATORY: Run this before every commit
-pnpm run build                 # Full build for all workspaces (shared, frontend, backend)
-pnpm run lint                  # Check for linting errors
-
-# 🚫 NEVER skip these steps - they will cause Vercel build failures!
-# ❌ Common mistakes that cause Vercel failures:
-# - TypeScript errors (untyped variables, missing types)
-# - ESLint errors (unused variables, code style issues)
-# - Missing dependencies or import errors
-# - Git merge conflicts left in files
-
-# ✅ Example safe commit workflow:
-# 1. Make your changes
-# 2. pnpm run build && pnpm run lint
-# 3. If no errors: git add . && git commit -m "feat: your changes"
-# 4. git push origin your-branch
-# 5. Check Vercel build status
-
-# 📋 Quick checklist before commits:
-# □ pnpm run build passes
-# □ pnpm run lint passes (or use --fix for auto-fixable issues)
-# □ No Git conflicts remaining in files
-# □ All new dependencies added to package.json
-# □ TypeScript types properly defined (avoid 'any' type)
-```
+Translation files: `frontend/src/i18n/locales/{locale}/pages.json`
 
 ## Environment Configuration
 
-Backend requires `.env` file in `backend/` directory:
+Backend `.env` file (`backend/.env`):
 ```env
 # AI Provider (choose one)
-OPENAI_API_KEY=your_openai_api_key_here
-ANTHROPIC_API_KEY=your_anthropic_api_key_here
+OPENAI_API_KEY=your_key_here
+ANTHROPIC_API_KEY=your_key_here
 
-# Server Configuration  
-PORT=4936  # Backend runs on port 4936, frontend on 3000
+# Server
+PORT=4936
 NODE_ENV=development
 
 # File System
 SLIDES_DIR=../slides  # Relative to backend/src
 
-# CORS Configuration (optional)
-# Add custom origins for production deployments
-CORS_ORIGINS=https://your-frontend.vercel.app,https://custom-domain.com
+# CORS (optional)
+CORS_ORIGINS=https://your-frontend.vercel.app
 ```
-
-## Key Development Patterns
-
-### State Management Flow
-1. Server state managed by React Query (slides, sessions, agents)
-2. Client state managed by Zustand (`useAppStore`, `useAgentStore`)
-3. AI interactions use Server-Sent Events (SSE) streaming
-4. Tool usage rendered dynamically with real-time status updates
-
-### CLI Tool
-The backend includes a CLI tool (`agentstudio`) for managing the application:
-- Project management and migration
-- Agent configuration upgrades
-- Service management (start/stop/status/logs)
-- Available after build: `pnpm run build && npx agentstudio`
-
-### AI Integration Pattern
-- Claude Code SDK integration in backend with streaming responses
-- Agent-based architecture with configurable tools and permissions
-- Session persistence with automatic title generation
-- Tool execution visualization with real-time feedback
-- Context-aware agents with project-specific configurations
-
-### API Configuration System
-- Dynamic API endpoint configuration via `frontend/src/lib/config.ts`
-- User-configurable backend host through settings UI (`/settings/api`)
-- Automatic detection of development vs production environment
-- LocalStorage-based persistence of custom API endpoints
-- Built-in connection testing for API validation
-
-### Slide Management
-- Slides are HTML files with embedded CSS
-- Each slide maintains 1280x720 dimensions
-- Auto-saving after AI edits via PUT /api/slides/:index
-
-### Internationalization (i18n)
-- **Framework**: react-i18next with JSON translation files
-- **Supported Languages**: English (en-US), Chinese (zh-CN)
-- **Translation Files**: `frontend/src/i18n/locales/{locale}/pages.json`
-- **Usage Pattern**: Use `useTranslation()` hook with namespaced keys (e.g., `t('pages:nav.dashboard')`)
-- **Adding New Languages**:
-  1. Create new locale directory under `frontend/src/i18n/locales/`
-  2. Copy translation structure from existing locales
-  3. Add locale configuration to `frontend/src/i18n/config.ts`
-
-## Compatibility Notes
-
-- Fully compatible with existing html-slide-player framework
-- Maintains slides.js configuration format
-- Preserves existing CSS styling conventions
-- Uses same file structure and naming patterns
-
-## Deployment and Production
-
-### Docker Deployment (Recommended)
-The project includes Docker support for all-in-one deployment:
-```bash
-# Build and run with Docker Compose
-docker build -t agentstudio:latest .
-docker-compose up -d
-
-# Access at http://localhost
-```
-
-**What you get:**
-- All-in-one container (frontend + backend)
-- Data persistence via Docker volumes
-- Zero configuration needed
-- Easy updates and rollbacks
-
-See [DOCKER.md](DOCKER.md) for detailed Docker deployment guide.
-
-### Frontend Deployment to Vercel
-The project includes `vercel.json` configuration for seamless deployment:
-- Automatic build via `pnpm --filter frontend run build`
-- SPA routing support with proper rewrites
-- Security headers and static file caching
-- Framework detection for optimized deployments
-
-### CORS and Cross-Origin Configuration
-Backend includes comprehensive CORS support:
-- Automatic support for localhost development (any port)
-- Built-in support for all `*.vercel.app` domains
-- Custom domain support via `CORS_ORIGINS` environment variable
-- Dynamic origin validation for security
-
-### API Endpoint Configuration
-Frontend supports flexible API configuration:
-- Development: Auto-detects `http://127.0.0.1:4936`
-- Production: Defaults to `https://agentstudio.cc`
-- User-configurable via `/settings/api` with connection testing
-- Persistent configuration via LocalStorage
-
-## Development Guidelines
-
-### Project Structure
-```
-ai-editor/
-├── package.json                    # Root package.json with monorepo scripts
-├── frontend/                      # React frontend
-│   ├── src/
-│   │   ├── components/            # React components
-│   │   │   ├── tools/             # Dynamic tool visualization components
-│   │   │   └── ui/               # Reusable UI components
-│   │   ├── hooks/                # React Query hooks
-│   │   ├── stores/               # Zustand state management
-│   │   ├── pages/                # Page components
-│   │   ├── types/                # Frontend type definitions
-│   │   │   ├── agents.ts         # Agent configuration types
-│   │   │   ├── commands.ts       # Slash command types (project/user scoped)
-│   │   │   └── subagents.ts      # Subagent configuration types
-│   │   └── lib/
-│   │       └── config.ts         # API configuration system
-│   ├── vitest.config.ts          # Test configuration
-│   └── vite.config.ts            # Vite configuration
-└── backend/                      # Node.js backend
-    ├── src/
-    │   ├── routes/               # Express routes
-    │   │   ├── agents.ts         # Agent-based AI endpoints
-    │   │   ├── commands.ts       # Command management endpoints
-    │   │   ├── projects.ts       # Project management endpoints
-    │   │   ├── ai.ts            # Legacy AI endpoints
-    │   │   ├── slides.ts        # Slide CRUD operations
-    │   │   └── usage.ts         # Usage statistics API
-    │   ├── types/                # Backend type definitions
-    │   │   ├── agents.ts         # Agent configuration types
-    │   │   ├── commands.ts       # Slash command types
-    │   │   ├── subagents.ts      # Subagent configuration types
-    │   │   └── projects.ts       # Project metadata types
-    │   ├── services/
-    │   │   └── ccusageService.ts # ccusage integration service
-    │   └── index.ts             # Server entry point (includes CORS config)
-    └── .env.example             # Environment variables template
-├── vercel.json                   # Vercel deployment configuration
-└── DEPLOYMENT.md                 # Detailed deployment guide
-```
-
-**Note**: Type definitions are maintained in both `frontend/src/types/` and `backend/src/types/` to ensure type safety across the monorepo. When updating types, changes must be made in both locations to maintain consistency.
-
-### Adding New AI Features
-1. **Built-in Agents**: Create agent configuration in both `frontend/src/types/agents.ts` and `backend/src/types/agents.ts`
-2. **Subagents**: Update subagent types in both `frontend/src/types/subagents.ts` and `backend/src/types/subagents.ts`
-3. **Slash Commands**: Add project/user-scoped commands via `frontend/src/types/commands.ts` and `backend/src/types/commands.ts`
-4. Add corresponding routes in `backend/src/routes/agents.ts`
-5. Update frontend components to support new agent types
-
-### UI Component Development
-- Follow existing patterns in `frontend/src/components/`
-- Use TailwindCSS for styling
-- Implement tool components in `components/tools/` for custom tool rendering
-- Add TypeScript interfaces in appropriate type files
-- **Internationalization**: Use `useTranslation()` hook for all user-facing text
-  - Import: `import { useTranslation } from 'react-i18next'`
-  - Usage: `const { t } = useTranslation('pages'); t('nav.dashboard')`
-  - Never hardcode user-facing strings in components
-
-### Testing
-- Write component tests using Vitest + Testing Library
-- Test files should be co-located with components in `__tests__/` directories
-- Use jsdom environment for component testing
-- Run tests with `cd frontend && pnpm test`
-
-### Agent Development
-- **Built-in Agents**: Extend `BUILTIN_AGENTS` in both `frontend/src/types/agents.ts` and `backend/src/types/agents.ts`
-- **Subagents**: Create user-defined agents with custom system prompts in both frontend and backend types
-- **Project Commands**: Define project-scoped slash commands in both `frontend/src/types/commands.ts` and `backend/src/types/commands.ts`
-- Configure agent tools, permissions, and UI properties
-- Implement context builders for agent-specific data
-
-### Usage Monitoring
-- **ccusage Integration**: Backend uses ccusage service for API usage tracking
-- **Statistics API**: Endpoints for daily, weekly, monthly, and live usage data
-- **Usage Dashboard**: Frontend `UsageStatsPage.tsx` displays consumption metrics
-- **Monitoring**: Real-time burn rate and usage summaries via `/api/usage/*` endpoints
-
-### API Configuration Guidelines
-When modifying API endpoints or adding new hooks:
-1. **Import API_BASE**: Always use `import { API_BASE } from '../lib/config.js'` instead of hardcoded paths
-2. **Avoid Hardcoded URLs**: Never use '/api/...' directly in fetch calls
-3. **Dynamic Configuration**: Support both development and production environments
-4. **Connection Testing**: Implement health checks for new API endpoints at `/api/health`
-
-### Development Workflow with Git Worktree
-
-#### Worktree-Based Development Strategy
-When developing new features or fixing issues, follow this workflow based on task complexity:
-
-**Small Tasks (Main Directory)**
-- **Scope**: Simple bug fixes, minor UI tweaks, documentation updates
-- **Criteria**:
-  - Affects ≤ 3 files
-  - Estimated time < 30 minutes
-  - No breaking changes
-  - No new dependencies
-- **Workflow**: Work directly in main directory on main branch
-
-**Medium to Large Features (Worktree Required)**
-- **Scope**: New components, API endpoints, agent integrations, UI features
-- **Criteria**:
-  - Affects > 3 files
-  - Estimated time ≥ 30 minutes
-  - Adds new dependencies
-  - Requires testing
-- **Workflow**: Create dedicated feature branch with worktree
-- **Testing Requirement**: Must pass user testing and approval before merging to main
-
-#### Worktree Commands
-```bash
-# Create feature branch and worktree
-git checkout -b feature-name
-git worktree add ../agentstudio-feature-name feature-name
-
-# Switch to worktree
-cd ../agentstudio-feature-name
-
-# Install dependencies and start development
-pnpm install
-pnpm run dev
-
-# After completion, request user testing and approval
-# User must test the feature and confirm it's ready for merge
-
-# Once approved, merge from main directory
-cd ../agentstudio
-git merge feature-name
-
-# Clean up worktree
-git worktree remove ../agentstudio-feature-name
-git branch -d feature-name
-```
-
-#### Testing and Approval Process
-Before merging any feature branch to main, follow this mandatory testing and approval process:
-
-**Developer Testing (Required)**
-- Run all automated tests: `cd frontend && pnpm test:run`
-- Build verification: `pnpm run build`
-- Manual testing of new functionality
-- Check for breaking changes in existing features
-
-**User Testing and Approval (Mandatory)**
-- Provide clear instructions for user to test the feature
-- Include specific test scenarios and expected outcomes
-- Wait for explicit user confirmation before merging
-- Document any issues found during user testing
-
-**Merge Criteria**
-- All automated tests pass
-- Build succeeds without errors
-- User has tested and approved the feature
-- No breaking changes to existing functionality
-- Code review completed if applicable
-
-#### Worktree Benefits for This Project
-- **Independent Development Environments**: Each worktree has separate dependency installations and build caches
-- **Parallel Testing**: Run different test suites simultaneously across worktrees
-- **Agent Isolation**: Test different agent configurations without interference
-- **Performance**: Avoid constant dependency reinstallation when switching contexts
-- **Safe Testing**: Users can test features in isolation before merging to main
-
-### Deployment Architecture Patterns
-The project supports multiple deployment configurations:
-- **Frontend**: Vercel (CDN-optimized) + **Backend**: Local/Self-hosted
-- **Frontend**: Vercel + **Backend**: Cloud server (full remote)
-- **Frontend**: Local build + **Backend**: Local (full local)
-- **Frontend**: Any static host + **Backend**: Any server with CORS configured
 
 ## Git Workflow
 
 ### Commit Messages
-- Write clear, concise commit messages that describe the changes
+- Write clear, concise commit messages
 - **DO NOT** include Claude Code signatures or Co-Authored-By tags
-- Follow conventional commit format when appropriate (e.g., `feat:`, `fix:`, `docs:`)
-- Keep commit messages focused on what changed and why
+- Follow conventional commit format: `feat:`, `fix:`, `refactor:`, etc.
+- Focus on what changed and why
+
+### Pre-Commit Hook
+The project has a pre-commit hook that runs:
+1. Incremental lint on staged files
+2. TypeScript type checking
+3. Build verification
+4. Tests (if available)
+
+If tests fail due to pre-existing issues (not your changes), use `git commit --no-verify` to skip the hook.
+
+### Development Workflow
+Small tasks (≤3 files, <30 min): Work directly on main
+Medium/Large features: Use git worktree for isolation
+
+```bash
+# Create worktree for feature
+git checkout -b feature-name
+git worktree add ../agentstudio-feature-name feature-name
+cd ../agentstudio-feature-name
+pnpm install && pnpm run dev
+```
+
+## Testing Strategy
+
+### Backend Tests
+- Vitest with test files co-located in `__tests__/` directories
+- Integration tests for routes, services, and A2A functionality
+- Mock SSE streams for testing streaming behavior
+- Some tests in `agents.test.ts` are currently failing (pre-existing issues)
+
+### Frontend Tests
+- Vitest + Testing Library with jsdom environment
+- Component tests for tools and UI elements
+- Hook tests for React Query and Zustand stores
+- Run with `cd frontend && pnpm test`
+
+### E2E Tests
+- Playwright for full user flow testing
+- Tests in `frontend/e2e/` directory
+
+## Deployment
+
+### Vercel Deployment
+Frontend deploys to Vercel with `vercel.json` configuration:
+- Automatic build via `pnpm --filter frontend run build`
+- SPA routing with rewrites
+- Static asset caching
+
+### Backend Deployment
+Backend can be deployed as:
+- System service (Linux/macOS)
+- Docker container (all-in-one with frontend)
+- Any Node.js hosting platform with CORS configured
+
+### API Configuration
+Frontend uses dynamic API configuration:
+- Development: Auto-detects `http://127.0.0.1:4936`
+- Production: User-configurable via `/settings/api`
+- Persistent storage via LocalStorage
+
+## Common Issues
+
+### SSE Streaming Not Working
+- Check browser console for connection errors
+- Verify backend PORT matches frontend API_BASE
+- Ensure CORS allows frontend origin
+
+### Tool Input Display Corruption
+- Verify JSON accumulation uses `+=` not `=`
+- Check for final parse on `content_block_stop`
+- Review `useAIStreamHandler.ts` implementation
+
+### Type Errors After Changes
+- Ensure types are updated in BOTH frontend and backend
+- Run `pnpm run type-check` to verify
+- Check import paths use `.js` extensions for ESM
+
+### Session Cleanup Issues
+- Sessions may get stuck in pending state
+- Use `manualCleanupSession()` to force cleanup
+- Check `sessionManager.ts` logs for cleanup errors
+
+## Debugging & Testing
+
+### Generate JWT Token for API Testing
+When testing authenticated API endpoints manually (e.g., scheduled tasks), generate a JWT token:
+
+```bash
+# Generate a new JWT token (valid for 7 days by default)
+cd /Users/kongjie/slides/ai-editor
+node -e "require('./backend/dist/utils/jwt').generateToken().then(console.log)"
+```
+
+Then use the token in API calls:
+
+```bash
+# Example: Manually trigger a scheduled task
+curl -X POST "http://127.0.0.1:4936/api/scheduled-tasks/<task_id>/run" \
+  -H "Authorization: Bearer <YOUR_TOKEN>"
+
+# Example: Get task execution history
+curl "http://127.0.0.1:4936/api/scheduled-tasks/<task_id>/history?limit=5" \
+  -H "Authorization: Bearer <YOUR_TOKEN>"
+```
+
+### Test Claude CLI Directly
+To verify Claude Code CLI is working:
+
+```bash
+cd /path/to/project
+echo "Say OK" | claude --print --dangerously-skip-permissions
+```
+
+### Scheduled Task Model Compatibility
+- **Claude models** (sonnet, haiku, opus): Fully compatible with `bypassPermissions` mode
+- **GLM models**: May require testing - check `schedulerService.ts` for compatibility logic

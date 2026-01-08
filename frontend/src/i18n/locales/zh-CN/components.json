@@ -339,7 +339,8 @@
       "createFolder": "创建目录",
       "creating": "创建中...",
       "preview": "预览",
-      "previewCSV": "预览CSV文件"
+      "previewCSV": "预览CSV文件",
+      "previewJSONL": "预览JSONL文件"
     },
     "dialog": {
       "newFolder": "新建目录",
@@ -389,6 +390,39 @@
       "unknownError": "未知错误"
     },
     "instructions": "方向键翻页 • Ctrl+F 搜索 • ESC关闭"
+  },
+  "jsonlPreview": {
+    "loading": "加载JSONL文件中...",
+    "info": {
+      "recordCount": "共 {{count}} 条记录",
+      "errorCount": "{{count}} 条解析错误",
+      "filtered": "已过滤"
+    },
+    "search": {
+      "placeholder": "搜索JSONL内容..."
+    },
+    "empty": {
+      "noData": "没有数据可显示"
+    },
+    "pagination": {
+      "showing": "显示第 {{start}}-{{end}} 条，共 {{total}} 条",
+      "previous": "上一页",
+      "next": "下一页"
+    },
+    "actions": {
+      "close": "关闭",
+      "download": "下载",
+      "maximize": "最大化",
+      "minimize": "最小化",
+      "copy": "复制"
+    },
+    "errors": {
+      "title": "预览错误",
+      "loadFailed": "加载JSONL文件失败",
+      "unknownError": "未知错误",
+      "parseError": "JSON解析错误"
+    },
+    "instructions": "点击展开详情 • 方向键翻页 • Ctrl+F 搜索 • ESC关闭"
   },
   "unifiedToolSelector": {
     "title": "工具选择",

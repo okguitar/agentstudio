@@ -12,6 +12,7 @@ import {
   Loader2,
   History,
   Settings,
+  StopCircle,
 } from 'lucide-react';
 import {
   Table,
@@ -30,6 +31,8 @@ import {
   useSchedulerStatus,
   useEnableScheduler,
   useDisableScheduler,
+  useStopExecution,
+  useRunningExecutions,
   scheduledTasksKeys,
 } from '../hooks/useScheduledTasks';
 import { useAgents } from '../hooks/useAgents';
@@ -47,12 +50,20 @@ export const ScheduledTasksPage: React.FC = () => {
   const deleteTask = useDeleteScheduledTask();
   const toggleTask = useToggleScheduledTask();
   const runTask = useRunScheduledTask();
+  const stopExecution = useStopExecution();
+  const { data: runningExecutionsData } = useRunningExecutions();
   const enableScheduler = useEnableScheduler();
   const disableScheduler = useDisableScheduler();
 
   const [editingTask, setEditingTask] = useState<ScheduledTask | null>(null);
   const [showEditorModal, setShowEditorModal] = useState(false);
   const [showHistory, setShowHistory] = useState<string | null>(null);
+
+  // Get running execution ID for a task
+  const getRunningExecutionId = (taskId: string): string | null => {
+    const exec = runningExecutionsData?.executions?.find(e => e.taskId === taskId);
+    return exec?.executionId || null;
+  };
 
   const agents = agentsData?.agents || [];
 
@@ -119,6 +130,23 @@ export const ScheduledTasksPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: scheduledTasksKeys.lists() });
     } catch {
       showError('执行失败');
+    }
+  };
+
+  // Handle stop execution
+  const handleStop = async (task: ScheduledTask) => {
+    const executionId = getRunningExecutionId(task.id);
+    if (!executionId) {
+      showError('找不到正在运行的执行');
+      return;
+    }
+    try {
+      await stopExecution.mutateAsync(executionId);
+      showSuccess('任务已停止');
+      // Refresh task list
+      queryClient.invalidateQueries({ queryKey: scheduledTasksKeys.lists() });
+    } catch {
+      showError('停止失败');
     }
   };
 
@@ -378,15 +406,24 @@ export const ScheduledTasksPage: React.FC = () => {
                   {/* Actions */}
                   <TableCell className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex items-center justify-end gap-1">
-                      {/* Run Now */}
-                      <button
-                        onClick={() => handleRun(task)}
-                        disabled={task.lastRunStatus === 'running'}
-                        className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900 rounded-lg transition-colors disabled:opacity-50"
-                        title="立即执行"
-                      >
-                        <RefreshCw className={`w-4 h-4 ${task.lastRunStatus === 'running' ? 'animate-spin' : ''}`} />
-                      </button>
+                      {/* Run Now or Stop */}
+                      {task.lastRunStatus === 'running' ? (
+                        <button
+                          onClick={() => handleStop(task)}
+                          className="p-2 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900 rounded-lg transition-colors"
+                          title="停止执行"
+                        >
+                          <StopCircle className="w-4 h-4" />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleRun(task)}
+                          className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900 rounded-lg transition-colors"
+                          title="立即执行"
+                        >
+                          <RefreshCw className="w-4 h-4" />
+                        </button>
+                      )}
 
                       {/* History */}
                       <button

@@ -54,6 +54,7 @@ const ICON_MAP = new Map([
   ['html', <FaHtml5 color="#e34f26" key="html" />],
   ['htm', <FaHtml5 color="#e34f26" key="htm" />],
   ['json', <VscJson color="#f9d71c" key="json" />],
+  ['jsonl', <VscJson color="#e6a23c" key="jsonl" />],
   ['md', <FaMarkdown color="#083fa1" key="md" />],
   ['csv', <FaFile color="#00a86b" key="csv" />],
   ['pdf', <FaFilePdf color="#d63031" key="pdf" />],
@@ -108,7 +109,7 @@ const getLanguageForFile = (fileName: string = ''): string => {
     case 'js': case 'jsx': return 'javascript';
     case 'ts': case 'tsx': return 'typescript';
     case 'css': case 'scss': case 'sass': case 'less': return 'css';
-    case 'json': return 'json';
+    case 'json': case 'jsonl': return 'json';
     case 'html': case 'htm': return 'html';
     case 'md': case 'markdown': return 'markdown';
     case 'csv': return 'csv';
@@ -184,7 +185,7 @@ const getFileType = (fileName: string): 'text' | 'image' | 'binary' => {
 
   const textExtensions = [
     'js', 'jsx', 'ts', 'tsx', 'css', 'scss', 'sass', 'less',
-    'html', 'htm', 'json', 'md', 'markdown', 'txt',
+    'html', 'htm', 'json', 'jsonl', 'md', 'markdown', 'txt',
     'py', 'java', 'xml', 'yaml', 'yml',
     'sh', 'bash', 'bat', 'cmd',
     'php', 'rb', 'go', 'rs',
@@ -290,7 +291,6 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
 }) => {
   const { t } = useTranslation('components');
   const [tabs, setTabs] = useState<FileTab[]>([]);
-  const [activeTabId, setActiveTabId] = useState<string | null>(null);
   const [temporaryTabId, setTemporaryTabId] = useState<string | null>(null); // 临时标签ID
   const [containerHeight, setContainerHeight] = useState<number>(600);
   const [showTabDropdown, setShowTabDropdown] = useState<boolean>(false);
@@ -325,10 +325,10 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
     refetch: refetchTree
   } = useFileTree(projectPath, showHiddenFiles);
   
-  // 获取当前活跃的标签
+  // 获取当前活跃的标签（直接从 tabs 获取，避免额外的状态依赖）
   const activeTab = useMemo(() => {
-    return tabs.find(tab => tab.id === activeTabId) || null;
-  }, [tabs, activeTabId]);
+    return tabs.find(tab => tab.isActive) || null;
+  }, [tabs]);
 
   // 读取当前活跃标签的文件内容
   const { 
@@ -636,37 +636,32 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
       const existingTabIndex = prevTabs.findIndex(tab => tab.path === file.path);
       
       if (existingTabIndex !== -1) {
-        // 标签已存在，激活它
-        const updatedTabs = prevTabs.map((tab, index) => ({
+        // 标签已存在，激活它（只更新 tabs，不单独更新 activeTabId）
+        return prevTabs.map((tab, index) => ({
           ...tab,
           isActive: index === existingTabIndex,
-          isPinned: isPinned || tab.isPinned // 如果要求固定，则固定
+          isPinned: isPinned || tab.isPinned
         }));
-        setActiveTabId(updatedTabs[existingTabIndex].id);
-        return updatedTabs;
       } else {
         // 创建新标签
         const newTab = createTab(file, isPinned);
         
         if (!isPinned && temporaryTabId) {
           // 如果是临时标签且已有临时标签，替换临时标签
-          const updatedTabs = prevTabs.map(tab => 
+          // 同时更新 temporaryTabId
+          setTemporaryTabId(newTab.id);
+          return prevTabs.map(tab => 
             tab.id === temporaryTabId ? { ...newTab, isActive: true } : { ...tab, isActive: false }
           );
-          setActiveTabId(newTab.id);
-          setTemporaryTabId(newTab.id);
-          return updatedTabs;
         } else {
           // 添加新标签
-          const updatedTabs = [
-            ...prevTabs.map(tab => ({ ...tab, isActive: false })),
-            { ...newTab, isActive: true }
-          ];
-          setActiveTabId(newTab.id);
           if (!isPinned) {
             setTemporaryTabId(newTab.id);
           }
-          return updatedTabs;
+          return [
+            ...prevTabs.map(tab => ({ ...tab, isActive: false })),
+            { ...newTab, isActive: true }
+          ];
         }
       }
     });
@@ -680,19 +675,14 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
       const tabIndex = prevTabs.findIndex(tab => tab.id === tabId);
       if (tabIndex === -1) return prevTabs;
       
+      const closingTab = prevTabs[tabIndex];
       const newTabs = prevTabs.filter(tab => tab.id !== tabId);
       
       // 如果关闭的是当前活跃标签，需要激活另一个标签
-      if (activeTabId === tabId) {
-        if (newTabs.length > 0) {
-          // 优先激活相邻的标签
-          const newActiveIndex = Math.min(tabIndex, newTabs.length - 1);
-          const newActiveTab = newTabs[newActiveIndex];
-          setActiveTabId(newActiveTab.id);
-          newTabs[newActiveIndex] = { ...newActiveTab, isActive: true };
-        } else {
-          setActiveTabId(null);
-        }
+      if (closingTab.isActive && newTabs.length > 0) {
+        // 优先激活相邻的标签
+        const newActiveIndex = Math.min(tabIndex, newTabs.length - 1);
+        newTabs[newActiveIndex] = { ...newTabs[newActiveIndex], isActive: true };
       }
       
       // 如果关闭的是临时标签，清除临时标签ID
@@ -702,7 +692,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
       
       return newTabs;
     });
-  }, [activeTabId, temporaryTabId]);
+  }, [temporaryTabId]);
 
   // 激活标签页
   const activateTab = useCallback((tabId: string) => {
@@ -712,7 +702,6 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
         isActive: tab.id === tabId
       }))
     );
-    setActiveTabId(tabId);
   }, []);
 
   // 防抖状态 - 防止双重触发

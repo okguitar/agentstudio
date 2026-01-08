@@ -40,7 +40,7 @@ export interface TaskSchedule {
 /**
  * Status of a scheduled task execution
  */
-export type TaskRunStatus = 'running' | 'success' | 'error';
+export type TaskRunStatus = 'running' | 'success' | 'error' | 'stopped';
 
 /**
  * Model override configuration for scheduled tasks

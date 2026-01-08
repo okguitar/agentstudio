@@ -4,6 +4,7 @@ import { API_BASE } from '../lib/config';
 import { authFetch } from '../lib/authFetch';
 import { showError } from '../utils/toast';
 import { CSVPreview } from './CSVPreview';
+import { JSONLPreview } from './JSONLPreview';
 import {
   Folder,
   File,
@@ -14,7 +15,8 @@ import {
   EyeOff,
   ChevronRight,
   FolderPlus,
-  FileText
+  FileText,
+  FileJson
 } from 'lucide-react';
 
 interface FileItem {
@@ -63,6 +65,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
   const [newFolderName, setNewFolderName] = useState('');
   const [creatingFolder, setCreatingFolder] = useState(false);
   const [csvPreviewPath, setCsvPreviewPath] = useState<string | null>(null);
+  const [jsonlPreviewPath, setJsonlPreviewPath] = useState<string | null>(null);
 
   const fetchDirectory = async (path?: string) => {
     setLoading(true);
@@ -172,12 +175,24 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
     return filename.toLowerCase().endsWith('.csv');
   };
 
+  const isJSONLFile = (filename: string) => {
+    return filename.toLowerCase().endsWith('.jsonl');
+  };
+
   const handlePreviewCSV = (path: string) => {
     setCsvPreviewPath(path);
   };
 
   const handleCloseCSVPreview = () => {
     setCsvPreviewPath(null);
+  };
+
+  const handlePreviewJSONL = (path: string) => {
+    setJsonlPreviewPath(path);
+  };
+
+  const handleCloseJSONLPreview = () => {
+    setJsonlPreviewPath(null);
   };
 
   return (
@@ -280,6 +295,8 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
                             <Folder className="w-4 h-4 text-blue-600 flex-shrink-0" />
                           ) : isCSVFile(item.name) ? (
                             <FileText className="w-4 h-4 text-green-600 flex-shrink-0" />
+                          ) : isJSONLFile(item.name) ? (
+                            <FileJson className="w-4 h-4 text-amber-500 flex-shrink-0" />
                           ) : (
                             <File className="w-4 h-4 text-gray-600 dark:text-gray-400 flex-shrink-0" />
                           )}
@@ -318,6 +335,15 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
                               onClick={() => handlePreviewCSV(item.path)}
                               className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
                               title={t('fileBrowser.actions.previewCSV')}
+                            >
+                              {t('fileBrowser.actions.preview')}
+                            </button>
+                          )}
+                          {!item.isDirectory && isJSONLFile(item.name) && (
+                            <button
+                              onClick={() => handlePreviewJSONL(item.path)}
+                              className="px-3 py-1 text-sm bg-amber-500 text-white rounded hover:bg-amber-600 transition-colors"
+                              title={t('fileBrowser.actions.previewJSONL')}
                             >
                               {t('fileBrowser.actions.preview')}
                             </button>
@@ -439,6 +465,14 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
         <CSVPreview
           filePath={csvPreviewPath}
           onClose={handleCloseCSVPreview}
+        />
+      )}
+
+      {/* JSONL Preview */}
+      {jsonlPreviewPath && (
+        <JSONLPreview
+          filePath={jsonlPreviewPath}
+          onClose={handleCloseJSONLPreview}
         />
       )}
     </div>

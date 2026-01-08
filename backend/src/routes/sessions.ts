@@ -330,8 +330,6 @@ function readClaudeHistorySessions(projectPath: string): ClaudeHistorySession[] 
       .filter(file => !file.startsWith('.'))
       .filter(file => !file.startsWith('agent-')); // 过滤掉 agent-xxx.jsonl 文件
 
-    console.log(`📁 [DEBUG] Found ${jsonlFiles.length} JSONL files:`, jsonlFiles);
-
     const sessions: ClaudeHistorySession[] = [];
 
     for (const filename of jsonlFiles) {
@@ -346,9 +344,52 @@ function readClaudeHistorySessions(projectPath: string): ClaudeHistorySession[] 
 
         const messages: ClaudeHistoryMessage[] = lines.map(line => JSON.parse(line));
         
-        // Find summary message for session title
+        // Find session title using priority: summary > first user message > default
         const summaryMessage = messages.find(msg => msg.type === 'summary');
-        const title = summaryMessage?.summary || `会话 ${sessionId.slice(0, 8)}`;
+        let title = summaryMessage?.summary;
+        
+        // If no summary, try to extract from first user message
+        if (!title) {
+          const firstUserMessage = messages.find(msg => 
+            msg.type === 'user' && 
+            msg.message?.content && 
+            !(msg as any).toolUseResult // Exclude tool result messages
+          );
+          
+          if (firstUserMessage?.message?.content) {
+            const content = firstUserMessage.message.content;
+            let textContent = '';
+            
+            // Handle both string content and array content
+            if (typeof content === 'string') {
+              textContent = content;
+            } else if (Array.isArray(content)) {
+              // Find first text block in array
+              const textBlock = content.find((block: any) => block.type === 'text');
+              if (textBlock?.text) {
+                textContent = textBlock.text;
+              }
+            }
+            
+            // Extract first 50 characters, remove newlines, trim
+            if (textContent) {
+              title = textContent
+                .replace(/\n/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim()
+                .slice(0, 50);
+              // Add ellipsis if truncated
+              if (textContent.length > 50) {
+                title += '...';
+              }
+            }
+          }
+        }
+        
+        // Final fallback
+        if (!title) {
+          title = `会话 ${sessionId.slice(0, 8)}`;
+        }
 
         // Process compact context messages before filtering
         const processedMessages = processCompactContextMessages(messages);
@@ -817,17 +858,10 @@ router.get('/:agentId', (req, res) => {
     // Apply search filter if provided
     if (search && typeof search === 'string' && search.trim()) {
       const searchTerm = search.trim().toLowerCase();
-      const originalLength = sessions.length;
-      sessions = sessions.filter(session => 
+      sessions = sessions.filter(session =>
         session.title.toLowerCase().includes(searchTerm)
       );
-      console.log(`🔍 [DEBUG] Search filter: "${searchTerm}" - ${originalLength} -> ${sessions.length} sessions`);
     }
-    
-    console.log(`📋 [DEBUG] Final sessions list (${sessions.length} sessions):`);
-    sessions.forEach((session, index) => {
-      console.log(`   ${index + 1}. ID: ${session.id}, Title: "${session.title}", Updated: ${session.lastUpdated}`);
-    });
     
     res.json({ sessions });
   } catch (error) {
