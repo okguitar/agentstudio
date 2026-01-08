@@ -138,14 +138,19 @@ export const McpPage: React.FC = () => {
             : s
         ));
       } else {
-        const error = await response.json();
+        const errorData = await response.json();
+        // Combine error and details for full error message
+        let errorMessage = errorData.error || t('mcp.errors.validationFailed');
+        if (errorData.details) {
+          errorMessage += `\n${errorData.details}`;
+        }
         // Update server with error status
         setServers(prev => prev.map(s => 
           s.name === serverName 
             ? { 
                 ...s, 
                 status: 'error' as const, 
-                error: error.error || t('mcp.errors.validationFailed'),
+                error: errorMessage,
                 tools: undefined
               }
             : s
@@ -620,8 +625,8 @@ export const McpPage: React.FC = () => {
 
                   {/* Error Display */}
                   {server.status === 'error' && server.error && (
-                    <div className="text-sm text-red-600 dark:text-red-400 mb-3">
-                      {server.error}
+                    <div className="text-sm text-red-600 dark:text-red-400 mb-3 p-2 bg-red-50 dark:bg-red-900/20 rounded border border-red-200 dark:border-red-800">
+                      <pre className="whitespace-pre-wrap break-words font-sans text-xs">{server.error}</pre>
                     </div>
                   )}
                 </div>
@@ -713,8 +718,8 @@ export const McpPage: React.FC = () => {
                             </span>
                           </div>
                           {server.status === 'error' && server.error && (
-                            <div className="text-xs text-red-600 dark:text-red-400 truncate max-w-xs mt-1">
-                              {server.error}
+                            <div className="text-xs text-red-600 dark:text-red-400 mt-1 max-w-md">
+                              <pre className="whitespace-pre-wrap break-words font-sans">{server.error}</pre>
                             </div>
                           )}
                         </div>
