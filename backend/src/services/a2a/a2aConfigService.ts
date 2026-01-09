@@ -13,6 +13,7 @@ import path from 'path';
 import lockfile from 'proper-lockfile';
 import type { A2AConfig } from '../../types/a2a.js';
 import { DEFAULT_A2A_CONFIG } from '../../types/a2a.js';
+import { isIPAddress } from '../../middleware/httpsOnly.js';
 
 const LOCK_OPTIONS = {
   retries: { retries: 5, minTimeout: 100, maxTimeout: 500 },
@@ -123,10 +124,15 @@ export function validateA2AConfig(config: A2AConfig): {
       } else {
         // Validate URL format
         try {
-          new URL(agent.url);
-          // In production, require HTTPS
+          const parsedUrl = new URL(agent.url);
+          // In production, require HTTPS for domain names
+          // IP addresses are exempt (internal/proxy scenarios)
           if (process.env.NODE_ENV === 'production' && !agent.url.startsWith('https://')) {
-            errors.push(`allowedAgents[${index}].url must use HTTPS in production`);
+            // Check if hostname is an IP address
+            const isIP = isIPAddress(parsedUrl.hostname);
+            if (!isIP) {
+              errors.push(`allowedAgents[${index}].url must use HTTPS in production (IP addresses exempt)`);
+            }
           }
         } catch {
           errors.push(`allowedAgents[${index}].url is not a valid URL`);

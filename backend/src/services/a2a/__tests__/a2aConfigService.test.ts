@@ -199,6 +199,44 @@ describe('a2aConfigService - Configuration Validation', () => {
       }
     });
 
+    it('should allow HTTP for IP addresses in production environment', () => {
+      // Save original NODE_ENV
+      const originalEnv = process.env.NODE_ENV;
+
+      try {
+        // Set to production
+        process.env.NODE_ENV = 'production';
+
+        const config: A2AConfig = {
+          allowedAgents: [
+            {
+              name: 'Agent with IPv4',
+              url: 'http://192.168.1.100:4936',
+              apiKey: 'key',
+              enabled: true,
+            },
+            {
+              name: 'Agent with localhost IP',
+              url: 'http://127.0.0.1:8080',
+              apiKey: 'key2',
+              enabled: true,
+            },
+          ],
+          taskTimeout: 60000,
+          maxConcurrentTasks: 10,
+        };
+
+        const validation = validateA2AConfig(config);
+
+        // IP addresses should be exempt from HTTPS requirement
+        expect(validation.valid).toBe(true);
+        expect(validation.errors).toBeUndefined();
+      } finally {
+        // Restore NODE_ENV
+        process.env.NODE_ENV = originalEnv;
+      }
+    });
+
     it('should allow HTTP in non-production environment', () => {
       // Save original NODE_ENV
       const originalEnv = process.env.NODE_ENV;
