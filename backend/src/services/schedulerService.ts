@@ -684,11 +684,18 @@ async function executeAgentTask(
   queryOptions.maxTurns = agent.maxTurns || 10;
 
   addLog('info', 'system', `Query options built: permissionMode=bypassPermissions, model=${modelToUse}, maxTurns=${queryOptions.maxTurns}`);
-  
+
   // Log MCP servers if configured
   if (queryOptions.mcpServers) {
     const mcpServerNames = Object.keys(queryOptions.mcpServers);
     addLog('info', 'system', `MCP servers configured: ${mcpServerNames.join(', ')}`);
+
+    // Log detailed MCP server config for debugging
+    for (const [serverName, serverConfig] of Object.entries(queryOptions.mcpServers)) {
+      addLog('info', 'system', `  - ${serverName}: ${JSON.stringify(serverConfig)}`);
+    }
+  } else {
+    addLog('warn', 'system', `No MCP servers configured in queryOptions (mcpTools passed: ${mcpTools.join(', ') || 'none'})`);
   }
 
   // Collect response
