@@ -562,6 +562,14 @@
     "adjustSearch": "Try adjusting search criteria",
     "addFirstServer": "Add your first MCP service configuration",
     "confirmDelete": "Are you sure you want to delete configuration \"{{name}}\"?",
+    "validateAll": "Validate All",
+    "stats": {
+      "total": "Total",
+      "active": "Active",
+      "error": "Error",
+      "validating": "Validating",
+      "tools": "Tools"
+    },
     "import": {
       "button": "Import from Claude Code",
       "importing": "Importing...",

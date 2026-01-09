@@ -172,6 +172,13 @@ export const McpPage: React.FC = () => {
     }
   };
 
+  // Validate all MCP servers
+  const handleValidateAll = async () => {
+    for (const server of servers) {
+      await validateMcpServer(server.name);
+    }
+  };
+
   const filteredServers = servers.filter(server => {
     const searchLower = debouncedSearchQuery.toLowerCase();
     const matchesName = server.name.toLowerCase().includes(searchLower);
@@ -447,6 +454,32 @@ export const McpPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Health Dashboard */}
+        <div className="mb-6 bg-white dark:bg-gray-800 rounded-lg shadow p-4 md:p-6 border border-gray-200 dark:border-gray-700">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="text-center">
+              <div className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">{servers.length}</div>
+              <div className="text-xs md:text-sm text-gray-600 dark:text-gray-400">{t('mcp.stats.total')}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl md:text-3xl font-bold text-green-600 dark:text-green-400">{servers.filter(s => s.status === 'active').length}</div>
+              <div className="text-xs md:text-sm text-gray-600 dark:text-gray-400">{t('mcp.stats.active')}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl md:text-3xl font-bold text-red-600 dark:text-red-400">{servers.filter(s => s.status === 'error').length}</div>
+              <div className="text-xs md:text-sm text-gray-600 dark:text-gray-400">{t('mcp.stats.error')}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl md:text-3xl font-bold text-blue-600 dark:text-blue-400">{servers.filter(s => s.status === 'validating').length}</div>
+              <div className="text-xs md:text-sm text-gray-600 dark:text-gray-400">{t('mcp.stats.validating')}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl md:text-3xl font-bold text-purple-600 dark:text-purple-400">{servers.reduce((sum, s) => sum + (s.tools?.length || 0), 0)}</div>
+              <div className="text-xs md:text-sm text-gray-600 dark:text-gray-400">{t('mcp.stats.tools')}</div>
+            </div>
+          </div>
+        </div>
+
         {/* Search and Add Button */}
         <div className={`${isMobile ? 'space-y-3' : 'flex items-center space-x-4'}`}>
           {/* Search */}
@@ -463,6 +496,15 @@ export const McpPage: React.FC = () => {
 
           {/* Action Buttons */}
           <div className={`${isMobile ? 'flex space-x-2' : 'flex items-center space-x-3'}`}>
+            <button
+              onClick={handleValidateAll}
+              disabled={servers.length === 0}
+              className={`${isMobile ? 'flex-1 px-3 py-2 text-sm' : 'px-5 py-3'} bg-gray-600 text-white rounded-lg hover:bg-gray-700 hover:shadow-md active:scale-95 transition-all whitespace-nowrap font-medium flex items-center ${isMobile ? 'justify-center' : 'space-x-2'} disabled:opacity-50 disabled:cursor-not-allowed`}
+              title={t('mcp.validateAll')}
+            >
+              <Loader2 className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
+              <span>{t('mcp.validateAll')}</span>
+            </button>
             <button
               onClick={handleImportFromClaudeCode}
               disabled={isImporting}
