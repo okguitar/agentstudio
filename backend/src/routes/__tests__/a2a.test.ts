@@ -12,6 +12,76 @@ vi.mock('../../middleware/a2aAuth');
 vi.mock('../../middleware/rateLimiting');
 vi.mock('../../services/a2a/agentMappingService');
 vi.mock('../../services/a2a/apiKeyService');
+vi.mock('../../services/a2a/a2aQueryService', () => ({
+  executeA2AQuery: vi.fn().mockResolvedValue({
+    sessionId: 'test-session-id',
+    fullResponse: 'Processed message',
+    tokensUsed: 100
+  }),
+  executeA2AQueryStreaming: vi.fn().mockResolvedValue({
+    sessionId: 'test-session-id'
+  })
+}));
+vi.mock('../../services/agentStorage', () => ({
+  AgentStorage: vi.fn().mockImplementation(() => ({
+    getAgent: vi.fn().mockReturnValue({
+      id: 'ppt-editor',
+      name: 'PPT Editor',
+      description: 'An agent that edits PPT presentations',
+      systemPrompt: 'You are a PPT editing assistant',
+      allowedTools: ['Read', 'Write'],
+      enabled: true
+    })
+  }))
+}));
+vi.mock('../../services/projectMetadataStorage', () => ({
+  ProjectMetadataStorage: vi.fn().mockImplementation(() => ({
+    getProjectMetadata: vi.fn().mockReturnValue({
+      name: 'Test Project'
+    })
+  }))
+}));
+vi.mock('../../services/a2a/agentCardService', () => ({
+  generateAgentCard: vi.fn().mockReturnValue({
+    name: 'PPT Editor',
+    description: 'An agent that edits PPT presentations',
+    version: '1.0.0',
+    url: 'http://localhost:3000/a2a/test-a2a-agent-id',
+    skills: [],
+    securitySchemes: [{
+      type: 'apiKey',
+      in: 'header',
+      name: 'Authorization',
+      scheme: 'bearer'
+    }],
+    context: {
+      a2aAgentId: 'test-a2a-agent-id',
+      projectId: 'test-project',
+      agentType: 'ppt-editor',
+      workingDirectory: '/test/working/dir'
+    }
+  })
+}));
+vi.mock('../../utils/agentCardCache', () => ({
+  agentCardCache: {
+    get: vi.fn().mockReturnValue(null),
+    set: vi.fn()
+  }
+}));
+vi.mock('../../utils/claudeUtils', () => ({
+  buildQueryOptions: vi.fn().mockResolvedValue({
+    queryOptions: {
+      cwd: '/test/working/dir',
+      model: 'sonnet',
+      includePartialMessages: false
+    }
+  })
+}));
+vi.mock('../../services/a2a/a2aHistoryService', () => ({
+  a2aHistoryService: {
+    appendEvent: vi.fn().mockResolvedValue(undefined)
+  }
+}));
 vi.mock('../../services/a2a/taskManager', () => ({
   taskManager: {
     createTask: vi.fn().mockResolvedValue({
@@ -185,7 +255,7 @@ describe('A2A Protocol Endpoints', () => {
       expect(response.body).toHaveProperty('metadata');
     });
 
-    it('should accept sessionId and return it', async () => {
+    it('should accept sessionId and return it with sessionMode=reuse', async () => {
       const { handleSessionManagement } = await import('../../utils/sessionUtils');
       vi.mocked(handleSessionManagement).mockResolvedValue({
         claudeSession: {
@@ -206,7 +276,8 @@ describe('A2A Protocol Endpoints', () => {
         .post('/a2a/test-agent/messages')
         .send({
           message: 'Hello again',
-          sessionId: 'existing-session-id'
+          sessionId: 'existing-session-id',
+          sessionMode: 'reuse'  // Explicitly use reuse mode to test session management
         })
         .expect(200);
 
@@ -215,7 +286,10 @@ describe('A2A Protocol Endpoints', () => {
         expect.anything(),
         'existing-session-id',
         expect.anything(),
-        expect.not.objectContaining({ resume: 'existing-session-id' })
+        expect.anything(),
+        undefined,
+        undefined,
+        'reuse'
       );
     });
 

@@ -12,11 +12,19 @@ import { z } from 'zod';
 // ============================================================================
 
 /**
+ * Session mode for A2A message requests
+ * - 'new': Always create a new session (default, avoids session reuse bugs)
+ * - 'reuse': Try to reuse/resume existing session if sessionId is provided
+ */
+export const SessionModeSchema = z.enum(['reuse', 'new']);
+
+/**
  * POST /a2a/:a2aAgentId/messages request validation
  */
 export const A2AMessageRequestSchema = z.object({
   message: z.string().min(1, 'Message cannot be empty').max(10000, 'Message too long (max 10000 characters)'),
   sessionId: z.string().optional(),
+  sessionMode: SessionModeSchema.optional().default('new'),
   context: z.record(z.unknown()).optional(),
 });
 

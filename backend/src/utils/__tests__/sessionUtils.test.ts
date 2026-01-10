@@ -83,7 +83,8 @@ describe('sessionUtils', () => {
         mockAgent,
         mockQueryOptions,
         'old-session',
-        'version-1'
+        'version-1',
+        undefined  // modelId
       );
     });
 
@@ -107,7 +108,8 @@ describe('sessionUtils', () => {
         mockAgent,
         mockQueryOptions,
         undefined,
-        undefined
+        undefined,
+        undefined  // modelId
       );
     });
 
@@ -130,7 +132,8 @@ describe('sessionUtils', () => {
         mockAgent,
         mockQueryOptions,
         undefined,
-        undefined
+        undefined,
+        undefined  // modelId
       );
     });
   });

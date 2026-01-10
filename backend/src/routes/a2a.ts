@@ -31,6 +31,7 @@ import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk';
 import { sessionManager } from '../services/sessionManager.js';
 import { handleSessionManagement } from '../utils/sessionUtils.js';
 import { buildQueryOptions } from '../utils/claudeUtils.js';
+import { executeA2AQuery, executeA2AQueryStreaming } from '../services/a2a/a2aQueryService.js';
 
 const router: Router = express.Router({ mergeParams: true });
 
@@ -173,7 +174,7 @@ router.post('/messages', async (req: A2ARequest, res: Response) => {
       });
     }
 
-    const { message, sessionId } = validation.data;
+    const { message, sessionId, sessionMode = 'new' } = validation.data;
     const stream = req.query.stream === 'true' || req.headers.accept === 'text/event-stream';
 
     console.info('[A2A] Message received:', {
@@ -182,6 +183,7 @@ router.post('/messages', async (req: A2ARequest, res: Response) => {
       agentType: a2aContext.agentType,
       messageLength: message.length,
       sessionId,
+      sessionMode,
       stream,
     });
 
@@ -227,96 +229,161 @@ router.post('/messages', async (req: A2ARequest, res: Response) => {
 
     const startTime = Date.now();
 
-    // Handle session management (get existing or create new)
-    const { claudeSession, actualSessionId } = await handleSessionManagement(
-      a2aContext.agentType,
-      sessionId || null,
-      a2aContext.workingDirectory,
-      queryOptions
-    );
-
-    if (stream) {
-      // Streaming Mode (SSE)
-      res.setHeader('Content-Type', 'text/event-stream');
-      res.setHeader('Cache-Control', 'no-cache');
-      res.setHeader('Connection', 'keep-alive');
-      res.flushHeaders();
-
-      const userMessage = {
-        type: 'user',
-        message: {
-          role: 'user',
-          content: [{ type: 'text', text: message }]
-        }
-      };
-
-      try {
-        await claudeSession.sendMessage(userMessage, async (sdkMessage: SDKMessage) => {
-          // Filter out internal events if needed, but for now forward relevant ones
-          // We want to forward 'assistant' messages (which will be complete blocks due to includePartialMessages=false)
-          // and 'result' messages.
-
-          const eventData = {
-            ...sdkMessage,
-            sessionId: actualSessionId,
-            timestamp: Date.now(),
-          };
-
-          // Write to SSE stream
-          res.write(`data: ${JSON.stringify(eventData)}\n\n`);
-
-          // Persist to history
-          // We fire and forget the history write to avoid blocking the stream, 
-          // or we could await it if strict ordering/persistence is critical.
-          // Given file I/O might be slower than network, we'll await to ensure order in file.
-          try {
-            if (actualSessionId) {
-              await a2aHistoryService.appendEvent(a2aContext.workingDirectory, actualSessionId, eventData);
-            }
-          } catch (err) {
-            console.error('[A2A] Failed to write history event:', err);
-          }
-
-          // Check for completion
-          if (sdkMessage.type === 'result') {
-            res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
-            res.end();
-          }
-        });
-      } catch (error) {
-        console.error('[A2A] Error in streaming session:', error);
-        const errorEvent = {
-          type: 'error',
-          error: error instanceof Error ? error.message : String(error)
-        };
-        res.write(`data: ${JSON.stringify(errorEvent)}\n\n`);
-        res.end();
+    // ============================================================================
+    // sessionMode='new': Use one-shot Query (no SessionManager/ClaudeSession reuse)
+    // ============================================================================
+    if (sessionMode === 'new') {
+      console.log(`🆕 [A2A] Using one-shot Query mode (sessionMode=new)`);
+      
+      // Add resume option if sessionId is provided
+      if (sessionId) {
+        queryOptions.resume = sessionId;
       }
 
-    } else {
-      // Synchronous Mode (Backward Compatibility)
-      let fullResponse = '';
-      let tokensUsed = 0;
+      if (stream) {
+        // Streaming Mode (SSE) with one-shot Query
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+        res.flushHeaders();
 
-      try {
-        await new Promise<void>((resolve, reject) => {
-          const userMessage = {
-            type: 'user',
-            message: {
-              role: 'user',
-              content: [{ type: 'text', text: message }]
+        let capturedSessionId: string | null = null;
+
+        try {
+          const result = await executeA2AQueryStreaming(
+            message,
+            undefined, // images
+            queryOptions,
+            (sdkMessage: SDKMessage) => {
+              // Capture session ID
+              if ((sdkMessage as any).session_id && !capturedSessionId) {
+                capturedSessionId = (sdkMessage as any).session_id;
+              }
+
+              const eventData = {
+                ...sdkMessage,
+                sessionId: capturedSessionId || sessionId,
+                timestamp: Date.now(),
+              };
+
+              // Write to SSE stream
+              res.write(`data: ${JSON.stringify(eventData)}\n\n`);
+
+              // Persist to history (fire and forget for streaming)
+              if (capturedSessionId || sessionId) {
+                a2aHistoryService.appendEvent(
+                  a2aContext.workingDirectory, 
+                  capturedSessionId || sessionId!, 
+                  eventData
+                ).catch(err => console.error('[A2A] Failed to write history event:', err));
+              }
+
+              // Check for completion
+              if (sdkMessage.type === 'result') {
+                res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
+              }
             }
-          };
+          );
 
-          claudeSession.sendMessage(userMessage, async (sdkMessage: SDKMessage) => {
-            // Persist to history for sync calls too, so they can be viewed later?
-            // The user requirement specifically mentioned "calling external agent... support streaming output... and read from history".
-            // It's good practice to save history for sync calls too if we want a unified history.
+          capturedSessionId = result.sessionId || capturedSessionId;
+          res.end();
+        } catch (error) {
+          console.error('[A2A] Error in one-shot streaming query:', error);
+          const errorEvent = {
+            type: 'error',
+            error: error instanceof Error ? error.message : String(error)
+          };
+          res.write(`data: ${JSON.stringify(errorEvent)}\n\n`);
+          res.end();
+        }
+      } else {
+        // Synchronous Mode with one-shot Query
+        try {
+          const result = await executeA2AQuery(
+            message,
+            undefined, // images
+            queryOptions,
+            async (sdkMessage: SDKMessage) => {
+              // Persist to history
+              const eventData = {
+                ...sdkMessage,
+                sessionId: sessionId,
+                timestamp: Date.now(),
+              };
+              if (sessionId) {
+                try {
+                  await a2aHistoryService.appendEvent(a2aContext.workingDirectory, sessionId, eventData);
+                } catch (err) {
+                  console.error('[A2A] Failed to write history event:', err);
+                }
+              }
+            }
+          );
+
+          const processingTimeMs = Date.now() - startTime;
+
+          console.info('[A2A] Message processed successfully (one-shot mode):', {
+            a2aAgentId: a2aContext.a2aAgentId,
+            processingTimeMs,
+            responseLength: result.fullResponse.length,
+            tokensUsed: result.tokensUsed,
+            sessionId: result.sessionId,
+          });
+
+          res.json({
+            response: result.fullResponse || 'No response generated',
+            sessionId: result.sessionId,
+            metadata: {
+              processingTimeMs,
+              tokensUsed: result.tokensUsed,
+            },
+          });
+        } catch (error) {
+          console.error('[A2A] Error in one-shot query:', error);
+          throw error;
+        }
+      }
+    } else {
+      // ============================================================================
+      // sessionMode='reuse': Use ClaudeSession/SessionManager (original behavior)
+      // ============================================================================
+      console.log(`♻️ [A2A] Using ClaudeSession reuse mode (sessionMode=reuse)`);
+
+      const { claudeSession, actualSessionId } = await handleSessionManagement(
+        a2aContext.agentType,
+        sessionId || null,
+        a2aContext.workingDirectory,
+        queryOptions,
+        undefined,  // claudeVersionId
+        undefined,  // modelId
+        'reuse'
+      );
+
+      if (stream) {
+        // Streaming Mode (SSE) with ClaudeSession
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+        res.flushHeaders();
+
+        const userMessage = {
+          type: 'user',
+          message: {
+            role: 'user',
+            content: [{ type: 'text', text: message }]
+          }
+        };
+
+        try {
+          await claudeSession.sendMessage(userMessage, async (sdkMessage: SDKMessage) => {
             const eventData = {
               ...sdkMessage,
               sessionId: actualSessionId,
               timestamp: Date.now(),
             };
+
+            res.write(`data: ${JSON.stringify(eventData)}\n\n`);
+
             try {
               if (actualSessionId) {
                 await a2aHistoryService.appendEvent(a2aContext.workingDirectory, actualSessionId, eventData);
@@ -325,64 +392,100 @@ router.post('/messages', async (req: A2ARequest, res: Response) => {
               console.error('[A2A] Failed to write history event:', err);
             }
 
-            // Extract assistant messages
-            if (sdkMessage.type === 'assistant' && sdkMessage.message?.content) {
-              for (const block of sdkMessage.message.content) {
-                if (block.type === 'text') {
-                  fullResponse += block.text;
+            if (sdkMessage.type === 'result') {
+              res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
+              res.end();
+            }
+          });
+        } catch (error) {
+          console.error('[A2A] Error in streaming session:', error);
+          const errorEvent = {
+            type: 'error',
+            error: error instanceof Error ? error.message : String(error)
+          };
+          res.write(`data: ${JSON.stringify(errorEvent)}\n\n`);
+          res.end();
+        }
+      } else {
+        // Synchronous Mode with ClaudeSession
+        let fullResponse = '';
+        let tokensUsed = 0;
+
+        try {
+          await new Promise<void>((resolve, reject) => {
+            const userMessage = {
+              type: 'user',
+              message: {
+                role: 'user',
+                content: [{ type: 'text', text: message }]
+              }
+            };
+
+            claudeSession.sendMessage(userMessage, async (sdkMessage: SDKMessage) => {
+              const eventData = {
+                ...sdkMessage,
+                sessionId: actualSessionId,
+                timestamp: Date.now(),
+              };
+              try {
+                if (actualSessionId) {
+                  await a2aHistoryService.appendEvent(a2aContext.workingDirectory, actualSessionId, eventData);
+                }
+              } catch (err) {
+                console.error('[A2A] Failed to write history event:', err);
+              }
+
+              if (sdkMessage.type === 'assistant' && sdkMessage.message?.content) {
+                for (const block of sdkMessage.message.content) {
+                  if (block.type === 'text') {
+                    fullResponse += block.text;
+                  }
                 }
               }
-            }
 
-            // Extract token usage if available
-            if (sdkMessage.type === 'assistant' && (sdkMessage as any).usage) {
-              const usage = (sdkMessage as any).usage;
-              tokensUsed = (usage.input_tokens || 0) + (usage.output_tokens || 0);
-            }
+              if (sdkMessage.type === 'assistant' && (sdkMessage as any).usage) {
+                const usage = (sdkMessage as any).usage;
+                tokensUsed = (usage.input_tokens || 0) + (usage.output_tokens || 0);
+              }
 
-            // Capture session ID from SDK messages (for session confirmation)
-            const sdkSessionId = (sdkMessage as any).session_id;
-            if (sdkSessionId && claudeSession.getClaudeSessionId() !== sdkSessionId) {
-              console.log('[DEBUG] claudeSession:', claudeSession);
-              claudeSession.setClaudeSessionId(sdkSessionId);
-              sessionManager.confirmSessionId(claudeSession, sdkSessionId);
-              console.log(`✅ Confirmed session ${sdkSessionId} for agent: ${a2aContext.agentType}`);
-            }
+              const sdkSessionId = (sdkMessage as any).session_id;
+              if (sdkSessionId && claudeSession.getClaudeSessionId() !== sdkSessionId) {
+                claudeSession.setClaudeSessionId(sdkSessionId);
+                sessionManager.confirmSessionId(claudeSession, sdkSessionId);
+                console.log(`✅ Confirmed session ${sdkSessionId} for agent: ${a2aContext.agentType}`);
+              }
 
-            // Check for completion
-            if (sdkMessage.type === 'result') {
-              resolve();
-            }
-          }).catch((err: any) => {
-            reject(err);
+              if (sdkMessage.type === 'result') {
+                resolve();
+              }
+            }).catch((err: any) => {
+              reject(err);
+            });
           });
-        });
 
-        // Get the final session ID from the claudeSession object
-        const finalSessionId = claudeSession.getClaudeSessionId();
+          const finalSessionId = claudeSession.getClaudeSessionId();
+          const processingTimeMs = Date.now() - startTime;
 
-        const processingTimeMs = Date.now() - startTime;
-
-        console.info('[A2A] Message processed successfully:', {
-          a2aAgentId: a2aContext.a2aAgentId,
-          processingTimeMs,
-          responseLength: fullResponse.length,
-          tokensUsed,
-          sessionId: finalSessionId,
-        });
-
-        // Return the complete response
-        res.json({
-          response: fullResponse || 'No response generated',
-          sessionId: finalSessionId,
-          metadata: {
+          console.info('[A2A] Message processed successfully:', {
+            a2aAgentId: a2aContext.a2aAgentId,
             processingTimeMs,
+            responseLength: fullResponse.length,
             tokensUsed,
-          },
-        });
-      } catch (error) {
-        console.error('[A2A] Error calling Claude:', error);
-        throw error;
+            sessionId: finalSessionId,
+          });
+
+          res.json({
+            response: fullResponse || 'No response generated',
+            sessionId: finalSessionId,
+            metadata: {
+              processingTimeMs,
+              tokensUsed,
+            },
+          });
+        } catch (error) {
+          console.error('[A2A] Error calling Claude:', error);
+          throw error;
+        }
       }
     }
   } catch (error) {

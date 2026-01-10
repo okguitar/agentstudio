@@ -79,6 +79,47 @@ vi.mock('../services/a2a/agentMappingService', () => ({
     }),
 }));
 
+// Mock a2aQueryService for sessionMode='new' (default mode)
+vi.mock('../services/a2a/a2aQueryService', () => ({
+    executeA2AQuery: vi.fn().mockResolvedValue({
+        sessionId: 'mock-session-id',
+        fullResponse: 'Hello World',
+        tokensUsed: 100
+    }),
+    executeA2AQueryStreaming: vi.fn().mockImplementation(async (message, images, options, onMessage) => {
+        // Simulate streaming events
+        onMessage({ type: 'text', text: 'Hello' });
+        onMessage({ type: 'text', text: ' World' });
+        onMessage({ type: 'result', content: [{ type: 'text', text: 'Hello World' }] });
+        return { sessionId: 'mock-session-id' };
+    })
+}));
+
+// Mock agentStorage
+vi.mock('../services/agentStorage', () => ({
+    AgentStorage: vi.fn().mockImplementation(() => ({
+        getAgent: vi.fn().mockReturnValue({
+            id: 'claude-code',
+            name: 'Claude Code',
+            description: 'A code assistant',
+            systemPrompt: 'You are a helpful assistant',
+            allowedTools: ['Read', 'Write'],
+            enabled: true
+        })
+    }))
+}));
+
+// Mock buildQueryOptions
+vi.mock('../utils/claudeUtils', () => ({
+    buildQueryOptions: vi.fn().mockResolvedValue({
+        queryOptions: {
+            cwd: '/tmp/mock-project',
+            model: 'sonnet',
+            includePartialMessages: false
+        }
+    })
+}));
+
 describe('A2A Streaming Tests', () => {
     let app: express.Express;
 
