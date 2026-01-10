@@ -21,10 +21,13 @@ import { MCP_SERVER_CONFIG_FILE } from '../config/paths.js';
 const execAsync = promisify(exec);
 
 /**
- * Get the path to the Claude executable
- * Prefers global installation over local node_modules
+ * Get the path to the system-installed Claude executable
+ * Only used when user explicitly wants to use system installation
+ * 
+ * Note: When no executable path is specified, SDK will automatically
+ * use its bundled CLI which is always compatible with the SDK version.
  */
-export async function getClaudeExecutablePath(): Promise<string | null> {
+export async function getSystemClaudeExecutablePath(): Promise<string | null> {
   try {
     const { stdout: claudePath } = await execAsync('which claude');
     if (!claudePath) return null;
@@ -50,9 +53,17 @@ export async function getClaudeExecutablePath(): Promise<string | null> {
 
     return cleanPath;
   } catch (error) {
-    console.error('Failed to get claude executable path:', error);
+    console.error('Failed to get system claude executable path:', error);
     return null;
   }
+}
+
+/**
+ * @deprecated Use SDK's bundled CLI by not passing pathToClaudeCodeExecutable
+ * This function is kept for backward compatibility when user explicitly configures a path
+ */
+export async function getClaudeExecutablePath(): Promise<string | null> {
+  return getSystemClaudeExecutablePath();
 }
 
 /**
@@ -189,6 +200,8 @@ export async function buildQueryOptions(
   }
 
   // Get Claude executable path and environment variables based on version
+  // Note: If no executablePath is explicitly configured, we don't pass pathToClaudeCodeExecutable
+  // to the SDK, allowing it to use its bundled CLI which is always compatible.
   let executablePath: string | null = null;
   let environmentVariables: Record<string, string> = {};
 
@@ -200,37 +213,37 @@ export async function buildQueryOptions(
       // Use specified version
       const selectedVersion = await getVersionByIdInternal(agentClaudeVersion);
       if (selectedVersion) {
+        // Only use executablePath if explicitly configured in the version
         if (selectedVersion.executablePath) {
           executablePath = selectedVersion.executablePath.trim();
+          console.log(`🎯 Using specified Claude version: ${selectedVersion.alias} (custom path: ${executablePath})`);
         } else {
-          executablePath = await getClaudeExecutablePath();
+          console.log(`🎯 Using specified Claude version: ${selectedVersion.alias} (SDK bundled CLI)`);
         }
         environmentVariables = selectedVersion.environmentVariables || {};
-        console.log(`🎯 Using specified Claude version: ${selectedVersion.alias} (${executablePath})`);
       } else {
-        console.warn(`⚠️ Specified Claude version not found: ${agentClaudeVersion}, falling back to default`);
-        executablePath = await getClaudeExecutablePath();
+        console.warn(`⚠️ Specified Claude version not found: ${agentClaudeVersion}, using SDK bundled CLI`);
       }
     } else {
       // Use default version or provided default environment
       if (defaultEnv) {
         // Slack integration or other callers can provide default env
-        console.log(`🎯 Using provided default environment variables`);
+        console.log(`🎯 Using provided default environment variables (SDK bundled CLI)`);
         environmentVariables = defaultEnv;
-        executablePath = await getClaudeExecutablePath();
       } else {
         // Standard flow: get default version from configuration
         const defaultVersionId = await getDefaultVersionId();
         if (defaultVersionId) {
           const defaultVersion = await getVersionByIdInternal(defaultVersionId);
           if (defaultVersion) {
+            // Only use executablePath if explicitly configured in the version
             if (defaultVersion.executablePath) {
               executablePath = defaultVersion.executablePath;
+              console.log(`🎯 Using default Claude version: ${defaultVersion.alias} (custom path: ${executablePath})`);
             } else {
-              executablePath = await getClaudeExecutablePath();
+              console.log(`🎯 Using default Claude version: ${defaultVersion.alias} (SDK bundled CLI)`);
             }
             environmentVariables = defaultVersion.environmentVariables || {};
-            console.log(`🎯 Using default Claude version: ${defaultVersion.alias} (${executablePath})`);
 
             // Log environment variables details
             const envVarKeys = Object.keys(environmentVariables);
@@ -251,19 +264,23 @@ export async function buildQueryOptions(
               console.log(`⚠️ No environment variables configured for this version`);
             }
           } else {
-            executablePath = await getClaudeExecutablePath();
+            console.log(`📦 Using SDK bundled CLI (no default version configured)`);
           }
         } else {
-          executablePath = await getClaudeExecutablePath();
+          console.log(`📦 Using SDK bundled CLI (no default version configured)`);
         }
       }
     }
   } catch (error) {
-    console.error('Failed to get Claude executable path:', error);
-    executablePath = await getClaudeExecutablePath();
+    console.error('Failed to get Claude version config:', error);
+    console.log(`📦 Using SDK bundled CLI (fallback due to error)`);
   }
 
-  console.log(`🎯 Using Claude executable path: ${executablePath}`);
+  if (executablePath) {
+    console.log(`🎯 Custom Claude executable path: ${executablePath}`);
+  } else {
+    console.log(`📦 No custom path specified, SDK will use bundled CLI`);
+  }
 
   const queryOptions: Options = {
     systemPrompt: agent.systemPrompt, // 直接使用 Agent 配置中的 systemPrompt

@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { useBackendServices } from './useBackendServices';
-import { API_BASE } from '../lib/config.js';
+import { getApiBase } from '../lib/config.js';
 import { isTokenExpired, extractToken, shouldRefreshToken as shouldRefreshTokenUtil } from '../utils/authHelpers';
 
 export function useAuth() {
@@ -33,7 +33,7 @@ export function useAuth() {
     error?: string;
   }> => {
     try {
-      const response = await fetch(`${API_BASE}/auth/check-password-required`, {
+      const response = await fetch(`${getApiBase()}/auth/check-password-required`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -79,7 +79,7 @@ export function useAuth() {
     }
 
     try {
-      const response = await fetch(`${API_BASE}/auth/login`, {
+      const response = await fetch(`${getApiBase()}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -134,7 +134,7 @@ export function useAuth() {
     }
 
     try {
-      const response = await fetch(`${API_BASE}/auth/login`, {
+      const response = await fetch(`${getApiBase()}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -154,7 +154,7 @@ export function useAuth() {
         };
         loginError.status = response.status;
         loginError.details = data as unknown;
-        loginError.url = API_BASE;
+        loginError.url = getApiBase();
         loginError.timestamp = Date.now();
         setError(loginError);
         return false;
@@ -188,7 +188,7 @@ export function useAuth() {
         isAbortError?: boolean;
       };
 
-      const loginUrl = `${API_BASE}/auth/login`;
+      const loginUrl = `${getApiBase()}/auth/login`;
 
       if (err instanceof Error) {
         networkError.originalError = {
@@ -202,9 +202,9 @@ export function useAuth() {
         if (err.name === 'TypeError') {
           networkError.isNetworkError = true;
           if (err.message.includes('fetch')) {
-            networkError.message = `Failed to connect to server at ${API_BASE}`;
+            networkError.message = `Failed to connect to server at ${getApiBase()}`;
           } else if (err.message.includes('network')) {
-            networkError.message = `Network connection error while contacting ${API_BASE}`;
+            networkError.message = `Network connection error while contacting ${getApiBase()}`;
           }
         } else if (err.name === 'AbortError') {
           networkError.isAbortError = true;
@@ -218,7 +218,7 @@ export function useAuth() {
       networkError.requestUrl = loginUrl;
       networkError.requestMethod = 'POST';
       networkError.requestBody = { password: '[REDACTED]' };
-      networkError.url = API_BASE;
+      networkError.url = getApiBase();
       networkError.timestamp = Date.now();
 
       setError(networkError);
@@ -237,7 +237,7 @@ export function useAuth() {
 
       // Call logout endpoint (optional, mainly for consistency)
       if (currentToken) {
-        await fetch(`${API_BASE}/auth/logout`, {
+        await fetch(`${getApiBase()}/auth/logout`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -279,7 +279,7 @@ export function useAuth() {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
 
-      const response = await fetch(`${API_BASE}/auth/verify`, {
+      const response = await fetch(`${getApiBase()}/auth/verify`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -348,7 +348,7 @@ export function useAuth() {
         return false;
       }
 
-      const response = await fetch(`${API_BASE}/auth/refresh`, {
+      const response = await fetch(`${getApiBase()}/auth/refresh`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

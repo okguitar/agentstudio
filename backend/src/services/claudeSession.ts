@@ -132,6 +132,26 @@ export class ClaudeSession {
       console.log(`✨ ${action} persistent Claude streaming session for agent: ${this.agentId}`);
     } catch (error) {
       console.error(`Failed to initialize Claude session for agent ${this.agentId}:`, error);
+      
+      // 打印更详细的错误信息
+      if (error instanceof Error) {
+        console.error(`❌ [初始化错误详情]`);
+        console.error(`   - name: ${error.name}`);
+        console.error(`   - message: ${error.message}`);
+        console.error(`   - stack: ${error.stack}`);
+        
+        const errorAny = error as any;
+        if (errorAny.stderr) console.error(`   - stderr: ${errorAny.stderr}`);
+        if (errorAny.stdout) console.error(`   - stdout: ${errorAny.stdout}`);
+        if (errorAny.exitCode !== undefined) console.error(`   - exitCode: ${errorAny.exitCode}`);
+        if (errorAny.code !== undefined) console.error(`   - code: ${errorAny.code}`);
+        
+        const allKeys = Object.keys(errorAny);
+        if (allKeys.length > 0) {
+          console.error(`   - 所有属性: ${allKeys.join(', ')}`);
+        }
+      }
+      
       this.isActive = false;
       throw error;
     }
@@ -211,6 +231,53 @@ export class ClaudeSession {
       }
     } catch (error) {
       console.error(`Error in background response handler for agent ${this.agentId}:`, error);
+      
+      // 打印更详细的错误信息
+      if (error instanceof Error) {
+        console.error(`❌ [详细错误信息]`);
+        console.error(`   - name: ${error.name}`);
+        console.error(`   - message: ${error.message}`);
+        console.error(`   - stack: ${error.stack}`);
+        
+        // 检查是否有额外的属性（如 stderr, stdout, exitCode 等）
+        const errorAny = error as any;
+        if (errorAny.stderr) {
+          console.error(`   - stderr: ${errorAny.stderr}`);
+        }
+        if (errorAny.stdout) {
+          console.error(`   - stdout: ${errorAny.stdout}`);
+        }
+        if (errorAny.exitCode !== undefined) {
+          console.error(`   - exitCode: ${errorAny.exitCode}`);
+        }
+        if (errorAny.code !== undefined) {
+          console.error(`   - code: ${errorAny.code}`);
+        }
+        if (errorAny.signal !== undefined) {
+          console.error(`   - signal: ${errorAny.signal}`);
+        }
+        if (errorAny.cause !== undefined) {
+          console.error(`   - cause: ${JSON.stringify(errorAny.cause, null, 2)}`);
+        }
+        
+        // 打印所有可枚举属性
+        const allKeys = Object.keys(errorAny);
+        if (allKeys.length > 0) {
+          console.error(`   - 所有属性: ${allKeys.join(', ')}`);
+          for (const key of allKeys) {
+            if (!['name', 'message', 'stack', 'stderr', 'stdout', 'exitCode', 'code', 'signal', 'cause'].includes(key)) {
+              try {
+                console.error(`   - ${key}: ${JSON.stringify(errorAny[key])}`);
+              } catch {
+                console.error(`   - ${key}: [无法序列化]`);
+              }
+            }
+          }
+        }
+      } else {
+        console.error(`❌ 非 Error 对象:`, JSON.stringify(error, null, 2));
+      }
+      
       this.isActive = false;
     } finally {
       this.isBackgroundRunning = false;
