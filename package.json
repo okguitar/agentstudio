@@ -12,6 +12,8 @@
     "build": "pnpm --filter @agentstudio/frontend run build && pnpm --filter agentstudio-backend run build",
     "build:frontend": "pnpm --filter @agentstudio/frontend run build",
     "build:backend": "pnpm --filter agentstudio-backend run build",
+    "build:npm": "node scripts/build-npm.js",
+    "build:npm:clean": "node scripts/build-npm.js --clean",
     "start": "pnpm --filter agentstudio-backend run start",
     "setup": "pnpm install",
     "test": "pnpm --recursive run test --if-present",
