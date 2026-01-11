@@ -23,7 +23,9 @@ import { generateAgentCard, type ProjectContext } from '../services/a2a/agentCar
 import { AgentStorage } from '../services/agentStorage.js';
 import { generateApiKey, listApiKeysWithDecryption, revokeApiKey } from '../services/a2a/apiKeyService.js';
 import { a2aHistoryService } from '../services/a2a/a2aHistoryService.js';
+import { loadA2AConfig, saveA2AConfig } from '../services/a2a/a2aConfigService.js';
 import type { A2AConfig } from '../types/a2a.js';
+import { DEFAULT_A2A_CONFIG } from '../types/a2a.js';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -309,23 +311,18 @@ router.get('/config/:projectPath', async (req: Request, res: Response) => {
     // Decode the URL-encoded project path
     const decodedProjectPath = decodeURIComponent(projectPath);
 
-    // Path to A2A config file
-    const configPath = path.join(decodedProjectPath, '.a2a', 'config.json');
-
-    try {
-      const data = await fs.readFile(configPath, 'utf-8');
-      const config = JSON.parse(data);
-      res.json(config);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-        // Config doesn't exist, return 404
-        return res.status(404).json({
-          error: 'A2A config not found',
-          code: 'CONFIG_NOT_FOUND',
-        });
-      }
-      throw error;
+    // Load config using the service (returns default config if file doesn't exist)
+    const config = await loadA2AConfig(decodedProjectPath);
+    
+    if (config === null) {
+      // loadA2AConfig returns null only on unexpected errors
+      return res.status(500).json({
+        error: 'Failed to load A2A config',
+        code: 'LOAD_ERROR',
+      });
     }
+    
+    res.json(config);
   } catch (error) {
     console.error('Error getting A2A config:', error);
     res.status(500).json({
@@ -355,15 +352,8 @@ router.put('/config/:projectPath', async (req: Request, res: Response) => {
       });
     }
 
-    // Path to A2A config file
-    const configPath = path.join(decodedProjectPath, '.a2a', 'config.json');
-    const configDir = path.dirname(configPath);
-
-    // Ensure directory exists
-    await fs.mkdir(configDir, { recursive: true });
-
-    // Write config file
-    await fs.writeFile(configPath, JSON.stringify(config, null, 2), 'utf-8');
+    // Save config using the service (handles directory creation and file locking)
+    await saveA2AConfig(decodedProjectPath, config);
 
     res.json(config);
   } catch (error) {
@@ -395,24 +385,10 @@ router.post('/import-projects/:projectPath', async (req: Request, res: Response)
       });
     }
 
-    // Load current project's A2A config
-    const configPath = path.join(decodedProjectPath, '.a2a', 'config.json');
-    let currentConfig: A2AConfig;
-
-    try {
-      const data = await fs.readFile(configPath, 'utf-8');
-      currentConfig = JSON.parse(data);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-        // Config doesn't exist, create default
-        currentConfig = {
-          allowedAgents: [],
-          taskTimeout: 300000,
-          maxConcurrentTasks: 5,
-        };
-      } else {
-        throw error;
-      }
+    // Load current project's A2A config (returns default config if not exists)
+    let currentConfig = await loadA2AConfig(decodedProjectPath);
+    if (currentConfig === null) {
+      currentConfig = { ...DEFAULT_A2A_CONFIG };
     }
 
     // Get current project name for API key descriptions
@@ -494,9 +470,7 @@ router.post('/import-projects/:projectPath', async (req: Request, res: Response)
 
     // Save updated config
     if (successfulImports.length > 0) {
-      const configDir = path.dirname(configPath);
-      await fs.mkdir(configDir, { recursive: true });
-      await fs.writeFile(configPath, JSON.stringify(currentConfig, null, 2), 'utf-8');
+      await saveA2AConfig(decodedProjectPath, currentConfig);
     }
 
     res.json({

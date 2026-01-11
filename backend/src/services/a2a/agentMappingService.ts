@@ -60,6 +60,16 @@ async function saveRegistry(registry: AgentMappingRegistry): Promise<void> {
   const dir = path.dirname(MAPPINGS_FILE);
   await fs.mkdir(dir, { recursive: true });
 
+  // Check if file exists, if not create it first (for lockfile to work)
+  let fileExists = true;
+  try {
+    await fs.access(MAPPINGS_FILE);
+  } catch {
+    fileExists = false;
+    // Create empty file first so lockfile can work
+    await fs.writeFile(MAPPINGS_FILE, JSON.stringify({ version: '1.0.0', mappings: {} }, null, 2), 'utf-8');
+  }
+
   // Acquire lock for atomic write
   const release = await lockfile.lock(MAPPINGS_FILE, LOCK_OPTIONS);
 
