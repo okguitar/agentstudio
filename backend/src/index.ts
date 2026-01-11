@@ -23,6 +23,7 @@ import pluginsRouter from './routes/plugins';
 import a2aRouter from './routes/a2a';
 import a2aManagementRouter from './routes/a2aManagement';
 import scheduledTasksRouter from './routes/scheduledTasks';
+import mcpAdminRouter from './routes/mcpAdmin';
 import { authMiddleware } from './middleware/auth';
 import { httpsOnly } from './middleware/httpsOnly';
 import { loadConfig, getSlidesDir } from './config/index';
@@ -247,6 +248,8 @@ const app: express.Express = express();
 
 // Routes - Public routes
   app.use('/api/auth', authRouter);
+  // MCP Admin - uses its own API key authentication
+  app.use('/api/mcp-admin', mcpAdminRouter);
   // Slack webhook - needs raw body for signature verification
   app.use('/api/slack',
     express.json({

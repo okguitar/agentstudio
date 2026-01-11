@@ -34,7 +34,7 @@ interface McpServerConfig {
   [key: string]: any;
 }
 
-interface McpConfigFile {
+export interface McpConfigFile {
   mcpServers: Record<string, Omit<McpServerConfig, 'name'>>;
 }
 
@@ -50,8 +50,8 @@ const ensureConfigDirectory = (): void => {
   }
 };
 
-// Helper function to read MCP config
-const readMcpConfig = (): McpConfigFile => {
+// Helper function to read MCP config (exported for use by other modules)
+export const readMcpConfig = (): McpConfigFile => {
   const configPath = getMcpConfigPath();
   
   if (!fs.existsSync(configPath)) {
@@ -67,8 +67,8 @@ const readMcpConfig = (): McpConfigFile => {
   }
 };
 
-// Helper function to write MCP config
-const writeMcpConfig = (config: McpConfigFile): void => {
+// Helper function to write MCP config (exported for use by other modules)
+export const writeMcpConfig = (config: McpConfigFile): void => {
   ensureConfigDirectory();
   const configPath = getMcpConfigPath();
   
