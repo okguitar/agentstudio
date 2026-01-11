@@ -62,7 +62,9 @@ export function LoginPage() {
             setAutoLoginAttempted(true);
             const loginSuccess = await loginWithoutPassword();
             if (loginSuccess && isMounted) {
-              navigate(from, { replace: true });
+              // Use window.location.href to force a full page reload
+              // This ensures API_BASE is re-initialized from localStorage
+              window.location.href = from;
             }
           }
         } else {
@@ -160,7 +162,9 @@ export function LoginPage() {
 
     const success = await login(password);
     if (success) {
-      navigate(from, { replace: true });
+      // Use window.location.href instead of navigate to force a full page reload
+      // This ensures API_BASE is re-initialized from localStorage with the correct service URL
+      window.location.href = from;
     }
   };
 
@@ -241,7 +245,8 @@ export function LoginPage() {
                 onClick={async () => {
                   const success = await loginWithoutPassword();
                   if (success) {
-                    navigate(from, { replace: true });
+                    // Use window.location.href to force a full page reload
+                    window.location.href = from;
                   }
                 }}
                 disabled={isLoading}
