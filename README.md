@@ -76,9 +76,57 @@ Screenshot:
 
 ### 🚀 Quick Start
 
-#### Option 1: Docker (Recommended)
+#### Option 1: NPM Install (Recommended)
 
-The fastest way to get started:
+The simplest way to get started - one command to install, one command to run:
+
+```bash
+# Install globally
+npm install -g agentstudio
+
+# Start the server
+agentstudio start
+
+# Or specify a custom port
+agentstudio start --port 8080
+```
+
+**Available Commands:**
+
+```bash
+# Basic usage
+agentstudio start              # Start full server (frontend + backend)
+agentstudio start --api-only   # Start API only (for CDN frontend mode)
+agentstudio start --port 8080  # Specify custom port
+
+# Install as system service (auto-start on boot)
+agentstudio install            # Install and start as system service
+agentstudio install --port 8080  # Specify port for service
+
+# Service management
+agentstudio service start      # Start the service
+agentstudio service stop       # Stop the service
+agentstudio service restart    # Restart the service
+agentstudio service status     # Check service status
+agentstudio service logs       # View service logs
+agentstudio uninstall          # Remove the service
+
+# Maintenance
+agentstudio upgrade            # Upgrade to latest version
+agentstudio doctor             # Check system status
+agentstudio info               # Show installation info
+agentstudio --help             # Show all commands
+```
+
+**What you get:**
+- ✅ Single command installation
+- ✅ Integrated frontend and backend
+- ✅ Easy upgrade with `agentstudio upgrade`
+- ✅ Works on macOS, Linux, and Windows
+
+#### Option 2: Docker
+
+For containerized deployment:
 
 ```bash
 # Build and run with Docker Compose
@@ -96,7 +144,7 @@ docker-compose up -d
 
 📖 See [DOCKER.md](DOCKER.md) for detailed Docker deployment guide.
 
-#### Option 2: One-Click Installation
+#### Option 3: One-Click Installation
 
 **For Linux & macOS** (User space installation, no sudo required):
 
@@ -115,7 +163,7 @@ curl -fsSL https://raw.githubusercontent.com/okguitar/agentstudio/main/scripts/i
 irm https://raw.githubusercontent.com/okguitar/agentstudio/main/scripts/windows-install.ps1 | iex
 ```
 
-#### Option 3: Manual Development Setup
+#### Option 4: Manual Development Setup
 
 **Prerequisites:**
 - Node.js 18+ (with npm or pnpm)

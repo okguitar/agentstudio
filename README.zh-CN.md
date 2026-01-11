@@ -74,9 +74,57 @@ Agent Studio 是一个基于 [Claude Code SDK](https://github.com/anthropics/ant
 
 ## 🚀 快速开始
 
-### 方式 1：Docker 部署（推荐）
+### 方式 1：NPM 安装（推荐）
 
-最快的启动方式：
+最简单的方式 - 一条命令安装，一条命令运行：
+
+```bash
+# 全局安装
+npm install -g agentstudio
+
+# 启动服务
+agentstudio start
+
+# 或指定自定义端口
+agentstudio start --port 8080
+```
+
+**可用命令：**
+
+```bash
+# 基本用法
+agentstudio start              # 启动完整服务（前端 + 后端）
+agentstudio start --api-only   # 仅启动 API（CDN 前端模式）
+agentstudio start --port 8080  # 指定自定义端口
+
+# 安装为系统服务（开机自启）
+agentstudio install            # 安装并启动系统服务
+agentstudio install --port 8080  # 指定服务端口
+
+# 服务管理
+agentstudio service start      # 启动服务
+agentstudio service stop       # 停止服务
+agentstudio service restart    # 重启服务
+agentstudio service status     # 查看服务状态
+agentstudio service logs       # 查看服务日志
+agentstudio uninstall          # 卸载服务
+
+# 维护命令
+agentstudio upgrade            # 升级到最新版本
+agentstudio doctor             # 检查系统状态
+agentstudio info               # 显示安装信息
+agentstudio --help             # 显示所有命令
+```
+
+**您将获得：**
+- ✅ 一条命令安装
+- ✅ 前后端一体化
+- ✅ 使用 `agentstudio upgrade` 轻松升级
+- ✅ 支持 macOS、Linux 和 Windows
+
+### 方式 2：Docker 部署
+
+容器化部署方式：
 
 ```bash
 # 使用 Docker Compose 构建和运行
@@ -94,7 +142,7 @@ docker-compose up -d
 
 📖 详细的 Docker 部署指南请参阅 [DOCKER.md](DOCKER.md)
 
-### 方式 2：一键安装
+### 方式 3：一键安装
 
 **适用于 Linux & macOS**（用户空间安装，无需 sudo）：
 
@@ -113,7 +161,7 @@ curl -fsSL https://raw.githubusercontent.com/okguitar/agentstudio/main/scripts/i
 irm https://raw.githubusercontent.com/okguitar/agentstudio/main/scripts/windows-install.ps1 | iex
 ```
 
-### 方式 3：手动开发环境搭建
+### 方式 4：手动开发环境搭建
 
 **前置要求：**
 - Node.js 18+ (推荐使用 pnpm)
@@ -277,6 +325,11 @@ pnpm run build
 
 ### 如何更新 Agent Studio？
 
+**NPM 安装用户：**
+```bash
+agentstudio upgrade
+```
+
 **Docker 用户：**
 ```bash
 docker-compose down
@@ -292,6 +345,7 @@ curl -fsSL https://raw.githubusercontent.com/okguitar/agentstudio/main/scripts/i
 
 ### 数据存储在哪里？
 
+- **NPM 安装**：`~/.claude-agent/`（默认）或通过 `--data-dir` 指定
 - **Docker**：`/app/data` 卷
 - **一键安装**：`~/.agentstudio/`
 - **手动安装**：项目根目录
