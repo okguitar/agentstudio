@@ -1,5 +1,5 @@
 import { useState, FormEvent, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
 import { useBackendServices } from '../hooks/useBackendServices';
@@ -19,7 +19,6 @@ export function LoginPage() {
     updateService,
     removeService
   } = useBackendServices();
-  const navigate = useNavigate();
   const location = useLocation();
 
   const [showServiceManagement, setShowServiceManagement] = useState(false);
