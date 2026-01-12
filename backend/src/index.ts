@@ -90,7 +90,7 @@ const app: express.Express = express();
         styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net"],
         fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdn.jsdelivr.net", "data:"],
         imgSrc: ["'self'", "data:", "https:", "http:", "blob:"],
-        connectSrc: ["'self'", "ws:", "wss:", "blob:", "data:"],
+        connectSrc: ["'self'", "ws:", "wss:", "blob:", "data:", "http://localhost:*", "http://127.0.0.1:*", "https://localhost:*", "https://127.0.0.1:*"],
         frameAncestors: ["'self'", "http://localhost:3000", "https://localhost:3000", "http://localhost:3001", "https://agentstudio.cc", "https://*.agentstudio.cc"], // Allow iframe embedding
         workerSrc: ["'self'", "blob:"],
         childSrc: ["'self'", "blob:"]
@@ -217,32 +217,38 @@ const app: express.Express = express();
     console.error('[Scheduler] Error initializing scheduler:', error);
   }
 
-  // Static files - serve frontend in production
-  if (process.env.NODE_ENV === 'production') {
-    // Check if frontend build exists
-    const frontendDistPath = join(__dirname, '../../frontend/dist');
-    const fs = await import('fs');
+  // Static files - serve embedded frontend (for npm package) or development frontend
+  // Check both npm package location (./public) and development location (../../frontend/dist)
+  const fs = await import('fs');
+  const npmPublicPath = join(__dirname, 'public');
+  const devFrontendPath = join(__dirname, '../../frontend/dist');
+  
+  // Prefer npm package embedded frontend, fallback to development path
+  const frontendDistPath = fs.existsSync(npmPublicPath) ? npmPublicPath : devFrontendPath;
+  const hasEmbeddedFrontend = fs.existsSync(join(frontendDistPath, 'index.html'));
 
-    if (fs.existsSync(frontendDistPath)) {
-      app.use(express.static(frontendDistPath));
+  if (hasEmbeddedFrontend && process.env.API_ONLY !== 'true') {
+    app.use(express.static(frontendDistPath));
 
-      // For SPA routing - serve index.html for any non-API routes
-      app.get('*', (req, res, next) => {
-        // Skip API routes and other specific routes
-        if (req.path.startsWith('/api') ||
-            req.path.startsWith('/media') ||
-            req.path.startsWith('/slides')) {
-          return next();
-        }
+    // For SPA routing - serve index.html for any non-API routes
+    app.get('*', (req, res, next) => {
+      // Skip API routes and other specific routes
+      if (req.path.startsWith('/api') ||
+          req.path.startsWith('/media') ||
+          req.path.startsWith('/slides') ||
+          req.path.startsWith('/a2a')) {
+        return next();
+      }
 
-        // Serve index.html for all other routes
-        res.sendFile(join(frontendDistPath, 'index.html'));
-      });
+      // Serve index.html for all other routes
+      res.sendFile(join(frontendDistPath, 'index.html'));
+    });
 
-      console.log('Frontend static files enabled');
-    } else {
-      console.log('Frontend build not found, serving API only');
-    }
+    console.log(`Frontend static files enabled from: ${frontendDistPath}`);
+  } else if (process.env.API_ONLY === 'true') {
+    console.log('API only mode - frontend serving disabled');
+  } else {
+    console.log('Frontend build not found, serving API only');
   }
 
 // Routes - Public routes

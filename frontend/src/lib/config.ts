@@ -1,12 +1,22 @@
 import { loadBackendServices, getCurrentService, saveBackendServices } from '../utils/backendServiceStorage';
 
+// Check if we're in embedded mode (npm package - frontend and backend on same server)
+// VITE_API_BASE=/api means relative API path, embedded mode
+const isEmbeddedMode = (): boolean => {
+  const apiBase = import.meta.env.VITE_API_BASE;
+  // If VITE_API_BASE is a relative path (starts with /), we're in embedded mode
+  return typeof apiBase === 'string' && apiBase.startsWith('/') && !apiBase.startsWith('//');
+};
+
 // 获取当前选中的后端服务URL
 const getCurrentBackendServiceUrl = (): string => {
-  // 优先使用环境变量
-  if (import.meta.env.VITE_API_BASE) {
-    return import.meta.env.VITE_API_BASE;
+  // In embedded mode, use window.location.origin as the base URL
+  // This allows the frontend to work with any port/host it's served from
+  if (isEmbeddedMode()) {
+    return window.location.origin;
   }
 
+  // For non-embedded mode (CDN frontend + separate backend), check user config
   // 从后端服务配置中获取当前选中的服务
   const backendServices = loadBackendServices();
   const currentService = getCurrentService(backendServices);
