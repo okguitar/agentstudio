@@ -53,6 +53,7 @@ export class BuiltinTaskExecutor implements ITaskExecutor {
   private startTime: number;
   private isRunning = false;
   private processTimer?: NodeJS.Timeout;
+  private workerHealthChecks: Map<string, NodeJS.Timeout> = new Map();
 
   constructor(config: Partial<TaskExecutorConfig> = {}) {
     this.config = {
@@ -152,17 +153,34 @@ export class BuiltinTaskExecutor implements ITaskExecutor {
   }
 
   async cancelTask(taskId: string): Promise<boolean> {
+    console.info(`[TaskExecutor] Attempting to cancel task: ${taskId}`);
+
     // Check running workers
     const workerInstance = this.workers.get(taskId);
     if (workerInstance) {
-      await workerInstance.worker.terminate();
-      this.workers.delete(taskId);
+      console.info(`[TaskExecutor] Terminating worker for running task: ${taskId}`);
 
-      this.stats.canceledTasks++;
-      this.updateStats();
+      try {
+        // Clear health check timer
+        const healthCheckTimer = this.workerHealthChecks.get(taskId);
+        if (healthCheckTimer) {
+          clearTimeout(healthCheckTimer);
+          this.workerHealthChecks.delete(taskId);
+        }
 
-      console.info(`[TaskExecutor] Canceled running task: ${taskId}`);
-      return true;
+        // Terminate worker gracefully
+        await workerInstance.worker.terminate();
+        this.workers.delete(taskId);
+
+        this.stats.canceledTasks++;
+        this.updateStats();
+
+        console.info(`[TaskExecutor] Successfully canceled running task: ${taskId}`);
+        return true;
+      } catch (error) {
+        console.error(`[TaskExecutor] Error canceling task ${taskId}:`, error);
+        return false;
+      }
     }
 
     // Check queued tasks
@@ -173,10 +191,11 @@ export class BuiltinTaskExecutor implements ITaskExecutor {
       this.stats.canceledTasks++;
       this.updateStats();
 
-      console.info(`[TaskExecutor] Canceled queued task: ${taskId}`);
+      console.info(`[TaskExecutor] Successfully canceled queued task: ${taskId}`);
       return true;
     }
 
+    console.warn(`[TaskExecutor] Task not found for cancellation: ${taskId}`);
     return false;
   }
 
@@ -269,6 +288,9 @@ export class BuiltinTaskExecutor implements ITaskExecutor {
       startTime,
       timeout,
     });
+
+    // Set up health check timer
+    this.setupWorkerHealthCheck(task.id, worker);
 
     // Handle messages from worker
     worker.on('message', (message: { type: string; data?: unknown }) => {
@@ -433,5 +455,33 @@ export class BuiltinTaskExecutor implements ITaskExecutor {
     this.stats.runningTasks = this.workers.size;
     this.stats.queuedTasks = this.taskQueue.length;
     this.stats.uptimeMs = Date.now() - this.startTime;
+  }
+
+  /**
+   * Set up health check for a worker
+   * Monitors worker execution time and logs warnings for long-running tasks
+   */
+  private setupWorkerHealthCheck(taskId: string, worker: Worker): void {
+    // Check worker health every 30 seconds
+    const healthCheckInterval = 30000;
+
+    const healthCheckTimer = setTimeout(() => {
+      const workerInstance = this.workers.get(taskId);
+      if (!workerInstance) {
+        return; // Worker already completed
+      }
+
+      const elapsedMs = Date.now() - workerInstance.startTime;
+      const elapsedMin = Math.floor(elapsedMs / 60000);
+
+      console.warn(
+        `[TaskExecutor] Health check: Task ${taskId} has been running for ${elapsedMin}m (${elapsedMs}ms)`
+      );
+
+      // Schedule next health check
+      this.setupWorkerHealthCheck(taskId, worker);
+    }, healthCheckInterval);
+
+    this.workerHealthChecks.set(taskId, healthCheckTimer);
   }
 }
