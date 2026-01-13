@@ -23,6 +23,7 @@ import pluginsRouter from './routes/plugins';
 import a2aRouter from './routes/a2a';
 import a2aManagementRouter from './routes/a2aManagement';
 import scheduledTasksRouter from './routes/scheduledTasks';
+import taskExecutorRouter from './routes/taskExecutor';
 import { authMiddleware } from './middleware/auth';
 import { httpsOnly } from './middleware/httpsOnly';
 import { loadConfig, getSlidesDir } from './config/index';
@@ -310,6 +311,7 @@ const app: express.Express = express();
   app.use('/api/skills', authMiddleware, skillsRouter);
   app.use('/api/plugins', authMiddleware, pluginsRouter);
   app.use('/api/scheduled-tasks', authMiddleware, scheduledTasksRouter);
+  app.use('/api/task-executor', authMiddleware, taskExecutorRouter);
   app.use('/api/media', mediaAuthRouter); // Media auth endpoints
   app.use('/media', mediaRouter); // Remove authMiddleware - media files are now public
 
