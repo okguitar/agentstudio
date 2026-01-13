@@ -62,9 +62,9 @@ export class McpAdminServer {
   }
 
   /**
-   * Get all registered tools (filtered by permissions)
+   * Get all registered tools (filtered by permissions and allowedTools)
    */
-  getTools(permissions: AdminPermission[]): McpToolsListResult {
+  getTools(permissions: AdminPermission[], allowedTools?: string[]): McpToolsListResult {
     const visibleTools = [];
 
     for (const [, def] of this.tools) {
@@ -73,9 +73,18 @@ export class McpAdminServer {
         hasPermission(permissions, perm)
       );
 
-      if (hasAccess) {
-        visibleTools.push(def.tool);
+      if (!hasAccess) {
+        continue;
       }
+
+      // If allowedTools is specified, filter by it
+      if (allowedTools && allowedTools.length > 0) {
+        if (!allowedTools.includes(def.tool.name)) {
+          continue;
+        }
+      }
+
+      visibleTools.push(def.tool);
     }
 
     return { tools: visibleTools };
@@ -152,12 +161,13 @@ export class McpAdminServer {
     request: JsonRpcRequest,
     context: ToolContext
   ): JsonRpcResponse {
-    const toolsList = this.getTools(context.permissions);
+    const toolsList = this.getTools(context.permissions, context.allowedTools);
 
     console.info(
       '[MCP Admin] Tools list request, returning',
       toolsList.tools.length,
-      'tools'
+      'tools',
+      context.allowedTools ? `(filtered by ${context.allowedTools.length} allowed tools)` : ''
     );
 
     return this.successResponse(request.id, toolsList);
@@ -199,6 +209,17 @@ export class McpAdminServer {
         message: 'Permission denied',
         data: `Insufficient permissions for tool: ${params.name}`,
       });
+    }
+
+    // Check allowedTools filter
+    if (context.allowedTools && context.allowedTools.length > 0) {
+      if (!context.allowedTools.includes(params.name)) {
+        return this.errorResponse(request.id, {
+          code: -32002,
+          message: 'Tool not allowed',
+          data: `This API key does not have access to tool: ${params.name}`,
+        });
+      }
     }
 
     console.info('[MCP Admin] Tool call:', params.name);

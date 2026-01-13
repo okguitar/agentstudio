@@ -97,6 +97,7 @@ async function adminAuth(
       console.warn('[MCP Admin] Failed authentication attempt:', {
         timestamp: new Date().toISOString(),
         ip: req.ip,
+        disabled: validation.disabled,
       });
 
       res.status(401).json({
@@ -104,7 +105,7 @@ async function adminAuth(
         id: null,
         error: {
           code: -32001,
-          message: 'Invalid or revoked API key',
+          message: validation.disabled ? 'API key is disabled' : 'Invalid or revoked API key',
         },
       });
       return;
@@ -114,10 +115,12 @@ async function adminAuth(
     req.adminContext = {
       apiKeyId: validation.keyId!,
       permissions: validation.permissions!,
+      allowedTools: validation.allowedTools,
     };
 
     console.info('[MCP Admin] Authenticated request:', {
       keyId: validation.keyId,
+      allowedTools: validation.allowedTools ? `${validation.allowedTools.length} tools` : 'all',
       timestamp: new Date().toISOString(),
     });
 

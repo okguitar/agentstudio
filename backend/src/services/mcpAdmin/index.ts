@@ -11,6 +11,8 @@ export {
   listAdminApiKeys,
   revokeAdminApiKey,
   deleteAdminApiKey,
+  updateAdminApiKey,
+  toggleAdminApiKey,
   hasPermission,
 } from './adminApiKeyService.js';
 export { allTools, projectTools, agentTools, mcpServerTools, systemTools } from './tools/index.js';

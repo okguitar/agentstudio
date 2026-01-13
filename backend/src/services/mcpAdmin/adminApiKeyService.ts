@@ -123,10 +123,14 @@ async function saveRegistry(registry: AdminApiKeyRegistry): Promise<void> {
 
 /**
  * Generate a new admin API key
+ * @param description - Human-readable description of the key
+ * @param permissions - Array of permission strings (default: ['admin:*'])
+ * @param allowedTools - Optional array of tool names this key can access. If undefined, all tools are accessible (based on permissions).
  */
 export async function generateAdminApiKey(
   description: string,
-  permissions: AdminPermission[] = ['admin:*']
+  permissions: AdminPermission[] = ['admin:*'],
+  allowedTools?: string[]
 ): Promise<{ key: string; keyData: AdminApiKey }> {
   const registry = await loadRegistry();
 
@@ -147,6 +151,7 @@ export async function generateAdminApiKey(
     description,
     createdAt: new Date().toISOString(),
     permissions,
+    allowedTools: allowedTools && allowedTools.length > 0 ? allowedTools : undefined,
   };
 
   registry.keys.push(keyData);
@@ -160,7 +165,7 @@ export async function generateAdminApiKey(
  */
 export async function validateAdminApiKey(
   apiKey: string
-): Promise<{ valid: boolean; keyId?: string; permissions?: AdminPermission[] }> {
+): Promise<{ valid: boolean; keyId?: string; permissions?: AdminPermission[]; allowedTools?: string[]; disabled?: boolean }> {
   if (!apiKey || !apiKey.startsWith(KEY_PREFIX)) {
     return { valid: false };
   }
@@ -177,6 +182,11 @@ export async function validateAdminApiKey(
     const isMatch = await bcrypt.compare(apiKey, keyData.keyHash);
 
     if (isMatch) {
+      // Check if key is disabled
+      if (keyData.enabled === false) {
+        return { valid: false, disabled: true };
+      }
+
       // Update last used timestamp
       keyData.lastUsedAt = new Date().toISOString();
       await saveRegistry(registry);
@@ -185,6 +195,7 @@ export async function validateAdminApiKey(
         valid: true,
         keyId: keyData.id,
         permissions: keyData.permissions,
+        allowedTools: keyData.allowedTools,
       };
     }
   }
@@ -261,6 +272,57 @@ export async function deleteAdminApiKey(keyId: string): Promise<boolean> {
   }
 
   registry.keys.splice(index, 1);
+  await saveRegistry(registry);
+
+  return true;
+}
+
+/**
+ * Update an admin API key
+ */
+export async function updateAdminApiKey(
+  keyId: string,
+  updates: {
+    description?: string;
+    allowedTools?: string[];
+    enabled?: boolean;
+  }
+): Promise<AdminApiKey | null> {
+  const registry = await loadRegistry();
+
+  const key = registry.keys.find((k) => k.id === keyId);
+  if (!key) {
+    return null;
+  }
+
+  // Apply updates
+  if (updates.description !== undefined) {
+    key.description = updates.description;
+  }
+  if (updates.allowedTools !== undefined) {
+    key.allowedTools = updates.allowedTools.length > 0 ? updates.allowedTools : undefined;
+  }
+  if (updates.enabled !== undefined) {
+    key.enabled = updates.enabled;
+  }
+
+  await saveRegistry(registry);
+
+  return key;
+}
+
+/**
+ * Toggle admin API key enabled status
+ */
+export async function toggleAdminApiKey(keyId: string, enabled: boolean): Promise<boolean> {
+  const registry = await loadRegistry();
+
+  const key = registry.keys.find((k) => k.id === keyId);
+  if (!key) {
+    return false;
+  }
+
+  key.enabled = enabled;
   await saveRegistry(registry);
 
   return true;

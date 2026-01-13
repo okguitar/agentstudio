@@ -14,7 +14,8 @@ import {
   Palette,
   Zap,
   Package,
-  Clock
+  Clock,
+  Key
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { ServiceStatusIndicator } from './ServiceStatusIndicator';
@@ -86,6 +87,11 @@ const getNavigationItems = (t: (key: string) => string) => [
         name: t('nav.settingsSubmenu.memory'),
         href: '/settings/memory',
         icon: Brain,
+      },
+      {
+        name: t('nav.settingsSubmenu.mcpAdmin'),
+        href: '/settings/mcp-admin',
+        icon: Key,
       },
     ],
   },

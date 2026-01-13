@@ -110,6 +110,10 @@ export interface AdminApiKey {
   lastUsedAt?: string;
   revokedAt?: string;
   permissions: AdminPermission[];
+  /** Optional list of allowed tool names. If undefined or empty, all tools are allowed (based on permissions). */
+  allowedTools?: string[];
+  /** Whether the key is enabled. Defaults to true if not specified. */
+  enabled?: boolean;
 }
 
 export interface AdminApiKeyRegistry {
@@ -135,6 +139,8 @@ export type AdminPermission =
 export interface ToolContext {
   apiKeyId: string;
   permissions: AdminPermission[];
+  /** Optional list of allowed tool names. If undefined, all tools are allowed (based on permissions). */
+  allowedTools?: string[];
 }
 
 export type ToolHandler = (

@@ -16,6 +16,7 @@ const GeneralSettingsPage = lazy(() => import('./pages/settings/GeneralSettingsP
 const SupplierSettingsPage = lazy(() => import('./pages/settings/VersionSettingsPage').then(module => ({ default: module.VersionSettingsPage })));
 const MemorySettingsPage = lazy(() => import('./pages/settings/MemorySettingsPage').then(module => ({ default: module.MemorySettingsPage })));
 const SubagentsPage = lazy(() => import('./pages/settings/SubagentsPage').then(module => ({ default: module.SubagentsPage })));
+const McpAdminSettingsPage = lazy(() => import('./pages/settings/McpAdminSettingsPage').then(module => ({ default: module.McpAdminSettingsPage })));
 const CommandsPage = lazy(() => import('./pages/CommandsPage').then(module => ({ default: module.CommandsPage })));
 const SkillsPage = lazy(() => import('./pages/SkillsPage').then(module => ({ default: module.SkillsPage })));
 const PluginsPage = lazy(() => import('./pages/PluginsPage').then(module => ({ default: module.PluginsPage })));
@@ -141,6 +142,7 @@ const AppContent: React.FC = () => {
             <Route path="memory" element={<MemorySettingsPage />} />
             <Route path="commands" element={<CommandsPage />} />
             <Route path="subagents" element={<SubagentsPage />} />
+            <Route path="mcp-admin" element={<McpAdminSettingsPage />} />
           </Route>
 
           {/* Toast Test Page */}

@@ -392,4 +392,150 @@ describe('McpAdminServer', () => {
       expect(instance2.getToolCount()).toBe(0);
     });
   });
+
+  describe('allowedTools filtering', () => {
+    beforeEach(() => {
+      const tools: ToolDefinition[] = [
+        {
+          tool: {
+            name: 'list_projects',
+            description: 'List projects',
+            inputSchema: { type: 'object', properties: {} },
+          },
+          handler: async () => ({ content: [{ type: 'text', text: 'projects list' }] }),
+          requiredPermissions: ['projects:read'],
+        },
+        {
+          tool: {
+            name: 'get_project',
+            description: 'Get project',
+            inputSchema: { type: 'object', properties: {} },
+          },
+          handler: async () => ({ content: [{ type: 'text', text: 'project details' }] }),
+          requiredPermissions: ['projects:read'],
+        },
+        {
+          tool: {
+            name: 'list_agents',
+            description: 'List agents',
+            inputSchema: { type: 'object', properties: {} },
+          },
+          handler: async () => ({ content: [{ type: 'text', text: 'agents list' }] }),
+          requiredPermissions: ['agents:read'],
+        },
+      ];
+      server.registerTools(tools);
+    });
+
+    it('should list only allowed tools when allowedTools is specified', async () => {
+      const request: JsonRpcRequest = {
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'tools/list',
+      };
+
+      const context: ToolContext = {
+        apiKeyId: 'test-key',
+        permissions: ['admin:*'],
+        allowedTools: ['list_projects', 'get_project'],
+      };
+
+      const response = await server.handleRequest(request, context);
+
+      expect(response.error).toBeUndefined();
+      const result = response.result as { tools: Array<{ name: string }> };
+      expect(result.tools).toHaveLength(2);
+      const toolNames = result.tools.map((t) => t.name);
+      expect(toolNames).toContain('list_projects');
+      expect(toolNames).toContain('get_project');
+      expect(toolNames).not.toContain('list_agents');
+    });
+
+    it('should list all tools for admin:* when allowedTools is not specified', async () => {
+      const request: JsonRpcRequest = {
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'tools/list',
+      };
+
+      const context: ToolContext = {
+        apiKeyId: 'test-key',
+        permissions: ['admin:*'],
+      };
+
+      const response = await server.handleRequest(request, context);
+
+      expect(response.error).toBeUndefined();
+      const result = response.result as { tools: Array<{ name: string }> };
+      expect(result.tools).toHaveLength(3);
+    });
+
+    it('should deny tool call when tool is not in allowedTools', async () => {
+      const request: JsonRpcRequest = {
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'tools/call',
+        params: {
+          name: 'list_agents',
+        },
+      };
+
+      const context: ToolContext = {
+        apiKeyId: 'test-key',
+        permissions: ['admin:*'],
+        allowedTools: ['list_projects', 'get_project'], // list_agents not included
+      };
+
+      const response = await server.handleRequest(request, context);
+
+      expect(response.error).toBeDefined();
+      expect(response.error?.code).toBe(-32002); // Tool not allowed
+    });
+
+    it('should allow tool call when tool is in allowedTools', async () => {
+      const request: JsonRpcRequest = {
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'tools/call',
+        params: {
+          name: 'list_projects',
+        },
+      };
+
+      const context: ToolContext = {
+        apiKeyId: 'test-key',
+        permissions: ['admin:*'],
+        allowedTools: ['list_projects', 'get_project'],
+      };
+
+      const response = await server.handleRequest(request, context);
+
+      expect(response.error).toBeUndefined();
+      const result = response.result as McpToolCallResult;
+      expect(result.content[0].text).toBe('projects list');
+    });
+
+    it('should require both permission and allowedTools for tool call', async () => {
+      const request: JsonRpcRequest = {
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'tools/call',
+        params: {
+          name: 'list_projects',
+        },
+      };
+
+      // Has permission but tool not in allowedTools
+      const context: ToolContext = {
+        apiKeyId: 'test-key',
+        permissions: ['projects:read'],
+        allowedTools: ['list_agents'], // list_projects not included
+      };
+
+      const response = await server.handleRequest(request, context);
+
+      expect(response.error).toBeDefined();
+      expect(response.error?.code).toBe(-32002); // Tool not allowed
+    });
+  });
 });

@@ -24,6 +24,7 @@ import a2aRouter from './routes/a2a';
 import a2aManagementRouter from './routes/a2aManagement';
 import scheduledTasksRouter from './routes/scheduledTasks';
 import mcpAdminRouter from './routes/mcpAdmin';
+import mcpAdminManagementRouter from './routes/mcpAdminManagement';
 import { authMiddleware } from './middleware/auth';
 import { httpsOnly } from './middleware/httpsOnly';
 import { loadConfig, getSlidesDir } from './config/index';
@@ -305,6 +306,7 @@ const app: express.Express = express();
   app.use('/api/skills', authMiddleware, skillsRouter);
   app.use('/api/plugins', authMiddleware, pluginsRouter);
   app.use('/api/scheduled-tasks', authMiddleware, scheduledTasksRouter);
+  app.use('/api/mcp-admin-management', authMiddleware, mcpAdminManagementRouter); // MCP Admin management with JWT auth
   app.use('/api/media', mediaAuthRouter); // Media auth endpoints
   app.use('/media', mediaRouter); // Remove authMiddleware - media files are now public
 

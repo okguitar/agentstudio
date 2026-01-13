@@ -12,6 +12,8 @@ import {
   listAdminApiKeys,
   revokeAdminApiKey,
   deleteAdminApiKey,
+  updateAdminApiKey,
+  toggleAdminApiKey,
   hasPermission,
 } from '../adminApiKeyService.js';
 import type { AdminPermission } from '../types.js';
@@ -211,6 +213,173 @@ describe('adminApiKeyService', () => {
     it('should not grant write access when only read is granted', () => {
       const permissions: AdminPermission[] = ['projects:read'];
       expect(hasPermission(permissions, 'projects:write')).toBe(false);
+    });
+  });
+
+  describe('generateAdminApiKey with allowedTools', () => {
+    it('should generate key with specific allowed tools', async () => {
+      const allowedTools = ['list_projects', 'get_project'];
+      const result = await generateAdminApiKey('Limited tool key', ['admin:*'], allowedTools);
+
+      expect(result.keyData.allowedTools).toEqual(allowedTools);
+    });
+
+    it('should generate key with empty allowedTools', async () => {
+      const result = await generateAdminApiKey('Full access key', ['admin:*']);
+
+      expect(result.keyData.allowedTools).toBeUndefined();
+    });
+
+    it('should generate key without enabled field by default (undefined means enabled)', async () => {
+      const result = await generateAdminApiKey('Test key');
+
+      // enabled is optional - undefined means enabled
+      expect(result.keyData.enabled).toBeUndefined();
+    });
+  });
+
+  describe('validateAdminApiKey with enabled status', () => {
+    it('should reject disabled key', async () => {
+      const { key, keyData } = await generateAdminApiKey('Test key');
+
+      // Disable the key
+      await toggleAdminApiKey(keyData.id, false);
+
+      const result = await validateAdminApiKey(key);
+
+      expect(result.valid).toBe(false);
+    });
+
+    it('should return allowedTools in validation result', async () => {
+      const allowedTools = ['list_projects', 'get_project'];
+      const { key } = await generateAdminApiKey('Limited key', ['admin:*'], allowedTools);
+
+      const result = await validateAdminApiKey(key);
+
+      expect(result.valid).toBe(true);
+      expect(result.allowedTools).toEqual(allowedTools);
+    });
+  });
+
+  describe('updateAdminApiKey', () => {
+    it('should update key description', async () => {
+      const { keyData } = await generateAdminApiKey('Original description');
+
+      const updatedKey = await updateAdminApiKey(keyData.id, {
+        description: 'Updated description',
+      });
+
+      expect(updatedKey).not.toBeNull();
+      expect(updatedKey?.description).toBe('Updated description');
+
+      const keys = await listAdminApiKeys();
+      expect(keys[0].description).toBe('Updated description');
+    });
+
+    it('should update key allowedTools', async () => {
+      const { keyData } = await generateAdminApiKey('Test key');
+
+      const allowedTools = ['list_projects', 'list_agents'];
+      const updatedKey = await updateAdminApiKey(keyData.id, {
+        allowedTools,
+      });
+
+      expect(updatedKey).not.toBeNull();
+      expect(updatedKey?.allowedTools).toEqual(allowedTools);
+
+      const keys = await listAdminApiKeys();
+      expect(keys[0].allowedTools).toEqual(allowedTools);
+    });
+
+    it('should update multiple fields at once', async () => {
+      const { keyData } = await generateAdminApiKey('Original', ['admin:*']);
+
+      const result = await updateAdminApiKey(keyData.id, {
+        description: 'Updated',
+        allowedTools: ['list_projects'],
+      });
+
+      expect(result).not.toBeNull();
+
+      const keys = await listAdminApiKeys();
+      expect(keys[0].description).toBe('Updated');
+      expect(keys[0].allowedTools).toEqual(['list_projects']);
+    });
+
+    it('should return null for non-existent key', async () => {
+      const result = await updateAdminApiKey('non-existent-id', {
+        description: 'New description',
+      });
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('toggleAdminApiKey', () => {
+    it('should disable an enabled key', async () => {
+      const { keyData } = await generateAdminApiKey('Test key');
+
+      // Verify key is enabled by default (undefined or true means enabled)
+      let keys = await listAdminApiKeys();
+      expect(keys[0].enabled).toBeUndefined(); // undefined means enabled
+
+      // Disable the key
+      const success = await toggleAdminApiKey(keyData.id, false);
+
+      expect(success).toBe(true);
+
+      keys = await listAdminApiKeys();
+      expect(keys[0].enabled).toBe(false);
+    });
+
+    it('should enable a disabled key', async () => {
+      const { keyData } = await generateAdminApiKey('Test key');
+
+      // First disable the key
+      await toggleAdminApiKey(keyData.id, false);
+
+      // Then enable it
+      const success = await toggleAdminApiKey(keyData.id, true);
+
+      expect(success).toBe(true);
+
+      const keys = await listAdminApiKeys();
+      expect(keys[0].enabled).toBe(true);
+    });
+
+    it('should return false for non-existent key', async () => {
+      const success = await toggleAdminApiKey('non-existent-id', false);
+
+      expect(success).toBe(false);
+    });
+  });
+
+  describe('listAdminApiKeys with new fields', () => {
+    it('should include allowedTools in listed keys', async () => {
+      const allowedTools = ['list_projects', 'get_project'];
+      await generateAdminApiKey('Limited key', ['admin:*'], allowedTools);
+
+      const keys = await listAdminApiKeys();
+
+      expect(keys[0].allowedTools).toEqual(allowedTools);
+      // enabled is undefined by default (means enabled)
+      expect(keys[0].enabled).toBeUndefined();
+    });
+
+    it('should include enabled status after toggle', async () => {
+      const { keyData } = await generateAdminApiKey('Test key');
+
+      // Toggle to disabled
+      await toggleAdminApiKey(keyData.id, false);
+
+      const keys = await listAdminApiKeys();
+      expect(keys[0].enabled).toBe(false);
+
+      // Toggle back to enabled
+      await toggleAdminApiKey(keyData.id, true);
+
+      const keysAfter = await listAdminApiKeys();
+      expect(keysAfter[0].enabled).toBe(true);
     });
   });
 });
