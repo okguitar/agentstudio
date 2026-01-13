@@ -27,6 +27,7 @@ import { AgentStorage } from '../services/agentStorage.js';
 import { ProjectMetadataStorage } from '../services/projectMetadataStorage.js';
 import { taskManager } from '../services/a2a/taskManager.js';
 import { a2aHistoryService } from '../services/a2a/a2aHistoryService.js';
+import { getTaskExecutor } from '../services/taskExecutor/index.js';
 import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk';
 import { sessionManager } from '../services/sessionManager.js';
 import { handleSessionManagement } from '../utils/sessionUtils.js';
@@ -561,6 +562,54 @@ router.post('/tasks', a2aStrictRateLimiter, async (req: A2ARequest, res: Respons
       },
       timeoutMs: timeout,
     });
+
+    // Submit task to executor for actual execution
+    try {
+      const executor = getTaskExecutor();
+
+      // Load agent configuration to get model info
+      const agent = agentStorage.getAgent(a2aContext.agentType);
+      if (!agent) {
+        throw new Error(`Agent not found: ${a2aContext.agentType}`);
+      }
+
+      await executor.submitTask({
+        id: task.id,
+        type: 'a2a_async',
+        agentId: task.agentId,
+        projectPath: a2aContext.workingDirectory,
+        message,
+        timeoutMs: task.timeoutMs,
+        modelId: agent.model,
+        maxTurns: agent.maxTurns,
+        permissionMode: 'bypassPermissions',
+        createdAt: task.createdAt,
+      });
+
+      console.info('[A2A] Task submitted to executor:', {
+        taskId: task.id,
+        executorMode: executor.getStats().mode,
+      });
+    } catch (executorError) {
+      console.error('[A2A] Error submitting task to executor:', executorError);
+
+      // Update task status to failed
+      await taskManager.updateTaskStatus(
+        a2aContext.workingDirectory,
+        task.id,
+        'failed',
+        {
+          errorDetails: {
+            message: `Failed to submit task to executor: ${executorError instanceof Error ? executorError.message : String(executorError)}`,
+            code: 'EXECUTOR_SUBMISSION_ERROR',
+          },
+          completedAt: new Date().toISOString(),
+        }
+      );
+
+      // Still return 202 since task was created
+      // But the task will be in failed state
+    }
 
     res.status(202).json({
       taskId: task.id,

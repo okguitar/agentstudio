@@ -98,6 +98,13 @@ export interface ScheduledTask {
   /** ISO 8601 timestamp of creation */
   createdAt: string;
 
+  /** Task timeout in milliseconds (optional) */
+  timeoutMs?: number;
+
+  /** Maximum number of turns for agent execution (optional) */
+  maxTurns?: number;
+
+
   /** ISO 8601 timestamp of last update */
   updatedAt: string;
 }

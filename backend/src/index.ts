@@ -27,8 +27,8 @@ import { authMiddleware } from './middleware/auth';
 import { httpsOnly } from './middleware/httpsOnly';
 import { loadConfig, getSlidesDir } from './config/index';
 import { cleanupOrphanedTasks } from './services/a2a/taskCleanup';
-import { startTaskTimeoutMonitor, stopTaskTimeoutMonitor } from './jobs/taskTimeoutMonitor';
 import { initializeScheduler, shutdownScheduler } from './services/schedulerService';
+import { initializeTaskExecutor, shutdownTaskExecutor } from './services/taskExecutor/index.js';
 
 dotenv.config();
 
@@ -187,7 +187,21 @@ const app: express.Express = express();
   const slidesDir = await getSlidesDir();
   app.use('/slides', express.static(slidesDir));
 
-  // A2A Task Lifecycle: Clean up orphaned tasks on startup
+  // ============================================================================
+  // Initialize Background Services
+  // ============================================================================
+
+  // 1. Initialize Task Executor (handles both A2A async tasks and scheduled tasks)
+  console.info('[TaskExecutor] Initializing unified task executor...');
+  try {
+    await initializeTaskExecutor();
+    console.info('[TaskExecutor] Task executor initialized successfully');
+  } catch (error) {
+    console.error('[TaskExecutor] Failed to initialize task executor:', error);
+    console.error('[TaskExecutor] Tasks will not be executed. Please check configuration.');
+  }
+
+  // 2. A2A Task Lifecycle: Clean up orphaned tasks on startup
   console.info('[A2A] Running orphaned task cleanup...');
   try {
     const cleanedCount = await cleanupOrphanedTasks();
@@ -200,15 +214,9 @@ const app: express.Express = express();
     console.error('[A2A] Error during orphaned task cleanup:', error);
   }
 
-  // A2A Task Lifecycle: Start task timeout monitor
-  console.info('[A2A] Starting task timeout monitor...');
-  try {
-    startTaskTimeoutMonitor();
-  } catch (error) {
-    console.error('[A2A] Error starting task timeout monitor:', error);
-  }
+  // Note: Task timeout monitor is no longer needed - handled by executor internally
 
-  // Scheduled Tasks: Initialize scheduler (always initialize, but enable state depends on env var)
+  // 3. Scheduled Tasks: Initialize scheduler (always initialize, but enable state depends on env var)
   const enableSchedulerInitially = process.env.ENABLE_SCHEDULER !== 'false'; // Default to true
   console.info('[Scheduler] Initializing scheduled tasks... (ENABLE_SCHEDULER=' + process.env.ENABLE_SCHEDULER + ', initial enabled=' + enableSchedulerInitially + ')');
   try {
@@ -320,23 +328,26 @@ const app: express.Express = express();
   });
 
   // Graceful shutdown handler
-  const gracefulShutdown = () => {
+  const gracefulShutdown = async () => {
     console.info('[System] Shutting down gracefully...');
 
-    // Stop task timeout monitor
-    try {
-      stopTaskTimeoutMonitor();
-    } catch (error) {
-      console.error('[A2A] Error stopping task timeout monitor:', error);
-    }
-
-    // Stop scheduler
+    // 1. Stop scheduler (no new tasks will be scheduled)
     try {
       shutdownScheduler();
+      console.info('[Scheduler] Scheduler stopped');
     } catch (error) {
       console.error('[Scheduler] Error shutting down scheduler:', error);
     }
 
+    // 2. Stop task executor (wait for running tasks to complete or timeout)
+    try {
+      await shutdownTaskExecutor();
+      console.info('[TaskExecutor] Task executor stopped');
+    } catch (error) {
+      console.error('[TaskExecutor] Error shutting down task executor:', error);
+    }
+
+    console.info('[System] Shutdown complete');
     // Exit process
     process.exit(0);
   };
