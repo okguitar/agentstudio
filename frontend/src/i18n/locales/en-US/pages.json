@@ -198,7 +198,7 @@
     },
     "footer": {
       "description": "Agent for Work - Your local Agent workspace powered by Claude Agent SDK.",
-      "copyright": "© 2024 AgentStudio. MIT License.",
+      "copyright": "© 2026 AgentStudio. Apache 2.0 License.",
       "product": "Product",
       "workspace": "Workspace",
       "sourceCode": "Source Code",
@@ -206,7 +206,7 @@
       "support": "Support",
       "documentation": "Documentation",
       "issues": "Issues",
-      "discussions": "Discussions"
+      "discussions": "Discord Community"
     }
   },
   "agents": {

@@ -6,6 +6,14 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { Toaster } from './components/ui/toaster';
 import { MobileProvider } from './contexts/MobileContext';
 
+// External redirect component for non-React routes
+const ExternalRedirect: React.FC<{ url: string }> = ({ url }) => {
+  useEffect(() => {
+    window.location.href = url;
+  }, [url]);
+  return <div className="flex items-center justify-center h-screen">Redirecting...</div>;
+};
+
 // 懒加载页面组件
 const DashboardPage = lazy(() => import('./pages/DashboardPage').then(module => ({ default: module.DashboardPage })));
 const AgentsPage = lazy(() => import('./pages/AgentsPage').then(module => ({ default: module.AgentsPage })));
@@ -151,6 +159,9 @@ const AppContent: React.FC = () => {
               <Layout><ToastTestPage /></Layout>
             </ProtectedRoute>
           } />
+
+          {/* Discord redirect */}
+          <Route path="/discord" element={<ExternalRedirect url="https://discord.gg/6uYsrr66" />} />
 
           {/* Catch-all route for unmatched paths */}
           <Route path="*" element={

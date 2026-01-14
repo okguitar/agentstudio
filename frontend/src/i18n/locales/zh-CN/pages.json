@@ -190,7 +190,7 @@
     },
     "footer": {
       "description": "Agent for Work - 本地的 Agent 工作台，由 Claude Agent SDK 强力驱动。",
-      "copyright": "© 2024 AgentStudio. MIT License.",
+      "copyright": "© 2026 AgentStudio. Apache 2.0 License.",
       "product": "产品",
       "workspace": "工作台",
       "sourceCode": "源码",
@@ -198,7 +198,7 @@
       "support": "支持",
       "documentation": "文档",
       "issues": "问题反馈",
-      "discussions": "社区讨论"
+      "discussions": "Discord 社区"
     }
   },
   "agents": {

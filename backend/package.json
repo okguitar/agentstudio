@@ -70,7 +70,7 @@
     "vitest": "^2.1.0"
   },
   "author": "okguitar <okguitar@gmail.com>",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/okguitar/agentstudio.git"
