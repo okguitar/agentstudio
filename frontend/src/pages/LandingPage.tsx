@@ -23,9 +23,14 @@ import {
 import { useTranslation } from 'react-i18next';
 
 const LandingPage: React.FC = () => {
-  const { t } = useTranslation('pages');
+  const { t, i18n } = useTranslation('pages');
   const [copied, setCopied] = useState(false);
   const [showWeChatModal, setShowWeChatModal] = useState(false);
+  
+  const toggleLanguage = () => {
+    const newLang = i18n.language === 'zh-CN' ? 'en-US' : 'zh-CN';
+    i18n.changeLanguage(newLang);
+  };
 
   const handleCopy = () => {
     navigator.clipboard.writeText('npm install -g agentstudio && agentstudio start');
@@ -77,6 +82,14 @@ const LandingPage: React.FC = () => {
                 <Github className="w-5 h-5 mr-1" />
                 <span className="hidden sm:inline">GitHub</span>
               </a>
+              <button
+                onClick={toggleLanguage}
+                className="inline-flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                title={i18n.language === 'zh-CN' ? 'Switch to English' : '切换到中文'}
+              >
+                <Globe className="w-5 h-5 mr-1" />
+                <span className="hidden sm:inline">{i18n.language === 'zh-CN' ? 'EN' : '中文'}</span>
+              </button>
               <Link
                 to="/dashboard"
                 className="inline-flex items-center px-4 py-2 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 font-medium rounded-lg transition-colors duration-200"
