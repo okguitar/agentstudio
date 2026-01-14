@@ -1,0 +1,78 @@
+/* DiffViewer.css */
+.diff-container {
+  font-family: monospace;
+  white-space: pre;
+  text-align: left;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 10px;
+  background-color: #fff; /* Change background to white for better contrast */
+  font-size: 14px;
+  line-height: 1.4;
+  overflow-x: auto;
+  color: #333;
+}
+
+.diff-hunk {
+  /* Add margin and a top border to separate hunks */
+  margin-top: 20px;
+  border-top: 1px solid #ddd;
+  padding-top: 20px;
+}
+
+/* Style the first hunk without the top margin/border */
+.diff-hunk:first-child {
+  margin-top: 0;
+  border-top: none;
+  padding-top: 0;
+}
+
+.hunk-header {
+  background-color: #f1f8ff; /* Light blue background for hunk headers */
+  color: #555;
+  padding: 5px 0;
+}
+
+.diff-line {
+  display: flex;
+  width: 100%;
+}
+
+.diff-added {
+  background-color: #e6ffed;
+}
+
+.diff-removed {
+  background-color: #ffeef0;
+}
+
+.line-gutter {
+  display: inline-block;
+  width: 80px;
+  text-align: right;
+  padding-right: 15px;
+  color: #888;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.line-prefix {
+  display: inline-block;
+  width: 15px;
+  text-align: center;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.line-content {
+  flex-grow: 1;
+  padding-left: 10px;
+}
+
+.diff-added .line-content {
+  color: #22863a;
+}
+
+.diff-removed .line-content {
+  color: #b31d28;
+}

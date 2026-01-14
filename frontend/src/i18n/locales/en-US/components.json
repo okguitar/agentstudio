@@ -1,0 +1,1177 @@
+{
+  "common": {
+    "enabled": "Enabled",
+    "disabled": "Disabled"
+  },
+  "projectForm": {
+    "name": "Project Name",
+    "nameRequired": "Project Name *",
+    "namePlaceholder": "Enter project name",
+    "description": "Project Description",
+    "descriptionPlaceholder": "Briefly describe the purpose of this project...",
+    "directory": "Project Directory",
+    "directoryNote": "A new folder will be created under this directory",
+    "agentType": "Select Assistant Type *",
+    "agentTypePlaceholder": "Choose an assistant type"
+  },
+  "agentForm": {
+    "name": "Assistant Name",
+    "namePlaceholder": "Enter assistant name",
+    "description": "Assistant Description",
+    "descriptionPlaceholder": "Describe the assistant's capabilities...",
+    "systemPrompt": "System Prompt",
+    "systemPromptPlaceholder": "Enter system prompt...",
+    "tools": "Available Tools",
+    "selectTools": "Select Tools"
+  },
+  "commandForm": {
+    "editTitle": "Edit Command",
+    "createTitle": "Create Command",
+    "formMode": "Form",
+    "codeMode": "Code",
+    "saveChanges": "Save Changes",
+    "createCommand": "Create Command",
+    "nameLabel": "Command Name",
+    "nameHint": "Can only contain letters, numbers, underscores, and hyphens",
+    "modelLabel": "Specify Model",
+    "inheritModel": "Inherit conversation settings",
+    "modelHint": "Specify a specific AI model for this command.",
+    "namespaceLabel": "Namespace",
+    "namespaceHint": "Used to organize commands, can include / separator",
+    "argumentHintLabel": "Argument Hint",
+    "argumentHintHint": "Argument hint displayed in autocomplete",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "Optimize code performance and readability",
+    "descriptionHint": "Brief description of the command, will use the first line of content if not provided",
+    "allowedToolsLabel": "Allowed Tools",
+    "selectTools": "Select Tools",
+    "regularToolsCount": "{{count}} regular tools",
+    "mcpToolsCount": "{{count}} MCP tools",
+    "allowedToolsHint": "Leave empty to inherit conversation permissions",
+    "contentLabel": "Command Content",
+    "contentPlaceholder": "Analyze performance issues in this code and provide optimization suggestions:\n\nUse arguments: $ARGUMENTS\nUse first argument: $1\nUse second argument: $2\n\nReference file: @src/utils/helpers.js\nExecute command: !`git status`",
+    "supportedFeatures": "Supported Features:",
+    "features": {
+      "arguments": "Get all arguments",
+      "positionArgs": "Get argument at specific position",
+      "fileRef": "Reference file content",
+      "bashCommand": "Execute bash command and include output"
+    },
+    "markdownSource": "Markdown Source",
+    "markdownPlaceholder": "---\ndescription: Optimize code performance and readability\nargument-hint: [filename] [options]\nnamespace: frontend\nallowed-tools: Read, Write, Edit\nmodel: claude-3-5-sonnet-20241022\n---\n\nAnalyze performance issues in this code and provide optimization suggestions:\n\nUse arguments: $ARGUMENTS\nUse first argument: $1\nUse second argument: $2\n\nReference file: @src/utils/helpers.js\nExecute command: !`git status`",
+    "frontmatterSupported": "Supported Frontmatter Fields:",
+    "frontmatterFields": {
+      "description": "Command description",
+      "argumentHint": "Argument hint",
+      "namespace": "Namespace",
+      "allowedTools": "Allowed tools (comma separated)",
+      "model": "Specify model"
+    },
+    "exampleDescription": "Optimize code performance and readability",
+    "exampleContent": "Analyze performance issues in this code and provide optimization suggestions:\n\nUse arguments: $ARGUMENTS\nUse first argument: $1\nUse second argument: $2\n\nReference file: @src/utils/helpers.js\nExecute command: !`git status`",
+    "errors": {
+      "nameRequired": "Command name is required",
+      "nameFormat": "Command name can only contain letters, numbers, underscores, and hyphens",
+      "contentRequired": "Command content is required",
+      "scopeRequired": "Please select command scope",
+      "saveFailed": "Save failed"
+    }
+  },
+  "fileExplorer": {
+    "title": "File Explorer",
+    "searchPlaceholder": "Search files...",
+    "uploadButton": "Upload File",
+    "createFolder": "New Folder",
+    "rename": "Rename",
+    "deleteFile": "Delete File",
+    "downloadFile": "Download File",
+    "noFiles": "No files",
+    "loading": "Loading files...",
+    "loadFailed": "Failed to load project files",
+    "retry": "Retry",
+    "projectPath": "Project path",
+    "emptyDirectory": "Project directory is empty",
+    "selectFile": "Select a file to preview",
+    "previewNotSupported": "Preview not supported for this file type",
+    "fileLabel": "File",
+    "imageLoadFailed": "Failed to load image",
+    "cannotReadFile": "Unable to read file content",
+    "noOpenFiles": "No open files",
+    "moreTabsCount": "{{count}} more tabs",
+    "pinnedTab": "pinned",
+    "temporaryTab": "temporary",
+    "closeTab": "Close tab",
+    "noProject": "No Project Selected",
+    "selectProjectFirst": "Please select a project first to browse files",
+    "collapsePanel": "Collapse directory panel",
+    "expandPanel": "Expand directory panel"
+  },
+  "sessionDropdown": {
+    "title": "Session Management",
+    "sessionHistory": "Session History",
+    "searchPlaceholder": "Search sessions...",
+    "noSessions": "No sessions",
+    "noSessionHistory": "No session history",
+    "noMatchingSessions": "No matching sessions found",
+    "sessionWillAppear": "Sessions will appear after you start chatting",
+    "messageCount": "{{count}} messages",
+    "newSession": "New Session",
+    "deleteSession": "Delete Session",
+    "renameSession": "Rename Session"
+  },
+  "toolSelector": {
+    "title": "Tool Selector",
+    "searchPlaceholder": "Search tools...",
+    "noTools": "No tools available",
+    "selectedTools": "Selected Tools",
+    "selectButton": "Select Tools",
+    "toolsCount": "{{count}} regular tools",
+    "mcpToolsCount": "{{count}} MCP tools"
+  },
+  "languageSwitcher": {
+    "title": "Language",
+    "chinese": "中文",
+    "english": "English"
+  },
+  "agentChat": {
+    "newSession": "New Session",
+    "sessionHistory": "Session History",
+    "refreshMessages": "Refresh Messages",
+    "messagesRefreshed": "Messages refreshed",
+    "loadingMessages": "Loading messages...",
+    "currentSession": "Current Session",
+    "imagePreview": "Preview",
+    "deleteImage": "Delete Image",
+    "dropImageHere": "Drop images here",
+    "sendImage": "Sent an image",
+    "addDescription": "Add description text... (optional)",
+    "inputPlaceholder": "Type your message... (Shift+Enter for new line, Enter to send, / for commands)",
+    "inputPlaceholderMobile": "Type message...",
+    "toolSelection": "Tool Selection",
+    "imageSelection": "Image Selection",
+    "selectedCount": "{{count}} selected",
+    "stop": "Stop",
+    "send": "Send",
+    "stopAi": "Stop AI",
+    "aiTyping": "AI is typing",
+    "noContent": "No content to send",
+    "unknownCommand": "Unknown command",
+    "sendMessage": "Send message",
+    "newMessages": "new messages",
+    "scrollToLatest": "View Latest Messages",
+    "permissionMode": {
+      "default": "Default",
+      "acceptEdits": "Accept Edits",
+      "bypassPermissions": "Bypass Permissions",
+      "plan": "Plan Mode"
+    },
+    "model": {
+      "sonnet": "Sonnet",
+      "opus": "Opus"
+    },
+    "claudeVersion": {
+      "title": "Select Supplier",
+      "default": "Default",
+      "custom": "Custom",
+      "system": "System",
+      "locked": "Supplier Locked (Active Session)"
+    },
+    "settings": {
+      "title": "Settings",
+      "permissionMode": "Permission Mode",
+      "claudeVersion": "Supplier",
+      "model": "Model",
+      "modelAndVersion": "Supplier & Model",
+      "noSettings": "No settings available"
+    },
+    "envVars": {
+      "title": "Environment Variables",
+      "add": "Add Variable",
+      "key": "Key",
+      "value": "Value",
+      "save": "Save",
+      "cancel": "Cancel",
+      "edit": "Edit",
+      "delete": "Delete",
+      "noVars": "No environment variables set"
+    },
+    "commandWarning": "Unknown command: {{command}}. Available commands: {{commands}}",
+    "navigateTo": "Navigate to: {{path}}",
+    "errorMessages": {
+      "claudeCodeSDKError": "❌ **Claude Code SDK Error**",
+      "parseError": "An error occurred while parsing response data. This may be caused by network interruption or abnormal server response format.",
+      "timeout": "Request processing timeout. Server response time is too long.",
+      "unknownError": "Unknown error. Please try again later.",
+      "networkError": "❌ **Network Connection Error**\n\nUnable to connect to AI service. Please check your network connection and try again.",
+      "requestTimeout": "⏰ **Request Timeout**\n\nRequest processing time is too long. Please try again later.",
+      "rateLimit": "🚫 **Rate Limit**\n\nToo many requests. Please try again later.",
+      "unauthorized": "🔐 **Authentication Failed**\n\nPlease check your API key configuration.",
+      "forbidden": "⛔ **Permission Denied**\n\nNo permission to perform this operation.",
+      "internalServerError": "🔧 **Internal Server Error**\n\nThe server encountered a problem. Please try again later.",
+      "connectionFailed": "❌ **Connection Failed**\n\nUnable to connect to AI service. Please check your network connection and try again.",
+      "connectionTimeout": "⏰ **Connection Timeout**\n\nConnection to server timed out. Please try again later.",
+      "suggestions": "**Suggested Actions:**",
+      "checkNetwork": "Check network connection",
+      "retryMessage": "Retry sending message",
+      "simplifyRequest": "Simplify request content",
+      "refreshPage": "Refresh page and retry",
+      "contactAdmin": "Contact administrator if the issue persists"
+    },
+    "sessionResumed": "🔄 **Session Resumed**",
+    "sessionIdUpdated": "*Session ID has been automatically updated, history has been reloaded*",
+    "taskComplete": "✅ Task Complete",
+    "executionCompleted": "(Execution Completed)",
+    "genericError": "Sorry, an error occurred while processing your request.",
+    "unknownCommandWarning": "Unknown command: /{{command}}. Available commands: {{commands}}",
+    "commandsLoadErrorWarning": "Command: /{{command}} not found. User/project commands failed to load ({{errorMessage}}). Available system commands: {{commands}}. Please check if you are properly logged in.",
+    "navigateToAlert": "Navigate to: {{path}}",
+    "generationStopped": "⏹️ Generation stopped",
+    "stopping": "Stopping...",
+    "stopFailed": "❌ **Stop Failed**",
+    "initializingSession": "Initializing new session, please wait...",
+    "fileBrowser": {
+      "title": "Select File - {{projectPath}}",
+      "currentProject": "Current Project"
+    },
+    "maxTurnsReached": "⏱️ **Maximum turns reached**",
+    "permissionDenials": "⚠️ **Permission Denied Operations:**",
+    "permissionNote": "💡 Some operations require user permission confirmation to execute.",
+    "executionError": "❌ **Error During Execution**\n\nPlease check your input or try again later.",
+    "processingError": "❌ **Processing Error**\n\nPlease try again later or check your input.",
+    "processingComplete": "✅ **Processing Complete**",
+    "maxBudgetReached": "💰 **Maximum Budget Reached**\n\nThe cost limit for this session has been exceeded.",
+    "maxRetriesReached": "🔄 **Maximum Retries Reached**\n\nFailed to get a valid response after multiple attempts."
+  },
+  "systemCommands": {
+    "init": {
+      "name": "init",
+      "description": "Initialize project or reset conversation context"
+    },
+    "clear": {
+      "name": "clear",
+      "description": "Clear current conversation history"
+    },
+    "compact": {
+      "name": "compact",
+      "description": "Compact conversation history, keep key information"
+    },
+    "agents": {
+      "name": "agents",
+      "description": "Manage AI agents and subagents"
+    },
+    "settings": {
+      "name": "settings",
+      "description": "Open settings page"
+    },
+    "help": {
+      "name": "help",
+      "description": "Show help information"
+    }
+  },
+  "projectMemory": {
+    "title": "Memory Management"
+  },
+  "projectCommands": {
+    "title": "Commands Management"
+  },
+  "projectSubAgents": {
+    "title": "SubAgents Management"
+  },
+  "sessionsDashboard": {
+    "title": "Active Sessions",
+    "activeCount": "Currently active: {{count}} sessions",
+    "loadingMessage": "Loading session information...",
+    "status": {
+      "pending": "Pending",
+      "active": "Active",
+      "idle": "Idle"
+    },
+    "labels": {
+      "session": "Session",
+      "agent": "Agent",
+      "project": "Project",
+      "activity": "Activity"
+    },
+    "time": {
+      "hoursMinutes": "{{hours}}h {{minutes}}m",
+      "minutesSeconds": "{{minutes}}m {{seconds}}s",
+      "seconds": "{{seconds}}s"
+    },
+    "heartbeat": {
+      "none": "No heartbeat",
+      "timeout": "Heartbeat timeout"
+    },
+    "actions": {
+      "openChat": "Open chat window",
+      "cleanup": "Cleanup session"
+    },
+    "errors": {
+      "loadFailed": "Failed to load session information",
+      "cleanupFailed": "Failed to cleanup session, please retry",
+      "navigationFailed": "Navigation failed, fallback applied"
+    },
+    "empty": {
+      "noSessions": "No active sessions",
+      "startChatHint": "Start a conversation with an assistant to create a session"
+    }
+  },
+  "fileBrowser": {
+    "title": "Select File or Directory",
+    "emptyDirectory": "This directory is empty",
+    "toolbar": {
+      "homeDirectory": "Home Directory",
+      "parentDirectory": "Parent Directory",
+      "loadingPath": "Loading...",
+      "newDirectory": "New Directory",
+      "showHidden": "Show Hidden Files",
+      "hideHidden": "Hide Hidden Files",
+      "restrictedToProject": "Restricted to project directory"
+    },
+    "table": {
+      "name": "Name",
+      "size": "Size",
+      "modified": "Modified",
+      "actions": "Actions"
+    },
+    "actions": {
+      "select": "Select",
+      "cancel": "Cancel",
+      "createFolder": "Create Folder",
+      "creating": "Creating...",
+      "preview": "Preview",
+      "previewCSV": "Preview CSV File",
+      "previewJSONL": "Preview JSONL File"
+    },
+    "dialog": {
+      "newFolder": "New Folder",
+      "createAt": "Create new directory at:",
+      "folderName": "Folder Name",
+      "folderNamePlaceholder": "Enter folder name"
+    },
+    "footer": {
+      "itemsCount": "{{count}} items"
+    },
+    "errors": {
+      "error": "Error",
+      "loadFailed": "Failed to load directory",
+      "browseFailed": "Failed to browse directory",
+      "createFailed": "Failed to create directory"
+    }
+  },
+  "csvPreview": {
+    "loading": "Loading CSV file...",
+    "info": {
+      "rowCount": "{{count}} rows total",
+      "filtered": "filtered"
+    },
+    "search": {
+      "placeholder": "Search CSV content..."
+    },
+    "table": {
+      "untitled": "Untitled"
+    },
+    "empty": {
+      "noData": "No data to display"
+    },
+    "pagination": {
+      "showing": "Showing {{start}}-{{end}} of {{total}}",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "actions": {
+      "close": "Close",
+      "download": "Download",
+      "maximize": "Maximize",
+      "minimize": "Minimize"
+    },
+    "errors": {
+      "title": "Preview Error",
+      "loadFailed": "Failed to load CSV file",
+      "unknownError": "Unknown error"
+    },
+    "instructions": "Arrow keys to navigate • Ctrl+F to search • ESC to close"
+  },
+  "jsonlPreview": {
+    "loading": "Loading JSONL file...",
+    "info": {
+      "recordCount": "{{count}} records total",
+      "errorCount": "{{count}} parse errors",
+      "filtered": "filtered"
+    },
+    "search": {
+      "placeholder": "Search JSONL content..."
+    },
+    "empty": {
+      "noData": "No data to display"
+    },
+    "pagination": {
+      "showing": "Showing {{start}}-{{end}} of {{total}}",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "actions": {
+      "close": "Close",
+      "download": "Download",
+      "maximize": "Maximize",
+      "minimize": "Minimize",
+      "copy": "Copy"
+    },
+    "errors": {
+      "title": "Preview Error",
+      "loadFailed": "Failed to load JSONL file",
+      "unknownError": "Unknown error",
+      "parseError": "JSON parse error"
+    },
+    "instructions": "Click to expand • Arrow keys to navigate • Ctrl+F to search • ESC to close"
+  },
+  "unifiedToolSelector": {
+    "title": "Tool Selection",
+    "tabs": {
+      "regular": "Regular Tools",
+      "mcp": "MCP Tools"
+    },
+    "selectAll": "Select All",
+    "preset": "Preset",
+    "enableMcpTools": "Enable MCP Tools",
+    "loading": "Loading...",
+    "noMcpServers": "No MCP servers available",
+    "toolsCount": "{{count}} tools",
+    "serverUnavailable": "Server unavailable"
+  },
+  "subagentForm": {
+    "title": {
+      "create": "Create Subagent",
+      "edit": "Edit Subagent"
+    },
+    "mode": {
+      "form": "Form",
+      "code": "Code"
+    },
+    "actions": {
+      "cancel": "Cancel",
+      "create": "Create Subagent",
+      "saving": "Saving...",
+      "saveChanges": "Save Changes"
+    },
+    "codeMode": {
+      "title": "Code Mode",
+      "description": "In this mode, you can directly edit the Markdown format subagent file, including YAML frontmatter and system prompt content.",
+      "label": "Subagent File Content",
+      "placeholder": "---\nname: my-subagent\ndescription: A subagent specialized for handling specific tasks\ntools: read_file, write, search_replace\n---\n\nYou are an AI assistant specialized in...\n\nYour task is to...\n\nPlease ensure...\n\nWhen encountering..., you should..."
+    },
+    "fields": {
+      "name": {
+        "label": "Name *",
+        "placeholder": "my-subagent"
+      },
+      "scope": {
+        "label": "Scope",
+        "projectScope": "Project Subagent"
+      },
+      "description": {
+        "label": "Description *",
+        "placeholder": "Describe the purpose of this subagent and when it should be invoked"
+      },
+      "tools": {
+        "label": "Allowed Tools",
+        "selectTools": "Select Tools",
+        "regularToolsCount": "{{count}} regular tools",
+        "mcpToolsCount": "{{count}} MCP tools",
+        "hint": "Leave empty to inherit all available tools"
+      },
+      "content": {
+        "label": "System Prompt *",
+        "placeholder": "You are an AI assistant specialized in...\n\nYour task is to...\n\nPlease ensure...\n\nWhen encountering..., you should..."
+      }
+    },
+    "validation": {
+      "nameRequired": "Name is required",
+      "nameFormat": "Name can only contain lowercase letters, numbers, and hyphens",
+      "descriptionRequired": "Description is required",
+      "contentRequired": "System prompt is required"
+    },
+    "errors": {
+      "saveFailed": "Save failed"
+    }
+  },
+  "commandSelector": {
+    "systemCommands": {
+      "init": {
+        "description": "Initialize project or reset conversation context"
+      },
+      "clear": {
+        "description": "Clear current conversation history"
+      },
+      "compact": {
+        "description": "Compact conversation history, keep key information"
+      },
+      "agents": {
+        "description": "Manage AI agents and subagents"
+      },
+      "settings": {
+        "description": "Open settings page"
+      },
+      "help": {
+        "description": "Show help information"
+      }
+    }
+  },
+  "apiSettingsModal": {
+    "title": "API Server Settings",
+    "fields": {
+      "address": "API Server Address",
+      "addressPlaceholder": "http://localhost:4936 or https://your-domain.com"
+    },
+    "actions": {
+      "test": "Test",
+      "reset": "Reset",
+      "cancel": "Cancel",
+      "save": "Save"
+    },
+    "quickSelect": {
+      "title": "Quick Select:",
+      "localDev": "Local Development",
+      "officialServer": "Official Server"
+    },
+    "status": {
+      "label": "Connection Status",
+      "success": "Connected",
+      "error": "Connection Failed",
+      "untested": "Not Tested"
+    },
+    "instructions": {
+      "title": "Instructions:",
+      "localDev": "Use for local development",
+      "production": "Use your server domain for production",
+      "cors": "Ensure the server supports CORS access",
+      "refresh": "The page will refresh automatically after changes"
+    },
+    "errors": {
+      "serverError": "Server response error: {{status}} {{statusText}}",
+      "connectionFailed": "Connection failed: {{message}}",
+      "connectionFailedUnknown": "Connection failed: Unknown error",
+      "enterAddress": "Please enter API server address"
+    },
+    "saveSuccess": "Settings saved, the page will refresh to apply new settings"
+  },
+  "projectCommandsModal": {
+    "title": "Project Commands Management",
+    "loading": "Loading project commands...",
+    "searchPlaceholder": "Search commands...",
+    "createButton": "New Command",
+    "error": {
+      "title": "Load Failed",
+      "message": "Unable to load project commands",
+      "retry": "Retry",
+      "close": "Close"
+    },
+    "emptyState": {
+      "noCommandsTitle": "No project commands yet",
+      "noCommandsDescription": "Create dedicated Slash Commands for this project",
+      "noMatchTitle": "No matching commands found",
+      "noMatchDescription": "Try adjusting your search criteria"
+    },
+    "table": {
+      "command": "Command",
+      "model": "Model",
+      "tools": "Tools",
+      "createdAt": "Created",
+      "actions": "Actions",
+      "inheritSettings": "Inherit conversation settings",
+      "toolsCount": "{{count}} tools"
+    },
+    "actions": {
+      "edit": "Edit",
+      "editTooltip": "Edit command",
+      "deleteTooltip": "Delete command"
+    },
+    "deleteConfirm": {
+      "title": "Delete Command",
+      "message": "Are you sure you want to delete command \"/{{name}}\"? This action cannot be undone.",
+      "cancel": "Cancel",
+      "confirm": "Delete",
+      "deleting": "Deleting..."
+    }
+  },
+  "projectSubAgentsModal": {
+    "title": "Project Subagent Management",
+    "loading": "Loading project subagents...",
+    "searchPlaceholder": "Search subagents...",
+    "error": {
+      "loadFailed": "Load Failed",
+      "loadFailedMessage": "Unable to load project subagents"
+    },
+    "actions": {
+      "retry": "Retry",
+      "close": "Close",
+      "create": "New Subagent",
+      "edit": "Edit",
+      "editTooltip": "Edit Subagent",
+      "delete": "Delete",
+      "deleteTooltip": "Delete Subagent",
+      "cancel": "Cancel"
+    },
+    "emptyState": {
+      "noSubagents": "No Project Subagents Yet",
+      "noResults": "No Matching Subagents Found",
+      "tryAdjust": "Try adjusting your search criteria",
+      "description": "Create specialized AI subagents for this project to handle specific tasks"
+    },
+    "table": {
+      "subagent": "Subagent",
+      "tools": "Tools",
+      "createdAt": "Created",
+      "actions": "Actions",
+      "toolsCount": "{{count}} tools",
+      "inheritSettings": "Inherit conversation settings"
+    },
+    "deleteConfirm": {
+      "title": "Confirm Delete",
+      "message": "Are you sure you want to delete subagent \"<strong>{{name}}</strong>\"?",
+      "warning": "This action cannot be undone."
+    }
+  },
+  "projectSelector": {
+    "selectProjectDirectory": "Select Project Directory",
+    "projectActions": "Project Actions",
+    "quickCreateProject": "Quick Create Project",
+    "creatingProject": "Creating project...",
+    "quickCreateDescription": "Automatically create in ~/claude-code-projects",
+    "customLocationCreate": "Custom Location Create",
+    "customLocationDescription": "Choose directory and project name",
+    "browseProject": "Browse Projects",
+    "browseDescription": "Select project directory via file browser",
+    "importProject": "Import Project",
+    "importDescription": "Import existing project directory",
+    "importProjectFailed": "Failed to import project",
+    "recentProjects": "Recent Projects",
+    "loadingProjects": "Loading projects...",
+    "lastAccessed": "Last accessed: {{date}}",
+    "noRecentProjects": "No recent projects",
+    "createProjectToStart": "Create a new project to get started",
+    "cancel": "Cancel",
+    "selectParentDirectory": "Select Parent Directory for New Project",
+    "createProjectFailed": "Failed to create project: {{error}}",
+    "unknownError": "Unknown error",
+    "importConfirmation": "This directory is not yet a project for {{agentName}}.\n\nDo you want to import this directory as a new project?\n\nPath: {{path}}",
+    "dialog": {
+      "createNewProject": "Create New Project",
+      "projectWillBeCreatedAt": "Project will be created in the following directory:",
+      "projectName": "Project Name",
+      "projectNamePlaceholder": "Enter project name",
+      "cancel": "Cancel",
+      "createProject": "Create Project"
+    }
+  },
+  "mcpTool": {
+    "image": "Image ({{mimeType}})",
+    "resource": "Resource",
+    "uri": "URI",
+    "name": "Name",
+    "description": "Description",
+    "type": "Type",
+    "unknownType": "Unknown type ({{type}})",
+    "errorMessage": "Error message:",
+    "executionResult": "Execution result:",
+    "progress": "Progress: {{current}} / {{total}}",
+    "subtitle": "MCP: {{toolName}} @ {{serverName}}",
+    "parameters": "Parameters"
+  },
+  "bashTool": {
+    "executing": "Executing...",
+    "executionError": "Execution error",
+    "timeout": "Timeout: {{timeout}}ms"
+  },
+  "readTool": {
+    "readFile": "Read file",
+    "startLine": "Start line",
+    "readLines": "Read lines"
+  },
+  "writeTool": {
+    "filePath": "File path",
+    "fileSize": "File size: {{size}} characters"
+  },
+  "editTool": {
+    "editFile": "Edit file",
+    "replaceAll": "Replace all",
+    "yes": "Yes"
+  },
+  "globTool": {
+    "noFilesFound": "No matching files found",
+    "patternLabel": "Pattern",
+    "pathLabel": "Search path",
+    "matchingResults": "Matching results:"
+  },
+  "grepTool": {
+    "noMatchesFound": "No matches found",
+    "matchStatistics": "Match statistics",
+    "patternLabel": "Search pattern",
+    "pathLabel": "Search path",
+    "globLabel": "File filter",
+    "typeLabel": "File type",
+    "outputModeLabel": "Output mode",
+    "ignoreCase": "Ignore case",
+    "showLineNumbers": "Show line numbers",
+    "afterLines": "After {{count}} lines",
+    "beforeLines": "Before {{count}} lines",
+    "contextLines": "Context {{count}} lines",
+    "multilineMode": "Multiline mode",
+    "searchResults": "Search results:"
+  },
+  "webFetchTool": {
+    "urlLabel": "URL:",
+    "analysisPromptLabel": "Analysis prompt",
+    "truncated": "...(truncated)",
+    "webAnalysisResult": "Web analysis result:"
+  },
+  "webSearchTool": {
+    "searchQueryLabel": "Search query",
+    "allowedDomains": "Allowed domains:",
+    "blockedDomains": "Blocked domains:",
+    "searchResults": "Search results:"
+  },
+  "taskTool": {
+    "taskDescriptionLabel": "Task description",
+    "taskPromptLabel": "Task prompt",
+    "truncated": "...(truncated)",
+    "totalLength": "Total length: {{length}} characters",
+    "agentType": "Agent Type",
+    "model": "Model",
+    "resumeTask": "Resume Task",
+    "fromPreviousExecution": "Continue from previous execution",
+    "executing": "Sub-agent is executing...",
+    "executingWithModel": "Executing with {{model}} model...",
+    "toolCallCount": "{{count}} tool calls",
+    "partsReceived": "parts received",
+    "status": {
+      "completed": "Completed",
+      "failed": "Failed",
+      "cancelled": "Cancelled"
+    }
+  },
+  "subAgentMessageFlow": {
+    "title": "Sub-agent Message Flow",
+    "messageCount": "{{count}} messages",
+    "toolCount": "{{count}} tool calls",
+    "taskInput": "Task Input",
+    "subAgent": "Sub-agent",
+    "thinking": "Thinking...",
+    "expand": "Show more",
+    "collapse": "Show less"
+  },
+  "skillTool": {
+    "toolName": "Skill",
+    "skillName": "Skill Name",
+    "commandName": "Command Name",
+    "unknownSkill": "Unknown Skill",
+    "loading": "Loading skill...",
+    "launched": "Skill launched"
+  },
+  "todoWriteTool": {
+    "allTasksCompleted": "All tasks completed",
+    "currentTaskProgress": "{{completed}}/{{total}} {{task}}",
+    "pendingTasks": "{{completed}}/{{total}} pending tasks",
+    "completedCount": "Completed: {{count}}",
+    "inProgressCount": "In progress: {{count}}",
+    "pendingCount": "Pending: {{count}}"
+  },
+  "exitPlanModeTool": {
+    "implementationPlan": "Implementation Plan:",
+    "planModeExited": "Plan mode exited, ready to start implementation"
+  },
+  "notebookEditTool": {
+    "notebookPath": "Notebook path",
+    "insert": "Insert",
+    "delete": "Delete",
+    "replace": "Replace",
+    "code": "Code",
+    "markdown": "Markdown",
+    "cellId": "Cell ID",
+    "newContent": "New content",
+    "truncated": "...(truncated)"
+  },
+  "toolRenderer": {
+    "unknownToolType": "Unknown tool type"
+  },
+  "baseToolComponent": {
+    "executionResult": "Execution result:",
+    "interrupted": "Interrupted"
+  },
+  "bashOutputTool": {
+    "shellPrefix": "Shell",
+    "exitCode": "Exit code",
+    "stdout": "Standard output",
+    "stderr": "Error output",
+    "fetchingOutput": "Fetching output for Shell {{shellId}}...",
+    "filterCondition": "Filter condition",
+    "status": {
+      "running": "Running",
+      "completed": "Completed",
+      "killed": "Killed",
+      "failed": "Execution failed"
+    }
+  },
+  "killBashTool": {
+    "subtitle": "Kill Shell {{shellId}}",
+    "subtitleWithProcess": "Kill Shell {{shellId}} ({{processName}})",
+    "shellId": "Shell ID",
+    "status": {
+      "terminating": "Terminating process...",
+      "success": "Process successfully terminated",
+      "failed": "Failed to terminate process",
+      "ready": "Ready to terminate process"
+    }
+  },
+  "lsTool": {
+    "directoryPath": "Directory path",
+    "ignorePatterns": "Ignore patterns",
+    "directoryStructure": "Directory structure:"
+  },
+  "timeMachineTool": {
+    "title": "Time Machine",
+    "description": "Rewind to previous conversation state and apply corrections",
+    "targetMessage": "Target Message",
+    "correction": "Correction",
+    "restoreCode": "Restore Code",
+    "result": "Result",
+    "rewinding": "Rewinding...",
+    "error": "Time machine execution failed"
+  },
+  "askUserQuestionTool": {
+    "title": "Ask User Question",
+    "description": "The AI assistant needs your input to continue. Please answer the questions below.",
+    "questionCount": "{{count}} question(s)",
+    "multiSelect": "Multi-select",
+    "userResponse": "Your Response",
+    "waitingForResponse": "Waiting for your response...",
+    "error": "Failed to submit response",
+    "interactionHint": "This interaction component requires manual input",
+    "submit": "Submit Answer",
+    "submitting": "Submitting...",
+    "completed": "Response submitted",
+    "typeSomething": "Type something...",
+    "typeSomethingPlaceholder": "Enter your custom response",
+    "yourAnswer": "Your answer",
+    "customAnswer": "Custom answer"
+  },
+  "multiEditTool": {
+    "filePath": "File path",
+    "batchEdit": "Batch edit ({{count}} operations):",
+    "operation": "Operation #{{number}}",
+    "replaceAll": "Replace all"
+  },
+  "notebookReadTool": {
+    "notebookPath": "Notebook path",
+    "cellId": "Cell ID"
+  },
+  "agentChatPanel": {
+    "send": "Send",
+    "stop": "Stop",
+    "stopping": "Stopping...",
+    "sendMessage": "Send message",
+    "stopGeneration": "Stop generation",
+    "aiTyping": "AI is typing",
+    "noContentToSend": "No content to send",
+    "unknownCommand": "Unknown command",
+    "noMessages": "No messages yet",
+    "startConversation": "Start a new conversation",
+    "newMessages": "New messages",
+    "initializingSession": "Initializing session...",
+    "errors": {
+      "jsonParseError": "An error occurred while parsing response data. This may be caused by network interruption or abnormal server response format.\n\n**Suggested Actions:**\n- Check network connection\n- Resend message\n- Contact administrator if the issue persists",
+      "timeoutError": "Request processing timeout. Server response time is too long.\n\n**Suggested Actions:**\n- Simplify request content\n- Try again later\n- Check network connection status",
+      "suggestedActions": "Suggested Actions",
+      "resendMessage": "Resend message",
+      "refreshPage": "Refresh page and retry",
+      "unknownError": "Unknown error",
+      "networkError": "❌ **Network Connection Error**\n\nUnable to connect to AI service. Please check your network connection and try again.",
+      "requestTimeout": "⏰ **Request Timeout**\n\nRequest processing time is too long. Please try again later.",
+      "rateLimit": "🚫 **Rate Limit**\n\nToo many requests. Please try again later.",
+      "unauthorized": "🔐 **Authentication Failed**\n\nPlease check your API key configuration.",
+      "forbidden": "⛔ **Permission Denied**\n\nNo permission to perform this operation.",
+      "internalServerError": "🔧 **Internal Server Error**\n\nThe server encountered a problem. Please try again later.",
+      "processingError": "Processing Error",
+      "unknownErrorRetry": "Unknown error. Please try again later.",
+      "connectionFailed": "❌ **Connection Failed**\n\nUnable to connect to AI service. Please check your network connection and try again.",
+      "networkConnectionFailed": "🌐 **Network Connection Failed**\n\nUnable to connect to server. Please check your network connection.",
+      "connectionTimeout": "⏰ **Connection Timeout**\n\nConnection to server timed out. Please try again later.",
+      "connectionError": "Connection Error",
+      "cannotConnectRetry": "Unable to connect to AI service. Please try again later.",
+      "contextWindowError": "📏 **Context Window Limit Exceeded**\n\nThe conversation has become too long. Please start a new session or use the /compact command to reduce context.",
+      "checkBudget": "Check your budget settings and cost limits",
+      "increaseMaxTurns": "Increase the maximum turns in agent settings"
+    }
+  },
+  "recentActivity": {
+    "title": "Recent Activity",
+    "empty": "No recent activity",
+    "time": {
+      "justNow": "Just now",
+      "minutesAgo": "{{count}} minutes ago",
+      "minutesAgo_one": "{{count}} minute ago",
+      "hoursAgo": "{{count}} hours ago",
+      "hoursAgo_one": "{{count}} hour ago",
+      "daysAgo": "{{count}} days ago",
+      "daysAgo_one": "{{count}} day ago"
+    }
+  },
+  "backendServiceSwitcher": {
+    "title": "Backend Services",
+    "noService": "No Service",
+    "namePlaceholder": "Service Name",
+    "urlPlaceholder": "Service URL",
+    "add": "Add",
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete",
+    "addNew": "Add New Service",
+    "testingConnection": "Testing connection...",
+    "connectionWarning": {
+      "title": "Unable to Connect to Service",
+      "message": "Cannot connect to service \"{{name}}\" ({{url}}).",
+      "consequence": "If you continue switching, you won't be able to login or use this service, but you can reconfigure the service address on the login page.",
+      "cancel": "Cancel",
+      "continue": "Switch Anyway"
+    }
+  },
+  "serviceStatusIndicator": {
+    "checking": "Checking...",
+    "connected": "Connected",
+    "disconnected": "Disconnected",
+    "manageServices": "Manage Services",
+    "quickSwitch": "Quick Switch Services",
+    "version": "Version",
+    "backendName": "Backend Name",
+    "status": "Status",
+    "clickToSwitch": "Click service name to quickly switch",
+    "clickToManage": "Click the gear icon to manage services"
+  },
+  "serviceManagementModal": {
+    "title": "Service Management",
+    "noService": "No Service",
+    "servicesList": "Services List",
+    "addService": "Add Service",
+    "current": "Current",
+    "testConnection": "Test Connection",
+    "switchToService": "Switch to This Service",
+    "editService": "Edit Service",
+    "removeService": "Remove Service",
+    "refreshStatus": "Refresh Status",
+    "servicesOnline": "services online",
+    "close": "Close",
+    "namePlaceholder": "Service Name",
+    "urlPlaceholder": "Service URL (e.g., http://localhost:4936)",
+    "version": "Version",
+    "add": "Add",
+    "save": "Save",
+    "cancel": "Cancel",
+    "addNewService": "Add New Service",
+    "switchSuccess": "Switched to service: {{name}}",
+    "addSuccess": "Service added successfully",
+    "updateSuccess": "Service updated successfully",
+    "removeSuccess": "Service removed successfully",
+    "logoutService": "Logout from this service",
+    "logoutSuccess": "Logged out successfully",
+    "managePassword": "Manage Password",
+    "password": {
+      "title": "Access Password Management",
+      "description": "After setting a password, you will need to enter it when logging in. Leave empty and save to clear the password for passwordless login.",
+      "checking": "Checking...",
+      "currentlySet": "Password is currently set",
+      "currentlyNotSet": "No password set, passwordless login enabled",
+      "newPassword": "New Password",
+      "newPasswordPlaceholder": "Enter new password (leave empty to clear)",
+      "confirmPassword": "Confirm Password",
+      "confirmPasswordPlaceholder": "Re-enter password",
+      "save": "Save Password",
+      "mismatch": "Passwords do not match",
+      "tooShort": "Password must be at least 4 characters",
+      "setSuccess": "Password set successfully, will take effect on next login",
+      "clearSuccess": "Password cleared, passwordless login is now enabled",
+      "saveFailed": "Failed to save password"
+    },
+    "connectionTest": {
+      "success": "Connection test successful",
+      "failed": "Connection test failed",
+      "error": "Connection test error"
+    },
+    "switchWarning": {
+      "title": "Service Connection Warning",
+      "message": "Service \"{{name}}\" ({{url}}) cannot be connected.",
+      "consequence": "If you continue switching, you may not be able to use certain features properly.",
+      "cancel": "Cancel",
+      "continue": "Switch Anyway"
+    }
+  },
+  "claudeVersionSetup": {
+    "detecting": {
+      "title": "Detecting Claude CLI",
+      "description": "Checking if Claude is installed on your system..."
+    },
+    "selection": {
+      "title": "Select Claude Version",
+      "description": "We detected the following Claude CLI installations, please select which one to use",
+      "userInstalled": "User Global Installation",
+      "systemInstalled": "System npm Package",
+      "path": "Path",
+      "version": "Version",
+      "packageManager": "Package Manager",
+      "useUserInstalled": "Use User-Installed Claude",
+      "useUserInstalledDesc": "Use the Claude CLI installed globally via package manager",
+      "useSystemPackage": "Use System npm Package",
+      "useSystemPackageDesc": "Use the Claude CLI bundled in project's node_modules",
+      "noClaudeFound": "No Claude CLI Found",
+      "noClaudeFoundDesc": "Please install Claude CLI or ensure project dependencies are properly installed"
+    },
+    "config": {
+      "title": "Configure Authentication",
+      "description": "Choose how to configure Claude authentication credentials",
+      "skipToken": "Skip Configuration (Recommended)",
+      "skipTokenDesc": "Skip authentication setup, works the same as Claude Pro subscription",
+      "claudePro": "Claude Pro Subscriber",
+      "claudeProDesc": "I'm a Claude Pro subscriber, will login via CLI myself",
+      "enterToken": "Enter Token Manually",
+      "enterTokenDesc": "Manually enter ANTHROPIC_AUTH_TOKEN environment variable",
+      "tokenPlaceholder": "Enter your ANTHROPIC_AUTH_TOKEN"
+    },
+    "creating": {
+      "title": "Creating System Version",
+      "description": "Configuring Claude version for you, please wait..."
+    },
+    "success": {
+      "title": "Setup Successful!",
+      "description": "Claude version has been created successfully, returning to dashboard..."
+    },
+    "actions": {
+      "skip": "Skip",
+      "next": "Next",
+      "back": "Back",
+      "create": "Create Version"
+    }
+  },
+  "a2aManagement": {
+    "title": "A2A Protocol Management",
+    "project": "Project",
+    "selectedProject": "Project: {{project}}",
+    "noProjectSelected": "No project selected",
+    "tabs": {
+      "overview": "Overview",
+      "apiKeys": "API Keys",
+      "external": "External Agents",
+      "tasks": "Tasks"
+    },
+    "actions": {
+      "copy": "Copy",
+      "createKey": "Create Key",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "edit": "Edit",
+      "enable": "Enable",
+      "disable": "Disable",
+      "hide": "Hide",
+      "show": "Show",
+      "addAgent": "Add Agent",
+      "importProjects": "Import Projects",
+      "copyKey": "Copy Key",
+      "close": "Close"
+    },
+    "overview": {
+      "agentIdentity": "Agent Identity",
+      "a2aAgentId": "A2A Agent ID",
+      "projectId": "Project ID",
+      "agentType": "Agent Type",
+      "agentCard": "Agent Card",
+      "apiKeys": "API Keys",
+      "externalAgents": "External Agents",
+      "activeTasks": "Active Tasks",
+      "notEnabled": "A2A functionality is not enabled for this project",
+      "enableAfterCreatingKey": "Automatically enabled after creating API key"
+    },
+    "agentCard": {
+      "context": "Agent Context",
+      "skills": "Available Skills",
+      "security": "Security Authentication"
+    },
+    "apiKeys": {
+      "title": "API Key Management",
+      "noKeys": "No API keys yet",
+      "createFirstKey": "Create First API Key",
+      "description": "Description",
+      "key": "Key",
+      "createdAt": "Created",
+      "lastUsed": "Last Used",
+      "usageCount": "Usage Count",
+      "actions": "Actions",
+      "showKey": "Show key",
+      "hideKey": "Hide key",
+      "keyCopied": "Key copied"
+    },
+    "external": {
+      "title": "External Agent Configuration",
+      "noAgents": "No external agents configured yet",
+      "addFirstAgent": "Add First External Agent",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "form": {
+        "name": "Agent Name",
+        "namePlaceholder": "e.g., Data Analysis Agent",
+        "url": "URL",
+        "urlPlaceholder": "https://agent.example.com/a2a/uuid",
+        "apiKey": "API Key",
+        "apiKeyPlaceholder": "agt_proj_external_key_here",
+        "description": "Description",
+        "descriptionPlaceholder": "Optional description of agent functionality",
+        "enableThisAgent": "Enable this agent",
+        "urlHelp": "Must be a complete HTTP or HTTPS URL"
+      },
+      "modal": {
+        "addTitle": "Add External Agent",
+        "editTitle": "Edit External Agent",
+        "saveChanges": "Save Changes",
+        "addAgent": "Add Agent"
+      },
+      "importModal": {
+        "title": "Import Projects",
+        "description": "Select projects to import. The system will automatically generate API keys for these projects and add them to the current project's external agent list.",
+        "noProjects": "No projects available to import",
+        "selected": "Selected",
+        "import": "Import",
+        "importing": "Importing..."
+      }
+    },
+    "tasks": {
+      "title": "Task Monitoring",
+      "needA2AEnabled": "A2A functionality needs to be enabled first",
+      "noTasks": "No task records yet",
+      "createdAt": "Created",
+      "startedAt": "Started",
+      "completedAt": "Completed"
+    },
+    "modals": {
+      "createKey": {
+        "title": "Create API Key",
+        "description": "Description",
+        "descriptionPlaceholder": "e.g., Production environment key",
+        "descriptionHelp": "Used to identify the purpose of this API key, max 100 characters",
+        "important": "Important",
+        "securityNote": "API keys are only shown in full once after creation. Please save them securely.",
+        "creating": "Creating..."
+      }
+    },
+    "validation": {
+      "descriptionRequired": "Description cannot be empty",
+      "descriptionTooLong": "Description cannot exceed 100 characters",
+      "agentNameRequired": "Agent name cannot be empty",
+      "agentNameTooLong": "Agent name cannot exceed 50 characters",
+      "urlRequired": "URL cannot be empty",
+      "invalidUrl": "Invalid URL format",
+      "apiKeyRequired": "API key cannot be empty",
+      "required": "This field is required"
+    },
+    "confirmations": {
+      "deleteApiKey": "Are you sure you want to delete this API key? This action cannot be undone.",
+      "deleteExternalAgent": "Are you sure you want to delete this external agent? This action cannot be undone."
+    }
+  }
+}

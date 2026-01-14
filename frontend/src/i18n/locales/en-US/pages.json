@@ -1,0 +1,1210 @@
+{
+  "docs": {
+    "backToHome": "Back to Home",
+    "documentation": "Documentation"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "projects": "Projects",
+    "agents": "Agents",
+    "scheduledTasks": "Scheduled Tasks",
+    "skills": "Skills",
+    "plugins": "Plugins",
+    "mcp": "MCP Services",
+    "commands": "Commands",
+    "subagents": "Subagents",
+    "settings": "Settings",
+    "settingsSubmenu": {
+      "general": "Look & Feel",
+      "suppliers": "Suppliers",
+      "memory": "Memory",
+      "mcpAdmin": "MCP Admin"
+    }
+  },
+  "footer": {
+    "version": "Version {{version}}",
+    "apiServerStatus": {
+      "connected": "API Server Settings - Connected",
+      "disconnected": "API Server Settings - Connection Failed",
+      "checking": "API Server Settings - Checking..."
+    },
+    "serviceStatus": {
+      "normal": "Service Normal",
+      "unavailable": "Service Unavailable",
+      "checking": "Checking..."
+    }
+  },
+  "login": {
+    "title": "Sign In",
+    "subtitle": "Enter your password to continue",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "Enter password",
+    "loginButton": "Sign In",
+    "loggingIn": "Signing in...",
+    "footer": "Please contact your administrator if you forgot your password",
+    "manageServices": "Manage Backend Services",
+    "serviceName": "Service Name",
+    "serviceUrl": "Service URL",
+    "current": "Current",
+    "testConnection": "Test Connection",
+    "switchTo": "Switch to this service",
+    "edit": "Edit",
+    "delete": "Delete",
+    "save": "Save",
+    "cancel": "Cancel",
+    "add": "Add",
+    "addService": "Add New Service",
+    "rerunOnboarding": "Rerun Configuration Wizard",
+    "checkingConnection": "Checking connection...",
+    "autoLoggingIn": "Auto signing in...",
+    "noPasswordRequired": "No password required for this service",
+    "enterSystem": "Enter System"
+  },
+  "landing": {
+    "pageTitle": "AgentStudio - Agent Workspace | Powered by Claude Agent SDK",
+    "metaDescription": "Agent for Work - Your local Agent workspace powered by Claude Agent SDK. Fully private data, scheduled tasks, A2A protocol, and custom agents.",
+    "nav": {
+      "enterWorkspace": "Enter Workspace",
+      "docs": "Docs"
+    },
+    "hero": {
+      "badge": "Powered by Claude Agent SDK",
+      "title": "Agent for Work",
+      "subtitle": "Your Local Agent Workspace",
+      "description": "A truly private AI assistant running on your computer. Your data stays local, with scheduled task automation and multi-agent collaboration.",
+      "startNow": "Get Started",
+      "viewSource": "View Source",
+      "copyCommand": "Copy Command",
+      "installHint": "Copy the command below and run it in your terminal to get started",
+      "copy": "Copy",
+      "copied": "Copied"
+    },
+    "preview": {
+      "title": "Product Preview",
+      "subtitle": "Intuitive Web interface for efficient AI work",
+      "chatAlt": "Chat interface screenshot",
+      "chatCaption": "Chat Interface - Talk to Agent with visual tool execution",
+      "mcpAlt": "MCP service management screenshot",
+      "mcpCaption": "MCP Management - One-click import Claude Code config"
+    },
+    "features": {
+      "title": "Core Features",
+      "subtitle": "A complete solution for AI work automation",
+      "localWorkspace": {
+        "title": "Local Agent Workspace",
+        "point1": "Runs on your computer - a true local workspace",
+        "point2": "Data is fully private, never uploaded to cloud",
+        "point3": "Files, code, and conversations under your control"
+      },
+      "webExperience": {
+        "title": "Web-Based Experience",
+        "point1": "Say goodbye to CLI, embrace a friendly Web interface",
+        "point2": "Visual tool execution makes conversations come alive",
+        "point3": "Built-in file browser to view project files alongside chat"
+      },
+      "sdkFeatures": {
+        "title": "Claude Agent SDK Full Suite",
+        "skills": "Skills",
+        "commands": "Commands",
+        "plugins": "Plugins",
+        "memory": "Memory",
+        "subagent": "Subagent",
+        "multiModel": "Multi-Model",
+        "anthropicCompat": "Supports Claude, GLM, DeepSeek, Kimi K2, MiniMax and other models compatible with Anthropic API"
+      }
+    },
+    "scheduler": {
+      "badge": "Scheduled Tasks",
+      "title": "Let Agents Run on Schedule",
+      "description": "True AI work automation! Set time rules and your Agent will automatically handle repetitive tasks, freeing up your time.",
+      "scenariosTitle": "Typical Use Cases",
+      "scenario1": {
+        "title": "Daily Progress Report",
+        "desc": "Every day at 9 AM, automatically generate project progress report"
+      },
+      "scenario2": {
+        "title": "Auto Code Review",
+        "desc": "Check code repository every 2 hours, automatically submit review comments"
+      },
+      "scenario3": {
+        "title": "Weekly Meeting Summary",
+        "desc": "Every Friday, automatically compile and archive weekly meeting notes"
+      },
+      "scenario4": {
+        "title": "Monthly Data Analysis",
+        "desc": "On the 1st of each month, automatically generate business data analysis report"
+      }
+    },
+    "a2a": {
+      "badge": "A2A Protocol",
+      "title": "Agent Collaboration Network",
+      "description": "Connect multiple agents into a collaborative network. Local and remote agents work together, building your personal AI team.",
+      "scenariosTitle": "Typical Use Cases",
+      "scenario1": {
+        "title": "Secretary Agent Dispatch",
+        "desc": "A secretary Agent receives tasks and dispatches other project Agents to execute specific work"
+      },
+      "scenario2": {
+        "title": "Local ↔ Remote Collaboration",
+        "desc": "Agents on your local machine and remote dev server communicate and collaborate on tasks"
+      },
+      "scenario3": {
+        "title": "Mobile Access Anywhere",
+        "desc": "Interact with local Agents via mobile messaging, work from anywhere (Beta)"
+      }
+    },
+    "customAgent": {
+      "badge": "Custom Agents",
+      "title": "Build Your Own Agent",
+      "description": "No coding required - customize your Agent through the UI. Built-in Claude Code Agent ready to use, suitable for various work scenarios.",
+      "example1": "PPT Creator Agent",
+      "example2": "Secretary Agent",
+      "example3": "Doc Writer Agent",
+      "example4": "Code Review Agent"
+    },
+    "comparison": {
+      "title": "AgentStudio vs Claude Code",
+      "subtitle": "Same Claude Agent SDK, friendlier experience",
+      "dimension": "Comparison",
+      "interface": "Interface",
+      "webInterface": "UI",
+      "cli": "Command Line (CLI)",
+      "targetUsers": "Target Users",
+      "everyone": "Everyone",
+      "developers": "Mainly Developers",
+      "toolDisplay": "Tool Display",
+      "visual": "Visual Rendering",
+      "textOnly": "Text Only",
+      "fileBrowser": "File Browser",
+      "agentCustom": "Agent Customization",
+      "scheduler": "Scheduled Tasks",
+      "a2a": "A2A Protocol",
+      "mobileAccess": "Mobile Access",
+      "beta": "Beta"
+    },
+    "quickStart": {
+      "title": "Quick Start",
+      "subtitle": "Choose your preferred installation method and start using within minutes",
+      "endUserTitle": "End Users - One-Click Install",
+      "endUserDescription": "No configuration needed, auto-installs all dependencies, perfect for quick experience and daily use",
+      "developerTitle": "Developers - Source Deployment",
+      "developerDescription": "Full development environment, supports hot reload, perfect for custom development and feature extension"
+    },
+    "cta": {
+      "title": "Ready to start your AI work automation?",
+      "subtitle": "One command to launch your local Agent workspace",
+      "start": "Get Started"
+    },
+    "footer": {
+      "description": "Agent for Work - Your local Agent workspace powered by Claude Agent SDK.",
+      "copyright": "© 2024 AgentStudio. MIT License.",
+      "product": "Product",
+      "workspace": "Workspace",
+      "sourceCode": "Source Code",
+      "releases": "Releases",
+      "support": "Support",
+      "documentation": "Documentation",
+      "issues": "Issues",
+      "discussions": "Discussions"
+    }
+  },
+  "agents": {
+    "title": "Agent Management",
+    "subtitle": "Manage Specialized AI Agents",
+    "createButton": "Create Assistant",
+    "editButton": "Edit Assistant",
+    "deleteButton": "Delete Assistant",
+    "enableButton": "Enable Assistant",
+    "disableButton": "Disable Assistant",
+    "useButton": "Use",
+    "startUsingButton": "Start using assistant",
+    "noAgents": "No assistants yet",
+    "noAgentsSearch": "No matching assistants found",
+    "searchPlaceholder": "Search assistants...",
+    "createFirst": "Create your first AI assistant",
+    "adjustSearch": "Try adjusting search criteria",
+    "loading": "Loading AI assistants...",
+    "filter": {
+      "all": "All",
+      "enabled": "Enabled",
+      "disabled": "Disabled"
+    },
+    "table": {
+      "agent": "AI Assistant",
+      "type": "Type",
+      "config": "Configuration",
+      "tools": "Tools",
+      "status": "Status",
+      "actions": "Actions",
+      "maxTurns": "Max Turns",
+      "unlimited": "Unlimited",
+      "permission": "Permission",
+      "toolsCount": "{{count}} tools"
+    },
+    "form": {
+      "create": "Create Assistant",
+      "edit": "Edit Assistant",
+      "name": "Name",
+      "description": "Description",
+      "maxTurns": "Max Turns",
+      "maxTurnsPlaceholder": "Unlimited",
+      "maxTurnsError": "Max turns must be between 1-100",
+      "maxTurnsExceeded": "Max turns cannot exceed {{maximum}}",
+      "permissionMode": "Permission Mode",
+      "icon": "Icon",
+      "primaryColor": "Primary Color",
+      "enabledTools": "Enabled Tools",
+      "selectTools": "Select Tools",
+      "toolsRegular": "{{count}} regular tools",
+      "toolsMcp": "{{count}} MCP tools",
+      "systemPrompt": "System Prompt",
+      "systemPromptPlaceholder": "Enter assistant's system prompt...",
+      "nameRequired": "Please enter assistant name",
+      "save": "Save",
+      "cancel": "Cancel"
+    },
+    "permissions": {
+      "default": "Default",
+      "acceptEdits": "Auto-accept edits",
+      "bypassPermissions": "Bypass permission checks",
+      "plan": "Plan mode"
+    },
+    "status": {
+      "enabled": "Enabled",
+      "disabled": "Disabled"
+    },
+    "errors": {
+      "createFailed": "Failed to create, please try again.",
+      "saveFailed": "Failed to save, please try again.",
+      "deleteFailed": "Failed to delete, please try again.",
+      "toggleFailed": "Operation failed, please try again.",
+      "builtinCannotDelete": "Built-in assistants cannot be deleted, but can be disabled."
+    },
+    "confirmDelete": "Are you sure you want to delete assistant \"{{name}}\"?\n\nThis action cannot be undone, and all related sessions will also be deleted."
+  },
+  "projects": {
+    "title": "Project Management",
+    "subtitle": "Manage All Your Work Projects",
+    "createButton": "Create New Project",
+    "selectType": "Select Assistant Type to Create Work Project",
+    "noProjects": "No projects yet",
+    "searchPlaceholder": "Search projects...",
+    "loading": "Loading projects...",
+    "filter": {
+      "all": "All",
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "table": {
+      "project": "Project",
+      "agent": "Assistant",
+      "lastActive": "Last Active",
+      "sessions": "Sessions",
+      "actions": "Actions",
+      "sessionsCount": "{{count}} sessions"
+    },
+    "form": {
+      "create": "Create Project",
+      "edit": "Edit Project",
+      "name": "Project Name",
+      "namePlaceholder": "Enter project name",
+      "nameRequired": "Project Name *",
+      "agentType": "Select Assistant Type *",
+      "agentTypePlaceholder": "Choose an assistant type",
+      "directory": "Project Directory",
+      "directoryNote": "A new folder will be created under this directory",
+      "description": "Project Description",
+      "descriptionPlaceholder": "Briefly describe the purpose of this project...",
+      "save": "Save",
+      "cancel": "Cancel"
+    },
+    "actions": {
+      "open": "Open",
+      "openInNewTab": "Open in new tab",
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "never": "Never"
+    },
+    "errors": {
+      "createFailed": "Failed to create project",
+      "updateFailed": "Failed to update project",
+      "deleteFailed": "Failed to delete project",
+      "loadFailed": "Failed to load projects"
+    },
+    "deleteConfirm": "Are you sure you want to delete this project?",
+    "deleteNote": "Note: This will only remove the project from the list, not delete the actual file directory.",
+    "deleteSuccess": "Project deleted"
+  },
+  "chat": {
+    "title": "Chat",
+    "inputPlaceholder": "Type a message...",
+    "aiTyping": "AI is typing",
+    "newSession": "New Chat",
+    "sessionHistory": "Chat History",
+    "loading": "Loading AI assistant...",
+    "agentNotFound": "Assistant Not Found",
+    "agentNotFoundDesc": "Unable to find the specified AI assistant, it may have been deleted or disabled.",
+    "agentDisabled": "Assistant Disabled",
+    "agentDisabledDesc": "AI assistant \"{{name}}\" is currently disabled and cannot be used.",
+    "closePage": "Close Page",
+    "tabNotification": {
+      "working": "🤖 Working",
+      "completed": "✅ Completed",
+      "error": "❌ Error"
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome back to Claude Code workspace",
+    "stats": {
+      "agentManagement": "Agent Management",
+      "workProjects": "Work Projects",
+      "slashCommands": "Slash Commands",
+      "activeSessions": "Active Sessions"
+    },
+    "recentAgents": {
+      "title": "Frequently Used Assistants",
+      "viewAll": "View All",
+      "types": {
+        "slides": "Presentations",
+        "claude-code": "Claude Code"
+      },
+      "noAgents": "No assistants available",
+      "goEnable": "Enable assistants"
+    },
+    "quickActions": {
+      "title": "Quick Actions",
+      "createProject": {
+        "title": "Create New Project",
+        "description": "Select assistant type to create work project"
+      },
+      "createAgent": {
+        "title": "Create New Assistant",
+        "description": "Configure custom AI assistant"
+      },
+      "addMcp": {
+        "title": "Add MCP Service",
+        "description": "Connect new MCP server"
+      },
+      "viewAnalytics": {
+        "title": "View Analytics",
+        "description": "Analyze usage and performance"
+      }
+    },
+    "overview": "Overview",
+    "statistics": "Statistics",
+    "recentActivity": "Recent Activity"
+  },
+  "settings": {
+    "title": "Settings",
+    "general": {
+      "title": "Look and Feel",
+      "description": "Configure interface theme and language",
+      "interfaceSettings": "Look and Feel",
+      "theme": {
+        "label": "Theme",
+        "description": "Select interface theme mode",
+        "auto": "Follow System",
+        "light": "Light Mode",
+        "dark": "Dark Mode"
+      },
+      "language": {
+        "label": "Language",
+        "description": "Select interface language"
+      },
+      "password": {
+        "title": "Access Password",
+        "checking": "Checking...",
+        "currentlySet": "Access password is currently set",
+        "currentlyNotSet": "No password set, passwordless login enabled",
+        "description": "Set a password to require authentication on login. Leave empty and save to clear the password and enable passwordless login.",
+        "newPassword": "New Password",
+        "newPasswordPlaceholder": "Enter new password (leave empty to clear)",
+        "confirmPassword": "Confirm Password",
+        "confirmPasswordPlaceholder": "Re-enter password",
+        "save": "Save Password",
+        "clear": "Clear Password",
+        "mismatch": "Passwords do not match",
+        "tooShort": "Password must be at least 4 characters",
+        "setSuccess": "Password set successfully. Takes effect on next login.",
+        "clearSuccess": "Password cleared. Passwordless login is now enabled.",
+        "saveFailed": "Failed to save password",
+        "clearFailed": "Failed to clear password"
+      }
+    },
+    "api": "API Server Settings",
+    "memory": "Global Memory",
+    "memorySettings": {
+      "title": "Global Memory Settings",
+      "description": "Global memory is shared background information for all AI assistants, including your work preferences, project information, etc.",
+      "fileSourceInfo": "Content is sourced from the ~/.claude/CLAUDE.md file in your user directory.",
+      "memoryContent": "Memory Content",
+      "edit": "Edit",
+      "cancelEdit": "Cancel Edit",
+      "refresh": "Refresh",
+      "refreshing": "Refreshing...",
+      "placeholder": "Write your global memory content here...",
+      "cancel": "Cancel",
+      "saveMemory": "Save Memory",
+      "loading": "Loading global memory...",
+      "noMemory": "No global memory content yet",
+      "clickEditToStart": "Click \"Edit\" button to start adding",
+      "infoAutoLoad": "Global memory will be automatically loaded in every conversation to provide background information for AI",
+      "infoSuggestions": "Recommended to include: work preferences, project background, personal information, etc.",
+      "infoFileLocation": "File location: ~/.claude/CLAUDE.md",
+      "saveSuccess": "Global memory saved successfully",
+      "saveFailed": "Failed to save, please try again"
+    },
+    "supplier": {
+      "title": "Supplier Management",
+      "subtitle": "Manage multiple model suppliers, specify executable paths, aliases and environment variables",
+      "addSupplier": "Add Supplier",
+      "noSuppliers": "No model suppliers configured yet",
+      "clickToAddFirst": "Click \"Add Supplier\" to configure your first model supplier",
+      "systemLabel": "System",
+      "defaultLabel": "Default",
+      "pathLabel": "Path",
+      "envVarsLabel": "Environment Variables",
+      "modelsLabel": "Supported Models",
+      "setAsDefault": "Set as Default",
+      "copyCommand": "Copy Command",
+      "edit": "Edit",
+      "delete": "Delete",
+      "confirmDelete": "Are you sure you want to delete supplier \"{{alias}}\"?",
+      "currentSupplier": {
+        "title": "Current Supplier",
+        "checking": "Checking...",
+        "checkVersion": "Check Supplier",
+        "claudeDesc": "AI Programming Assistant",
+        "updating": "Updating...",
+        "update": "Update",
+        "willUse": "Will use",
+        "toUpdate": "to update",
+        "nodejsDesc": "JavaScript Runtime Environment",
+        "preferred": "Preferred",
+        "packageManager": "Package Manager",
+        "lastChecked": "Last Checked",
+        "clickToCheck": "Click \"Check Supplier\" to get supplier info",
+        "updateSuccess": "Update Successful",
+        "updateFailed": "Update Failed",
+        "info1": "Claude Code is an AI programming assistant that supports code generation, editing and project management",
+        "info2": "Node.js is the fundamental runtime environment for the system",
+        "info3": "Supports multiple package managers: npm, pnpm, yarn (Priority: pnpm > yarn > npm)",
+        "info4": "The system will automatically select the preferred package manager for update operations",
+        "info5": "It is recommended to keep Claude Code up to date for the best experience"
+      },
+      "templates": {
+        "title": "Quick Configuration Templates",
+        "description": "Select a preset template to quickly configure third-party API suppliers with auto-filled environment variables",
+        "providers": {
+          "glm": {
+            "name": "GLM (Zhipu AI)",
+            "description": "Use Zhipu AI's GLM model service, compatible with Anthropic API"
+          },
+          "deepseek": {
+            "name": "DeepSeek",
+            "description": "Use DeepSeek's high-performance model service"
+          },
+          "kimi": {
+            "name": "Kimi K2 (Moonshot AI)",
+            "description": "Use Kimi K2 model service, compatible with Anthropic API"
+          },
+          "minimax": {
+            "name": "MiniMax",
+            "description": "Use MiniMax high-performance model service, compatible with Anthropic API"
+          }
+        }
+      },
+      "form": {
+        "createTitle": "Add New Supplier",
+        "editTitle": "Edit Supplier",
+        "supplierName": "Supplier Name",
+        "supplierNamePlaceholder": "e.g., Claude Code v1.2.3",
+        "alias": "Alias",
+        "aliasPlaceholder": "e.g., claude-1.2.3",
+        "description": "Description",
+        "descriptionPlaceholder": "Supplier description (optional)",
+        "executablePath": "Executable Path",
+        "executablePathPlaceholder": "Leave empty to use system default path",
+        "browseFile": "Browse Files",
+        "envVars": "Environment Variables",
+        "varName": "Variable Name",
+        "varValue": "Variable Value",
+        "emptyValue": "Not set",
+        "getApiKey": "Get API Key",
+        "models": "Model Configuration",
+        "modelId": "Model ID",
+        "modelName": "Model Name",
+        "visionModel": "Vision Model",
+        "addModel": "Add Model",
+        "cancel": "Cancel",
+        "saving": "Saving...",
+        "update": "Update",
+        "create": "Create",
+        "selectExecutable": "Select Claude Executable"
+      },
+      "errors": {
+        "requiredFields": "Please fill in all required fields",
+        "saveFailed": "Save failed",
+        "cannotDeleteSystem": "Cannot delete system supplier",
+        "deleteFailed": "Delete failed",
+        "setDefaultFailed": "Failed to set default supplier",
+        "copyFailed": "Copy failed, please manually copy the following command:"
+      },
+      "success": {
+        "createVersion": "Supplier created successfully",
+        "updateVersion": "Supplier updated successfully",
+        "deleteVersion": "Supplier deleted successfully",
+        "setDefault": "Set \"{{alias}}\" as default supplier",
+        "copyCommand": "Command copied to clipboard"
+      }
+    },
+    "language": "Language Settings",
+    "subagents": {
+      "title": "Subagent Management",
+      "subtitle": "Manage Specialized AI Subagents",
+      "loading": "Loading Subagents...",
+      "loadFailed": "Load Failed",
+      "loadFailedMessage": "Unable to load Subagents list",
+      "retry": "Retry",
+      "searchPlaceholder": "Search Subagents...",
+      "createButton": "New Subagent",
+      "noSubagents": "No Subagents Yet",
+      "noSubagentsSearch": "No Matching Subagents Found",
+      "adjustSearch": "Try adjusting search criteria",
+      "createFirst": "Create your first specialized AI subagent to handle specific tasks",
+      "table": {
+        "subagent": "Subagent",
+        "tools": "Tools",
+        "createdAt": "Created At",
+        "actions": "Actions",
+        "toolsCount": "{{count}} tools",
+        "inheritSettings": "Inherit conversation settings"
+      },
+      "actions": {
+        "edit": "Edit",
+        "view": "View",
+        "editTitle": "Edit Subagent",
+        "viewTitle": "View Subagent",
+        "deleteTitle": "Delete Subagent"
+      },
+      "source": {
+        "local": "Local",
+        "plugin": "Plugin"
+      },
+      "deleteConfirm": {
+        "title": "Confirm Delete",
+        "message": "Are you sure you want to delete Subagent \"{{name}}\"?",
+        "warning": "This action cannot be undone.",
+        "cancel": "Cancel",
+        "delete": "Delete"
+      }
+    },
+    "mcpAdmin": {
+      "title": "MCP Admin Server",
+      "subtitle": "Configure MCP Admin API to allow external AI tools to manage your AgentStudio",
+      "refresh": "Refresh",
+      "serverStatus": "Server Status",
+      "status": {
+        "status": "Status",
+        "active": "Active",
+        "version": "Version",
+        "tools": "Available Tools",
+        "activeKeys": "Active Keys",
+        "unavailable": "Service Unavailable"
+      },
+      "endpoint": "Endpoint",
+      "apiKeys": "API Keys",
+      "createKey": "Create Key",
+      "noKeys": "No API keys yet",
+      "noKeysHint": "Create an API key to allow external tools to access",
+      "createdAt": "Created",
+      "lastUsed": "Last used",
+      "revoked": "Revoked",
+      "revokeKey": "Revoke key",
+      "confirmRevoke": "Are you sure you want to revoke this API key? This action cannot be undone.",
+      "availableTools": "Available Management Tools",
+      "createKeyTitle": "Create API Key",
+      "keyDescription": "Key Description",
+      "keyDescriptionPlaceholder": "e.g., Cursor MCP Connection",
+      "fullPermissions": "This key will have full admin permissions",
+      "cancel": "Cancel",
+      "create": "Create",
+      "creating": "Creating...",
+      "keyCreated": "API Key Created!",
+      "saveKeyWarning": "Save this key now! It will only be shown once and cannot be viewed again.",
+      "yourApiKey": "Your API Key",
+      "configFile": "Config File",
+      "copyConfig": "Copy Config",
+      "done": "Done",
+      "showKey": "Show Key",
+      "hideKey": "Hide Key",
+      "copyKey": "Copy Key",
+      "viewConfig": "View Config",
+      "limitTools": "Limit Available Tools",
+      "selectAll": "Select All",
+      "deselectAll": "Deselect All",
+      "selectedToolsCount": "{{count}} tools selected",
+      "limitedTools": "{{count}} tools limited",
+      "allToolsAccess": "All tools",
+      "disabled": "Disabled",
+      "enableKey": "Enable Key",
+      "disableKey": "Disable Key",
+      "editKey": "Edit Key",
+      "editKeyTitle": "Edit API Key",
+      "save": "Save",
+      "saving": "Saving...",
+      "toolParams": "Parameters",
+      "noParams": "No parameters",
+      "success": {
+        "copied": "Copied to clipboard",
+        "keyRevoked": "API key revoked",
+        "keyUpdated": "API key updated",
+        "keyEnabled": "API key enabled",
+        "keyDisabled": "API key disabled"
+      },
+      "errors": {
+        "configFetch": "Failed to fetch config",
+        "createFailed": "Failed to create key",
+        "revokeFailed": "Failed to revoke key",
+        "copyFailed": "Copy failed",
+        "descriptionRequired": "Please enter a key description",
+        "updateFailed": "Failed to update key",
+        "toggleFailed": "Failed to toggle key status"
+      },
+      "help": {
+        "button": "Help",
+        "title": "MCP Admin Server Help",
+        "whatIs": "What is MCP Admin Server?",
+        "whatIsDesc": "MCP Admin Server is a standard MCP (Model Context Protocol) server that allows other AI tools (like Cursor, Claude Desktop) to remotely manage your AgentStudio via MCP protocol. Through this interface, you can directly query and manage AgentStudio's projects, agents, MCP servers, etc. from other AI tools.",
+        "howToUse": "How to use?",
+        "step1": "Create an Admin API key on this page",
+        "step2": "Click \"View Config\" to get the configuration snippet",
+        "step3": "Add the config to Cursor or Claude Desktop's MCP configuration file",
+        "step4": "Restart Cursor/Claude Desktop, then you can use the management tools in conversations",
+        "availableTools": "Available Tools Examples",
+        "toolListProjects": "List all projects",
+        "toolGetProject": "Get project details",
+        "toolListAgents": "List all agents",
+        "toolGetAgent": "Get agent details",
+        "toolHealthCheck": "System health check",
+        "examples": "Usage Examples",
+        "examplePrompt": "In Cursor, you can directly say to AI:"
+      }
+    },
+    "apiSettings": {
+      "title": "API Server Settings",
+      "hostLabel": "API Server Address",
+      "hostPlaceholder": "http://localhost:4936 or https://your-domain.com",
+      "testConnection": "Test Connection",
+      "quickSelect": "Quick Select:",
+      "connectionStatus": "Connection Status",
+      "status": {
+        "success": "Connected",
+        "error": "Connection Failed",
+        "untested": "Not Tested"
+      },
+      "serverError": "Server error: {{status}} {{statusText}}",
+      "connectionFailed": "Connection failed: {{message}}",
+      "connectionUnknownError": "Connection failed: Unknown error",
+      "enterApiHost": "Please enter API server address",
+      "settingsSavedRefresh": "Settings saved. Page will refresh to apply new settings",
+      "usage": {
+        "title": "Usage Instructions:",
+        "localDev": "For local development, use",
+        "production": "For production environment, use your server domain such as",
+        "cors": "Ensure the server supports CORS access and allows frontend domain access",
+        "refresh": "Page needs to be refreshed after modification to take effect"
+      },
+      "resetToDefault": "Reset to Default",
+      "saveSettings": "Save Settings"
+    }
+  },
+  "analytics": {
+    "title": "Analytics",
+    "usage": "Usage Statistics",
+    "performance": "Performance Metrics"
+  },
+  "mcp": {
+    "title": "MCP Services",
+    "subtitle": "Manage and monitor Model Context Protocol servers",
+    "loading": "Loading MCP configurations...",
+    "searchPlaceholder": "Search by name, command or arguments...",
+    "addServer": "Add Service",
+    "noServers": "No MCP service configurations yet",
+    "noResults": "No matching configurations found",
+    "adjustSearch": "Try adjusting search criteria",
+    "addFirstServer": "Add your first MCP service configuration",
+    "confirmDelete": "Are you sure you want to delete configuration \"{{name}}\"?",
+    "validateAll": "Validate All",
+    "stats": {
+      "total": "Total",
+      "active": "Active",
+      "error": "Error",
+      "validating": "Validating",
+      "tools": "Tools"
+    },
+    "import": {
+      "button": "Import from Claude Code",
+      "importing": "Importing...",
+      "noConfigFound": "No MCP configurations found in Claude Code (reading from ~/.claude.json)",
+      "success": "Successfully imported {{imported}} MCP server configuration(s){{skipped, select, 0{} other{, skipped {{skipped}} existing configuration(s)}}",
+      "allExist": "All configurations already exist, no new imports"
+    },
+    "table": {
+      "server": "Server",
+      "type": "Type",
+      "status": "Status",
+      "tools": "Available Tools",
+      "actions": "Actions",
+      "toolsCount": "{{count}} tools",
+      "noTools": "No tools"
+    },
+    "status": {
+      "active": "Active",
+      "error": "Error",
+      "validating": "Validating",
+      "unvalidated": "Unvalidated"
+    },
+    "actions": {
+      "validate": "Re-validate",
+      "copyCommand": "Copy Command",
+      "edit": "Edit",
+      "view": "View",
+      "delete": "Delete configuration"
+    },
+    "source": {
+      "local": "Local",
+      "plugin": "Plugin"
+    },
+    "modal": {
+      "addTitle": "Add MCP Service Configuration",
+      "editTitle": "Edit MCP Service Configuration",
+      "saving": "Saving...",
+      "saveConfig": "Save Configuration",
+      "addConfig": "Add Configuration"
+    },
+    "form": {
+      "serverName": "Service Name *",
+      "serverNamePlaceholder": "e.g., playwright",
+      "nameNotEditable": "Service name cannot be modified",
+      "nameRequired": "Please enter service name",
+      "mcpType": "MCP Type *",
+      "stdioOption": "Stdio (Local Process)",
+      "httpOption": "HTTP (Remote Service)",
+      "selectConnectionType": "Select MCP server connection type",
+      "configuration": "Configuration * (JSON format)",
+      "configInvalid": "Configuration format is incorrect, please ensure required {{fields}} fields are included and properly formatted",
+      "configFormatError": "⚠️ Configuration format is incorrect, please ensure required {{fields}} fields are included",
+      "requiredFields": "Required fields:",
+      "requiredFieldsStdio": "type, command and args",
+      "requiredFieldsHttp": "type and url",
+      "optionalFields": "Optional fields:",
+      "typeField": "String, MCP type (\"stdio\" or \"http\")",
+      "commandField": "String, execution command (e.g. \"npx\", \"uvx\")",
+      "argsField": "Array, command arguments",
+      "urlField": "String, HTTP MCP server URL",
+      "timeoutField": "Number, timeout in milliseconds",
+      "autoApproveField": "Array, auto-approve operations"
+    },
+    "errors": {
+      "validationFailed": "Validation failed",
+      "networkError": "Network error or service unavailable",
+      "deleteFailed": "Failed to delete configuration",
+      "importFailed": "Import failed",
+      "saveFailed": "Failed to save configuration",
+      "copyFailed": "Failed to copy"
+    },
+    "commandCopied": "Command copied to clipboard"
+  },
+  "commands": {
+    "title": "Custom Commands",
+    "subtitle": "Manage Slash Commands",
+    "loading": "Loading commands...",
+    "searchPlaceholder": "Search commands...",
+    "createButton": "New Command",
+    "error": {
+      "loadFailed": "Load Failed",
+      "cannotLoadCommands": "Unable to load custom commands",
+      "retry": "Retry"
+    },
+    "empty": {
+      "noCommands": "No custom commands yet",
+      "noMatchingCommands": "No matching commands found",
+      "adjustSearch": "Try adjusting search criteria or filters",
+      "createFirst": "Create your first custom Slash Command"
+    },
+    "table": {
+      "command": "Command",
+      "model": "Model",
+      "tools": "Tools",
+      "createdAt": "Created",
+      "actions": "Actions",
+      "inheritSettings": "Inherit conversation settings",
+      "toolsCount": "{{count}} tools"
+    },
+    "actions": {
+      "edit": "Edit",
+      "view": "View",
+      "editCommand": "Edit command",
+      "deleteCommand": "Delete command"
+    },
+    "source": {
+      "local": "Local",
+      "plugin": "Plugin"
+    },
+    "delete": {
+      "title": "Delete Command",
+      "confirmMessage": "Are you sure you want to delete command \"/{{name}}\"? This action cannot be undone.",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "deleting": "Deleting..."
+    }
+  },
+  "plugins": {
+    "title": "Plugin Management",
+    "subtitle": "Manage plugin marketplaces and installed plugins",
+    "tabs": {
+      "marketplaces": "Marketplaces",
+      "browse": "Browse Plugins",
+      "installed": "Installed Plugins"
+    },
+    "marketplaces": {
+      "title": "Plugin Marketplaces",
+      "subtitle": "Manage plugin marketplace sources",
+      "addButton": "Add Marketplace",
+      "searchPlaceholder": "Search marketplaces...",
+      "noMarketplaces": "No marketplaces configured yet",
+      "addFirst": "Add your first plugin marketplace",
+      "table": {
+        "marketplace": "Marketplace",
+        "type": "Type",
+        "plugins": "Plugins",
+        "lastSync": "Last Sync",
+        "actions": "Actions"
+      },
+      "types": {
+        "git": "Git Repository",
+        "github": "GitHub",
+        "local": "Local Directory"
+      },
+      "actions": {
+        "sync": "Sync",
+        "syncing": "Syncing...",
+        "edit": "Edit",
+        "delete": "Delete"
+      },
+      "addModal": {
+        "title": "Add Marketplace",
+        "editTitle": "Edit Marketplace",
+        "name": "Marketplace Name",
+        "namePlaceholder": "e.g., official-plugins",
+        "type": "Source Type",
+        "typePlaceholder": "Select source type",
+        "source": "Source",
+        "sourcePlaceholderGit": "Git repository URL",
+        "sourcePlaceholderGithub": "owner/repo or full URL",
+        "sourcePlaceholderLocal": "Local directory path",
+        "branch": "Branch (Optional)",
+        "branchPlaceholder": "main",
+        "description": "Description (Optional)",
+        "descriptionPlaceholder": "Marketplace description",
+        "cancel": "Cancel",
+        "add": "Add",
+        "adding": "Adding...",
+        "save": "Save",
+        "saving": "Saving..."
+      },
+      "confirmDelete": "Are you sure you want to delete marketplace \"{{name}}\"? All plugins from this marketplace will be uninstalled."
+    },
+    "browse": {
+      "title": "Browse Plugins",
+      "subtitle": "Discover and install plugins from marketplaces",
+      "searchPlaceholder": "Search plugins...",
+      "filters": {
+        "allMarketplaces": "All Marketplaces",
+        "allTypes": "All Types",
+        "showOnlyInstalled": "Show only installed"
+      },
+      "noPlugins": "No plugins available",
+      "noMarketplaces": "No marketplaces added yet",
+      "goAddMarketplace": "Add a marketplace to browse plugins",
+      "noResults": "No plugins found",
+      "adjustSearch": "Try adjusting your search criteria",
+      "card": {
+        "from": "from",
+        "version": "v{{version}}",
+        "by": "by",
+        "installed": "Installed",
+        "install": "Install",
+        "installing": "Installing...",
+        "viewDetails": "View Details"
+      },
+      "actions": {
+        "details": "Details",
+        "install": "Install",
+        "uninstall": "Uninstall"
+      },
+      "confirmUninstall": "Are you sure you want to uninstall plugin \"{{name}}\"?",
+      "components": {
+        "commands": "{{count}} Command{{count, plural, one {} other{s}}}",
+        "agents": "{{count}} Agent{{count, plural, one {} other{s}}}",
+        "skills": "{{count}} Skill{{count, plural, one {} other{s}}}",
+        "hooks": "{{count}} Hook{{count, plural, one {} other{s}}}",
+        "mcpServers": "{{count}} MCP Server{{count, plural, one {} other{s}}}"
+      },
+      "detailModal": {
+        "title": "Plugin Details",
+        "version": "Version",
+        "author": "Author",
+        "marketplace": "Marketplace",
+        "updated": "Last Updated",
+        "components": "Components",
+        "files": "Files",
+        "readme": "README",
+        "noReadme": "No README available",
+        "install": "Install Plugin",
+        "installing": "Installing...",
+        "installed": "Installed",
+        "close": "Close"
+      }
+    },
+    "installed": {
+      "title": "Installed Plugins",
+      "subtitle": "Manage your installed plugins",
+      "searchPlaceholder": "Search installed plugins...",
+      "filters": {
+        "all": "All",
+        "enabled": "Enabled",
+        "disabled": "Disabled",
+        "allMarketplaces": "All Marketplaces"
+      },
+      "noPlugins": "No plugins installed yet",
+      "goBrowse": "Browse plugins to install",
+      "noResults": "No matching plugins found",
+      "table": {
+        "plugin": "Plugin",
+        "marketplace": "Marketplace",
+        "version": "Version",
+        "status": "Status",
+        "components": "Components",
+        "actions": "Actions"
+      },
+      "status": {
+        "enabled": "Enabled",
+        "disabled": "Disabled"
+      },
+      "actions": {
+        "details": "Details",
+        "viewDetails": "View Details",
+        "enable": "Enable",
+        "enabling": "Enabling...",
+        "disable": "Disable",
+        "disabling": "Disabling...",
+        "uninstall": "Uninstall"
+      },
+      "confirmUninstall": "Are you sure you want to uninstall plugin \"{{name}}\"?",
+      "detailModal": {
+        "title": "Plugin Details",
+        "basicInfo": "Basic Information",
+        "version": "Version",
+        "author": "Author",
+        "marketplace": "Marketplace",
+        "installedAt": "Installed",
+        "status": "Status",
+        "components": "Components",
+        "commands": "Commands",
+        "agents": "Agents",
+        "skills": "Skills",
+        "hooks": "Hooks",
+        "mcpServers": "MCP Servers",
+        "none": "None",
+        "files": "Plugin Files",
+        "viewFile": "View File",
+        "close": "Close",
+        "enable": "Enable",
+        "disable": "Disable",
+        "uninstall": "Uninstall"
+      },
+      "fileViewer": {
+        "title": "File Viewer",
+        "loading": "Loading...",
+        "error": "Failed to load file",
+        "close": "Close"
+      }
+    },
+    "messages": {
+      "installSuccess": "Plugin installed successfully. Please refresh to use the new plugin.",
+      "installError": "Failed to install plugin",
+      "enableSuccess": "Plugin enabled successfully. Please refresh to use the plugin.",
+      "enableError": "Failed to enable plugin",
+      "disableSuccess": "Plugin disabled successfully",
+      "disableError": "Failed to disable plugin",
+      "uninstallSuccess": "Plugin uninstalled successfully",
+      "uninstallError": "Failed to uninstall plugin",
+      "marketplaceAddSuccess": "Marketplace added successfully",
+      "marketplaceAddError": "Failed to add marketplace",
+      "marketplaceSyncSuccess": "Marketplace synced successfully",
+      "marketplaceSyncError": "Failed to sync marketplace",
+      "marketplaceRemoveSuccess": "Marketplace removed successfully",
+      "marketplaceRemoveError": "Failed to remove marketplace"
+    },
+    "detail": {
+      "back": "Back",
+      "root": "Root",
+      "noDescription": "No description available",
+      "version": "Version",
+      "author": "Author",
+      "license": "License",
+      "components": "Components",
+      "type": "Type",
+      "name": "Name",
+      "description": "Description",
+      "actions": "Actions",
+      "viewEntryFile": "View entry file",
+      "browseDirectory": "Browse directory",
+      "noComponents": "No components found",
+      "loadFailed": "Failed to load plugin details",
+      "componentTypes": {
+        "command": "Command",
+        "agent": "Agent",
+        "skill": "Skill",
+        "hook": "Hook",
+        "mcp": "MCP Server"
+      }
+    }
+  },
+  "skills": {
+    "title": "Agent Skills",
+    "subtitle": "Manage and organize your agent capabilities",
+    "createButton": "Create Skill",
+    "noSkills": "No skills created yet",
+    "noSkillsSearch": "No skills found matching your filters",
+    "createFirst": "Create Your First Skill",
+    "searchPlaceholder": "Search skills...",
+    "filter": {
+      "all": "All Skills",
+      "user": "User Skills",
+      "project": "Project Skills"
+    },
+    "scope": {
+      "user": "User",
+      "project": "Project"
+    },
+    "status": {
+      "enabled": "Enabled",
+      "disabled": "Disabled"
+    },
+    "create": {
+      "title": "Create New Skill",
+      "subtitle": "Define a new capability for your AI agents",
+      "steps": {
+        "basic": "Basic Info",
+        "content": "Content",
+        "preview": "Preview"
+      },
+      "basic": {
+        "name": "Skill Name",
+        "namePlaceholder": "my-awesome-skill",
+        "nameHint": "Use lowercase letters, numbers, and hyphens only (max 64 characters)",
+        "description": "Description",
+        "descriptionPlaceholder": "Brief description of what this skill does and when to use it",
+        "descriptionHint": "Include both what the skill does and when Claude should use it (max 1024 characters)",
+        "allowedTools": "Allowed Tools",
+        "allowedToolsPlaceholder": "Read, Write, Grep (comma-separated)",
+        "allowedToolsHint": "Tools this skill can use without asking for permission. Leave empty for default behavior.",
+        "selectTools": "Select Tools",
+        "noToolsSelected": "No tools selected"
+      },
+      "content": {
+        "skillManifest": "SKILL.md Content",
+        "additionalFiles": "Additional Files",
+        "addFile": "Add File",
+        "noFiles": "No additional files",
+        "noFilesHint": "Add files to extend your skill functionality",
+        "fileName": "File name",
+        "filePath": "Path/to/file",
+        "fileContent": "File content",
+        "fileType": {
+          "markdown": "Markdown",
+          "text": "Text",
+          "script": "Script",
+          "template": "Template",
+          "other": "Other"
+        }
+      },
+      "preview": {
+        "title": "Skill Preview",
+        "name": "Name:",
+        "description": "Description:",
+        "scope": "Scope:",
+        "allowedTools": "Allowed Tools:",
+        "additionalFiles": "Additional Files:",
+        "none": "None",
+        "fileCount": "{{count}} file(s)",
+        "previewContent": "SKILL.md Preview:",
+        "noContent": "(no content)"
+      }
+    },
+    "editor": {
+      "title": "Edit Skill",
+      "basic": {
+        "name": "Name",
+        "description": "Description",
+        "allowedTools": "Allowed Tools",
+        "allowedToolsHint": "Tools this skill can use without asking for permission. Leave empty for default behavior.",
+        "skillContent": "SKILL.md Content",
+        "validationErrors": "Validation Errors:",
+        "unsavedChanges": "You have unsaved changes. Press Cmd+S to save."
+      },
+      "files": {
+        "title": "Additional Files",
+        "addFile": "Add File",
+        "noFiles": "No additional files",
+        "addFilesHint": "Add files to extend your skill functionality"
+      },
+      "scope": {
+        "user": "User Skill"
+      },
+      "errors": {
+        "validationErrors": "Validation Errors:",
+        "saveFailed": "Failed to save skill. Please try again."
+      }
+    },
+    "preview": {
+      "title": "Skill Content",
+      "usageStats": "Usage Statistics",
+      "usage": "Used {{count}} time{{count, plural, one {} other{s}}",
+      "lastUsed": "Last used",
+      "created": "Created:",
+      "updated": "Updated:",
+      "scope": "Scope:",
+      "userScopeDesc": "Personal (across all projects)",
+      "projectScopeDesc": "Project: Current",
+      "actions": {
+        "edit": "Edit",
+        "enable": "Enable",
+        "disable": "Disable",
+        "delete": "Delete"
+      }
+    },
+    "errors": {
+      "loadFailed": "Error loading skills",
+      "deleteFailed": "Failed to delete skill. Please try again.",
+      "toggleFailed": "Toggle functionality will be implemented in the API",
+      "createFailed": "Failed to create skill. Please try again."
+    },
+    "deleteConfirm": "Are you sure you want to delete \"{{name}}\"?",
+    "usage": {
+      "customInstructions": "Custom instructions",
+      "toolPermissions": "Tool permissions"
+    },
+    "filter": {
+      "showDisabled": "Show disabled"
+    }
+  }
+}

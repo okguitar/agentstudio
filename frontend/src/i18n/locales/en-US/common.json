@@ -1,0 +1,155 @@
+{
+  "actions": {
+    "create": "Create",
+    "delete": "Delete",
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "edit": "Edit",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "refresh": "Refresh",
+    "submit": "Submit",
+    "reset": "Reset",
+    "search": "Search",
+    "add": "Add",
+    "remove": "Remove",
+    "update": "Update",
+    "upload": "Upload",
+    "download": "Download",
+    "export": "Export",
+    "import": "Import",
+    "copy": "Copy",
+    "paste": "Paste",
+    "cut": "Cut"
+  },
+  "status": {
+    "loading": "Loading...",
+    "processing": "Processing...",
+    "success": "Success",
+    "failed": "Failed",
+    "saving": "Saving...",
+    "deleting": "Deleting...",
+    "uploading": "Uploading...",
+    "downloading": "Downloading...",
+    "completed": "Completed",
+    "pending": "Pending",
+    "active": "Active",
+    "inactive": "Inactive",
+    "enabled": "Enabled",
+    "disabled": "Disabled"
+  },
+  "common": {
+    "yes": "Yes",
+    "no": "No",
+    "ok": "OK",
+    "all": "All",
+    "none": "None",
+    "or": "Or",
+    "and": "And",
+    "more": "More",
+    "less": "Less",
+    "unknown": "Unknown",
+    "optional": "Optional",
+    "required": "Required",
+    "default": "Default",
+    "custom": "Custom"
+  },
+  "path": "Path",
+  "createdAt": "Created",
+  "systemCommands": {
+    "init": {
+      "description": ""
+    },
+    "clear": {
+      "description": ""
+    },
+    "compact": {
+      "description": ""
+    },
+    "agents": {
+      "description": ""
+    },
+    "settings": {
+      "description": ""
+    },
+    "help": {
+      "description": ""
+    }
+  },
+  "agentChat": {
+    "sendImage": ""
+  },
+  "languageSwitcher": {
+    "chinese": "",
+    "english": ""
+  },
+  "landing": {
+    "pageTitle": "",
+    "metaDescription": "",
+    "nav": {
+      "enterWorkspace": ""
+    },
+    "hero": {
+      "title": "",
+      "subtitle": "",
+      "description": "",
+      "startNow": "",
+      "viewSource": ""
+    },
+    "features": {
+      "title": "",
+      "subtitle": "",
+      "modernWeb": {
+        "title": "",
+        "description": ""
+      },
+      "multiModel": {
+        "title": "",
+        "description": ""
+      },
+      "agentSystem": {
+        "title": "",
+        "description": ""
+      },
+      "fileManagement": {
+        "title": "",
+        "description": ""
+      },
+      "professionalTools": {
+        "title": "",
+        "description": ""
+      },
+      "secureReliable": {
+        "title": "",
+        "description": ""
+      }
+    },
+    "quickStart": {
+      "title": "",
+      "subtitle": "",
+      "endUserTitle": "",
+      "endUserDescription": "",
+      "developerTitle": "",
+      "developerDescription": ""
+    },
+    "cta": {
+      "title": "",
+      "subtitle": "",
+      "start": ""
+    },
+    "footer": {
+      "description": "",
+      "copyright": "",
+      "product": "",
+      "workspace": "",
+      "sourceCode": "",
+      "releases": "",
+      "support": "",
+      "documentation": "",
+      "issues": "",
+      "discussions": ""
+    }
+  }
+}

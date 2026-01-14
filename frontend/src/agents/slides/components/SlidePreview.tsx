@@ -1,0 +1,287 @@
+import { useEffect, useRef, useState, forwardRef, useImperativeHandle, useCallback } from 'react';
+import { Eye, Code } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import Prism from 'prismjs';
+import 'prismjs/themes/prism-tomorrow.css';
+import 'prismjs/components/prism-markup';
+import 'prismjs/components/prism-css';
+import type { Slide } from '../../../types/index.js';
+import { useSlideContent } from '../hooks/useSlides';
+import { authFetch } from '../../../lib/authFetch.js';
+import { getApiBase, getMediaBase } from '../../../lib/config';
+
+interface SlidePreviewProps {
+  slide: Slide;
+  totalSlides: number;
+  projectPath?: string;
+}
+
+export interface SlidePreviewRef {
+  refreshIframe: () => void;
+}
+
+export const SlidePreview = forwardRef<SlidePreviewRef, SlidePreviewProps>(({ slide, totalSlides, projectPath }, ref) => {
+  const { t } = useTranslation('agents');
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [viewMode, setViewMode] = useState<'preview' | 'code'>('preview');
+  const [projectId, setProjectId] = useState<string | null>(null);
+  const [scale, setScale] = useState(1);
+  
+  const { data: slideContent } = useSlideContent(slide.index, projectPath);
+
+  // Load iframe directly (no authentication required for media files)
+  const loadIframeWithToken = useCallback((iframe: HTMLIFrameElement, projectId: string, filePath: string) => {
+    try {
+      const timestamp = Date.now();
+      const url = `${getMediaBase()}/${projectId}/${filePath}?t=${timestamp}`;
+      console.log('SlidePreview: Loading iframe with URL:', url);
+      iframe.src = url;
+    } catch (error) {
+      console.error('SlidePreview: Error loading iframe:', error);
+      setError(true);
+      setIsLoading(false);
+    }
+  }, [getMediaBase]);
+
+  // Expose refresh method via ref
+  useImperativeHandle(ref, () => ({
+    refreshIframe: () => {
+      const iframe = iframeRef.current;
+      if (iframe && projectId && slide.path) {
+        loadIframeWithToken(iframe, projectId, slide.path);
+      }
+    }
+  }), [projectId, slide.path, loadIframeWithToken]);
+
+  // Fetch project ID using files API
+  useEffect(() => {
+    if (!projectPath) {
+      console.log('SlidePreview: No projectPath provided');
+      return;
+    }
+
+    const fetchProjectId = async () => {
+      try {
+        const searchParams = new URLSearchParams();
+        searchParams.set('projectPath', projectPath);
+        const url = `${getApiBase()}/files/project-id?${searchParams.toString()}`;
+        console.log('SlidePreview: Fetching project ID from:', url);
+        const response = await authFetch(url);
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log('SlidePreview: Got project ID:', data.projectId, 'for path:', projectPath);
+          setProjectId(data.projectId);
+        } else {
+          console.error('SlidePreview: Failed to fetch project ID, status:', response.status);
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          console.error('SlidePreview: Error details:', errorData);
+        }
+      } catch (error) {
+        console.error('SlidePreview: Exception while fetching project ID:', error);
+      }
+    };
+
+    fetchProjectId();
+  }, [projectPath]);
+
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (!iframe || viewMode !== 'preview' || !projectId || !slide.path) return;
+
+    setIsLoading(true);
+    setError(false);
+
+    const handleLoad = () => {
+      setIsLoading(false);
+      setError(false);
+    };
+
+    const handleError = () => {
+      setIsLoading(false);
+      setError(true);
+    };
+
+    iframe.addEventListener('load', handleLoad);
+    iframe.addEventListener('error', handleError);
+    
+    // Load iframe with temporary token
+    loadIframeWithToken(iframe, projectId, slide.path);
+
+    return () => {
+      iframe.removeEventListener('load', handleLoad);
+      iframe.removeEventListener('error', handleError);
+    };
+  }, [viewMode, projectId, slide.path, loadIframeWithToken]);
+
+  // Highlight code when switching to code view or when content loads
+  useEffect(() => {
+    if (viewMode === 'code' && slideContent) {
+      // Delay to ensure DOM is ready
+      setTimeout(() => {
+        Prism.highlightAll();
+      }, 0);
+    }
+  }, [viewMode, slideContent]);
+
+  // Calculate aspect ratio container dimensions
+  const aspectRatio = 1280 / 720; // 16:9
+  const SLIDE_WIDTH = 1280;
+  const SLIDE_HEIGHT = 720;
+
+  // Calculate scale based on container size
+  const calculateScale = () => {
+    if (!containerRef.current) return 1;
+    
+    const container = containerRef.current;
+    const containerRect = container.getBoundingClientRect();
+    const containerWidth = containerRect.width;
+    const containerHeight = containerRect.height;
+    
+    // Calculate scale factors for both dimensions
+    const scaleX = containerWidth / SLIDE_WIDTH;
+    const scaleY = containerHeight / SLIDE_HEIGHT;
+    
+    // Use the smaller scale to ensure the entire slide fits
+    return Math.min(scaleX, scaleY, 1); // Don't scale up beyond 1:1
+  };
+
+  // Update scale when container size changes
+  useEffect(() => {
+    const updateScale = () => {
+      const newScale = calculateScale();
+      setScale(newScale);
+    };
+
+    // Update scale initially and on window resize
+    updateScale();
+    window.addEventListener('resize', updateScale);
+    
+    // Also update when switching view modes
+    const timeout = setTimeout(updateScale, 100);
+
+    return () => {
+      window.removeEventListener('resize', updateScale);
+      clearTimeout(timeout);
+    };
+  }, [viewMode]);
+  
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+      {/* Header with tabs and page indicator */}
+      <div className="h-12 px-4 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center">
+        <div className="flex items-center gap-4">
+          {/* Tab buttons */}
+          <div className="flex space-x-1">
+            <button
+              onClick={() => setViewMode('preview')}
+              className={`flex items-center space-x-2 px-3 py-1.5 text-sm rounded-md transition-colors ${
+                viewMode === 'preview'
+                  ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700'
+                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-600'
+              }`}
+            >
+              <Eye className="w-4 h-4" />
+              <span>{t('slidePreview.tabs.preview')}</span>
+            </button>
+            <button
+              onClick={() => setViewMode('code')}
+              className={`flex items-center space-x-2 px-3 py-1.5 text-sm rounded-md transition-colors ${
+                viewMode === 'code'
+                  ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700'
+                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-600'
+              }`}
+            >
+              <Code className="w-4 h-4" />
+              <span>{t('slidePreview.tabs.code')}</span>
+            </button>
+          </div>
+
+          {/* File name */}
+          <div className="text-sm text-gray-600 dark:text-gray-300 font-medium flex-1">
+            {slide.path ? slide.path.replace(/\.html$/, '') : ''}
+          </div>
+
+          {/* Page indicator */}
+          <div className="text-sm text-gray-500 dark:text-gray-400 font-medium">
+            {slide.index + 1}/{totalSlides}
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="p-4">
+        {viewMode === 'preview' ? (
+          // Preview mode - iframe with 1280:720 aspect ratio and proper scaling
+          <div
+            ref={containerRef}
+            className="relative w-full bg-gray-100 dark:bg-gray-900 rounded-lg overflow-hidden"
+            style={{ aspectRatio: `${aspectRatio}` }}
+          >
+            {isLoading && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-sm text-gray-500 dark:text-gray-400">{t('slidePreview.loading')}</div>
+              </div>
+            )}
+
+            {error && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-sm text-red-500 dark:text-red-400">{t('slidePreview.loadFailed')}</div>
+              </div>
+            )}
+
+            {slide.exists && projectId && (
+              <div
+                className="absolute top-0 left-0"
+                style={{
+                  width: `${SLIDE_WIDTH}px`,
+                  height: `${SLIDE_HEIGHT}px`,
+                  transform: `scale(${scale})`,
+                  transformOrigin: 'top left',
+                }}
+              >
+                <iframe
+                  ref={iframeRef}
+                  className="w-full h-full border-none"
+                  style={{
+                    display: isLoading || error ? 'none' : 'block',
+                    width: `${SLIDE_WIDTH}px`,
+                    height: `${SLIDE_HEIGHT}px`,
+                  }}
+                  scrolling="no"
+                />
+              </div>
+            )}
+
+            {!slide.exists && !isLoading && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-sm text-orange-500 dark:text-orange-400">{t('slidePreview.fileNotFound')}</div>
+              </div>
+            )}
+          </div>
+        ) : (
+          // Code mode - show HTML source with syntax highlighting
+          <div className="relative bg-gray-100 dark:bg-gray-900 rounded-lg overflow-hidden"
+               style={{ aspectRatio: `${aspectRatio}` }}>
+            {slideContent ? (
+              <div className="h-full overflow-y-auto">
+                <pre className="language-html h-full m-0 p-4 text-sm" style={{ backgroundColor: '#2d3748' }}>
+                  <code className="language-html text-gray-100">
+                    {slideContent.content}
+                  </code>
+                </pre>
+              </div>
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-gray-500 dark:text-gray-400">{t('slidePreview.loadingCode')}</div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+});

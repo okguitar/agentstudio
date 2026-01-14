@@ -1,0 +1,56 @@
+{
+  "network": {
+    "connectionFailed": "Network connection error, unable to connect to AI service",
+    "connectionFailedRetry": "Network connection error, unable to connect to AI service. Please check your network connection and try again",
+    "timeout": "Request timeout, please try again",
+    "serverError": "Server error, please try again later",
+    "unknownError": "Unknown error, please try again"
+  },
+  "project": {
+    "createFailed": "Failed to create project",
+    "deleteFailed": "Failed to delete project",
+    "updateFailed": "Failed to update project",
+    "notFound": "Project not found",
+    "loadFailed": "Failed to load project",
+    "nameRequired": "Project name is required",
+    "nameInvalid": "Project name contains invalid characters"
+  },
+  "agent": {
+    "createFailed": "Failed to create assistant",
+    "deleteFailed": "Failed to delete assistant",
+    "updateFailed": "Failed to update assistant",
+    "notFound": "The specified assistant could not be found. It may have been deleted or disabled",
+    "loadFailed": "Failed to load assistant",
+    "setFailed": "Failed to set agent",
+    "builtinCannotDelete": "Built-in assistants cannot be deleted, but can be disabled",
+    "nameRequired": "Assistant name is required"
+  },
+  "file": {
+    "uploadFailed": "Failed to upload file",
+    "deleteFailed": "Failed to delete file",
+    "downloadFailed": "Failed to download file",
+    "readFailed": "Failed to read file",
+    "writeFailed": "Failed to write file",
+    "notFound": "File not found",
+    "tooLarge": "File is too large"
+  },
+  "session": {
+    "createFailed": "Failed to create session",
+    "deleteFailed": "Failed to delete session",
+    "loadFailed": "Failed to load session",
+    "notFound": "Session not found"
+  },
+  "command": {
+    "executeFailed": "Command execution failed",
+    "notFound": "Command not found",
+    "loadFailed": "Failed to load custom commands",
+    "invalidFormat": "Invalid command format"
+  },
+  "common": {
+    "saveFailed": "Save failed, please try again",
+    "loadFailed": "Load failed",
+    "operationFailed": "Operation failed, please try again",
+    "invalidInput": "Invalid input",
+    "permissionDenied": "Permission denied"
+  }
+}

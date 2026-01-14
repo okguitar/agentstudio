@@ -1,0 +1,85 @@
+{
+  "types": {
+    "pptEditor": "PPT Editor Assistant",
+    "codeAssistant": "AI Code Assistant",
+    "documentWriter": "Document Writer Assistant",
+    "generalChat": "General Chat Assistant",
+    "custom": "Custom Assistant"
+  },
+  "messages": {
+    "loading": "Loading AI assistants...",
+    "loadingProjects": "Loading projects...",
+    "loadingMcp": "Loading MCP configuration...",
+    "loadingSubagents": "Loading Subagents...",
+    "loadingCommands": "Loading commands...",
+    "loadingSession": "Loading session info...",
+    "creating": "Creating project...",
+    "notFound": "Unable to find the specified assistant",
+    "noAgents": "No AI assistants available"
+  },
+  "tools": {
+    "bash": "Command Line Tool",
+    "read": "File Read",
+    "write": "File Write",
+    "edit": "File Edit",
+    "search": "Code Search",
+    "webSearch": "Web Search",
+    "webFetch": "Web Fetch"
+  },
+  "status": {
+    "active": "Active",
+    "inactive": "Inactive",
+    "running": "Running",
+    "stopped": "Stopped",
+    "error": "Error"
+  },
+  "actions": {
+    "createAgent": "Create Assistant",
+    "editAgent": "Edit Assistant",
+    "deleteAgent": "Delete Assistant",
+    "enableAgent": "Enable Assistant",
+    "disableAgent": "Disable Assistant",
+    "testAgent": "Test Assistant",
+    "configureAgent": "Configure Assistant"
+  },
+  "notifications": {
+    "taskCompleted": "✅ Task completed",
+    "generationStopped": "⏹️ Generation stopped",
+    "sessionRestored": "🔄 Session restored",
+    "executionCompleted": "(Execution completed)"
+  },
+  "documentOutline": {
+    "title": "Document Outline",
+    "description": "Document structure and chapter management",
+    "createSection": "New Section",
+    "featureTitle": "Document Outline Feature",
+    "comingSoon": "Coming soon...",
+    "chatManagement": "You can manage document content through chat"
+  },
+  "codeExplorer": {
+    "title": "Code Explorer",
+    "description": "Code files and structure management",
+    "projectWithPath": "Project: {{path}}",
+    "openFile": "Open File",
+    "featureTitle": "Code Explorer Feature",
+    "comingSoon": "Coming soon...",
+    "chatManagement": "You can manage code files through chat"
+  },
+  "slidePreview": {
+    "title": "Slide Preview",
+    "refreshTitle": "Refresh Slides",
+    "refresh": "Refresh",
+    "slideCount": "{{count}} slides total",
+    "noSlides": "No slides yet",
+    "createWithAI": "Chat with AI to create slides",
+    "loading": "Loading...",
+    "loadError": "Failed to load, please refresh the page and try again",
+    "tabs": {
+      "preview": "Preview",
+      "code": "Code"
+    },
+    "loadFailed": "Failed to load",
+    "fileNotFound": "File not found",
+    "loadingCode": "Loading code..."
+  }
+}

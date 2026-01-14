@@ -1,0 +1,218 @@
+// Claude Code 工具调用的类型定义
+
+export interface BaseToolInput {
+  [key: string]: unknown;
+}
+
+export interface BaseToolResult {
+  content?: string;
+  is_error?: boolean;
+  tool_use_id: string;
+}
+
+// 具体工具的输入类型
+export interface TaskToolInput extends BaseToolInput {
+  description: string;
+  prompt: string;
+  subagent_type: string;
+  model?: string;
+  resume?: string;
+}
+
+// 子Agent消息流中的单个消息部分
+export interface SubAgentMessagePart {
+  id: string;
+  type: 'text' | 'thinking' | 'tool';
+  content?: string;
+  toolData?: {
+    id: string;
+    toolName: string;
+    toolInput: Record<string, unknown>;
+    toolResult?: string;
+    isError?: boolean;
+  };
+  order: number;
+}
+
+// 子Agent消息流中的单条消息
+export interface SubAgentMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  timestamp: string;
+  messageParts: SubAgentMessagePart[];
+}
+
+// 子Agent工具调用（用于测试数据）
+export interface SubAgentToolCall {
+  id: string;
+  toolName: string;
+  toolInput: Record<string, unknown>;
+  toolResult?: string;
+  isError?: boolean;
+  timestamp: string;
+}
+
+// Task工具执行结果
+export interface TaskToolResult {
+  status: 'completed' | 'failed' | 'cancelled';
+  prompt: string;
+  agentId: string;
+  content?: Array<{ type: string; text: string }>;
+  totalDurationMs?: number;
+  totalTokens?: number;
+  totalToolUseCount?: number;
+  usage?: {
+    input_tokens: number;
+    output_tokens: number;
+    cache_read_input_tokens?: number;
+  };
+  subAgentMessageFlow?: SubAgentMessage[];
+}
+
+export interface BashToolInput extends BaseToolInput {
+  command: string;
+  description?: string;
+  timeout?: number;
+  run_in_background?: boolean;
+}
+
+export interface BashOutputToolInput extends BaseToolInput {
+  bash_id: string;
+  filter?: string;
+}
+
+export interface BashOutputToolResult {
+  shellId: string;
+  command: string;
+  status: 'running' | 'completed' | 'killed' | 'failed';
+  exitCode: number | null;
+  stdout: string;
+  stderr: string;
+  stdoutLines: number;
+  stderrLines: number;
+  timestamp: string;
+  filterPattern?: string;
+}
+
+export interface KillBashToolInput extends BaseToolInput {
+  shell_id: string;
+}
+
+export interface GlobToolInput extends BaseToolInput {
+  pattern: string;
+  path?: string;
+}
+
+export interface GrepToolInput extends BaseToolInput {
+  pattern: string;
+  path?: string;
+  glob?: string;
+  type?: string;
+  output_mode?: 'content' | 'files_with_matches' | 'count';
+  '-i'?: boolean;
+  '-n'?: boolean;
+  '-A'?: number;
+  '-B'?: number;
+  '-C'?: number;
+  head_limit?: number;
+  multiline?: boolean;
+}
+
+export interface LSToolInput extends BaseToolInput {
+  path: string;
+  ignore?: string[];
+}
+
+export interface ExitPlanModeToolInput extends BaseToolInput {
+  plan: string;
+}
+
+export interface ReadToolInput extends BaseToolInput {
+  file_path: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface EditToolInput extends BaseToolInput {
+  file_path: string;
+  old_string: string;
+  new_string: string;
+  replace_all?: boolean;
+}
+
+export interface StructuredPatch {
+  oldStart: number;
+  oldLines: number;
+  newStart: number;
+  newLines: number;
+  lines: string[];
+}
+
+export interface EditToolResult {
+  filePath: string;
+  oldString: string;
+  newString: string;
+  originalFile: string;
+  structuredPatch: StructuredPatch[];
+  userModified: boolean;
+  replaceAll: boolean;
+}
+
+export interface MultiEditToolInput extends BaseToolInput {
+  file_path: string;
+  edits: Array<{
+    old_string: string;
+    new_string: string;
+    replace_all?: boolean;
+  }>;
+}
+
+export interface WriteToolInput extends BaseToolInput {
+  file_path: string;
+  content: string;
+}
+
+export interface NotebookReadToolInput extends BaseToolInput {
+  notebook_path: string;
+  cell_id?: string;
+}
+
+export interface NotebookEditToolInput extends BaseToolInput {
+  notebook_path: string;
+  new_source: string;
+  cell_id?: string;
+  cell_type?: 'code' | 'markdown';
+  edit_mode?: 'replace' | 'insert' | 'delete';
+}
+
+export interface WebFetchToolInput extends BaseToolInput {
+  url: string;
+  prompt: string;
+}
+
+export interface TodoWriteToolInput extends BaseToolInput {
+  todos: Array<{
+    content: string;
+    status: 'pending' | 'in_progress' | 'completed';
+    activeForm: string;
+  }>;
+}
+
+export interface WebSearchToolInput extends BaseToolInput {
+  query: string;
+  allowed_domains?: string[];
+  blocked_domains?: string[];
+}
+
+// 工具执行状态
+export interface ToolExecution {
+  id: string;
+  toolName: string;
+  toolInput: BaseToolInput;
+  toolResult?: string;
+  toolUseResult?: EditToolResult | any; // 包含 structuredPatch 等详细信息
+  isExecuting: boolean;
+  isError?: boolean;
+  isInterrupted?: boolean; // 标记工具是否被用户中断
+  timestamp: Date;
+}

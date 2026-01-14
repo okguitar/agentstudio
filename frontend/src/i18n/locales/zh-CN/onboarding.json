@@ -1,0 +1,122 @@
+{
+  "backend": {
+    "welcome": {
+      "title": "欢迎使用 AgentStudio",
+      "subtitle": "在开始之前，我们需要配置后端服务连接",
+      "features": {
+        "title": "后端服务负责：",
+        "ai": {
+          "title": "AI 模型调用",
+          "description": "连接 Claude 等 AI 模型进行智能对话"
+        },
+        "storage": {
+          "title": "文件存储和管理",
+          "description": "保存您的工作内容和项目文件"
+        },
+        "history": {
+          "title": "会话历史记录",
+          "description": "保存和管理您的对话历史"
+        }
+      }
+    },
+    "detecting": {
+      "title": "检测后端服务",
+      "description": "正在检测本地后端服务..."
+    },
+    "found": {
+      "title": "检测到本地后端服务",
+      "description": "我们在您的系统中发现了可用的后端服务",
+      "serviceAddress": "服务地址",
+      "status": "连接正常",
+      "useThisService": "使用此服务",
+      "addOtherService": "添加其他服务"
+    },
+    "notFound": {
+      "title": "未检测到本地后端服务",
+      "description": "请选择以下方式之一来配置后端服务",
+      "tabs": {
+        "install": "本地安装",
+        "remote": "使用远程服务"
+      },
+      "install": {
+        "title": "安装本地后端服务",
+        "description": "按照以下步骤在本地安装后端服务：",
+        "copyCommands": "复制安装命令",
+        "viewDocs": "查看完整文档",
+        "retry": "重新检测"
+      },
+      "remote": {
+        "title": "使用远程后端服务",
+        "description": "如果您已有远程服务，可以在这里配置连接",
+        "serviceName": "服务名称",
+        "serviceNamePlaceholder": "例如：公司服务器",
+        "serviceUrl": "服务地址",
+        "testConnection": "测试连接",
+        "testing": "测试中...",
+        "success": "连接成功",
+        "failed": "连接失败",
+        "addService": "添加服务",
+        "commonServices": "常用服务：",
+        "official": "官方服务",
+        "local": "本地服务"
+      }
+    },
+    "complete": {
+      "title": "配置完成！",
+      "description": "已成功连接到后端服务",
+      "serviceName": "服务名称",
+      "serviceUrl": "服务地址",
+      "nextSteps": {
+        "title": "接下来",
+        "description": "请登录系统开始使用 AgentStudio"
+      },
+      "goToLogin": "前往登录",
+      "manageServices": "管理服务"
+    },
+    "skipConfirm": {
+      "title": "确定要跳过配置？",
+      "warning": "未配置后端服务可能导致：",
+      "consequences": {
+        "noAi": "无法连接 AI 服务",
+        "noStorage": "无法保存工作内容",
+        "noFeatures": "系统功能不可用"
+      },
+      "reconfigure": "您可以随时在以下位置重新配置：",
+      "locations": {
+        "loginPage": "登录页面的服务管理",
+        "settingsPage": "设置页面的 API 配置"
+      },
+      "back": "返回配置",
+      "skip": "仍要跳过"
+    },
+    "addService": {
+      "title": "添加后端服务",
+      "description": "输入后端服务的地址和名称进行连接",
+      "installHelp": "安装帮助",
+      "installGuide": {
+        "title": "本地安装指南",
+        "description": "按照以下步骤在本地安装后端服务：",
+        "copyCommands": "复制命令",
+        "viewDocs": "查看文档"
+      },
+      "serviceName": "服务名称",
+      "serviceNamePlaceholder": "例如：公司服务器",
+      "serviceUrl": "服务地址",
+      "testConnection": "测试连接",
+      "testing": "测试中...",
+      "success": "连接成功",
+      "failed": "连接失败",
+      "commonServices": "常用服务：",
+      "official": "官方服务",
+      "local": "本地服务",
+      "retry": "重新检测",
+      "addButton": "添加服务"
+    },
+    "actions": {
+      "skip": "跳过",
+      "getStarted": "开始配置",
+      "next": "下一步",
+      "back": "上一步"
+    }
+  }
+}

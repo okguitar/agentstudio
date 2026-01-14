@@ -1,0 +1,120 @@
+{
+  "title": "技能管理",
+  "subtitle": "创建和管理 Claude 助手技能，扩展 AI 功能",
+  "createButton": "创建技能",
+  "searchPlaceholder": "搜索技能名称或描述...",
+  "filter": {
+    "showDisabled": "显示已禁用技能"
+  },
+  "noSkills": "还没有创建任何技能",
+  "noSkillsSearch": "没有找到匹配的技能",
+  "createFirst": "创建第一个技能",
+  "scope": {
+    "user": "用户技能"
+  },
+  "source": {
+    "local": "本地",
+    "plugin": "插件"
+  },
+  "status": {
+    "enabled": "已启用",
+    "disabled": "已禁用"
+  },
+  "table": {
+    "skill": "技能",
+    "tools": "工具",
+    "status": "状态",
+    "updated": "更新时间",
+    "actions": "操作"
+  },
+  "adjustSearch": "尝试调整搜索条件",
+  "preview": {
+    "updated": "更新于",
+    "usage": "使用 {{count}} 次",
+    "actions": {
+      "edit": "编辑",
+      "view": "查看",
+      "browseFiles": "浏览文件",
+      "delete": "删除"
+    }
+  },
+  "detail": {
+    "description": "描述",
+    "allowedTools": "允许的工具",
+    "additionalFiles": "附加文件",
+    "browseFiles": "浏览文件",
+    "files": "文件",
+    "back": "返回",
+    "close": "关闭"
+  },
+  "deleteConfirm": "确定要删除技能 \"{{name}}\" 吗？此操作不可撤销。",
+  "errors": {
+    "loadFailed": "加载技能失败",
+    "createFailed": "创建技能失败",
+    "updateFailed": "更新技能失败",
+    "deleteFailed": "删除技能失败"
+  },
+  "create": {
+    "title": "创建新技能",
+    "subtitle": "配置新技能的基本信息和功能",
+    "tabs": {
+      "basic": "基本信息",
+      "manifest": "技能清单",
+      "files": "附件文件"
+    },
+    "basic": {
+      "name": "技能名称",
+      "namePlaceholder": "输入技能名称",
+      "nameHint": "技能的显示名称，支持中英文和数字",
+      "description": "技能描述",
+      "descriptionPlaceholder": "详细描述这个技能的功能和用途",
+      "descriptionHint": "清晰的描述有助于理解技能的作用",
+      "allowedTools": "允许使用的工具",
+      "allowedToolsHint": "选择此技能可以使用的工具",
+      "noToolsSelected": "尚未选择任何工具",
+      "selectTools": "选择工具",
+      "unsavedChanges": "您有未保存的更改"
+    },
+    "content": {
+      "skillManifest": "技能清单",
+      "additionalFiles": "附加文件",
+      "addFile": "添加文件",
+      "noFiles": "没有附加文件",
+      "noFilesHint": "点击上方按钮添加技能相关文件",
+      "fileName": "文件名",
+      "filePath": "文件路径",
+      "fileContent": "文件内容",
+      "fileType": {
+        "markdown": "Markdown",
+        "text": "文本",
+        "script": "脚本",
+        "template": "模板",
+        "other": "其他"
+      }
+    }
+  },
+  "editor": {
+    "title": "编辑技能",
+    "scope": {
+      "user": "用户级技能"
+    },
+    "basic": {
+      "name": "技能名称",
+      "description": "技能描述",
+      "allowedTools": "允许使用的工具",
+      "allowedToolsHint": "选择此技能可以使用的工具",
+      "skillContent": "技能内容",
+      "unsavedChanges": "您有未保存的更改，按 Cmd+S 保存"
+    },
+    "files": {
+      "title": "附加文件",
+      "addFile": "添加文件",
+      "noFiles": "没有附加文件",
+      "addFilesHint": "添加相关文件来支持技能功能"
+    },
+    "errors": {
+      "validationErrors": "验证错误",
+      "saveFailed": "保存技能失败"
+    }
+  }
+}
