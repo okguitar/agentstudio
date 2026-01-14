@@ -81,14 +81,37 @@ program
       const expressApp = app.default;
       
       expressApp.listen(parseInt(options.port), options.host, () => {
+        const localUrl = `http://${options.host === '0.0.0.0' ? 'localhost' : options.host}:${options.port}`;
+        
+        // ASCII Art Banner - Single line style
         console.log('');
-        console.log(`✅ AgentStudio is running!`);
-        console.log(`   URL: http://${options.host === '0.0.0.0' ? 'localhost' : options.host}:${options.port}`);
+        console.log('\x1b[36m   ╭──────────────────────────────────────────────────────────────────────────╮\x1b[0m');
+        console.log('\x1b[36m   │  \x1b[1m█▀█ █▀▀ █▀▀ █▄ █ ▀█▀   █▀ ▀█▀ █ █ █▀▄ █ █▀█\x1b[0m\x1b[36m                           │\x1b[0m');
+        console.log('\x1b[36m   │  \x1b[1m█▀█ █▄█ ██▄ █ ▀█  █    ▄█  █  █▄█ █▄▀ █ █▄█\x1b[0m\x1b[36m   \x1b[33mv' + version + '\x1b[0m\x1b[36m                    │\x1b[0m');
+        console.log('\x1b[36m   ╰──────────────────────────────────────────────────────────────────────────╯\x1b[0m');
+        console.log('');
+        console.log('\x1b[32m   ✅ AgentStudio is running!\x1b[0m');
+        console.log('');
+        console.log(`   🌐 Local:      \x1b[36m${localUrl}\x1b[0m`);
+        console.log(`   🌍 Website:    \x1b[36mhttps://agentstudio.cc\x1b[0m`);
+        console.log(`   📖 Docs:       \x1b[36mhttps://github.com/okguitar/agentstudio/blob/main/docs/USER_MANUAL.md\x1b[0m`);
+        console.log('');
         if (!options.apiOnly) {
-          console.log(`   Open your browser to start using AgentStudio`);
+          console.log('   Open your browser to start your AI journey! 🚀');
+          console.log('');
         }
+        console.log('\x1b[90m   ─────────────────────────────────────────────────────────────────────────────\x1b[0m');
+        console.log('\x1b[90m   Quick Commands:\x1b[0m');
+        console.log(`   \x1b[33magentstudio start --port <port>\x1b[0m    Start on a specific port`);
+        console.log(`   \x1b[33magentstudio start --api-only\x1b[0m       Start API server only`);
+        console.log(`   \x1b[33magentstudio service install\x1b[0m        Install as system service`);
+        console.log(`   \x1b[33magentstudio service start|stop\x1b[0m     Control the service`);
+        console.log(`   \x1b[33magentstudio upgrade\x1b[0m                Upgrade to latest version`);
+        console.log(`   \x1b[33magentstudio --help\x1b[0m                 Show all commands`);
+        console.log('\x1b[90m   ─────────────────────────────────────────────────────────────────────────────\x1b[0m');
         console.log('');
-        console.log('   Press Ctrl+C to stop');
+        console.log('   Press \x1b[33mCtrl+C\x1b[0m to stop');
+        console.log('');
       });
     } catch (error) {
       console.error('❌ Failed to start AgentStudio:', error);
