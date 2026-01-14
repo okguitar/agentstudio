@@ -16,6 +16,16 @@ export type TaskType = 'a2a_async' | 'scheduled';
 export type PermissionMode = 'bypassPermissions' | 'default';
 
 /**
+ * Push Notification Configuration for task callbacks
+ */
+export interface TaskPushNotificationConfig {
+  url: string;
+  token?: string;
+  authScheme?: string;  // e.g., "Bearer"
+  authCredentials?: string;
+}
+
+/**
  * Task definition - submitted to executor
  */
 export interface TaskDefinition {
@@ -39,6 +49,9 @@ export interface TaskDefinition {
   // Metadata
   createdAt: string;
   scheduledFor?: string; // For scheduled tasks
+
+  // Push Notification (for A2A async tasks)
+  pushNotificationConfig?: TaskPushNotificationConfig;
 }
 
 /**

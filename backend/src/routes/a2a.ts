@@ -541,13 +541,14 @@ router.post('/tasks', a2aStrictRateLimiter, async (req: A2ARequest, res: Respons
       });
     }
 
-    const { message, timeout, context } = validation.data;
+    const { message, timeout, context, pushNotificationConfig } = validation.data;
 
     console.info('[A2A] Task creation requested:', {
       a2aAgentId: a2aContext.a2aAgentId,
       projectId: a2aContext.projectId,
       agentType: a2aContext.agentType,
       timeout,
+      hasWebhook: !!pushNotificationConfig?.url,
     });
 
     // Create task using TaskManager
@@ -561,6 +562,7 @@ router.post('/tasks', a2aStrictRateLimiter, async (req: A2ARequest, res: Respons
         additionalContext: context,
       },
       timeoutMs: timeout,
+      pushNotificationConfig,
     });
 
     // Submit task to executor for actual execution
@@ -573,6 +575,14 @@ router.post('/tasks', a2aStrictRateLimiter, async (req: A2ARequest, res: Respons
         throw new Error(`Agent not found: ${a2aContext.agentType}`);
       }
 
+      // Build push notification config for executor
+      const executorPushConfig = pushNotificationConfig ? {
+        url: pushNotificationConfig.url,
+        token: pushNotificationConfig.token,
+        authScheme: pushNotificationConfig.authentication?.schemes?.[0],
+        authCredentials: pushNotificationConfig.authentication?.credentials,
+      } : undefined;
+
       await executor.submitTask({
         id: task.id,
         type: 'a2a_async',
@@ -584,11 +594,19 @@ router.post('/tasks', a2aStrictRateLimiter, async (req: A2ARequest, res: Respons
         maxTurns: agent.maxTurns,
         permissionMode: 'bypassPermissions',
         createdAt: task.createdAt,
+        pushNotificationConfig: executorPushConfig,
       });
 
       console.info('[A2A] Task submitted to executor:', {
         taskId: task.id,
         executorMode: executor.getStats().mode,
+      });
+
+      // Task successfully submitted - return 202 Accepted
+      res.status(202).json({
+        taskId: task.id,
+        status: task.status,
+        checkUrl: `/a2a/${a2aContext.a2aAgentId}/tasks/${task.id}`,
       });
     } catch (executorError) {
       console.error('[A2A] Error submitting task to executor:', executorError);
@@ -607,15 +625,15 @@ router.post('/tasks', a2aStrictRateLimiter, async (req: A2ARequest, res: Respons
         }
       );
 
-      // Still return 202 since task was created
-      // But the task will be in failed state
+      // Return 500 since task submission failed
+      // Include task ID so client can still query its (failed) status if needed
+      return res.status(500).json({
+        error: 'Failed to submit task for execution',
+        code: 'EXECUTOR_SUBMISSION_ERROR',
+        taskId: task.id,
+        checkUrl: `/a2a/${a2aContext.a2aAgentId}/tasks/${task.id}`,
+      });
     }
-
-    res.status(202).json({
-      taskId: task.id,
-      status: task.status,
-      checkUrl: `/a2a/${a2aContext.a2aAgentId}/tasks/${task.id}`,
-    });
   } catch (error) {
     console.error('[A2A] Error creating task:', error);
     res.status(500).json({

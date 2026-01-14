@@ -525,6 +525,36 @@ export function getRunningExecutions(): Array<{
   }));
 }
 
+/**
+ * Called by task executor when a scheduled task execution completes
+ * Updates internal tracking counters and cleans up running execution records
+ *
+ * @param executionId - The execution ID that completed (format: exec_XXXXXXXX)
+ */
+export function onScheduledTaskComplete(executionId: string): void {
+  // Find the running execution by executionId
+  const execution = runningExecutions.get(executionId);
+
+  if (execution) {
+    runningExecutions.delete(executionId);
+    runningTaskCount--;
+
+    console.debug(`[Scheduler] Task execution completed: ${executionId} (task: ${execution.taskId}), running count: ${runningTaskCount}`);
+
+    // Update next run time for recurring tasks
+    const task = getScheduledTask(execution.taskId);
+    if (task && task.schedule.type !== 'once') {
+      const cronExpression = getCronExpression(task);
+      if (cronExpression) {
+        const nextRunAt = getNextRunTime(cronExpression);
+        updateTaskNextRunAt(execution.taskId, nextRunAt);
+      }
+    }
+  } else {
+    console.warn(`[Scheduler] onScheduledTaskComplete called for unknown execution: ${executionId}`);
+  }
+}
+
 // ============================================================================
 // Utility Functions
 // ============================================================================

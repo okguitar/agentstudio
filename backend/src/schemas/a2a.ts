@@ -29,6 +29,23 @@ export const A2AMessageRequestSchema = z.object({
 });
 
 /**
+ * Push Notification Authentication Info validation
+ */
+export const PushNotificationAuthenticationInfoSchema = z.object({
+  schemes: z.array(z.string()).min(1, 'At least one authentication scheme required'),
+  credentials: z.string().optional(),
+});
+
+/**
+ * Push Notification Configuration validation (A2A Protocol)
+ */
+export const PushNotificationConfigSchema = z.object({
+  url: z.string().url('Invalid webhook URL'),
+  token: z.string().optional(),
+  authentication: PushNotificationAuthenticationInfoSchema.optional(),
+});
+
+/**
  * POST /a2a/:a2aAgentId/tasks request validation
  */
 export const A2ATaskRequestSchema = z.object({
@@ -40,6 +57,7 @@ export const A2ATaskRequestSchema = z.object({
     .max(1800000, 'Timeout cannot exceed 30 minutes (1800000ms)')
     .optional(),
   context: z.record(z.unknown()).optional(),
+  pushNotificationConfig: PushNotificationConfigSchema.optional(),
 });
 
 // ============================================================================
