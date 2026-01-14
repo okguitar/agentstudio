@@ -10,6 +10,7 @@
 import { Worker } from 'worker_threads';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { existsSync } from 'fs';
 import type {
   ITaskExecutor,
   TaskDefinition,
@@ -262,9 +263,33 @@ export class BuiltinTaskExecutor implements ITaskExecutor {
   private async startTask(task: TaskDefinition): Promise<void> {
     console.info(`[TaskExecutor] Starting task: ${task.id} (type=${task.type})`);
 
-    const workerPath = path.join(_dirname, 'taskWorker.js');
+    // Worker Threads require compiled JavaScript files
+    // The worker file path resolution strategy:
+    // 1. Check current directory (works when running from dist/)
+    // 2. Check dist directory (works when running from src/ during tests)
+    //
+    // Note: We cannot use .ts files directly in Workers because:
+    // - Workers run in isolated threads without access to the parent's TypeScript loader
+    // - Even with tsx/ts-node, configuring loaders for Workers is unreliable
+    // - Best practice: Run `pnpm run build` before testing
 
-    // Create worker
+    let workerPath = path.join(_dirname, 'taskWorker.js');
+
+    if (!existsSync(workerPath)) {
+      // If not found in current directory, try the dist directory
+      // This handles the case when tests run from src/ but need dist/ workers
+      const distPath = _dirname.replace('/src/', '/dist/');
+      workerPath = path.join(distPath, 'taskWorker.js');
+
+      if (!existsSync(workerPath)) {
+        throw new Error(
+          `Worker file not found at ${workerPath}. ` +
+          `Please run 'pnpm run build' to compile TypeScript files.`
+        );
+      }
+    }
+
+    // Create worker with the compiled JavaScript file
     const worker = new Worker(workerPath, {
       workerData: task,
       resourceLimits: {
@@ -397,30 +422,61 @@ export class BuiltinTaskExecutor implements ITaskExecutor {
         // Store result for A2A task
         const { taskManager } = await import('../a2a/taskManager.js');
 
+        // First, ensure task is in 'running' state (pending → running transition)
+        // This is needed because the task was created as 'pending' and we need
+        // a valid state transition: pending → running → completed/failed
+        try {
+          const currentTask = await taskManager.getTask(task.projectPath, task.id);
+          if (currentTask && currentTask.status === 'pending') {
+            await taskManager.updateTaskStatus(
+              task.projectPath,
+              task.id,
+              'running',
+              { startedAt: task.createdAt }
+            );
+          }
+        } catch (transitionError) {
+          console.warn(`[TaskExecutor] Could not transition A2A task ${task.id} to running:`, transitionError);
+        }
+
+        // Prepare output and error for storage and webhook
+        let taskOutput: { result: string } | undefined;
+        let taskError: { message: string; code: string; stack?: string } | undefined;
+
+        // Now update to final state
         if (result.status === 'completed') {
+          taskOutput = { result: result.output || '' };
           await taskManager.updateTaskStatus(
             task.projectPath,
             task.id,
             'completed',
             {
-              output: { result: result.output || '' },
+              output: taskOutput,
               completedAt: result.completedAt,
             }
           );
         } else {
+          taskError = {
+            message: result.error || 'Unknown error',
+            code: 'EXECUTION_ERROR',
+            stack: result.errorStack,
+          };
           await taskManager.updateTaskStatus(
             task.projectPath,
             task.id,
             'failed',
             {
-              errorDetails: {
-                message: result.error || 'Unknown error',
-                code: 'EXECUTION_ERROR',
-                stack: result.errorStack,
-              },
+              errorDetails: taskError,
               completedAt: result.completedAt,
             }
           );
+        }
+
+        // Send webhook callback if configured (fire and forget, don't block)
+        if (task.pushNotificationConfig?.url) {
+          this.sendWebhookCallback(task, result.status, taskOutput, taskError).catch(err => {
+            console.error(`[TaskExecutor] Webhook callback failed for task ${task.id}:`, err);
+          });
         }
       } else if (task.type === 'scheduled') {
         // Store result for scheduled task
@@ -428,6 +484,7 @@ export class BuiltinTaskExecutor implements ITaskExecutor {
           updateTaskExecution,
           updateTaskRunStatus,
         } = await import('../scheduledTaskStorage.js');
+        const { onScheduledTaskComplete } = await import('../schedulerService.js');
 
         await updateTaskExecution(task.id, result.sessionId || task.id, {
           status: result.status === 'completed' ? 'success' : 'error',
@@ -444,6 +501,10 @@ export class BuiltinTaskExecutor implements ITaskExecutor {
           result.status === 'completed' ? 'success' : 'error',
           result.error
         );
+
+        // Notify scheduler that task execution is complete
+        // This updates runningTaskCount and runningExecutions tracking
+        onScheduledTaskComplete(task.id);
       }
     } catch (error) {
       console.error(`[TaskExecutor] Error storing result:`, error);
@@ -455,6 +516,38 @@ export class BuiltinTaskExecutor implements ITaskExecutor {
     this.stats.runningTasks = this.workers.size;
     this.stats.queuedTasks = this.taskQueue.length;
     this.stats.uptimeMs = Date.now() - this.startTime;
+  }
+
+  /**
+   * Send webhook callback for completed A2A task
+   */
+  private async sendWebhookCallback(
+    task: TaskDefinition,
+    status: 'completed' | 'failed' | 'canceled',
+    output?: { result: string },
+    errorDetails?: { message: string; code: string; stack?: string }
+  ): Promise<void> {
+    if (!task.pushNotificationConfig?.url) {
+      return;
+    }
+
+    const { sendTaskCompletionWebhook } = await import('../a2a/webhookService.js');
+
+    console.info(`[TaskExecutor] Sending webhook callback for task ${task.id} to ${task.pushNotificationConfig.url}`);
+
+    const result = await sendTaskCompletionWebhook(
+      task.pushNotificationConfig,
+      task.id,
+      status,
+      output,
+      errorDetails
+    );
+
+    if (result.success) {
+      console.info(`[TaskExecutor] Webhook callback sent successfully for task ${task.id} (${result.attempts} attempts)`);
+    } else {
+      console.error(`[TaskExecutor] Webhook callback failed for task ${task.id}: ${result.error} (${result.attempts} attempts)`);
+    }
   }
 
   /**
