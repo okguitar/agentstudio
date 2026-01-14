@@ -1,4 +1,8 @@
 {
+  "docs": {
+    "backToHome": "Back to Home",
+    "documentation": "Documentation"
+  },
   "nav": {
     "dashboard": "Dashboard",
     "projects": "Projects",
@@ -57,45 +61,126 @@
     "enterSystem": "Enter System"
   },
   "landing": {
-    "pageTitle": "AgentStudio - AI Agent Platform | Powered by Claude Code",
-    "metaDescription": "A modern personal agent platform built on Claude Code SDK. Access powerful AI capabilities through an intuitive web interface, supporting multiple LLMs to boost productivity.",
+    "pageTitle": "AgentStudio - Agent Workspace | Powered by Claude Agent SDK",
+    "metaDescription": "Agent for Work - Your local Agent workspace powered by Claude Agent SDK. Fully private data, scheduled tasks, A2A protocol, and custom agents.",
     "nav": {
-      "enterWorkspace": "Enter Workspace"
+      "enterWorkspace": "Enter Workspace",
+      "docs": "Docs"
     },
     "hero": {
-      "title": "AI Agent Platform",
-      "subtitle": "Make AI Your Powerful Assistant",
-      "description": "A modern personal agent platform built on Claude Code SDK. Access powerful AI capabilities through an intuitive web interface to boost productivity.",
+      "badge": "Powered by Claude Agent SDK",
+      "title": "Agent for Work",
+      "subtitle": "Your Local Agent Workspace",
+      "description": "A truly private AI assistant running on your computer. Your data stays local, with scheduled task automation and multi-agent collaboration.",
       "startNow": "Get Started",
-      "viewSource": "View Source"
+      "viewSource": "View Source",
+      "copyCommand": "Copy Command",
+      "installHint": "Copy the command below and run it in your terminal to get started",
+      "copy": "Copy",
+      "copied": "Copied"
+    },
+    "preview": {
+      "title": "Product Preview",
+      "subtitle": "Intuitive Web interface for efficient AI work",
+      "chatAlt": "Chat interface screenshot",
+      "chatCaption": "Chat Interface - Talk to Agent with visual tool execution",
+      "mcpAlt": "MCP service management screenshot",
+      "mcpCaption": "MCP Management - One-click import Claude Code config"
     },
     "features": {
       "title": "Core Features",
-      "subtitle": "Comprehensive Features for Modern AI Workflows",
-      "modernWeb": {
-        "title": "Modern Web Interface",
-        "description": "Professional intuitive Web UI, real-time streaming responses, split-panel design, suitable for developers and general users"
+      "subtitle": "A complete solution for AI work automation",
+      "localWorkspace": {
+        "title": "Local Agent Workspace",
+        "point1": "Runs on your computer - a true local workspace",
+        "point2": "Data is fully private, never uploaded to cloud",
+        "point3": "Files, code, and conversations under your control"
       },
-      "multiModel": {
-        "title": "Multi-Model Support",
-        "description": "Support for Claude, OpenAI, GLM, DeepSeek and other LLMs, flexible switching to meet different needs"
+      "webExperience": {
+        "title": "Web-Based Experience",
+        "point1": "Say goodbye to CLI, embrace a friendly Web interface",
+        "point2": "Visual tool execution makes conversations come alive",
+        "point3": "Built-in file browser to view project files alongside chat"
       },
-      "agentSystem": {
-        "title": "Agent System",
-        "description": "Built-in professional agents, custom agent creation, message-level tool customization, extensible development framework"
-      },
-      "fileManagement": {
-        "title": "File Management",
-        "description": "Built-in file explorer, project-aware operations, version control integration, support for image upload and content preview"
-      },
-      "professionalTools": {
-        "title": "Professional Tools",
-        "description": "Slide agents, code explorer, document outline, tool renderer and other professional tools to boost productivity"
-      },
-      "secureReliable": {
-        "title": "Secure & Reliable",
-        "description": "Environment variables protect API keys, CORS configuration, input validation, sandboxed file system access to ensure security"
+      "sdkFeatures": {
+        "title": "Claude Agent SDK Full Suite",
+        "skills": "Skills",
+        "commands": "Commands",
+        "plugins": "Plugins",
+        "memory": "Memory",
+        "subagent": "Subagent",
+        "multiModel": "Multi-Model",
+        "anthropicCompat": "Supports Claude, GLM, DeepSeek, Kimi K2, MiniMax and other models compatible with Anthropic API"
       }
+    },
+    "scheduler": {
+      "badge": "Scheduled Tasks",
+      "title": "Let Agents Run on Schedule",
+      "description": "True AI work automation! Set time rules and your Agent will automatically handle repetitive tasks, freeing up your time.",
+      "scenariosTitle": "Typical Use Cases",
+      "scenario1": {
+        "title": "Daily Progress Report",
+        "desc": "Every day at 9 AM, automatically generate project progress report"
+      },
+      "scenario2": {
+        "title": "Auto Code Review",
+        "desc": "Check code repository every 2 hours, automatically submit review comments"
+      },
+      "scenario3": {
+        "title": "Weekly Meeting Summary",
+        "desc": "Every Friday, automatically compile and archive weekly meeting notes"
+      },
+      "scenario4": {
+        "title": "Monthly Data Analysis",
+        "desc": "On the 1st of each month, automatically generate business data analysis report"
+      }
+    },
+    "a2a": {
+      "badge": "A2A Protocol",
+      "title": "Agent Collaboration Network",
+      "description": "Connect multiple agents into a collaborative network. Local and remote agents work together, building your personal AI team.",
+      "scenariosTitle": "Typical Use Cases",
+      "scenario1": {
+        "title": "Secretary Agent Dispatch",
+        "desc": "A secretary Agent receives tasks and dispatches other project Agents to execute specific work"
+      },
+      "scenario2": {
+        "title": "Local ↔ Remote Collaboration",
+        "desc": "Agents on your local machine and remote dev server communicate and collaborate on tasks"
+      },
+      "scenario3": {
+        "title": "Mobile Access Anywhere",
+        "desc": "Interact with local Agents via mobile messaging, work from anywhere (Beta)"
+      }
+    },
+    "customAgent": {
+      "badge": "Custom Agents",
+      "title": "Build Your Own Agent",
+      "description": "No coding required - customize your Agent through the UI. Built-in Claude Code Agent ready to use, suitable for various work scenarios.",
+      "example1": "PPT Creator Agent",
+      "example2": "Secretary Agent",
+      "example3": "Doc Writer Agent",
+      "example4": "Code Review Agent"
+    },
+    "comparison": {
+      "title": "AgentStudio vs Claude Code",
+      "subtitle": "Same Claude Agent SDK, friendlier experience",
+      "dimension": "Comparison",
+      "interface": "Interface",
+      "webInterface": "UI",
+      "cli": "Command Line (CLI)",
+      "targetUsers": "Target Users",
+      "everyone": "Everyone",
+      "developers": "Mainly Developers",
+      "toolDisplay": "Tool Display",
+      "visual": "Visual Rendering",
+      "textOnly": "Text Only",
+      "fileBrowser": "File Browser",
+      "agentCustom": "Agent Customization",
+      "scheduler": "Scheduled Tasks",
+      "a2a": "A2A Protocol",
+      "mobileAccess": "Mobile Access",
+      "beta": "Beta"
     },
     "quickStart": {
       "title": "Quick Start",
@@ -106,12 +191,12 @@
       "developerDescription": "Full development environment, supports hot reload, perfect for custom development and feature extension"
     },
     "cta": {
-      "title": "Ready to start your AI workflow?",
-      "subtitle": "Join developers and teams using AgentStudio and experience AI-driven productivity",
+      "title": "Ready to start your AI work automation?",
+      "subtitle": "One command to launch your local Agent workspace",
       "start": "Get Started"
     },
     "footer": {
-      "description": "Personal agent platform built on Claude Code SDK, make AI your powerful assistant.",
+      "description": "Agent for Work - Your local Agent workspace powered by Claude Agent SDK.",
       "copyright": "© 2024 AgentStudio. MIT License.",
       "product": "Product",
       "workspace": "Workspace",

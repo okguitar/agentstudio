@@ -1,4 +1,8 @@
 {
+  "docs": {
+    "backToHome": "返回首页",
+    "documentation": "文档目录"
+  },
   "nav": {
     "dashboard": "仪表板",
     "projects": "项目管理",
@@ -57,61 +61,134 @@
     "enterSystem": "进入系统"
   },
   "landing": {
-    "pageTitle": "AgentStudio - 智能体工作平台 | Claude Code 驱动的 AI 助手",
-    "metaDescription": "基于 Claude Code SDK 的现代化个人智能体工作平台。通过直观的 Web 界面，轻松访问强大的 AI 能力，支持多种大语言模型，提升工作效率。",
+    "pageTitle": "AgentStudio - Agent 工作台 | Claude Agent SDK 驱动",
+    "metaDescription": "Agent for Work - 本地的 Agent 工作台，由 Claude Agent SDK 强力驱动。数据完全私有，支持定时任务、A2A 协议、自定义 Agent。",
     "nav": {
-      "enterWorkspace": "进入工作台"
+      "enterWorkspace": "进入工作台",
+      "docs": "文档"
     },
     "hero": {
-      "title": "智能体工作平台",
-      "subtitle": "让AI成为你的得力助手",
-      "description": "基于 Claude Code SDK 构建的现代化个人智能体工作平台。通过直观的 Web 界面，轻松访问强大的 AI 能力，提升工作效率。",
-      "startNow": "立即开始",
-      "viewSource": "查看源码"
+      "badge": "由 Claude Agent SDK 强力驱动",
+      "title": "Agent for Work",
+      "subtitle": "本地的 Agent 工作台",
+      "description": "真正运行在你电脑上的私人 AI 助理。数据完全私有，安全可控，支持定时任务自动化和多 Agent 协作。",
+      "startNow": "开始使用",
+      "viewSource": "查看源码",
+      "copyCommand": "复制命令",
+      "installHint": "复制下面的命令到终端运行，即可开始使用",
+      "copy": "复制",
+      "copied": "已复制"
+    },
+    "preview": {
+      "title": "产品预览",
+      "subtitle": "直观的 Web 界面，让 AI 工作更高效",
+      "chatAlt": "聊天界面截图",
+      "chatCaption": "聊天界面 - 与 Agent 对话，可视化展示工具调用",
+      "mcpAlt": "MCP 服务管理截图",
+      "mcpCaption": "MCP 服务管理 - 一键导入 Claude Code 配置"
     },
     "features": {
       "title": "核心特性",
-      "subtitle": "为现代化AI工作流程设计的全面功能集",
-      "modernWeb": {
-        "title": "现代化Web界面",
-        "description": "专业直观的 Web UI，实时流式响应，分屏布局设计，适合开发者和普通用户使用"
+      "subtitle": "为 AI 工作自动化设计的完整解决方案",
+      "localWorkspace": {
+        "title": "本地的 Agent 工作台",
+        "point1": "运行在你的电脑上，真正意义的本地工作台",
+        "point2": "数据完全私有，不上传云端",
+        "point3": "文件、代码、对话记录都在掌控之中"
       },
-      "multiModel": {
-        "title": "多模型支持",
-        "description": "支持 Claude、OpenAI、GLM、DeepSeek 等多种大语言模型，灵活切换，满足不同需求"
+      "webExperience": {
+        "title": "Web 版交互体验",
+        "point1": "告别命令行，拥抱友好的 Web 界面",
+        "point2": "工具调用可视化呈现，对话体验更鲜活",
+        "point3": "内置文件浏览器，对话同时查看项目文件"
       },
-      "agentSystem": {
-        "title": "智能体系统",
-        "description": "内置多种专业智能体，支持自定义智能体创建，消息级工具定制，扩展开发框架"
-      },
-      "fileManagement": {
-        "title": "文件管理",
-        "description": "内置文件浏览器，项目感知操作，版本控制集成，支持图片上传和内容预览"
-      },
-      "professionalTools": {
-        "title": "专业工具",
-        "description": "幻灯片智能体、代码探索器、文档大纲、工具渲染器等专业工具，提升工作效率"
-      },
-      "secureReliable": {
-        "title": "安全可靠",
-        "description": "环境变量保护API密钥，CORS配置，输入验证，沙盒文件系统访问，确保安全性"
+      "sdkFeatures": {
+        "title": "Claude Agent SDK 全家桶",
+        "skills": "技能系统",
+        "commands": "自定义命令",
+        "plugins": "插件生态",
+        "memory": "项目记忆",
+        "subagent": "子 Agent",
+        "multiModel": "多模型支持",
+        "anthropicCompat": "支持 Claude、GLM、DeepSeek、Kimi K2、MiniMax 等兼容 Anthropic 接口规范的模型"
       }
     },
-    "quickStart": {
-      "title": "快速开始",
-      "subtitle": "选择适合你的安装方式，几分钟内即可开始使用",
-      "endUserTitle": "普通用户 - 一键安装",
-      "endUserDescription": "无需配置，自动安装所有依赖，适合快速体验和日常使用",
-      "developerTitle": "开发者 - 源码部署",
-      "developerDescription": "完整开发环境，支持热重载，适合定制开发和功能扩展"
+    "scheduler": {
+      "badge": "定时任务调度",
+      "title": "让 Agent 按计划自动执行",
+      "description": "真正实现 AI 工作自动化！设定时间规则，Agent 将自动完成重复性工作，解放你的时间。",
+      "scenariosTitle": "典型应用场景",
+      "scenario1": {
+        "title": "每日进度日报",
+        "desc": "每天早上 9 点，自动生成项目进度日报"
+      },
+      "scenario2": {
+        "title": "代码自动审查",
+        "desc": "每 2 小时检查代码仓库，自动提交审查意见"
+      },
+      "scenario3": {
+        "title": "周会纪要整理",
+        "desc": "每周五自动整理本周会议纪要并归档"
+      },
+      "scenario4": {
+        "title": "月度数据分析",
+        "desc": "每月 1 号自动生成业务数据分析报告"
+      }
+    },
+    "a2a": {
+      "badge": "A2A 协议",
+      "title": "智能体协作网络",
+      "description": "让多个 Agent 形成协同工作的网络。本地 Agent、远程 Agent 互联互通，构建你的私人 AI 团队。",
+      "scenariosTitle": "典型应用场景",
+      "scenario1": {
+        "title": "秘书 Agent 调度",
+        "desc": "一个秘书 Agent 统一接收任务，自动调度其他项目 Agent 执行具体工作"
+      },
+      "scenario2": {
+        "title": "本地 ↔ 远程协作",
+        "desc": "本地电脑与远程开发机上的 Agent 互相通讯，协同完成任务"
+      },
+      "scenario3": {
+        "title": "移动端随时访问",
+        "desc": "通过移动通讯端与本地 Agent 交互，随时随地工作（内测中）"
+      }
+    },
+    "customAgent": {
+      "badge": "自定义 Agent",
+      "title": "打造你的专属 Agent",
+      "description": "无需编写代码，通过界面配置即可定制专属 Agent。内置 Claude Code Agent 开箱即用，满足各种工作场景。",
+      "example1": "PPT 制作 Agent",
+      "example2": "秘书 Agent",
+      "example3": "文档写作 Agent",
+      "example4": "代码审查 Agent"
+    },
+    "comparison": {
+      "title": "AgentStudio vs Claude Code",
+      "subtitle": "同样的 Claude Agent SDK，更友好的使用体验",
+      "dimension": "对比维度",
+      "interface": "交互形态",
+      "webInterface": "界面",
+      "cli": "命令行 (CLI)",
+      "targetUsers": "目标用户",
+      "everyone": "所有人",
+      "developers": "主要开发者",
+      "toolDisplay": "工具展示",
+      "visual": "可视化呈现",
+      "textOnly": "纯文本",
+      "fileBrowser": "文件浏览器",
+      "agentCustom": "Agent 定制",
+      "scheduler": "定时任务",
+      "a2a": "A2A 协议",
+      "mobileAccess": "移动端访问",
+      "beta": "内测中"
     },
     "cta": {
-      "title": "准备好开始你的AI工作流程了吗？",
-      "subtitle": "加入使用AgentStudio的开发者和团队，体验AI驱动的高效工作方式",
+      "title": "准备好开始你的 AI 工作自动化了吗？",
+      "subtitle": "一行命令，即刻启动你的本地 Agent 工作台",
       "start": "开始使用"
     },
     "footer": {
-      "description": "基于 Claude Code SDK 的个人智能体工作平台，让AI成为你的得力助手。",
+      "description": "Agent for Work - 本地的 Agent 工作台，由 Claude Agent SDK 强力驱动。",
       "copyright": "© 2024 AgentStudio. MIT License.",
       "product": "产品",
       "workspace": "工作台",
