@@ -50,7 +50,7 @@ const LandingPage: React.FC = () => {
             </div>
             <div className="flex items-center space-x-4">
               <a
-                href="https://github.com/okguitar/agentstudio/tree/main/docs"
+                href="https://github.com/okguitar/agentstudio/blob/main/docs/USER_MANUAL.md"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
@@ -519,7 +519,7 @@ const LandingPage: React.FC = () => {
             <div>
               <h3 className="text-white font-semibold mb-4">{t('landing.footer.support')}</h3>
               <ul className="space-y-2 text-sm">
-                <li><a href="https://github.com/okguitar/agentstudio/tree/main/docs" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">{t('landing.footer.documentation')}</a></li>
+                <li><a href="https://github.com/okguitar/agentstudio/blob/main/docs/USER_MANUAL.md" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">{t('landing.footer.documentation')}</a></li>
                 <li><a href="https://github.com/okguitar/agentstudio/issues" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">{t('landing.footer.issues')}</a></li>
                 <li><a href="https://github.com/okguitar/agentstudio/discussions" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">{t('landing.footer.discussions')}</a></li>
               </ul>

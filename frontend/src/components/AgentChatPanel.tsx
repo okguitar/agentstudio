@@ -34,9 +34,10 @@ interface AgentChatPanelProps {
   agent: AgentConfig;
   projectPath?: string;
   onSessionChange?: (sessionId: string | null) => void;
+  initialMessage?: string;
 }
 
-export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPath, onSessionChange }) => {
+export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPath, onSessionChange, initialMessage }) => {
   const { t } = useTranslation('components');
   const { isCompactMode } = useResponsiveSettings();
   const { isMobile } = useMobileContext();
@@ -50,6 +51,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
 
   // 基础状态
   const [inputMessage, setInputMessage] = useState('');
+  const [hasProcessedInitialMessage, setHasProcessedInitialMessage] = useState(false);
 
   // Agent store状态 - 需要在其他hooks之前
   const {
@@ -64,6 +66,18 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
     loadSessionMessages,
     setPendingUserQuestion,
   } = useAgentStore();
+
+  // 标记是否需要自动发送初始消息
+  const shouldAutoSendRef = useRef(false);
+  
+  // 处理初始消息 - 从 Dashboard 跳转过来时自动填充并发送
+  useEffect(() => {
+    if (initialMessage && !hasProcessedInitialMessage) {
+      setInputMessage(initialMessage);
+      setHasProcessedInitialMessage(true);
+      shouldAutoSendRef.current = true;
+    }
+  }, [initialMessage, hasProcessedInitialMessage]);
 
   // UI状态管理
   const uiState = useUIState();
@@ -381,6 +395,33 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
     getAllAvailableCommands,
     envVars,
   });
+
+  // 自动发送初始消息 - 从 Dashboard 跳转过来时
+  useEffect(() => {
+    if (!shouldAutoSendRef.current || !inputMessage) return;
+    
+    // 使用轮询确保条件满足后发送
+    const checkAndSend = () => {
+      if (!isSendDisabled() && !isAiTyping) {
+        shouldAutoSendRef.current = false;
+        handleSendMessage();
+        return true;
+      }
+      return false;
+    };
+    
+    // 立即尝试一次
+    if (checkAndSend()) return;
+    
+    // 如果不行，延迟重试
+    const timer = setTimeout(() => {
+      if (shouldAutoSendRef.current) {
+        checkAndSend();
+      }
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, [inputMessage, isSendDisabled, isAiTyping, handleSendMessage]);
 
   // 🎤 处理 AskUserQuestion 用户回答提交
   // 新架构：调用 HTTP API 提交用户响应，MCP 工具会自动接收并返回

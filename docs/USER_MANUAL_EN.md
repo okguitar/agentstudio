@@ -72,7 +72,7 @@ curl -fsSL https://raw.githubusercontent.com/okguitar/agentstudio/main/scripts/r
 ```bash
 git clone https://github.com/okguitar/agentstudio.git
 cd agentstudio
-pnpm install && pnpm run dev
+npm install && npm run dev
 ```
 
 After installation, visit `http://localhost:3000` in your browser to get started.
@@ -83,7 +83,7 @@ After installation, visit `http://localhost:3000` in your browser to get started
 
 The homepage is the portal page of AgentStudio, showcasing the core value and quick entry points.
 
-![Homepage](../.playwright-mcp/en-01-homepage.png)
+![Homepage](screenshots/en-01-homepage.png)
 
 ### Page Elements
 
@@ -123,7 +123,7 @@ The homepage is the portal page of AgentStudio, showcasing the core value and qu
 
 The dashboard is the first page you see after logging in, providing a global view of your work status.
 
-![Dashboard](../.playwright-mcp/en-02-dashboard.png)
+![Dashboard](screenshots/en-02-dashboard.png)
 
 ### Page Layout
 
@@ -176,7 +176,7 @@ The dashboard is the first page you see after logging in, providing a global vie
 
 The project management page is used to manage all work projects, where each project corresponds to a working directory.
 
-![Project Management Overview](../.playwright-mcp/en-project-list-overview.png)
+![Project Management Overview](screenshots/en-project-list-overview.png)
 
 ### Page Features
 
@@ -206,7 +206,7 @@ The project management page is used to manage all work projects, where each proj
 
 Click the **"Create New Project"** button in the top right to open the create project dialog:
 
-![Create Project Dialog](../.playwright-mcp/en-create-project-dialog.png)
+![Create Project Dialog](screenshots/en-create-project-dialog.png)
 
 #### Steps
 
@@ -436,7 +436,7 @@ The Tasks tab is used to monitor A2A protocol task execution:
 
 The agent management page is used to manage and configure AI assistants.
 
-![Agent Management Overview](../.playwright-mcp/en-agent-list-overview.png)
+![Agent Management Overview](screenshots/en-agent-list-overview.png)
 
 ### Page Features
 
@@ -601,7 +601,7 @@ Click the edit button in the agent list to open the edit dialog:
 
 The MCP (Model Context Protocol) service management page is used to configure and manage external tool servers.
 
-![MCP Services Overview](../.playwright-mcp/en-mcp-list-overview.png)
+![MCP Services Overview](screenshots/en-mcp-list-overview.png)
 
 ### Page Features
 
@@ -630,7 +630,7 @@ The MCP (Model Context Protocol) service management page is used to configure an
 
 Click the **"Add Service"** button to open the add dialog:
 
-![Add MCP Service Dialog](../.playwright-mcp/en-mcp-add-service.png)
+![Add MCP Service Dialog](screenshots/en-mcp-add-service.png)
 
 #### Dialog Field Descriptions
 
@@ -709,7 +709,7 @@ If you have already configured MCP services in Claude Code, you can automaticall
 
 The skills management page is used to create and manage Claude assistant skills to extend AI capabilities.
 
-![Skills Management Overview](../.playwright-mcp/en-skills-list-overview.png)
+![Skills Management Overview](screenshots/en-skills-list-overview.png)
 
 ### Page Features
 
@@ -805,7 +805,7 @@ Click the "View" button in the skill list to view the complete skill content:
 
 Click the folder icon in the skill list to view the complete file structure of the skill:
 
-![Skill File Browser](../.playwright-mcp/en-skill-file-browser.png)
+![Skill File Browser](screenshots/en-skill-file-browser.png)
 
 #### Features
 
@@ -822,7 +822,7 @@ The skill file browser allows you to view the complete contents of the skill dir
 
 3. **File Content Preview**
 
-![Skill File Content Preview](../.playwright-mcp/en-skill-file-preview.png)
+![Skill File Content Preview](screenshots/en-skill-file-preview.png)
 
 Click a specific file to preview its content:
    - Supports code syntax highlighting
@@ -851,7 +851,7 @@ Click a specific file to preview its content:
 
 The plugin management page is used to manage plugin marketplaces and installed plugins.
 
-![Plugin Management Overview](../.playwright-mcp/en-plugins-overview.png)
+![Plugin Management Overview](screenshots/en-plugins-overview.png)
 
 ### Page Features
 
@@ -875,7 +875,7 @@ The plugin management page is used to manage plugin marketplaces and installed p
 
 Click the **"Add Marketplace"** button to add a new plugin source:
 
-![Plugin Source Types](../.playwright-mcp/en-plugin-source-types.png)
+![Plugin Source Types](screenshots/en-plugin-source-types.png)
 
 #### Dialog Field Descriptions
 
@@ -923,7 +923,7 @@ Click the **"Add Marketplace"** button to add a new plugin source:
 
 Switch to the "Browse Plugins" tab to view and install available plugins:
 
-![Browse Plugins](../.playwright-mcp/en-plugins-browse.png)
+![Browse Plugins](screenshots/en-plugins-browse.png)
 
 #### Features
 
@@ -953,7 +953,7 @@ Switch to the "Browse Plugins" tab to view and install available plugins:
 
 The custom commands page is used to manage Slash Commands.
 
-![Custom Commands Overview](../.playwright-mcp/en-commands-overview.png)
+![Custom Commands Overview](screenshots/en-commands-overview.png)
 
 ### Page Features
 
@@ -1033,7 +1033,7 @@ In the chat interface, type `/` to trigger the command menu and select the comma
 
 The chat interface is the main work area for conversations with AI assistants.
 
-![Chat Interface](../.playwright-mcp/en-chat-interface.png)
+![Chat Interface](screenshots/en-chat-interface.png)
 
 ### Page Layout
 
@@ -1150,13 +1150,13 @@ Click the "Session History" button to view and switch historical sessions:
 
 Click the settings area at the bottom of the input box (showing current model and permission status, e.g., "GLM-4.7 | Bypass Permissions") to open the chat settings panel:
 
-![Chat Settings Panel](../.playwright-mcp/en-chat-settings-panel.png)
+![Chat Settings Panel](screenshots/en-chat-settings-panel.png)
 
 #### Setting Options
 
 1. **Supplier Selection**
 
-![Supplier Selection](../.playwright-mcp/en-chat-settings-suppliers.png)
+![Supplier Selection](screenshots/en-chat-settings-suppliers.png)
 
    - Select configured supplier from dropdown menu
    - Each supplier corresponds to different API configuration
@@ -1210,7 +1210,7 @@ Click the settings area at the bottom of the input box (showing current model an
 
 The look and feel settings page is used to configure interface theme and language:
 
-![Look and Feel](../.playwright-mcp/en-settings-look-and-feel.png)
+![Look and Feel](screenshots/en-settings-look-and-feel.png)
 
 #### Theme Settings
 
@@ -1243,7 +1243,7 @@ The look and feel settings page is used to configure interface theme and languag
 
 The supplier management page is used to configure multiple AI model suppliers:
 
-![Supplier Management](../.playwright-mcp/en-settings-suppliers.png)
+![Supplier Management](screenshots/en-settings-suppliers.png)
 
 #### Page Features
 
@@ -1336,7 +1336,7 @@ Click the edit button in the supplier list to modify supplier configuration:
 
 The global memory page is used to manage cross-project shared memory content:
 
-![Global Memory](../.playwright-mcp/en-settings-memory.png)
+![Global Memory](screenshots/en-settings-memory.png)
 
 #### Features
 

@@ -61,18 +61,10 @@ AgentStudio 是一个基于 Claude Code SDK 构建的现代化个人智能体工
 
 ## 快速开始
 
-### 方式一：一键安装（推荐）
+### 一键安装
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/okguitar/agentstudio/main/scripts/remote-install.sh | bash
-```
-
-### 方式二：源码部署
-
-```bash
-git clone https://github.com/okguitar/agentstudio.git
-cd agentstudio
-pnpm install && pnpm run dev
+npm install -g agentstudio && agentstudio
 ```
 
 安装完成后，在浏览器中访问 `http://localhost:3000` 即可开始使用。
@@ -83,7 +75,7 @@ pnpm install && pnpm run dev
 
 首页是 AgentStudio 的门户页面，展示了产品的核心价值和快速入口。
 
-![首页](../.playwright-mcp/01-homepage.png)
+![首页](screenshots/01-homepage.png)
 
 ### 页面元素
 
@@ -123,7 +115,7 @@ pnpm install && pnpm run dev
 
 仪表板是您登录后看到的第一个页面，提供了工作状态的全局视图。
 
-![仪表板](../.playwright-mcp/02-dashboard.png)
+![仪表板](screenshots/02-dashboard.png)
 
 ### 页面布局
 
@@ -176,7 +168,7 @@ pnpm install && pnpm run dev
 
 项目管理页面用于管理所有工作项目，每个项目对应一个工作目录。
 
-![项目管理概览](../.playwright-mcp/project-list-overview.png)
+![项目管理概览](screenshots/project-list-overview.png)
 
 ### 页面功能
 
@@ -206,7 +198,7 @@ pnpm install && pnpm run dev
 
 点击右上角的 **"创建新项目"** 按钮，打开创建项目对话框：
 
-![创建项目对话框](../.playwright-mcp/create-project-dialog.png)
+![创建项目对话框](screenshots/create-project-dialog.png)
 
 #### 操作步骤
 
@@ -239,7 +231,7 @@ pnpm install && pnpm run dev
 
 对于已经存在的项目目录，可以通过导入功能快速添加：
 
-![导入项目对话框](../.playwright-mcp/import-project-dialog.png)
+![导入项目对话框](screenshots/import-project-dialog.png)
 
 #### 操作步骤
 
@@ -264,7 +256,7 @@ pnpm install && pnpm run dev
 
 每个项目可以有独立的记忆设置，帮助AI助手更好地理解项目上下文：
 
-![项目记忆管理](../.playwright-mcp/project-memory-dialog.png)
+![项目记忆管理](screenshots/project-memory-dialog.png)
 
 #### 功能说明
 
@@ -303,7 +295,7 @@ pnpm install && pnpm run dev
 
 为项目配置专属的自定义命令：
 
-![项目命令管理](../.playwright-mcp/project-commands-dialog.png)
+![项目命令管理](screenshots/project-commands-dialog.png)
 
 #### 功能说明
 
@@ -338,7 +330,7 @@ pnpm install && pnpm run dev
 
 管理项目中可用的子Agent配置：
 
-![项目子Agent管理](../.playwright-mcp/project-subagent-dialog.png)
+![项目子Agent管理](screenshots/project-subagent-dialog.png)
 
 #### 功能说明
 
@@ -370,7 +362,7 @@ pnpm install && pnpm run dev
 
 A2A（Agent-to-Agent）协议管理用于配置Agent之间的通信和协作：
 
-![A2A协议概览](../.playwright-mcp/project-a2a-overview.png)
+![A2A协议概览](screenshots/project-a2a-overview.png)
 
 #### 功能概述
 
@@ -390,7 +382,7 @@ A2A协议允许不同的Agent之间进行互操作，支持：
 
 #### API密钥管理
 
-![A2A API密钥](../.playwright-mcp/project-a2a-apikeys.png)
+![A2A API密钥](screenshots/project-a2a-apikeys.png)
 
 API密钥标签页用于管理服务的身份验证：
 
@@ -409,7 +401,7 @@ API密钥标签页用于管理服务的身份验证：
 
 #### 外部Agent管理
 
-![A2A外部Agent](../.playwright-mcp/project-a2a-external-agents.png)
+![A2A外部Agent](screenshots/project-a2a-external-agents.png)
 
 外部Agent标签页用于配置连接到外部Agent服务：
 
@@ -428,7 +420,7 @@ API密钥标签页用于管理服务的身份验证：
 
 #### 任务监控
 
-![A2A任务](../.playwright-mcp/project-a2a-tasks.png)
+![A2A任务](screenshots/project-a2a-tasks.png)
 
 任务标签页用于监控A2A协议的任务执行：
 
@@ -452,7 +444,7 @@ API密钥标签页用于管理服务的身份验证：
 
 Agent管理页面用于管理和配置 AI 助手。
 
-![Agent管理概览](../.playwright-mcp/agent-list-overview.png)
+![Agent管理概览](screenshots/agent-list-overview.png)
 
 ### 页面功能
 
@@ -482,7 +474,7 @@ Agent管理页面用于管理和配置 AI 助手。
 
 点击 **"创建助手"** 按钮打开创建对话框：
 
-![创建助手对话框](../.playwright-mcp/agent-create-dialog.png)
+![创建助手对话框](screenshots/agent-create-dialog.png)
 
 #### 对话框字段说明
 
@@ -521,7 +513,7 @@ Agent管理页面用于管理和配置 AI 助手。
 
 **预设模式**
 
-![预设系统提示词](../.playwright-mcp/agent-create-prompt-preset.png)
+![预设系统提示词](screenshots/agent-create-prompt-preset.png)
 
 - 选择"预设"选项使用系统默认的 Claude Code 提示词
 - 适用于需要完整 Claude Code 功能的助手
@@ -530,7 +522,7 @@ Agent管理页面用于管理和配置 AI 助手。
 
 **自定义模式**
 
-![自定义系统提示词](../.playwright-mcp/agent-create-prompt-custom.png)
+![自定义系统提示词](screenshots/agent-create-prompt-custom.png)
 
 - 选择"自定义"选项编写个性化提示词
 - 完全控制助手的行为和回答风格
@@ -547,7 +539,7 @@ Agent管理页面用于管理和配置 AI 助手。
 
 在创建或编辑助手时，需要选择可用的工具：
 
-![工具选择对话框](../.playwright-mcp/agent-tools-selection.png)
+![工具选择对话框](screenshots/agent-tools-selection.png)
 
 #### 可用工具类型
 
@@ -595,7 +587,7 @@ Agent管理页面用于管理和配置 AI 助手。
 
 点击助手列表中的编辑按钮，打开编辑对话框：
 
-![编辑助手对话框](../.playwright-mcp/agent-edit-dialog.png)
+![编辑助手对话框](screenshots/agent-edit-dialog.png)
 
 #### 可编辑内容
 
@@ -627,7 +619,7 @@ Agent管理页面用于管理和配置 AI 助手。
 
 MCP（Model Context Protocol）服务管理页面用于配置和管理外部工具服务器。
 
-![MCP服务概览](../.playwright-mcp/mcp-list-overview.png)
+![MCP服务概览](screenshots/mcp-list-overview.png)
 
 ### 页面功能
 
@@ -656,7 +648,7 @@ MCP（Model Context Protocol）服务管理页面用于配置和管理外部工�
 
 点击 **"添加服务"** 按钮打开添加对话框：
 
-![添加MCP服务对话框](../.playwright-mcp/mcp-add-service-dialog.png)
+![添加MCP服务对话框](screenshots/mcp-add-service-dialog.png)
 
 #### 对话框字段说明
 
@@ -706,7 +698,7 @@ MCP（Model Context Protocol）服务管理页面用于配置和管理外部工�
 
 如果您已经在 Claude Code 中配置了 MCP 服务，可以一键自动导入：
 
-![从Claude Code导入](../.playwright-mcp/mcp-import-claude-code.png)
+![从Claude Code导入](screenshots/mcp-import-claude-code.png)
 
 #### 操作步骤
 
@@ -736,7 +728,7 @@ MCP（Model Context Protocol）服务管理页面用于配置和管理外部工�
 
 技能管理页面用于创建和管理 Claude 助手技能，扩展 AI 功能。
 
-![技能管理概览](../.playwright-mcp/skills-list-overview.png)
+![技能管理概览](screenshots/skills-list-overview.png)
 
 ### 页面功能
 
@@ -764,7 +756,7 @@ MCP（Model Context Protocol）服务管理页面用于配置和管理外部工�
 
 点击 **"创建技能"** 按钮打开创建对话框：
 
-![创建技能对话框](../.playwright-mcp/skills-create-dialog.png)
+![创建技能对话框](screenshots/skills-create-dialog.png)
 
 #### 对话框字段说明
 
@@ -814,7 +806,7 @@ MCP（Model Context Protocol）服务管理页面用于配置和管理外部工�
 
 点击技能列表中的"查看"按钮，查看技能完整内容：
 
-![技能详情](../.playwright-mcp/skills-view-detail.png)
+![技能详情](screenshots/skills-view-detail.png)
 
 #### 详情内容
 
@@ -836,7 +828,7 @@ MCP（Model Context Protocol）服务管理页面用于配置和管理外部工�
 
 点击技能列表中的文件夹图标，可以查看技能的完整文件结构：
 
-![技能文件浏览器](../.playwright-mcp/skill-file-browser.png)
+![技能文件浏览器](screenshots/skill-file-browser.png)
 
 #### 功能说明
 
@@ -853,7 +845,7 @@ MCP（Model Context Protocol）服务管理页面用于配置和管理外部工�
 
 3. **文件内容预览**
 
-![技能文件内容预览](../.playwright-mcp/skill-file-preview.png)
+![技能文件内容预览](screenshots/skill-file-preview.png)
 
 点击具体文件可以预览其内容：
    - 支持代码高亮显示
@@ -882,7 +874,7 @@ MCP（Model Context Protocol）服务管理页面用于配置和管理外部工�
 
 插件管理页面用于管理插件市场和已安装插件。
 
-![插件管理概览](../.playwright-mcp/plugins-overview.png)
+![插件管理概览](screenshots/plugins-overview.png)
 
 ### 页面功能
 
@@ -906,7 +898,7 @@ MCP（Model Context Protocol）服务管理页面用于配置和管理外部工�
 
 点击 **"添加市场"** 按钮添加新的插件源：
 
-![添加市场对话框](../.playwright-mcp/plugins-add-market.png)
+![添加市场对话框](screenshots/plugins-add-market.png)
 
 #### 对话框字段说明
 
@@ -916,7 +908,7 @@ MCP（Model Context Protocol）服务管理页面用于配置和管理外部工�
 
 2. **来源类型**（必填）
 
-![来源类型选择](../.playwright-mcp/plugin-source-types.png)
+![来源类型选择](screenshots/plugin-source-types.png)
 
    系统支持三种插件市场来源类型：
 
@@ -956,7 +948,7 @@ MCP（Model Context Protocol）服务管理页面用于配置和管理外部工�
 
 切换到"浏览插件"标签页，查看和安装可用插件：
 
-![浏览插件](../.playwright-mcp/plugins-browse.png)
+![浏览插件](screenshots/plugins-browse.png)
 
 #### 功能说明
 
@@ -986,7 +978,7 @@ MCP（Model Context Protocol）服务管理页面用于配置和管理外部工�
 
 自定义命令页面用于管理 Slash Commands（斜杠命令）。
 
-![自定义命令概览](../.playwright-mcp/commands-overview.png)
+![自定义命令概览](screenshots/commands-overview.png)
 
 ### 页面功能
 
@@ -1007,7 +999,7 @@ MCP（Model Context Protocol）服务管理页面用于配置和管理外部工�
 
 点击 **"新建命令"** 按钮创建自定义命令：
 
-![新建命令对话框](../.playwright-mcp/commands-create-dialog.png)
+![新建命令对话框](screenshots/commands-create-dialog.png)
 
 #### 对话框字段说明
 
@@ -1068,7 +1060,7 @@ MCP（Model Context Protocol）服务管理页面用于配置和管理外部工�
 
 聊天界面是与 AI 助手进行对话的主要工作区域。
 
-![聊天界面](../.playwright-mcp/chat-interface.png)
+![聊天界面](screenshots/chat-interface.png)
 
 ### 页面布局
 
@@ -1132,7 +1124,7 @@ MCP（Model Context Protocol）服务管理页面用于配置和管理外部工�
 
 点击输入框旁的工具图标，配置当前对话可用的工具：
 
-![工具选择](../.playwright-mcp/chat-tools-selection.png)
+![工具选择](screenshots/chat-tools-selection.png)
 
 #### 功能说明
 
@@ -1159,7 +1151,7 @@ MCP（Model Context Protocol）服务管理页面用于配置和管理外部工�
 
 点击"会话历史"按钮查看和切换历史会话：
 
-![会话历史](../.playwright-mcp/chat-session-history.png)
+![会话历史](screenshots/chat-session-history.png)
 
 #### 功能说明
 
@@ -1189,13 +1181,13 @@ MCP（Model Context Protocol）服务管理页面用于配置和管理外部工�
 
 点击输入框下方的设置区域（显示当前模型和权限状态，如 "GLM-4.7 | 绕过权限"），打开聊天设置面板：
 
-![聊天设置面板](../.playwright-mcp/chat-settings-panel.png)
+![聊天设置面板](screenshots/chat-settings-panel.png)
 
 #### 设置选项
 
 1. **供应商选择**
 
-![供应商选择](../.playwright-mcp/chat-settings-suppliers.png)
+![供应商选择](screenshots/chat-settings-suppliers.png)
 
    - 从下拉菜单选择已配置的供应商
    - 每个供应商对应不同的 API 配置
@@ -1249,7 +1241,7 @@ MCP（Model Context Protocol）服务管理页面用于配置和管理外部工�
 
 外观设置页面用于配置界面主题和语言：
 
-![外观设置](../.playwright-mcp/settings-general.png)
+![外观设置](screenshots/settings-general.png)
 
 #### 主题设置
 
@@ -1282,7 +1274,7 @@ MCP（Model Context Protocol）服务管理页面用于配置和管理外部工�
 
 供应商管理页面用于配置多个 AI 模型供应商：
 
-![供应商管理概览](../.playwright-mcp/suppliers-overview.png)
+![供应商管理概览](screenshots/suppliers-overview.png)
 
 #### 页面功能
 
@@ -1310,7 +1302,7 @@ MCP（Model Context Protocol）服务管理页面用于配置和管理外部工�
 
 点击 **"添加供应商"** 按钮或快捷按钮添加新供应商：
 
-![添加供应商对话框](../.playwright-mcp/supplier-add-dialog.png)
+![添加供应商对话框](screenshots/supplier-add-dialog.png)
 
 ##### 对话框字段说明
 
@@ -1349,7 +1341,7 @@ MCP（Model Context Protocol）服务管理页面用于配置和管理外部工�
 
 点击供应商列表中的编辑按钮，修改供应商配置：
 
-![编辑供应商对话框](../.playwright-mcp/supplier-edit-dialog.png)
+![编辑供应商对话框](screenshots/supplier-edit-dialog.png)
 
 ##### 可编辑内容
 
@@ -1379,7 +1371,7 @@ MCP（Model Context Protocol）服务管理页面用于配置和管理外部工�
 
 全局记忆页面用于管理跨项目共享的记忆内容：
 
-![全局记忆](../.playwright-mcp/settings-memory.png)
+![全局记忆](screenshots/settings-memory.png)
 
 #### 功能说明
 

@@ -477,6 +477,7 @@ export class SessionManager {
     projectPath: string | null;
     claudeVersionId?: string;
     modelId?: string;
+    sessionTitle?: string;
   }> {
     const now = Date.now();
     const result: Array<{
@@ -491,6 +492,7 @@ export class SessionManager {
       projectPath: string | null;
       claudeVersionId?: string;
       modelId?: string;
+      sessionTitle?: string;
     }> = [];
 
     // 添加正式会话
@@ -507,7 +509,8 @@ export class SessionManager {
         status: 'confirmed',
         projectPath: session.getProjectPath(),
         claudeVersionId: session.getClaudeVersionId(),
-        modelId: session.getModelId()
+        modelId: session.getModelId(),
+        sessionTitle: session.getSessionTitle() || undefined
       });
     }
 
@@ -524,11 +527,50 @@ export class SessionManager {
         status: 'pending',
         projectPath: session.getProjectPath(),
         claudeVersionId: session.getClaudeVersionId(),
-        modelId: session.getModelId()
+        modelId: session.getModelId(),
+        sessionTitle: session.getSessionTitle() || undefined
       });
     }
 
     return result;
+  }
+
+  /**
+   * 清除所有会话（用户主动清理）
+   * @returns 清理的会话数量
+   */
+  async clearAllSessions(): Promise<number> {
+    console.log('🧹 Clearing all sessions...');
+    
+    const totalSessions = this.sessions.size + this.tempSessions.size;
+    
+    // 关闭所有正式会话
+    const sessionPromises = Array.from(this.sessions.values()).map(async (session) => {
+      try {
+        await session.close();
+      } catch (error) {
+        console.warn(`⚠️  Failed to close session:`, error);
+      }
+    });
+    
+    // 关闭所有临时会话
+    const tempPromises = Array.from(this.tempSessions.values()).map(async (session) => {
+      try {
+        await session.close();
+      } catch (error) {
+        console.warn(`⚠️  Failed to close temp session:`, error);
+      }
+    });
+    
+    await Promise.all([...sessionPromises, ...tempPromises]);
+    
+    this.sessions.clear();
+    this.tempSessions.clear();
+    this.agentSessions.clear();
+    this.sessionHeartbeats.clear();
+    
+    console.log(`✅ Cleared ${totalSessions} sessions`);
+    return totalSessions;
   }
 
   /**

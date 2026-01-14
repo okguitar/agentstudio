@@ -128,6 +128,21 @@ router.delete('/sessions/:sessionId', async (req, res) => {
   }
 });
 
+// 清除所有会话
+router.delete('/sessions', async (req, res) => {
+  try {
+    const clearedCount = await sessionManager.clearAllSessions();
+    res.json({ 
+      success: true, 
+      clearedCount,
+      message: `Successfully cleared ${clearedCount} sessions` 
+    });
+  } catch (error) {
+    console.error('Failed to clear all sessions:', error);
+    res.status(500).json({ error: 'Failed to clear all sessions' });
+  }
+});
+
 // 中断指定会话的当前请求
 router.post('/sessions/:sessionId/interrupt', async (req, res) => {
   try {
@@ -651,6 +666,9 @@ router.post('/chat', async (req, res) => {
 
         // 构建用户消息(传递claudeVersion以便查询isVision配置)
         const userMessage = await buildUserMessageContent(message, images, finalModel, projectPath, claudeVersion);
+
+        // 设置会话标题（使用第一条消息的前50个字符）
+        claudeSession.setSessionTitle(message);
 
         // 为这个特定请求创建一个独立的query调用，但复用session context
         const currentSessionId = claudeSession.getClaudeSessionId();

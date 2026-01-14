@@ -14,6 +14,7 @@ export interface SessionInfo {
   projectPath: string | null;
   claudeVersionId?: string;
   modelId?: string;
+  sessionTitle?: string;
 }
 
 export interface SessionsResponse {
@@ -79,4 +80,17 @@ export const cleanupSession = async (agentId: string, sessionId: string): Promis
     const errorData = await response.json();
     throw new Error(errorData.error || 'Failed to cleanup session');
   }
+};
+
+export const clearAllSessions = async (): Promise<{ clearedCount: number }> => {
+  const response = await authFetch(`${API_BASE}/agents/sessions`, {
+    method: 'DELETE',
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || 'Failed to clear all sessions');
+  }
+  
+  return response.json();
 };

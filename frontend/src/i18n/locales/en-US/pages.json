@@ -18,7 +18,8 @@
       "general": "Look & Feel",
       "suppliers": "Suppliers",
       "memory": "Memory",
-      "mcpAdmin": "MCP Admin"
+      "mcpAdmin": "MCP Admin",
+      "cloudflareTunnel": "Public Access"
     }
   },
   "footer": {
@@ -360,6 +361,15 @@
   "dashboard": {
     "title": "Dashboard",
     "welcome": "Welcome back to Claude Code workspace",
+    "defaultProjectName": "Default Workspace",
+    "loading": "Loading...",
+    "creatingDefaultProject": "Creating default workspace...",
+    "noAgentsEnabled": "No Agent available, please enable one first",
+    "goToAgents": "Go to Agent Management",
+    "selectProject": "Select Project",
+    "noProjects": "No projects",
+    "createNewProject": "Create New Project",
+    "selectProjectToStart": "Please select a project to start chatting",
     "stats": {
       "agentManagement": "Agent Management",
       "workProjects": "Work Projects",
@@ -561,6 +571,102 @@
         "deleteVersion": "Supplier deleted successfully",
         "setDefault": "Set \"{{alias}}\" as default supplier",
         "copyCommand": "Command copied to clipboard"
+      }
+    },
+    "cloudflare": {
+      "title": "Cloudflare Tunnel",
+      "description": "Enable public internet access with one click using Cloudflare Tunnel",
+      "wizard": {
+        "showGuide": "Show Setup Guide",
+        "steps": {
+          "intro": "Intro",
+          "credentials": "Credentials",
+          "create": "Create",
+          "start": "Start",
+          "done": "Done"
+        },
+        "intro": {
+          "title": "Welcome to Cloudflare Tunnel",
+          "description": "Cloudflare Tunnel allows you to expose your local AgentStudio to the internet without needing a public IP address.",
+          "benefit1": "No public IP or router configuration needed",
+          "benefit2": "Automatic HTTPS encryption for security",
+          "benefit3": "Powered by Cloudflare's global CDN",
+          "benefit4": "Free to use, quick to deploy",
+          "requirements": "Requirements",
+          "req1": "A free Cloudflare account",
+          "req2": "Python 3 environment (for API calls)",
+          "req3": "Docker or cloudflared CLI (to run the tunnel)",
+          "getStarted": "Get Started"
+        },
+        "credentials": {
+          "howToGet": "How to get Cloudflare credentials?",
+          "step1": "Visit Cloudflare Dashboard to create an API Token",
+          "step2": "Configure permissions: Cloudflare Tunnel - Edit",
+          "step3": "Copy your Account ID and API Token",
+          "openDashboard": "Open Cloudflare Dashboard",
+          "saveAndContinue": "Save and Continue"
+        },
+        "create": {
+          "description": "Now you can create your first Tunnel. You can customize the subdomain prefix or leave it empty for auto-generation.",
+          "createButton": "Create Tunnel with One Click"
+        },
+        "start": {
+          "tunnelCreated": "Tunnel created successfully!",
+          "nextStep": "Now you need to start the cloudflared client to establish the connection.",
+          "yourPublicUrl": "Your Public URL",
+          "importantNote": "Important Note",
+          "needToStartClient": "Tunnel is created, but you still need to start the cloudflared client to establish the connection. Follow the steps below.",
+          "howToStart": "How to start the tunnel?",
+          "option1": "Option 1: Using Docker",
+          "option2": "Option 2: Using cloudflared CLI",
+          "recommended": "Recommended",
+          "copy": "Copy",
+          "copied": "Copied",
+          "installCloudfared": "Install cloudflared",
+          "runCommand": "Run command",
+          "finishSetup": "Finish Setup"
+        },
+        "done": {
+          "title": "Setup Complete!",
+          "description": "Your AgentStudio is now accessible via the public internet",
+          "deleteTunnel": "Delete Tunnel",
+          "reminder": "Reminder",
+          "keepClientRunning": "Keep the cloudflared client running to maintain public access."
+        }
+      },
+      "credentials": {
+        "title": "Cloudflare Credentials",
+        "configured": "Credentials configured",
+        "update": "Update credentials",
+        "apiToken": "API Token",
+        "accountId": "Account ID",
+        "save": "Save",
+        "saving": "Saving...",
+        "cancel": "Cancel",
+        "help": "Get API Token and Account ID from"
+      },
+      "tunnel": {
+        "title": "Tunnel Management",
+        "active": "Active Tunnel",
+        "publicUrl": "Public URL",
+        "name": "Tunnel Name",
+        "localPort": "Local Port",
+        "createdAt": "Created At",
+        "subdomain": "Subdomain Prefix (Optional)",
+        "subdomainPlaceholder": "Leave empty for random subdomain",
+        "subdomainHelp": "Leave empty to auto-generate a random subdomain",
+        "create": "Enable Public Access",
+        "creating": "Creating...",
+        "details": "Tunnel Details",
+        "token": "Tunnel Token",
+        "cliCommand": "CLI Command"
+      },
+      "credentialsSaved": "Cloudflare credentials saved successfully",
+      "tunnelCreated": "Tunnel created successfully! Now accessible via public URL",
+      "tunnelDeleted": "Tunnel deleted",
+      "confirmDelete": "Are you sure you want to delete this tunnel?",
+      "errors": {
+        "credentialsRequired": "Please provide API Token and Account ID"
       }
     },
     "language": "Language Settings",

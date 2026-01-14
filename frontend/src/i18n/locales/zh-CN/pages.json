@@ -4,7 +4,7 @@
     "documentation": "文档目录"
   },
   "nav": {
-    "dashboard": "仪表板",
+    "dashboard": "首页",
     "projects": "项目管理",
     "agents": "Agent管理",
     "scheduledTasks": "定时任务",
@@ -18,7 +18,8 @@
       "general": "外观设置",
       "suppliers": "供应商管理",
       "memory": "全局记忆",
-      "mcpAdmin": "MCP Admin"
+      "mcpAdmin": "MCP Admin",
+      "cloudflareTunnel": "外网访问"
     }
   },
   "footer": {
@@ -350,8 +351,52 @@
     }
   },
   "dashboard": {
-    "title": "仪表板",
+    "title": "首页",
     "welcome": "欢迎回到Claude Code工作台",
+    "defaultProjectName": "默认工作空间",
+    "loading": "加载中...",
+    "creatingDefaultProject": "正在创建默认工作空间...",
+    "noAgentsEnabled": "没有可用的 Agent，请先启用一个 Agent",
+    "goToAgents": "前往 Agent 管理",
+    "selectProject": "选择项目",
+    "noProjects": "暂无项目",
+    "createNewProject": "创建新项目",
+    "noProjectsHint": {
+      "title": "还没有项目",
+      "description": "创建一个项目来开始与 AI 协作",
+      "createButton": "一键创建默认项目",
+      "creating": "创建中..."
+    },
+    "projectCreated": {
+      "title": "项目创建成功",
+      "message": "已经为您创建项目：{{name}}，你现在可以开始与 Agent 工作了。"
+    },
+    "quickLinks": {
+      "title": "快捷入口",
+      "projects": "项目管理",
+      "modelSettings": "模型供应商",
+      "scheduledTasks": "定时任务",
+      "customAgents": "自定义 Agent"
+    },
+    "sessions": {
+      "title": "活跃会话",
+      "clearAll": "清除全部",
+      "close": "关闭会话",
+      "closed": "会话已关闭",
+      "closedMessage": "会话已成功关闭",
+      "closeFailed": "关闭失败",
+      "closeError": "无法关闭会话",
+      "allCleared": "全部清除",
+      "allClearedMessage": "已清除 {{count}} 个会话",
+      "clearFailed": "清除失败",
+      "clearError": "无法清除会话",
+      "confirmed": "已确认",
+      "pending": "等待中",
+      "idle": "空闲",
+      "heartbeatTimeout": "心跳超时",
+      "session": "会话"
+    },
+    "selectProjectToStart": "请选择一个项目开始聊天",
     "stats": {
       "agentManagement": "Agent管理",
       "workProjects": "工作项目",
@@ -553,6 +598,102 @@
         "deleteVersion": "供应商删除成功",
         "setDefault": "已将 \"{{alias}}\" 设置为默认供应商",
         "copyCommand": "命令已复制到剪贴板"
+      }
+    },
+    "cloudflare": {
+      "title": "Cloudflare Tunnel",
+      "description": "一键启用外网访问，通过 Cloudflare Tunnel 将本地服务暴露到公网",
+      "wizard": {
+        "showGuide": "显示设置向导",
+        "steps": {
+          "intro": "介绍",
+          "credentials": "配置凭证",
+          "create": "创建隧道",
+          "start": "启动服务",
+          "done": "完成"
+        },
+        "intro": {
+          "title": "欢迎使用 Cloudflare Tunnel",
+          "description": "Cloudflare Tunnel 可以让你无需公网 IP，就能将本地运行的 AgentStudio 暴露到公网，实现随时随地访问。",
+          "benefit1": "无需公网 IP 或路由器配置",
+          "benefit2": "自动 HTTPS 加密，安全可靠",
+          "benefit3": "利用 Cloudflare 全球 CDN 加速",
+          "benefit4": "免费使用，快速部署",
+          "requirements": "前置要求",
+          "req1": "一个 Cloudflare 免费账号",
+          "req2": "Python 3 环境（用于调用 API）",
+          "req3": "Docker 或 cloudflared CLI（用于启动隧道）",
+          "getStarted": "开始设置"
+        },
+        "credentials": {
+          "howToGet": "如何获取 Cloudflare 凭证？",
+          "step1": "访问 Cloudflare Dashboard 创建 API Token",
+          "step2": "配置权限：Cloudflare Tunnel - Edit",
+          "step3": "复制 Account ID 和 API Token",
+          "openDashboard": "打开 Cloudflare Dashboard",
+          "saveAndContinue": "保存并继续"
+        },
+        "create": {
+          "description": "现在可以创建你的第一个 Tunnel 了。你可以自定义子域名前缀，或者留空让系统自动生成。",
+          "createButton": "一键创建 Tunnel"
+        },
+        "start": {
+          "tunnelCreated": "Tunnel 创建成功！",
+          "nextStep": "现在需要启动 cloudflared 客户端来建立连接。",
+          "yourPublicUrl": "你的公网访问地址",
+          "importantNote": "重要提示",
+          "needToStartClient": "Tunnel 已创建，但还需要启动 cloudflared 客户端才能真正建立连接。请按照下方步骤操作。",
+          "howToStart": "如何启动 Tunnel？",
+          "option1": "方式一：使用 Docker",
+          "option2": "方式二：使用 cloudflared CLI",
+          "recommended": "推荐",
+          "copy": "复制",
+          "copied": "已复制",
+          "installCloudfared": "安装 cloudflared",
+          "runCommand": "运行命令",
+          "finishSetup": "完成设置"
+        },
+        "done": {
+          "title": "设置完成！",
+          "description": "你的 AgentStudio 现在可以通过公网访问了",
+          "deleteTunnel": "删除 Tunnel",
+          "reminder": "温馨提示",
+          "keepClientRunning": "请保持 cloudflared 客户端运行，关闭后将无法访问公网地址。"
+        }
+      },
+      "credentials": {
+        "title": "Cloudflare 凭证配置",
+        "configured": "凭证已配置",
+        "update": "更新凭证",
+        "apiToken": "API Token",
+        "accountId": "Account ID",
+        "save": "保存",
+        "saving": "保存中...",
+        "cancel": "取消",
+        "help": "获取 API Token 和 Account ID，请访问"
+      },
+      "tunnel": {
+        "title": "Tunnel 管理",
+        "active": "当前激活的 Tunnel",
+        "publicUrl": "公网访问地址",
+        "name": "Tunnel 名称",
+        "localPort": "本地端口",
+        "createdAt": "创建时间",
+        "subdomain": "子域名前缀（可选）",
+        "subdomainPlaceholder": "留空自动生成随机子域名",
+        "subdomainHelp": "留空将自动生成一个随机子域名",
+        "create": "一键启用外网访问",
+        "creating": "创建中...",
+        "details": "Tunnel 详情",
+        "token": "Tunnel Token",
+        "cliCommand": "CLI 启动命令"
+      },
+      "credentialsSaved": "Cloudflare 凭证保存成功",
+      "tunnelCreated": "Tunnel 创建成功！现在可以通过公网 URL 访问",
+      "tunnelDeleted": "Tunnel 已删除",
+      "confirmDelete": "确定要删除这个 Tunnel 吗？",
+      "errors": {
+        "credentialsRequired": "请填写 API Token 和 Account ID"
       }
     },
     "language": "语言设置",

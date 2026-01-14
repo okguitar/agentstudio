@@ -20,6 +20,7 @@ export class ClaudeSession {
   private projectPath: string | null = null;
   private claudeVersionId: string | undefined = undefined;
   private modelId: string | undefined = undefined;
+  private sessionTitle: string | null = null;
 
   // 响应分发器相关 - 简化版本（会话级别的并发控制在 SlackAIService 中处理）
   private responseCallbacks: Map<string, (response: SDKMessage) => void> = new Map();
@@ -75,6 +76,23 @@ export class ClaudeSession {
    */
   getProjectPath(): string | null {
     return this.projectPath;
+  }
+
+  /**
+   * 获取会话标题
+   */
+  getSessionTitle(): string | null {
+    return this.sessionTitle;
+  }
+
+  /**
+   * 设置会话标题（从第一条消息生成）
+   */
+  setSessionTitle(title: string): void {
+    if (!this.sessionTitle) {
+      // 只设置一次，取前50个字符
+      this.sessionTitle = title.slice(0, 50) + (title.length > 50 ? '...' : '');
+    }
   }
 
   /**
