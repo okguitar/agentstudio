@@ -1,84 +1,38 @@
-# Agent Studio
+# AgentStudio
 
 <div align="center">
 
-![Agent Studio](./frontend/public/cc-studio.png)
+![AgentStudio](./frontend/public/cc-studio.png)
 
-**🤖 Your Personal AI Agent Workspace**
+**Agent for Work — Your Local Agent Workspace**
 
-A modern agent workspace platform built on Claude agent SDK
+Powered by Claude Agent SDK
 
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
 [![GitHub stars](https://img.shields.io/github/stars/okguitar/agentstudio.svg)](https://github.com/okguitar/agentstudio/stargazers)
 [![GitHub issues](https://img.shields.io/github/issues/okguitar/agentstudio.svg)](https://github.com/okguitar/agentstudio/issues)
 
-[English](#english) | [中文](#中文)
+[English](README.md) | [中文](README.zh-CN.md)
 
 </div>
 
 ---
 
-## English
+## 📖 Overview
 
-### 📖 Overview
+AgentStudio is a **local Agent workspace** running on your computer — a true personal AI assistant. Your data stays completely private, secure, and under your control. It supports scheduled task automation and multi-agent collaboration.
 
-Agent Studio is a modern web-based personal agent workspace platform built on top of [Claude Code SDK](https://github.com/anthropics/anthropic-quickstarts/tree/main/computer-use-demo). It provides a professional interface to harness the power of AI agents for various tasks, from content editing to code assistance.
+Built on Claude Agent SDK, AgentStudio transforms the CLI experience into a friendly Web interface, making AI agents accessible to everyone, not just developers.
 
-Screenshot:
+<div align="center">
 
- ![screenshot.png](./docs/images/screen-en.png)
+![Chat Interface](./frontend/public/screenshot-chat.png)
 
-### ✨ Key Features
+</div>
 
-#### 🎨 Modern Web Interface
-- **Professional UI**: Clean, intuitive interface designed for productivity
-- **Real-time Streaming**: Instant AI responses with streaming support
-- **Responsive Design**: Works seamlessly on desktop and mobile devices
-- **Dark Mode**: Eye-friendly theme for extended work sessions
-- **Multi-language**: Full support for English and Chinese
+## 🚀 Quick Start
 
-#### 🤖 Advanced Agent System
-- **Built-in Agents**: Ready-to-use agents for slides, chat, and more
-- **Custom Agents**: Create specialized agents with custom system prompts
-- **Subagents**: Configure AI subagents with specific tool permissions
-- **Plugin Architecture**: Extensible agent system with community plugins
-- **Session Management**: Persistent conversation history per agent
-
-#### 🔌 MCP Integration
-- **MCP Servers**: Integrate with Model Context Protocol servers
-- **Tool Discovery**: Automatic detection of available MCP tools
-- **Status Monitoring**: Real-time health checks for MCP services
-- **Flexible Configuration**: Support for both stdio and HTTP MCP servers
-
-#### 📦 Plugin Marketplace
-- **Plugin System**: Install agents, commands, skills, and MCP servers as plugins
-- **Marketplace Management**: Add custom or community marketplaces
-- **One-Click Install**: Easy installation and management of plugins
-- **Version Control**: Track and update plugin versions
-
-#### 📁 Project Management
-- **Project-aware**: Organize work into separate project contexts
-- **File Browser**: Integrated file explorer for project files
-- **Git Integration**: Version control awareness
-- **Multi-project**: Switch seamlessly between different projects
-
-#### 🛠️ Developer Tools
-- **Skills System**: Reusable code skills for agents
-- **Commands**: Custom slash commands for quick actions
-- **Tool Renderer**: Visual feedback for AI tool usage
-- **API Access**: RESTful API for programmatic integration
-
-#### 🔐 Security & Privacy
-- **Local First**: All data stored locally on your machine
-- **API Key Management**: Secure storage of API credentials
-- **Permission Control**: Fine-grained control over agent capabilities
-- **No Telemetry**: Your data never leaves your infrastructure
-
-### 🚀 Quick Start
-
-#### Option 1: NPM Install (Recommended)
-
-The simplest way to get started - one command to install, one command to run:
+Install and run with npm:
 
 ```bash
 # Install globally
@@ -86,221 +40,161 @@ npm install -g agentstudio
 
 # Start the server
 agentstudio start
-
-# Or specify a custom port
-agentstudio start --port 8080
 ```
 
-**Available Commands:**
+Then open [http://localhost:4936](http://localhost:4936) in your browser.
+
+**More commands:**
 
 ```bash
-# Basic usage
-agentstudio start              # Start full server (frontend + backend)
-agentstudio start --api-only   # Start API only (for CDN frontend mode)
-agentstudio start --port 8080  # Specify custom port
-
-# Install as system service (auto-start on boot)
-agentstudio install            # Install and start as system service
-agentstudio install --port 8080  # Specify port for service
-
-# Service management
-agentstudio service start      # Start the service
-agentstudio service stop       # Stop the service
-agentstudio service restart    # Restart the service
-agentstudio service status     # Check service status
-agentstudio service logs       # View service logs
-agentstudio uninstall          # Remove the service
-
-# Maintenance
+agentstudio start --port 8080  # Custom port
+agentstudio install            # Install as system service (auto-start)
 agentstudio upgrade            # Upgrade to latest version
 agentstudio doctor             # Check system status
-agentstudio info               # Show installation info
 agentstudio --help             # Show all commands
 ```
 
-**What you get:**
-- ✅ Single command installation
-- ✅ Integrated frontend and backend
-- ✅ Easy upgrade with `agentstudio upgrade`
-- ✅ Works on macOS, Linux, and Windows
+## ✨ Core Features
 
-#### Option 2: Docker
+### 🖥️ Local Agent Workspace
 
-For containerized deployment:
+- **Runs on your computer** — A true local workspace
+- **Data stays private** — Nothing uploaded to the cloud
+- **Full control** — Files, code, and conversations remain in your hands
+
+### 🌐 Web-Based Experience
+
+- **Say goodbye to CLI** — Embrace a friendly Web interface
+- **Visual tool execution** — See what your Agent is doing in real-time
+- **Built-in file browser** — View project files alongside conversations
+
+### 🧰 Claude Agent SDK Full Stack
+
+Everything from Claude Code, and more:
+
+| Feature | Description |
+|---------|-------------|
+| **MCP** | One-click import of Claude Code MCP configurations |
+| **Skills** | Reusable code skill library |
+| **Commands** | Custom slash commands for quick actions |
+| **Plugin Ecosystem** | Install agents, commands, skills, and MCP servers |
+| **Project Memory** | Each project has independent memory (CLAUDE.md) |
+| **Subagents** | Configure nested AI agents with specific capabilities |
+| **Multi-Model** | Claude, GLM, DeepSeek, Kimi K2, MiniMax, and more |
+
+### ⏰ Scheduled Tasks
+
+Let your Agent work automatically on a schedule — true AI work automation!
+
+**Example scenarios:**
+- 📊 **Daily progress reports** — Generate project updates every morning at 9am
+- 🔍 **Automated code review** — Check repositories every 2 hours
+- 📝 **Weekly meeting notes** — Summarize and archive every Friday
+- 📈 **Monthly analytics** — Generate business data reports on the 1st
+
+### 🔗 A2A Protocol (Agent-to-Agent)
+
+Build a collaborative network of intelligent agents:
+
+- **Secretary Agent dispatch** — One Agent receives tasks and delegates to project-specific Agents
+- **Local ↔ Remote collaboration** — Agents on your computer communicate with Agents on remote dev machines
+- **Mobile access** — Interact with local Agents from mobile messaging apps (beta)
+
+### 🎨 Custom Agents
+
+Create your own specialized Agents without writing code:
+
+- **PPT creation Agent**
+- **Secretary Agent**
+- **Document writing Agent**
+- **Code review Agent**
+- And any other workflow you need!
+
+## 📊 AgentStudio vs Claude Code
+
+| Feature | AgentStudio | Claude Code |
+|---------|-------------|-------------|
+| Interface | Web UI | Command Line (CLI) |
+| Target Users | Everyone | Primarily developers |
+| Tool Display | Visual rendering | Plain text |
+| File Browser | ✅ | ❌ |
+| Agent Customization | ✅ | ❌ |
+| Scheduled Tasks | ✅ | ❌ |
+| A2A Protocol | ✅ | ❌ |
+| Mobile Access | Beta | ❌ |
+
+Same Claude Agent SDK, friendlier experience.
+
+## 📦 Alternative Installation
+
+### Docker
 
 ```bash
-# Build and run with Docker Compose
 docker build -t agentstudio:latest .
 docker-compose up -d
-
-# Access at http://localhost
 ```
 
-**What you get:**
-- ✅ All-in-one container (frontend + backend)
-- ✅ Data persistence via Docker volumes
-- ✅ Zero configuration needed
-- ✅ Easy updates and rollbacks
+See [DOCKER.md](DOCKER.md) for details.
 
-📖 See [DOCKER.md](DOCKER.md) for detailed Docker deployment guide.
+### One-Click Install
 
-#### Option 3: One-Click Installation
-
-**For Linux & macOS** (User space installation, no sudo required):
+**macOS/Linux:**
 
 ```bash
-# Install for current user
 curl -fsSL https://raw.githubusercontent.com/okguitar/agentstudio/main/scripts/install-macos.sh | bash
-
-# Or for Linux
-curl -fsSL https://raw.githubusercontent.com/okguitar/agentstudio/main/scripts/install-linux.sh | bash
 ```
 
-**For Windows** (PowerShell):
+**Windows (PowerShell):**
 
 ```powershell
-# Download and run installer
 irm https://raw.githubusercontent.com/okguitar/agentstudio/main/scripts/windows-install.ps1 | iex
 ```
 
-#### Option 4: Manual Development Setup
-
-**Prerequisites:**
-- Node.js 18+ (with npm or pnpm)
-- Git
-
-**Installation Steps:**
+### Development Setup
 
 ```bash
-# 1. Clone the repository
 git clone https://github.com/okguitar/agentstudio.git
 cd agentstudio
-
-# 2. Install dependencies (using pnpm recommended)
 pnpm install
-# or: npm run setup
-
-# 3. Configure environment variables
 cp backend/.env.example backend/.env
-# Edit backend/.env and add your API keys
-
-# 4. Start development servers
+# Edit backend/.env with your API keys
 pnpm run dev
-# Frontend: http://localhost:3000
-# Backend: http://localhost:4936
 ```
 
-
-### 📚 Core Concepts
-
-#### Agents
-Agents are AI assistants configured with specific:
-- **System Prompts**: Define agent personality and behavior
-- **Allowed Tools**: Control what the agent can do
-- **Permission Mode**: Set approval requirements for actions
-- **Claude Version**: Choose which Claude model to use
-
-#### Projects
-Projects are workspaces containing:
-- Files and directories
-- Project-specific agents
-- Session histories
-- Custom configurations
-
-#### Plugins
-Plugins extend Agent Studio with:
-- **Agents**: Pre-configured AI agents
-- **Commands**: Slash commands for quick actions
-- **Skills**: Reusable code snippets
-- **MCP Servers**: Additional tool integrations
-
-#### MCP (Model Context Protocol)
-MCP servers provide additional capabilities to agents:
-- File system operations
-- Database access
-- API integrations
-- Custom tools
-
-### 📖 Usage Examples
-
-#### Creating a Custom Agent
-
-1. Navigate to **Agents** page
-2. Click **Create Agent**
-3. Configure agent properties:
-   - Name and description
-   - System prompt
-   - Allowed tools
-   - Permission mode
-4. Start chatting with your agent!
-
-#### Installing Plugins
-
-1. Go to **Plugins** page
-2. Add a marketplace (e.g., community marketplace)
-3. Browse available plugins
-4. Click **Install** on desired plugins
-5. Enable plugins in agent configuration
-
-#### Managing Projects
-
-1. Visit **Projects** page
-2. Create or select a project
-3. Associate agents with the project
-4. Work within project context
-
-### 🧪 Development
+## 🧪 Development
 
 ```bash
-# Development mode (frontend + backend)
-pnpm run dev
-
-# Run tests
-pnpm run test
-
-# Type checking
-pnpm run type-check
-
-# Linting
-pnpm run lint
-
-# Build for production
-pnpm run build
+pnpm run dev          # Start development servers
+pnpm run test         # Run tests
+pnpm run type-check   # Type checking
+pnpm run lint         # Linting
+pnpm run build        # Production build
 ```
 
-### 📦 Tech Stack
+## 📦 Tech Stack
 
-**Frontend:**
-- React 19 + TypeScript
-- Vite (build tool)
-- TailwindCSS (styling)
-- Zustand (state management)
-- React Query (server state)
-- React Router (routing)
+**Frontend:** React 19, TypeScript, Vite, TailwindCSS, Zustand, React Query
 
-**Backend:**
-- Node.js + Express
-- TypeScript
-- Claude Agent SDK
-- JWT authentication
-- File-based storage
+**Backend:** Node.js, Express, TypeScript, Claude Agent SDK, JWT
 
-### 🤝 Contributing
+## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-### 📄 License
+## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License — see [LICENSE](LICENSE) for details.
 
-### 🙏 Acknowledgments
-
-- Built on [Claude Code SDK](https://github.com/anthropics/anthropic-quickstarts)
-- Inspired by the Claude Code project
-- Community plugin marketplace contributors
-
-### 📮 Support
+## 📮 Support
 
 - 🐛 [Report Issues](https://github.com/okguitar/agentstudio/issues)
 - 💬 [Discussions](https://github.com/okguitar/agentstudio/discussions)
 - 📧 Email: okguitar@gmail.com
+
+---
+
+<div align="center">
+
+Made with ❤️ by the AgentStudio Team
+
+</div>

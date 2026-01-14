@@ -65,3 +65,4 @@ specs/
 # A2A local configurations
 .a2a/
 **/.a2a/
+.playwright-mcp/
