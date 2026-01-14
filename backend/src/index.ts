@@ -25,6 +25,7 @@ import a2aManagementRouter from './routes/a2aManagement';
 import scheduledTasksRouter from './routes/scheduledTasks';
 import mcpAdminRouter from './routes/mcpAdmin';
 import mcpAdminManagementRouter from './routes/mcpAdminManagement';
+import cloudflareTunnelRouter from './routes/cloudflareTunnel';
 import { authMiddleware } from './middleware/auth';
 import { httpsOnly } from './middleware/httpsOnly';
 import { loadConfig, getSlidesDir } from './config/index';
@@ -34,16 +35,28 @@ import { initializeScheduler, shutdownScheduler } from './services/schedulerServ
 
 dotenv.config();
 
-// Get version from package.json
+// Get version from package.json (works in both dev and npm package mode)
 const getVersion = () => {
-  try {
-    const packagePath = join(__dirname, '../package.json');
-    const packageJson = JSON.parse(readFileSync(packagePath, 'utf8'));
-    return packageJson.version;
-  } catch (error) {
-    console.warn('Could not read version from package.json:', error);
-    return 'unknown';
+  // Try npm package mode first (package.json in same directory as dist)
+  const npmPackagePath = join(__dirname, 'package.json');
+  // Then try development mode (backend/package.json)
+  const devPackagePath = join(__dirname, '../package.json');
+  // Also try root package.json
+  const rootPackagePath = join(__dirname, '../../package.json');
+  
+  for (const packagePath of [npmPackagePath, devPackagePath, rootPackagePath]) {
+    try {
+      const packageJson = JSON.parse(readFileSync(packagePath, 'utf8'));
+      if (packageJson.version) {
+        return packageJson.version;
+      }
+    } catch {
+      // Continue to next path
+    }
   }
+  
+  console.warn('Could not read version from package.json');
+  return 'unknown';
 };
 
 const VERSION = getVersion();
@@ -313,6 +326,7 @@ const app: express.Express = express();
   app.use('/api/plugins', authMiddleware, pluginsRouter);
   app.use('/api/scheduled-tasks', authMiddleware, scheduledTasksRouter);
   app.use('/api/mcp-admin-management', authMiddleware, mcpAdminManagementRouter); // MCP Admin management with JWT auth
+  app.use('/api/cloudflare-tunnel', authMiddleware, cloudflareTunnelRouter); // Cloudflare Tunnel management
   app.use('/api/media', mediaAuthRouter); // Media auth endpoints
   app.use('/media', mediaRouter); // Remove authMiddleware - media files are now public
 
