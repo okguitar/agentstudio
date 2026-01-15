@@ -217,6 +217,7 @@
         this.loading = true;
         this.error = null;
         this.lavsClient = null;
+        this.pollInterval = null; // For auto-refresh
       }
 
       /**
@@ -236,11 +237,61 @@
           this.loading = false;
           this.render();
           this.attachEventListeners();
+
+          // Start auto-refresh polling (every 3 seconds)
+          this.startPolling();
         } catch (error) {
           this.loading = false;
           this.error = error.message;
           this.render();
         }
+      }
+
+      /**
+       * Start polling for todo updates
+       */
+      startPolling() {
+        // Clear any existing interval
+        if (this.pollInterval) {
+          clearInterval(this.pollInterval);
+        }
+
+        // Poll every 3 seconds
+        this.pollInterval = setInterval(async () => {
+          try {
+            const newTodos = await this.lavsClient.call('listTodos');
+
+            // Only update if todos actually changed (to avoid unnecessary re-renders)
+            if (JSON.stringify(newTodos) !== JSON.stringify(this.todos)) {
+              console.log('[TodoView] Todos changed, refreshing UI');
+              this.todos = newTodos;
+              this.render();
+              this.attachEventListeners();
+            }
+          } catch (error) {
+            console.error('[TodoView] Failed to poll todos:', error);
+          }
+        }, 3000);
+
+        console.log('[TodoView] Auto-refresh polling started (every 3s)');
+      }
+
+      /**
+       * Stop polling (cleanup)
+       */
+      stopPolling() {
+        if (this.pollInterval) {
+          clearInterval(this.pollInterval);
+          this.pollInterval = null;
+          console.log('[TodoView] Auto-refresh polling stopped');
+        }
+      }
+
+      /**
+       * Cleanup when component is removed
+       */
+      disconnectedCallback() {
+        this.stopPolling();
       }
 
       /**

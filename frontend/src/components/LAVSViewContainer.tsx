@@ -59,11 +59,18 @@ export const LAVSViewContainer: React.FC<LAVSViewContainerProps> = ({
 
   // Load view component when manifest is available
   useEffect(() => {
+    console.log('[LAVS] Load component effect triggered', {
+      hasManifest: !!manifest,
+      hasView: !!manifest?.view,
+      hasContainer: !!containerRef.current
+    });
+
     if (!manifest || !manifest.view || !containerRef.current) return;
 
     const loadComponent = async () => {
       try {
         const { component } = manifest.view!;
+        console.log('[LAVS] Loading component', { type: component.type, path: (component as any).path });
 
         switch (component.type) {
           case 'local': {
@@ -122,11 +129,13 @@ export const LAVSViewContainer: React.FC<LAVSViewContainerProps> = ({
    * Load local component as iframe
    */
   const loadLocalComponent = async (_path: string) => {
+    console.log('[LAVS] loadLocalComponent called', { path: _path, hasContainer: !!containerRef.current });
     if (!containerRef.current) return;
 
     // Construct the full URL to the component
     // In development, this will be relative to the agent directory
     const componentURL = `/api/agents/${agent.id}/lavs-view`;
+    console.log('[LAVS] Loading iframe from:', componentURL);
 
     // Create iframe
     const iframe = document.createElement('iframe');
@@ -136,9 +145,12 @@ export const LAVSViewContainer: React.FC<LAVSViewContainerProps> = ({
     iframe.style.border = 'none';
     iframe.setAttribute('data-lavs-component', 'true');
 
-    // Wait for iframe to load
-    await new Promise<void>((resolve, reject) => {
+    console.log('[LAVS] Iframe created, appending to DOM');
+
+    // Set up load handlers BEFORE appending to DOM
+    const loadPromise = new Promise<void>((resolve, reject) => {
       iframe.onload = () => {
+        console.log('[LAVS] Iframe loaded successfully');
         // Inject LAVS client into iframe
         if (iframe.contentWindow && lavsClientRef.current) {
           // Create a message handler for cross-frame communication
@@ -167,10 +179,18 @@ export const LAVSViewContainer: React.FC<LAVSViewContainerProps> = ({
           resolve();
         }
       };
-      iframe.onerror = reject;
+      iframe.onerror = (err) => {
+        console.error('[LAVS] Iframe failed to load', err);
+        reject(err);
+      };
     });
 
+    // Add iframe to DOM FIRST (this triggers loading)
     containerRef.current.appendChild(iframe);
+    console.log('[LAVS] Iframe appended to DOM, waiting for load...');
+
+    // Wait for iframe to load
+    await loadPromise;
   };
 
   /**
