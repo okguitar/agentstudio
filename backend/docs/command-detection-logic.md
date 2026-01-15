@@ -213,7 +213,7 @@ function convertClaudeMessageToMessageParts(msg) {
 description: "命令描述"
 argument-hint: "参数提示"
 allowed-tools: "Read,Write,Edit"
-model: "claude-3-5-sonnet-20241022"
+model: "sonnet"
 ---
 
 命令的具体内容...

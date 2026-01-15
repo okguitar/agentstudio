@@ -58,7 +58,7 @@
       "bashCommand": "Execute bash command and include output"
     },
     "markdownSource": "Markdown Source",
-    "markdownPlaceholder": "---\ndescription: Optimize code performance and readability\nargument-hint: [filename] [options]\nnamespace: frontend\nallowed-tools: Read, Write, Edit\nmodel: claude-3-5-sonnet-20241022\n---\n\nAnalyze performance issues in this code and provide optimization suggestions:\n\nUse arguments: $ARGUMENTS\nUse first argument: $1\nUse second argument: $2\n\nReference file: @src/utils/helpers.js\nExecute command: !`git status`",
+    "markdownPlaceholder": "---\ndescription: Optimize code performance and readability\nargument-hint: [filename] [options]\nnamespace: frontend\nallowed-tools: Read, Write, Edit\nmodel: sonnet\n---\n\nAnalyze performance issues in this code and provide optimization suggestions:\n\nUse arguments: $ARGUMENTS\nUse first argument: $1\nUse second argument: $2\n\nReference file: @src/utils/helpers.js\nExecute command: !`git status`",
     "frontmatterSupported": "Supported Frontmatter Fields:",
     "frontmatterFields": {
       "description": "Command description",

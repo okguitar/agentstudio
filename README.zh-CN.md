@@ -8,7 +8,7 @@
 
 由 Claude Agent SDK 强力驱动
 
-[![Apache 2.0 License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![GPL v3 License](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![GitHub stars](https://img.shields.io/github/stars/okguitar/agentstudio.svg)](https://github.com/okguitar/agentstudio/stargazers)
 [![GitHub issues](https://img.shields.io/github/issues/okguitar/agentstudio.svg)](https://github.com/okguitar/agentstudio/issues)
 
@@ -183,7 +183,7 @@ pnpm run build        # 生产构建
 
 ## 📄 许可证
 
-Apache 2.0 许可证 —— 详见 [LICENSE](LICENSE)。
+GPL v3 许可证 —— 详见 [LICENSE](LICENSE)。
 
 ## 📮 支持
 

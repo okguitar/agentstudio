@@ -41,7 +41,7 @@ describe('agents.ts - Channel-Specific Streaming', () => {
             systemPrompt: 'You are a test agent',
             maxTurns: 25,
             permissionMode: 'acceptEdits',
-            model: 'claude-3-5-sonnet-20241022',
+            model: 'sonnet',
             allowedTools: [],
             ui: {
               icon: '🤖',
@@ -75,7 +75,7 @@ describe('agents.ts - Channel-Specific Streaming', () => {
         allowedTools: [],
         maxTurns: 25,
         permissionMode: 'acceptEdits',
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'sonnet',
         pathToClaudeCodeExecutable: '/mock/claude',
         env: {}
       },

@@ -17,7 +17,7 @@ describe('agentCardService - Agent Card Generation', () => {
     systemPrompt: 'You are a test agent',
     maxTurns: 25,
     permissionMode: 'acceptEdits' as const,
-    model: 'claude-3-5-sonnet-20241022',
+    model: 'sonnet',
     allowedTools: [
       { name: 'read_file', enabled: true },
       { name: 'write_file', enabled: true },

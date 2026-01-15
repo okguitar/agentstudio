@@ -46,9 +46,9 @@ export const COMMAND_SCOPES = [
 ] as const;
 
 export const DEFAULT_MODELS = [
-  'claude-3-5-sonnet-20241022',
-  'claude-3-5-haiku-20241022', 
-  'claude-3-opus-20240229'
+  'sonnet',
+  'haiku',
+  'opus'
 ] as const;
 
 export const COMMON_TOOLS = [

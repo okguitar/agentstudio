@@ -66,7 +66,8 @@
     "metaDescription": "Agent for Work - 本地的 Agent 工作台，由 Claude Agent SDK 强力驱动。数据完全私有，支持定时任务、A2A 协议、自定义 Agent。",
     "nav": {
       "enterWorkspace": "进入工作台",
-      "docs": "文档"
+      "docs": "文档",
+      "wechat": "微信群"
     },
     "hero": {
       "badge": "由 Claude Agent SDK 强力驱动",
@@ -190,7 +191,7 @@
     },
     "footer": {
       "description": "Agent for Work - 本地的 Agent 工作台，由 Claude Agent SDK 强力驱动。",
-      "copyright": "© 2026 AgentStudio. Apache 2.0 License.",
+      "copyright": "© 2026 AgentStudio. GPL v3 License.",
       "product": "产品",
       "workspace": "工作台",
       "sourceCode": "源码",
@@ -198,7 +199,13 @@
       "support": "支持",
       "documentation": "文档",
       "issues": "问题反馈",
-      "discussions": "Discord 社区"
+      "wechat": "微信群"
+    },
+    "wechat": {
+      "title": "加入微信群",
+      "fallback": "二维码失效？请添加微信号：",
+      "wechatId": "talk4kong",
+      "tip": "扫码或添加微信号，即可加入交流群"
     }
   },
   "agents": {
@@ -434,7 +441,19 @@
     },
     "overview": "概览",
     "statistics": "统计信息",
-    "recentActivity": "最近活动"
+    "recentActivity": "最近活动",
+    "templates": {
+      "organizeFiles": "整理文件",
+      "analyzeFiles": "文件分析",
+      "writeDoc": "写一份文档",
+      "codeReview": "代码审查",
+      "checkWeather": "查深圳天气",
+      "quickTask": "自由提问"
+    },
+    "welcome": {
+      "title": "让我们开始工作吧",
+      "subtitle": "选择一个项目，开始与 AI 协作完成任务"
+    }
   },
   "settings": {
     "title": "设置",

@@ -6,8 +6,10 @@ import {
   ChevronDown, 
   Code, 
   FileText, 
-  MessageSquare, 
-  Zap,
+  FolderSync,
+  FileSearch,
+  CloudSun,
+  Sparkles,
   Plus,
   Loader2,
   FolderOpen,
@@ -16,7 +18,8 @@ import {
   Bot,
   X,
   Trash2,
-  AlertCircle
+  AlertCircle,
+  ArrowUp
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useProjects, Project } from '../hooks/useProjects';
@@ -100,14 +103,15 @@ export const DashboardPage: React.FC = () => {
     }
   };
 
-  // 处理提交 - 跳转到聊天页面
+  // 处理提交 - 在新标签页打开聊天页面
   const handleSubmit = () => {
     const targetAgent = getProjectAgent(selectedProject);
     if (!inputMessage.trim() || !selectedProject || !targetAgent) return;
     
-    // 跳转到聊天页面，带上消息参数
+    // 在新标签页打开聊天页面，带上消息参数
     const encodedMessage = encodeURIComponent(inputMessage);
-    navigate(`/chat/${targetAgent.id}?project=${encodeURIComponent(selectedProject.path)}&message=${encodedMessage}`);
+    const url = `/chat/${targetAgent.id}?project=${encodeURIComponent(selectedProject.path)}&message=${encodedMessage}`;
+    window.open(url, '_blank');
   };
 
   // 关闭单个会话
@@ -157,12 +161,38 @@ export const DashboardPage: React.FC = () => {
     }
   };
 
-  // 快捷模板
+  // 快捷模板 - 实用的 AI 任务快捷方式
   const quickTemplates = [
-    { icon: Code, label: t('dashboard.templates.codeReview', { defaultValue: '代码审查' }), prompt: '帮我审查一下这个项目的代码质量' },
-    { icon: FileText, label: t('dashboard.templates.writeDoc', { defaultValue: '写文档' }), prompt: '帮我写一份项目文档' },
-    { icon: MessageSquare, label: t('dashboard.templates.askQuestion', { defaultValue: '问问题' }), prompt: '' },
-    { icon: Zap, label: t('dashboard.templates.quickTask', { defaultValue: '快速任务' }), prompt: '' },
+    { 
+      icon: FolderSync, 
+      label: t('dashboard.templates.organizeFiles', { defaultValue: '整理文件' }), 
+      prompt: '帮我整理一下当前目录下的文件。请先分析目录结构，然后提出整理方案让我确认，最后再执行。' 
+    },
+    { 
+      icon: FileSearch, 
+      label: t('dashboard.templates.analyzeFiles', { defaultValue: '文件分析' }), 
+      prompt: '帮我分析一下当前项目的文件结构和代码情况，给出概要报告。' 
+    },
+    { 
+      icon: FileText, 
+      label: t('dashboard.templates.writeDoc', { defaultValue: '写一份文档' }), 
+      prompt: '帮我为这个项目写一份 README 文档，包含项目介绍、安装步骤和使用说明。' 
+    },
+    { 
+      icon: Code, 
+      label: t('dashboard.templates.codeReview', { defaultValue: '代码审查' }), 
+      prompt: '帮我审查一下这个项目的代码质量，包括代码风格、潜在问题和改进建议。' 
+    },
+    { 
+      icon: CloudSun, 
+      label: t('dashboard.templates.checkWeather', { defaultValue: '查深圳天气' }), 
+      prompt: '查一下深圳现在的天气情况。' 
+    },
+    { 
+      icon: Sparkles, 
+      label: t('dashboard.templates.quickTask', { defaultValue: '自由提问' }), 
+      prompt: '' 
+    },
   ];
 
   // 快捷入口
@@ -195,7 +225,16 @@ export const DashboardPage: React.FC = () => {
 
   const handleTemplateClick = (prompt: string) => {
     if (prompt) {
-      setInputMessage(prompt);
+      // 如果有prompt内容且已选择项目，在新标签页打开对话界面
+      const targetAgent = getProjectAgent(selectedProject);
+      if (selectedProject && targetAgent) {
+        const encodedMessage = encodeURIComponent(prompt);
+        const url = `/chat/${targetAgent.id}?project=${encodeURIComponent(selectedProject.path)}&message=${encodedMessage}`;
+        window.open(url, '_blank');
+      } else {
+        // 没有项目时，填充到输入框
+        setInputMessage(prompt);
+      }
     }
   };
 
@@ -218,12 +257,9 @@ export const DashboardPage: React.FC = () => {
       <div className="flex-1 flex flex-col items-center px-6 py-8">
         {/* 标题区域 */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
-            {t('dashboard.welcome.title', { defaultValue: '有什么可以帮你的？' })}
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white">
+            {t('dashboard.welcome.title', { defaultValue: '让我们开始工作吧' })}
           </h1>
-          <p className="text-lg text-gray-500 dark:text-gray-400 max-w-xl mx-auto">
-            {t('dashboard.welcome.subtitle', { defaultValue: '选择一个项目，开始与 AI 协作完成任务' })}
-          </p>
         </div>
 
         {/* 输入框区域 */}
@@ -258,66 +294,27 @@ export const DashboardPage: React.FC = () => {
             </div>
           )}
 
-          {/* 项目选择器 */}
-          <div className="mb-4 flex justify-center">
-            <div className="relative">
+          {/* 快捷模板 - 放在输入框上方，参考截图风格 */}
+          <div className="mb-6 grid grid-cols-2 md:grid-cols-3 gap-3">
+            {quickTemplates.map((template, index) => (
               <button
-                onClick={() => setShowProjectDropdown(!showProjectDropdown)}
-                className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 rounded-full border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-colors shadow-sm"
+                key={index}
+                onClick={() => handleTemplateClick(template.prompt)}
+                className="flex items-center gap-3 px-4 py-3.5 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600/50 hover:border-gray-300 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 hover:shadow-md text-left transition-all group"
               >
-                <Folder className="w-4 h-4 text-gray-400" />
-                <span className="text-sm text-gray-700 dark:text-gray-300">
-                  {selectedProject?.name || t('dashboard.selectProject', { defaultValue: '选择项目' })}
+                <div className="flex-shrink-0 p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                  <template.icon className="w-5 h-5 text-gray-500 dark:text-gray-300" />
+                </div>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
+                  {template.label}
                 </span>
-                <ChevronDown className="w-4 h-4 text-gray-400" />
               </button>
-
-              {showProjectDropdown && (
-                <>
-                  <div 
-                    className="fixed inset-0 z-10" 
-                    onClick={() => setShowProjectDropdown(false)}
-                  />
-                  <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-72 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 z-20 max-h-80 overflow-y-auto">
-                    {projects.map((project) => (
-                      <button
-                        key={project.id}
-                        onClick={() => {
-                          setSelectedProject(project);
-                          setShowProjectDropdown(false);
-                        }}
-                        className={`w-full px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 flex items-center gap-3 first:rounded-t-xl last:rounded-b-xl ${
-                          selectedProject?.id === project.id 
-                            ? 'bg-blue-50 dark:bg-blue-900/20' 
-                            : ''
-                        }`}
-                      >
-                        <Folder className={`w-4 h-4 flex-shrink-0 ${
-                          selectedProject?.id === project.id 
-                            ? 'text-blue-500' 
-                            : 'text-gray-400'
-                        }`} />
-                        <span className={`text-sm truncate ${
-                          selectedProject?.id === project.id 
-                            ? 'text-blue-600 dark:text-blue-400 font-medium' 
-                            : 'text-gray-700 dark:text-gray-300'
-                        }`}>{project.name}</span>
-                      </button>
-                    ))}
-                    {projects.length === 0 && (
-                      <div className="px-4 py-6 text-center text-gray-500 text-sm">
-                        {t('dashboard.noProjects', { defaultValue: '暂无项目' })}
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
+            ))}
           </div>
 
           {/* 输入框 */}
           <div className="relative">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
               <textarea
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
@@ -332,9 +329,60 @@ export const DashboardPage: React.FC = () => {
                 rows={3}
               />
               <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 dark:border-gray-700">
-                <span className="text-sm text-gray-400">
-                  {t('dashboard.footer.hint', { defaultValue: 'Enter 发送，Shift + Enter 换行' })}
-                </span>
+                {/* 项目选择器 - 移到左下角 */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowProjectDropdown(!showProjectDropdown)}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 transition-colors"
+                  >
+                    <Folder className="w-4 h-4 text-gray-400" />
+                    <span className="text-sm text-gray-600 dark:text-gray-300 max-w-[150px] truncate">
+                      {selectedProject?.name || t('dashboard.selectProject', { defaultValue: '选择项目' })}
+                    </span>
+                    <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
+                  </button>
+
+                  {showProjectDropdown && (
+                    <>
+                      <div 
+                        className="fixed inset-0 z-10" 
+                        onClick={() => setShowProjectDropdown(false)}
+                      />
+                      <div className="absolute left-0 top-full mt-2 w-72 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 z-20 max-h-64 overflow-y-auto">
+                        {projects.map((project) => (
+                          <button
+                            key={project.id}
+                            onClick={() => {
+                              setSelectedProject(project);
+                              setShowProjectDropdown(false);
+                            }}
+                            className={`w-full px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 flex items-center gap-3 first:rounded-t-xl last:rounded-b-xl ${
+                              selectedProject?.id === project.id 
+                                ? 'bg-blue-50 dark:bg-blue-900/20' 
+                                : ''
+                            }`}
+                          >
+                            <Folder className={`w-4 h-4 flex-shrink-0 ${
+                              selectedProject?.id === project.id 
+                                ? 'text-blue-500' 
+                                : 'text-gray-400'
+                            }`} />
+                            <span className={`text-sm truncate ${
+                              selectedProject?.id === project.id 
+                                ? 'text-blue-600 dark:text-blue-400 font-medium' 
+                                : 'text-gray-700 dark:text-gray-300'
+                            }`}>{project.name}</span>
+                          </button>
+                        ))}
+                        {projects.length === 0 && (
+                          <div className="px-4 py-6 text-center text-gray-500 text-sm">
+                            {t('dashboard.noProjects', { defaultValue: '暂无项目' })}
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
                 <button
                   onClick={handleSubmit}
                   disabled={!inputMessage.trim() || !selectedProject || !getProjectAgent(selectedProject)}
@@ -345,20 +393,12 @@ export const DashboardPage: React.FC = () => {
                 </button>
               </div>
             </div>
-          </div>
-
-          {/* 快捷模板 */}
-          <div className="mt-6 flex flex-wrap justify-center gap-3">
-            {quickTemplates.map((template, index) => (
-              <button
-                key={index}
-                onClick={() => handleTemplateClick(template.prompt)}
-                className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 rounded-full border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-sm text-gray-600 dark:text-gray-400 transition-colors"
-              >
-                <template.icon className="w-4 h-4" />
-                <span>{template.label}</span>
-              </button>
-            ))}
+            
+            {/* 提示文字 - 箭头指向项目选择器 */}
+            <div className="flex items-center gap-2 mt-3 text-sm text-gray-400 dark:text-gray-500">
+              <ArrowUp className="w-4 h-4 animate-bounce" />
+              <span>{t('dashboard.welcome.subtitle', { defaultValue: '选择一个项目，开始与 AI 协作完成任务' })}</span>
+            </div>
           </div>
 
           {/* 快捷入口卡片 */}
@@ -439,7 +479,7 @@ export const DashboardPage: React.FC = () => {
                               <>
                                 <span>•</span>
                                 <span className="bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">
-                                  {session.modelId.replace('claude-', '').replace('-20241022', '')}
+                                  {session.modelId.replace('claude-', '').replace(/-\d{8}$/, '')}
                                 </span>
                               </>
                             )}

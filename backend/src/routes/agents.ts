@@ -64,7 +64,7 @@ const CreateAgentSchema = z.object({
   // maxTurns 可以是数字（1-100）、null（不限制）或 undefined（使用默认值）
   maxTurns: z.union([z.number().min(1).max(100), z.null()]).optional().default(25),
   permissionMode: z.enum(['default', 'acceptEdits', 'bypassPermissions', 'plan']).optional().default('acceptEdits'),
-  model: z.string().min(1).optional().default('claude-3-5-sonnet-20241022'),
+  model: z.string().min(1).optional().default('sonnet'),
   allowedTools: z.array(z.object({
     name: z.string(),
     enabled: z.boolean(),
@@ -234,7 +234,7 @@ router.post('/', (req, res) => {
     const agent = globalAgentStorage.createAgent({
       ...agentData,
       version: '1.0.0',
-      model: 'claude-sonnet-4-20250514',
+      model: 'sonnet',
       source: 'local'
     } as Omit<AgentConfig, 'createdAt' | 'updatedAt'>);
 

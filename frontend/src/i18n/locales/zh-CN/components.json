@@ -58,7 +58,7 @@
       "bashCommand": "执行 bash 命令并包含输出"
     },
     "markdownSource": "Markdown 源代码",
-    "markdownPlaceholder": "---\ndescription: 优化代码性能和可读性\nargument-hint: [filename] [options]\nnamespace: frontend\nallowed-tools: Read, Write, Edit\nmodel: claude-3-5-sonnet-20241022\n---\n\n分析这段代码的性能问题并提供优化建议：\n\n使用参数：$ARGUMENTS\n使用第一个参数：$1\n使用第二个参数：$2\n\n引用文件：@src/utils/helpers.js\n执行命令：!`git status`",
+    "markdownPlaceholder": "---\ndescription: 优化代码性能和可读性\nargument-hint: [filename] [options]\nnamespace: frontend\nallowed-tools: Read, Write, Edit\nmodel: sonnet\n---\n\n分析这段代码的性能问题并提供优化建议：\n\n使用参数：$ARGUMENTS\n使用第一个参数：$1\n使用第二个参数：$2\n\n引用文件：@src/utils/helpers.js\n执行命令：!`git status`",
     "frontmatterSupported": "Frontmatter 支持的字段：",
     "frontmatterFields": {
       "description": "命令描述",

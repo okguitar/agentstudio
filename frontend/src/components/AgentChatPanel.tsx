@@ -160,7 +160,7 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
   });
 
   const claudeVersionManager = useClaudeVersionManager({
-    initialModel: 'claude-3-5-sonnet-20241022'
+    initialModel: 'sonnet'
   });
 
   // 从hooks中解构需要的状态和方法
