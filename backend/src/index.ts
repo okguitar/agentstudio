@@ -325,8 +325,9 @@ const app: express.Express = express();
 
   // Protected routes - Require authentication
   app.use('/api/files', authMiddleware, filesRouter);
+  // TEMPORARY: LAVS routes without auth for PoC testing (must come before agentsRouter)
+  app.use('/api/agents', lavsRouter); // LAVS routes (under /api/agents) - NO AUTH for testing
   app.use('/api/agents', authMiddleware, agentsRouter);
-  app.use('/api/agents', authMiddleware, lavsRouter); // LAVS routes (under /api/agents)
   app.use('/api/mcp', authMiddleware, mcpRouter);
   app.use('/api/sessions', authMiddleware, sessionsRouter);
   app.use('/api/settings', authMiddleware, settingsRouter);
