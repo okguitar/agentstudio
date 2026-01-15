@@ -32,7 +32,7 @@
       "handler": {
         "type": "script",
         "command": "node",
-        "args": ["scripts/todo-service.js", "add"],
+        "args": ["scripts/todo-service.cjs", "add"],
         "input": "stdin",
         "timeout": 5000
       },
@@ -64,7 +64,7 @@
       "handler": {
         "type": "script",
         "command": "node",
-        "args": ["scripts/todo-service.js", "toggle"],
+        "args": ["scripts/todo-service.cjs", "toggle"],
         "input": "stdin",
         "timeout": 5000
       },
@@ -91,7 +91,7 @@
       "handler": {
         "type": "script",
         "command": "node",
-        "args": ["scripts/todo-service.js", "delete"],
+        "args": ["scripts/todo-service.cjs", "delete"],
         "input": "stdin",
         "timeout": 5000
       },
