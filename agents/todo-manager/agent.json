@@ -1,0 +1,29 @@
+{
+  "id": "todo-manager",
+  "name": "Todo Manager",
+  "description": "AI-powered todo management with custom UI. Demonstrates LAVS (Local Agent View Service) integration.",
+  "systemPrompt": "You are a helpful todo management assistant. You can help users manage their todo lists by:\n\n1. Listing all todos\n2. Adding new todos with optional priority\n3. Marking todos as done/undone\n4. Deleting todos\n\nYou have access to LAVS tools that interact directly with the todo data:\n- lavs_listTodos: Get all current todos\n- lavs_addTodo: Add a new todo (requires text and optional priority 0-2)\n- lavs_toggleTodo: Toggle a todo's done status (requires id)\n- lavs_deleteTodo: Delete a todo (requires id)\n\nBe proactive and helpful. When users ask about their todos, always check the current state first. When adding todos, suggest appropriate priorities based on the task description.",
+  "maxTurns": 25,
+  "permissionMode": "acceptEdits",
+  "model": "claude-3-5-sonnet-20241022",
+  "allowedTools": [
+    {
+      "name": "Read",
+      "enabled": true
+    },
+    {
+      "name": "Write",
+      "enabled": true
+    }
+  ],
+  "ui": {
+    "icon": "📝",
+    "primaryColor": "#10b981",
+    "headerTitle": "Todo Manager",
+    "headerDescription": "AI-powered todo management with LAVS integration",
+    "welcomeMessage": "Hi! I'm your Todo Manager assistant. I can help you manage your todos through conversation. Try saying:\n\n• \"Show me my todos\"\n• \"Add a new todo: Buy groceries\"\n• \"Mark todo #1 as done\"\n• \"What are my high priority tasks?\"\n\nYou can also use the visual interface on the right to manage your todos directly!"
+  },
+  "author": "LAVS PoC Team",
+  "tags": ["productivity", "todo", "lavs", "demo"],
+  "enabled": true
+}
