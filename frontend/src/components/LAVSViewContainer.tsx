@@ -17,10 +17,12 @@ import { useAgentStore } from '../stores/useAgentStore';
 interface LAVSViewContainerProps {
   agent: AgentConfig;
   projectPath?: string;
+  onToolExecuted?: (toolName: string, toolInput: any, toolResult: any) => void;
 }
 
 export const LAVSViewContainer: React.FC<LAVSViewContainerProps> = ({
   agent,
+  onToolExecuted,
 }) => {
   const [manifest, setManifest] = useState<LAVSManifest | null>(null);
   const [loading, setLoading] = useState(true);
@@ -29,6 +31,7 @@ export const LAVSViewContainer: React.FC<LAVSViewContainerProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const lavsClientRef = useRef<LAVSClient | null>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const processedToolsRef = useRef<Set<string>>(new Set()); // Track processed tool calls
 
   // Subscribe to agent messages to detect tool usage
   const messages = useAgentStore((state) => state.messages);
@@ -134,31 +137,72 @@ export const LAVSViewContainer: React.FC<LAVSViewContainerProps> = ({
   useEffect(() => {
     if (!componentLoaded || !iframeRef.current || !manifest) return;
 
-    // Get last message
-    const lastMessage = messages[messages.length - 1];
-    if (!lastMessage) return;
+    console.log('[LAVS] Message listener effect triggered', {
+      messagesCount: messages.length,
+      hasIframe: !!iframeRef.current,
+      hasManifest: !!manifest
+    });
 
-    // Check if message contains LAVS tool use
-    const parts = lastMessage.parts || [];
-    for (const part of parts) {
-      if (part.type === 'tool_use' && part.name?.startsWith('lavs_')) {
-        console.log('[LAVS] Detected LAVS tool use:', part.name, part.toolInput);
+    // Check last 3 messages for LAVS tool use (tool calls might be in earlier messages)
+    const recentMessages = messages.slice(-3);
+    if (recentMessages.length === 0) {
+      console.log('[LAVS] No messages yet');
+      return;
+    }
 
-        // Notify iframe view component via postMessage
-        if (iframeRef.current.contentWindow) {
-          iframeRef.current.contentWindow.postMessage({
-            type: 'lavs-agent-action',
-            action: {
-              type: 'tool_used',
-              tool: part.name,
-              input: part.toolInput,
-              timestamp: Date.now(),
-            }
-          }, '*');
+    let foundLAVSTool = false;
 
-          console.log('[LAVS] Notified view component of agent action');
+    for (const message of recentMessages) {
+      const parts = message.parts || [];
+
+      for (const part of parts) {
+        // Generate unique ID for this tool call
+        const toolCallId = `${part.type}-${part.name}-${part.toolUseId || part.id || ''}`;
+
+        console.log('[LAVS] Checking part:', {
+          messageRole: message.role,
+          type: part.type,
+          name: part.name,
+          toolCallId,
+          alreadyProcessed: processedToolsRef.current.has(toolCallId)
+        });
+
+        if (part.type === 'tool_use' && part.name?.startsWith('lavs_')) {
+          // Check if we've already processed this tool call
+          if (processedToolsRef.current.has(toolCallId)) {
+            console.log('[LAVS] ⏭️ Tool call already processed, skipping');
+            continue;
+          }
+
+          foundLAVSTool = true;
+          processedToolsRef.current.add(toolCallId);
+
+          console.log('[LAVS] ✅ Detected LAVS tool use:', part.name, part.toolInput);
+
+          // Notify iframe view component via postMessage
+          if (iframeRef.current.contentWindow) {
+            const message = {
+              type: 'lavs-agent-action',
+              action: {
+                type: 'tool_used',
+                tool: part.name,
+                input: part.toolInput,
+                timestamp: Date.now(),
+              }
+            };
+
+            console.log('[LAVS] Sending postMessage to iframe:', message);
+            iframeRef.current.contentWindow.postMessage(message, '*');
+            console.log('[LAVS] ✅ Message sent to iframe');
+          } else {
+            console.warn('[LAVS] ⚠️ iframe.contentWindow not available');
+          }
         }
       }
+    }
+
+    if (!foundLAVSTool) {
+      console.log('[LAVS] No LAVS tools found in recent messages');
     }
   }, [messages, componentLoaded, manifest]);
 

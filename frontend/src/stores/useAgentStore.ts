@@ -63,12 +63,15 @@ interface A2AStreamData {
 interface AgentState {
   // Current agent (框架层)
   currentAgent: AgentConfig | null;
-  
+
   // Chat state (框架层通用聊天)
   messages: AgentMessage[];
   isAiTyping: boolean;
   currentSessionId: string | null;
-  
+
+  // Tool execution notification (for LAVS sync)
+  lastToolExecution: { toolName: string; timestamp: number } | null;
+
   // MCP status (MCP工具状态)
   mcpStatus: McpStatusData;
   
@@ -111,7 +114,10 @@ interface AgentState {
   setA2AStreamEnd: (agentUrl: string) => void;
   addA2AStreamEvent: (agentUrl: string, event: A2AStreamEvent) => void;
   getA2AStreamByUrl: (agentUrl: string) => A2AStreamData | undefined;
-  
+
+  // Tool execution notification
+  notifyToolExecution: (toolName: string) => void;
+
   setSidebarCollapsed: (collapsed: boolean) => void;
 }
 
@@ -121,6 +127,7 @@ export const useAgentStore = create<AgentState>((set, get) => ({
   messages: [],
   isAiTyping: false,
   currentSessionId: null,
+  lastToolExecution: null,
   mcpStatus: {
     hasError: false,
     connectedServers: [],
@@ -421,6 +428,11 @@ export const useAgentStore = create<AgentState>((set, get) => ({
   }),
   
   getA2AStreamByUrl: (agentUrl) => get().activeA2AStreams[agentUrl],
-  
+
+  // Tool execution notification
+  notifyToolExecution: (toolName) => set({
+    lastToolExecution: { toolName, timestamp: Date.now() }
+  }),
+
   setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
 }));
