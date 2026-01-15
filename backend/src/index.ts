@@ -28,6 +28,7 @@ import mcpAdminManagementRouter from './routes/mcpAdminManagement';
 import cloudflareTunnelRouter from './routes/cloudflareTunnel';
 import taskExecutorRouter from './routes/taskExecutor';
 import versionRouter from './routes/version';
+import lavsRouter from './routes/lavs';
 import { authMiddleware } from './middleware/auth';
 import { httpsOnly } from './middleware/httpsOnly';
 import { loadConfig, getSlidesDir } from './config/index';
@@ -325,6 +326,7 @@ const app: express.Express = express();
   // Protected routes - Require authentication
   app.use('/api/files', authMiddleware, filesRouter);
   app.use('/api/agents', authMiddleware, agentsRouter);
+  app.use('/api/agents', authMiddleware, lavsRouter); // LAVS routes (under /api/agents)
   app.use('/api/mcp', authMiddleware, mcpRouter);
   app.use('/api/sessions', authMiddleware, sessionsRouter);
   app.use('/api/settings', authMiddleware, settingsRouter);

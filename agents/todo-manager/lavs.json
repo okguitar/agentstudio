@@ -1,0 +1,147 @@
+{
+  "lavs": "1.0",
+  "name": "todo-manager",
+  "version": "1.0.0",
+  "description": "Todo management service with AI assistance",
+
+  "endpoints": [
+    {
+      "id": "listTodos",
+      "method": "query",
+      "description": "Get all todos",
+      "handler": {
+        "type": "script",
+        "command": "node",
+        "args": ["scripts/todo-service.js", "list"],
+        "input": "args",
+        "timeout": 5000
+      },
+      "schema": {
+        "output": {
+          "type": "array",
+          "items": {
+            "$ref": "#/types/Todo"
+          }
+        }
+      }
+    },
+    {
+      "id": "addTodo",
+      "method": "mutation",
+      "description": "Add a new todo",
+      "handler": {
+        "type": "script",
+        "command": "node",
+        "args": ["scripts/todo-service.js", "add"],
+        "input": "stdin",
+        "timeout": 5000
+      },
+      "schema": {
+        "input": {
+          "type": "object",
+          "properties": {
+            "text": {
+              "type": "string",
+              "description": "Todo text"
+            },
+            "priority": {
+              "type": "number",
+              "description": "Priority (0-5)",
+              "default": 0
+            }
+          },
+          "required": ["text"]
+        },
+        "output": {
+          "$ref": "#/types/Todo"
+        }
+      }
+    },
+    {
+      "id": "toggleTodo",
+      "method": "mutation",
+      "description": "Toggle todo done status",
+      "handler": {
+        "type": "script",
+        "command": "node",
+        "args": ["scripts/todo-service.js", "toggle"],
+        "input": "stdin",
+        "timeout": 5000
+      },
+      "schema": {
+        "input": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "number",
+              "description": "Todo ID"
+            }
+          },
+          "required": ["id"]
+        },
+        "output": {
+          "$ref": "#/types/Todo"
+        }
+      }
+    },
+    {
+      "id": "deleteTodo",
+      "method": "mutation",
+      "description": "Delete a todo",
+      "handler": {
+        "type": "script",
+        "command": "node",
+        "args": ["scripts/todo-service.js", "delete"],
+        "input": "stdin",
+        "timeout": 5000
+      },
+      "schema": {
+        "input": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "number",
+              "description": "Todo ID"
+            }
+          },
+          "required": ["id"]
+        },
+        "output": {
+          "type": "object",
+          "properties": {
+            "success": { "type": "boolean" }
+          }
+        }
+      }
+    }
+  ],
+
+  "view": {
+    "component": {
+      "type": "local",
+      "path": "view/index.html"
+    },
+    "fallback": "table",
+    "icon": "checklist"
+  },
+
+  "types": {
+    "Todo": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "number" },
+        "text": { "type": "string" },
+        "done": { "type": "boolean" },
+        "priority": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "text", "done"]
+    }
+  },
+
+  "permissions": {
+    "fileAccess": ["./data/**/*.json"],
+    "networkAccess": false,
+    "maxExecutionTime": 30000
+  }
+}

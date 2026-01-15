@@ -1,0 +1,18 @@
+{
+  "todos": [
+    {
+      "id": 1,
+      "text": "Welcome to LAVS Todo Manager!",
+      "done": false,
+      "priority": 0,
+      "createdAt": "2025-01-15T10:00:00Z"
+    },
+    {
+      "id": 2,
+      "text": "Try adding a new todo via AI chat",
+      "done": false,
+      "priority": 1,
+      "createdAt": "2025-01-15T10:01:00Z"
+    }
+  ]
+}
