@@ -28,6 +28,13 @@ export class LAVSClient {
   }
 
   /**
+   * Get auth token from localStorage
+   */
+  private getAuthToken(): string | null {
+    return localStorage.getItem('authToken');
+  }
+
+  /**
    * Get LAVS manifest for the agent
    */
   async getManifest(): Promise<LAVSManifest> {
@@ -38,11 +45,18 @@ export class LAVSClient {
     const url = `${this.baseURL}/api/agents/${this.agentId}/lavs/manifest`;
 
     try {
+      const token = this.getAuthToken();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(url, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         credentials: 'include', // Include cookies for auth
       });
 
@@ -79,11 +93,18 @@ export class LAVSClient {
     const url = `${this.baseURL}/api/agents/${this.agentId}/lavs/${endpointId}`;
 
     try {
+      const token = this.getAuthToken();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         credentials: 'include',
         body: JSON.stringify(input || {}),
       });
