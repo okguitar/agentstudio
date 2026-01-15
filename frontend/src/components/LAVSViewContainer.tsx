@@ -12,6 +12,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { LAVSClient, LAVSManifest, LAVSViewComponent } from '../lavs';
 import type { AgentConfig } from '../types';
+import { useAgentStore } from '../stores/useAgentStore';
 
 interface LAVSViewContainerProps {
   agent: AgentConfig;
@@ -27,6 +28,10 @@ export const LAVSViewContainer: React.FC<LAVSViewContainerProps> = ({
   const [componentLoaded, setComponentLoaded] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const lavsClientRef = useRef<LAVSClient | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+
+  // Subscribe to agent messages to detect tool usage
+  const messages = useAgentStore((state) => state.messages);
 
   // Initialize LAVS client
   useEffect(() => {
@@ -125,6 +130,38 @@ export const LAVSViewContainer: React.FC<LAVSViewContainerProps> = ({
     }
   }, [componentLoaded]);
 
+  // Listen for LAVS tool usage in agent messages and notify view component
+  useEffect(() => {
+    if (!componentLoaded || !iframeRef.current || !manifest) return;
+
+    // Get last message
+    const lastMessage = messages[messages.length - 1];
+    if (!lastMessage) return;
+
+    // Check if message contains LAVS tool use
+    const parts = lastMessage.parts || [];
+    for (const part of parts) {
+      if (part.type === 'tool_use' && part.name?.startsWith('lavs_')) {
+        console.log('[LAVS] Detected LAVS tool use:', part.name, part.toolInput);
+
+        // Notify iframe view component via postMessage
+        if (iframeRef.current.contentWindow) {
+          iframeRef.current.contentWindow.postMessage({
+            type: 'lavs-agent-action',
+            action: {
+              type: 'tool_used',
+              tool: part.name,
+              input: part.toolInput,
+              timestamp: Date.now(),
+            }
+          }, '*');
+
+          console.log('[LAVS] Notified view component of agent action');
+        }
+      }
+    }
+  }, [messages, componentLoaded, manifest]);
+
   /**
    * Load local component as iframe
    */
@@ -188,6 +225,9 @@ export const LAVSViewContainer: React.FC<LAVSViewContainerProps> = ({
     // Add iframe to DOM FIRST (this triggers loading)
     containerRef.current.appendChild(iframe);
     console.log('[LAVS] Iframe appended to DOM, waiting for load...');
+
+    // Save iframe reference for later communication
+    iframeRef.current = iframe;
 
     // Wait for iframe to load
     await loadPromise;

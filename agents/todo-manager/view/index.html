@@ -217,7 +217,6 @@
         this.loading = true;
         this.error = null;
         this.lavsClient = null;
-        this.pollInterval = null; // For auto-refresh
       }
 
       /**
@@ -238,60 +237,20 @@
           this.render();
           this.attachEventListeners();
 
-          // Start auto-refresh polling (every 3 seconds)
-          this.startPolling();
+          // Listen for agent action events from parent window
+          window.addEventListener('message', (event) => {
+            if (event.data.type === 'lavs-agent-action') {
+              console.log('[TodoView] Received agent action event:', event.data.action);
+              this.onAgentAction(event.data.action);
+            }
+          });
+
+          console.log('[TodoView] Component initialized, listening for agent actions');
         } catch (error) {
           this.loading = false;
           this.error = error.message;
           this.render();
         }
-      }
-
-      /**
-       * Start polling for todo updates
-       */
-      startPolling() {
-        // Clear any existing interval
-        if (this.pollInterval) {
-          clearInterval(this.pollInterval);
-        }
-
-        // Poll every 3 seconds
-        this.pollInterval = setInterval(async () => {
-          try {
-            const newTodos = await this.lavsClient.call('listTodos');
-
-            // Only update if todos actually changed (to avoid unnecessary re-renders)
-            if (JSON.stringify(newTodos) !== JSON.stringify(this.todos)) {
-              console.log('[TodoView] Todos changed, refreshing UI');
-              this.todos = newTodos;
-              this.render();
-              this.attachEventListeners();
-            }
-          } catch (error) {
-            console.error('[TodoView] Failed to poll todos:', error);
-          }
-        }, 3000);
-
-        console.log('[TodoView] Auto-refresh polling started (every 3s)');
-      }
-
-      /**
-       * Stop polling (cleanup)
-       */
-      stopPolling() {
-        if (this.pollInterval) {
-          clearInterval(this.pollInterval);
-          this.pollInterval = null;
-          console.log('[TodoView] Auto-refresh polling stopped');
-        }
-      }
-
-      /**
-       * Cleanup when component is removed
-       */
-      disconnectedCallback() {
-        this.stopPolling();
       }
 
       /**
@@ -508,15 +467,20 @@
       }
 
       /**
-       * Called when AI agent performs an action (optional)
+       * Called when AI agent performs an action (event-driven sync)
        */
       onAgentAction(action) {
-        console.log('Agent action received:', action);
-        // Refresh todos when AI makes changes
-        if (action.type === 'todo_changed') {
+        console.log('[TodoView] Agent action received:', action);
+
+        // Refresh todos when AI uses LAVS tools
+        if (action.type === 'tool_used' && action.tool?.startsWith('lavs_')) {
+          console.log('[TodoView] LAVS tool used, refreshing data...');
           this.loadTodos().then(() => {
             this.render();
             this.attachEventListeners();
+            console.log('[TodoView] UI refreshed after agent action');
+          }).catch(err => {
+            console.error('[TodoView] Failed to refresh after agent action:', err);
           });
         }
       }
