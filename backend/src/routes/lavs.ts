@@ -220,6 +220,40 @@ router.post('/:agentId/lavs/:endpoint', async (req, res) => {
 });
 
 /**
+ * GET /api/agents/:agentId/lavs-view
+ * Serve the view component HTML for local components
+ */
+router.get('/:agentId/lavs-view', async (req, res) => {
+  try {
+    const { agentId } = req.params;
+
+    // Load manifest
+    const manifest = await loadAgentManifest(agentId);
+    if (!manifest || !manifest.view) {
+      return res.status(404).send('No view configured for this agent');
+    }
+
+    const { component } = manifest.view;
+
+    // Only serve local components
+    if (component.type !== 'local') {
+      return res.status(400).send('This endpoint only serves local components');
+    }
+
+    // Read the HTML file
+    const fs = await import('fs/promises');
+    const htmlContent = await fs.readFile(component.path, 'utf-8');
+
+    // Serve as HTML
+    res.setHeader('Content-Type', 'text/html');
+    res.send(htmlContent);
+  } catch (error: any) {
+    console.error('[LAVS] Error serving view:', error);
+    res.status(500).send(`Error loading view: ${error.message}`);
+  }
+});
+
+/**
  * POST /api/agents/:agentId/lavs-cache/clear
  * Clear manifest cache for an agent
  * Useful during development when lavs.json changes
