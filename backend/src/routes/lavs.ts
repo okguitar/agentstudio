@@ -27,19 +27,29 @@ const manifestCache = new Map<string, LAVSManifest>();
  * Agents can be in either global agents directory or project agents directory
  */
 function getAgentDirectory(agentId: string): string {
-  // For PoC, we support agents in the project's agents/ directory
-  const projectAgentDir = path.join(process.cwd(), 'agents', agentId);
-
-  // Also check global agents directory
-  const globalAgentDir = path.join(AGENTS_DIR, agentId);
-
-  // Prefer project directory if it exists, otherwise use global
   const fs = require('fs');
-  if (fs.existsSync(projectAgentDir)) {
-    return projectAgentDir;
+
+  // Check project agents directory (one level up from backend if cwd is backend/)
+  const cwd = process.cwd();
+  let projectAgentDir = path.join(cwd, 'agents', agentId);
+
+  // If cwd ends with 'backend', check parent directory
+  if (cwd.endsWith('backend')) {
+    projectAgentDir = path.join(cwd, '..', 'agents', agentId);
   }
 
-  return globalAgentDir;
+  if (fs.existsSync(projectAgentDir)) {
+    return path.resolve(projectAgentDir);
+  }
+
+  // Check global agents directory
+  const globalAgentDir = path.join(AGENTS_DIR, agentId);
+  if (fs.existsSync(globalAgentDir)) {
+    return globalAgentDir;
+  }
+
+  // Default to project directory even if it doesn't exist yet
+  return path.resolve(projectAgentDir);
 }
 
 /**

@@ -2,8 +2,8 @@ import React from 'react';
 import { FileText, Folder } from 'lucide-react';
 
 interface FloatingToggleProps {
-  currentView: 'files' | 'custom';
-  onViewChange: (view: 'files' | 'custom') => void;
+  currentView: 'files' | 'custom' | 'lavs';
+  onViewChange: (view: 'files' | 'custom' | 'lavs') => void;
   hasCustomComponent: boolean;
   className?: string;
 }
@@ -20,7 +20,12 @@ export const FloatingToggle: React.FC<FloatingToggleProps> = ({
   }
 
   const toggleView = () => {
-    onViewChange(currentView === 'files' ? 'custom' : 'files');
+    // Cycle through views: files -> custom/lavs -> files
+    if (currentView === 'files') {
+      onViewChange('custom');
+    } else if (currentView === 'custom' || currentView === 'lavs') {
+      onViewChange('files');
+    }
   };
 
   const CurrentIcon = currentView === 'files' ? Folder : FileText;

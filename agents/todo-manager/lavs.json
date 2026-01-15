@@ -12,7 +12,7 @@
       "handler": {
         "type": "script",
         "command": "node",
-        "args": ["scripts/todo-service.js", "list"],
+        "args": ["scripts/todo-service.cjs", "list"],
         "input": "args",
         "timeout": 5000
       },

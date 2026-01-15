@@ -362,6 +362,13 @@ export async function buildQueryOptions(
   const currentProjectId = projectPath || cwd;
   await integrateA2AMcpServer(queryOptions, currentProjectId, a2aStreamEnabled ?? false);
 
+  // Integrate LAVS SDK MCP server
+  // This automatically registers LAVS endpoints as tools for the agent
+  if (agent.id) {
+    const { integrateLAVSMcpServer } = await import('../lavs/lavs-integration.js');
+    await integrateLAVSMcpServer(queryOptions, agent.id);
+  }
+
   // Integrate AskUserQuestion SDK MCP server
   // This provides user interaction capability for web channel
   // Only integrate if sessionId and agentId are provided

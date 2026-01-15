@@ -20,7 +20,6 @@ interface LAVSViewContainerProps {
 
 export const LAVSViewContainer: React.FC<LAVSViewContainerProps> = ({
   agent,
-  projectPath,
 }) => {
   const [manifest, setManifest] = useState<LAVSManifest | null>(null);
   const [loading, setLoading] = useState(true);
@@ -122,7 +121,7 @@ export const LAVSViewContainer: React.FC<LAVSViewContainerProps> = ({
   /**
    * Load local component as iframe
    */
-  const loadLocalComponent = async (path: string) => {
+  const loadLocalComponent = async (_path: string) => {
     if (!containerRef.current) return;
 
     // Construct the full URL to the component
@@ -177,7 +176,7 @@ export const LAVSViewContainer: React.FC<LAVSViewContainerProps> = ({
   /**
    * Load component from CDN
    */
-  const loadCDNComponent = async (url: string, exportName?: string) => {
+  const loadCDNComponent = async (url: string, _exportName?: string) => {
     // Load script from CDN
     await new Promise<void>((resolve, reject) => {
       const script = document.createElement('script');
