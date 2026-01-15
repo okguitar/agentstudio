@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  cloudflare-proxy:
+    build: .
+    container_name: cloudflare-proxy
+    ports:
+      - "8000:8000"
+    environment:
+      - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN}
+      - CLOUDFLARE_ACCOUNT_ID=${CLOUDFLARE_ACCOUNT_ID}
+      - CLOUDFLARE_ZONE_ID=${CLOUDFLARE_ZONE_ID}
+      - PARENT_DOMAIN=${PARENT_DOMAIN:-agentstudio.cc}
+      - API_KEYS=${API_KEYS}
+      - DATABASE_URL=${DATABASE_URL:-sqlite:////data/proxy.db}
+      - HOST=0.0.0.0
+      - PORT=8000
+      - DEBUG=${DEBUG:-false}
+    volumes:
+      - proxy-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+volumes:
+  proxy-data:
