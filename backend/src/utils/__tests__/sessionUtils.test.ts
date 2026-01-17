@@ -17,7 +17,8 @@ vi.mock('../../services/sessionManager', () => ({
   sessionManager: {
     getSession: vi.fn(),
     checkSessionExists: vi.fn(),
-    createNewSession: vi.fn()
+    createNewSession: vi.fn(),
+    isSessionBusy: vi.fn().mockReturnValue(false)
   }
 }));
 
