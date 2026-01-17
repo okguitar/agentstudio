@@ -1,6 +1,6 @@
 {
   "name": "agentstudio",
-  "version": "0.1.25",
+  "version": "0.1.26",
   "description": "Claude-powered AgentStudio with React frontend and Node.js backend, built on top of Claude Code SDK",
   "type": "module",
   "private": true,
