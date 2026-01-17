@@ -17,6 +17,7 @@ import { ProjectMemoryModal } from '../components/ProjectMemoryModal';
 import { ProjectCommandsModal } from '../components/ProjectCommandsModal';
 import { ProjectSubAgentsModal } from '../components/ProjectSubAgentsModal';
 import { ProjectA2AModal } from '../components/ProjectA2AModal';
+import { ProjectSettingsModal } from '../components/ProjectSettingsModal';
 
 interface Project {
   id: string;
@@ -28,6 +29,8 @@ interface Project {
   defaultAgent: string;
   defaultAgentName: string;
   defaultAgentIcon: string;
+  defaultProviderId?: string;
+  defaultModel?: string;
   createdAt: string;
   lastAccessed: string;
   description?: string;
@@ -254,6 +257,7 @@ export const ProjectsPage: React.FC = () => {
   const [commandsProject, setCommandsProject] = useState<Project | null>(null);
   const [subAgentsProject, setSubAgentsProject] = useState<Project | null>(null);
   const [a2aProject, setA2aProject] = useState<Project | null>(null);
+  const [settingsProject, setSettingsProject] = useState<Project | null>(null);
   const [agentSelectProject, setAgentSelectProject] = useState<Project | null>(null);
   const [showImportModal, setShowImportModal] = useState(false);
   const [importProjectPath, setImportProjectPath] = useState('');
@@ -403,6 +407,10 @@ export const ProjectsPage: React.FC = () => {
 
   const handleA2AManagement = (project: Project) => {
     setA2aProject(project);
+  };
+
+  const handleSettings = (project: Project) => {
+    setSettingsProject(project);
   };
 
   const handleAgentChanged = (projectId: string, newAgent: any) => {
@@ -613,6 +621,7 @@ export const ProjectsPage: React.FC = () => {
           onCommandManagement={handleCommandManagement}
           onSubAgentManagement={handleSubAgentManagement}
           onA2AManagement={handleA2AManagement}
+          onSettings={handleSettings}
           onDeleteProject={handleDeleteProject}
           onAgentChanged={handleAgentChanged}
         />
@@ -732,6 +741,14 @@ export const ProjectsPage: React.FC = () => {
           onClose={() => setA2aProject(null)}
         />
       )}
+
+      {/* Project Settings Modal */}
+      <ProjectSettingsModal
+        isOpen={!!settingsProject}
+        project={settingsProject}
+        onClose={() => setSettingsProject(null)}
+        onSaved={loadProjects}
+      />
 
       {/* Agent Selection Modal */}
       {agentSelectProject && (

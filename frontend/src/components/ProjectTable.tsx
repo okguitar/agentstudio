@@ -10,7 +10,8 @@ import {
   Bot,
   Trash2,
   ChevronDown,
-  Shield
+  Shield,
+  Settings
 } from 'lucide-react';
 import { formatRelativeTime } from '../utils';
 import { API_BASE } from '../lib/config';
@@ -30,6 +31,8 @@ interface Project {
   createdAt: string;
   lastAccessed: string;
   description?: string;
+  defaultProviderId?: string;
+  defaultModel?: string;
 }
 
 interface Agent {
@@ -50,6 +53,7 @@ interface ProjectTableProps {
   onCommandManagement: (project: Project) => void;
   onSubAgentManagement: (project: Project) => void;
   onA2AManagement: (project: Project) => void;
+  onSettings: (project: Project) => void;
   onDeleteProject: (project: Project) => void;
   onAgentChanged?: (projectId: string, newAgent: Agent) => void;
   className?: string;
@@ -63,6 +67,7 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({
   onCommandManagement,
   onSubAgentManagement,
   onA2AManagement,
+  onSettings,
   onDeleteProject,
   onAgentChanged,
   className = '',
@@ -205,6 +210,13 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({
         <Shield className="w-3.5 h-3.5" />
       </button>
       <button
+        onClick={() => onSettings(project)}
+        className="p-1.5 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/50 rounded-md transition-colors"
+        title="项目设置"
+      >
+        <Settings className="w-3.5 h-3.5" />
+      </button>
+      <button
         onClick={() => onDeleteProject(project)}
         className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/50 rounded-md transition-colors"
         title={t('projects.actions.delete')}
@@ -292,6 +304,13 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({
                     title="A2A Protocol 管理"
                   >
                     <Shield className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => onSettings(project)}
+                    className="p-2 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/50 rounded-md transition-colors"
+                    title="项目设置"
+                  >
+                    <Settings className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => onDeleteProject(project)}

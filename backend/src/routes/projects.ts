@@ -56,7 +56,15 @@ router.get('/:dirName', async (req, res) => {
       return res.status(404).json({ error: 'Project not found' });
     }
     
-    res.json({ project });
+    // Include provider/model settings from metadata
+    const projectMeta = projectStorage.getProjectMetadata(dirName);
+    res.json({ 
+      project: {
+        ...project,
+        defaultProviderId: projectMeta?.defaultProviderId,
+        defaultModel: projectMeta?.defaultModel,
+      }
+    });
   } catch (error) {
     console.error('Error fetching project:', error);
     res.status(500).json({ error: 'Failed to fetch project' });
@@ -98,7 +106,7 @@ router.post('/', async (req, res) => {
 router.put('/:dirName', async (req, res) => {
   try {
     const { dirName } = req.params;
-    const { name, description, tags, metadata } = req.body;
+    const { name, description, tags, metadata, defaultProviderId, defaultModel } = req.body;
     
     const project = projectStorage.getProject(dirName);
     if (!project) {
@@ -120,8 +128,34 @@ router.put('/:dirName', async (req, res) => {
       projectStorage.updateProjectMetadata(dirName, metadata);
     }
     
+    // Update default provider and model
+    if (defaultProviderId !== undefined || defaultModel !== undefined) {
+      const projectMeta = projectStorage.getProjectMetadata(dirName);
+      if (projectMeta) {
+        if (defaultProviderId !== undefined) {
+          // Empty string clears the value
+          projectMeta.defaultProviderId = defaultProviderId || undefined;
+        }
+        if (defaultModel !== undefined) {
+          // Empty string clears the value
+          projectMeta.defaultModel = defaultModel || undefined;
+        }
+        projectMeta.lastAccessed = new Date().toISOString();
+        projectStorage.saveProjectMetadata(dirName, projectMeta);
+      }
+    }
+    
     const updatedProject = projectStorage.getProject(dirName);
-    res.json({ project: updatedProject });
+    
+    // Include provider/model settings in response
+    const projectMeta = projectStorage.getProjectMetadata(dirName);
+    res.json({ 
+      project: {
+        ...updatedProject,
+        defaultProviderId: projectMeta?.defaultProviderId,
+        defaultModel: projectMeta?.defaultModel,
+      }
+    });
   } catch (error) {
     console.error('Error updating project:', error);
     res.status(500).json({ error: 'Failed to update project' });
