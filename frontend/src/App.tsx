@@ -5,6 +5,8 @@ import { Layout } from './components/Layout';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Toaster } from './components/ui/toaster';
 import { MobileProvider } from './contexts/MobileContext';
+import { TelemetryProvider } from './components/TelemetryProvider';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 // External redirect component for non-React routes
 const ExternalRedirect: React.FC<{ url: string }> = ({ url }) => {
@@ -25,6 +27,7 @@ const SupplierSettingsPage = lazy(() => import('./pages/settings/VersionSettings
 const MemorySettingsPage = lazy(() => import('./pages/settings/MemorySettingsPage').then(module => ({ default: module.MemorySettingsPage })));
 const SubagentsPage = lazy(() => import('./pages/settings/SubagentsPage').then(module => ({ default: module.SubagentsPage })));
 const McpAdminSettingsPage = lazy(() => import('./pages/settings/McpAdminSettingsPage').then(module => ({ default: module.McpAdminSettingsPage })));
+const TelemetrySettingsPage = lazy(() => import('./pages/settings/TelemetrySettingsPage').then(module => ({ default: module.TelemetrySettingsPage })));
 const CommandsPage = lazy(() => import('./pages/CommandsPage').then(module => ({ default: module.CommandsPage })));
 const SkillsPage = lazy(() => import('./pages/SkillsPage').then(module => ({ default: module.SkillsPage })));
 const PluginsPage = lazy(() => import('./pages/PluginsPage').then(module => ({ default: module.PluginsPage })));
@@ -151,6 +154,7 @@ const AppContent: React.FC = () => {
             <Route path="commands" element={<CommandsPage />} />
             <Route path="subagents" element={<SubagentsPage />} />
             <Route path="mcp-admin" element={<McpAdminSettingsPage />} />
+            <Route path="telemetry" element={<TelemetrySettingsPage />} />
           </Route>
 
           {/* Toast Test Page */}
@@ -177,12 +181,16 @@ const AppContent: React.FC = () => {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <MobileProvider>
-        <AppContent />
-        <Toaster />
-      </MobileProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <MobileProvider>
+          <TelemetryProvider>
+            <AppContent />
+            <Toaster />
+          </TelemetryProvider>
+        </MobileProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

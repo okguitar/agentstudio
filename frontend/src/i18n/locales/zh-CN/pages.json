@@ -19,7 +19,8 @@
       "suppliers": "供应商管理",
       "memory": "全局记忆",
       "mcpAdmin": "MCP Admin",
-      "cloudflareTunnel": "外网访问"
+      "cloudflareTunnel": "外网访问",
+      "telemetry": "遥测与分析"
     }
   },
   "footer": {
@@ -875,6 +876,51 @@
       },
       "resetToDefault": "重置为默认",
       "saveSettings": "保存设置"
+    },
+    "telemetry": {
+      "title": "遥测与分析",
+      "description": "管理匿名使用数据收集",
+      "enableTelemetry": "启用匿名遥测",
+      "enableDescription": "分享匿名使用数据，帮助我们改进 AgentStudio",
+      "statusEnabled": "遥测已启用。感谢您帮助改进 AgentStudio！",
+      "statusDisabled": "遥测已禁用。不会收集任何数据。",
+      "whatWeCollect": "我们收集的数据",
+      "whatWeNeverCollect": "我们绝不收集的数据",
+      "collect": {
+        "installId": "匿名安装 ID",
+        "installIdDesc": "一个随机 UUID 用于区分安装实例，不与您的身份关联",
+        "version": "应用版本和操作系统",
+        "versionDesc": "帮助我们了解哪些版本和平台使用最多",
+        "features": "功能使用统计",
+        "featuresDesc": "哪些功能被使用（不包含内容或个人数据）",
+        "errors": "错误报告",
+        "errorsDesc": "脱敏的错误信息和堆栈跟踪（文件路径已移除）"
+      },
+      "neverCollect": {
+        "files": "文件内容、代码或项目数据",
+        "keys": "API 密钥、密码或凭据",
+        "pii": "个人身份信息（姓名、邮箱、IP）",
+        "conversations": "聊天对话或 AI 回复"
+      },
+      "privacyNote": "隐私优先",
+      "privacyNoteDesc": "所有遥测数据都是匿名和聚合的。我们无法识别个人用户。您可以随时禁用遥测。",
+      "consent": {
+        "title": "帮助改进 AgentStudio",
+        "subtitle": "匿名使用数据",
+        "description": "我们收集匿名使用数据，以了解 AgentStudio 的使用方式并改善用户体验。不会收集任何个人信息。",
+        "whatWeCollect": "我们收集的数据",
+        "item1": "匿名安装 ID",
+        "item2": "应用版本和操作系统类型",
+        "item3": "功能使用统计",
+        "item4": "错误报告（不含个人数据）",
+        "whatWeDoNotCollect": "我们绝不收集",
+        "notItem1": "文件内容或代码",
+        "notItem2": "API 密钥或凭据",
+        "notItem3": "个人身份信息",
+        "changeAnytime": "您可以随时在 设置 → 遥测与分析 中更改此设置。",
+        "accept": "是的，我愿意帮助",
+        "decline": "不了，谢谢"
+      }
     }
   },
   "analytics": {

@@ -19,7 +19,8 @@
       "suppliers": "Suppliers",
       "memory": "Memory",
       "mcpAdmin": "MCP Admin",
-      "cloudflareTunnel": "Public Access"
+      "cloudflareTunnel": "Public Access",
+      "telemetry": "Telemetry"
     }
   },
   "footer": {
@@ -847,6 +848,51 @@
       },
       "resetToDefault": "Reset to Default",
       "saveSettings": "Save Settings"
+    },
+    "telemetry": {
+      "title": "Telemetry & Analytics",
+      "description": "Manage anonymous usage data collection",
+      "enableTelemetry": "Enable Anonymous Telemetry",
+      "enableDescription": "Help improve AgentStudio by sharing anonymous usage data",
+      "statusEnabled": "Telemetry is enabled. Thank you for helping improve AgentStudio!",
+      "statusDisabled": "Telemetry is disabled. No data is being collected.",
+      "whatWeCollect": "What We Collect",
+      "whatWeNeverCollect": "What We Never Collect",
+      "collect": {
+        "installId": "Anonymous Installation ID",
+        "installIdDesc": "A random UUID to distinguish installations, not linked to your identity",
+        "version": "App Version & OS",
+        "versionDesc": "Helps us understand which versions and platforms are most used",
+        "features": "Feature Usage",
+        "featuresDesc": "Which features are used (without content or personal data)",
+        "errors": "Error Reports",
+        "errorsDesc": "Sanitized error messages and stack traces (file paths removed)"
+      },
+      "neverCollect": {
+        "files": "File contents, code, or project data",
+        "keys": "API keys, passwords, or credentials",
+        "pii": "Personal identifying information (name, email, IP)",
+        "conversations": "Chat conversations or AI responses"
+      },
+      "privacyNote": "Privacy First",
+      "privacyNoteDesc": "All telemetry data is anonymized and aggregated. We cannot identify individual users. You can disable telemetry at any time.",
+      "consent": {
+        "title": "Help Improve AgentStudio",
+        "subtitle": "Anonymous usage data",
+        "description": "We collect anonymous usage data to understand how AgentStudio is used and to improve the experience. No personal information is collected.",
+        "whatWeCollect": "What we collect",
+        "item1": "Anonymous installation ID",
+        "item2": "App version and OS type",
+        "item3": "Feature usage statistics",
+        "item4": "Error reports (without personal data)",
+        "whatWeDoNotCollect": "What we never collect",
+        "notItem1": "File contents or code",
+        "notItem2": "API keys or credentials",
+        "notItem3": "Personal identifying information",
+        "changeAnytime": "You can change this setting anytime in Settings → Telemetry.",
+        "accept": "Yes, I want to help",
+        "decline": "No, thanks"
+      }
     }
   },
   "analytics": {

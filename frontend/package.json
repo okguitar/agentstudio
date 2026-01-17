@@ -30,6 +30,7 @@
     "i18next-browser-languagedetector": "^8.2.0",
     "lucide-react": "^0.541.0",
     "mermaid": "^11.12.0",
+    "posthog-js": "^1.326.0",
     "prismjs": "^1.30.0",
     "react": "^19.1.1",
     "react-arborist": "^3.4.3",

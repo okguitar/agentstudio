@@ -219,6 +219,19 @@ SLIDES_DIR=../slides  # Relative to backend/src
 
 # CORS (optional)
 CORS_ORIGINS=https://your-frontend.vercel.app
+
+# Telemetry (optional, disabled by default)
+TELEMETRY_ENABLED=false
+POSTHOG_API_KEY=phc_your_api_key_here
+POSTHOG_HOST=https://app.posthog.com
+```
+
+Frontend `.env` file (`frontend/.env`):
+```env
+# Telemetry (optional, uses PostHog)
+VITE_POSTHOG_API_KEY=phc_your_api_key_here
+VITE_POSTHOG_HOST=https://app.posthog.com
+VITE_APP_VERSION=0.2.0
 ```
 
 ## Git Workflow

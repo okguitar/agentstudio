@@ -32,6 +32,7 @@ import { loadConfig, getSlidesDir } from './config/index';
 import { cleanupOrphanedTasks } from './services/a2a/taskCleanup';
 import { startTaskTimeoutMonitor, stopTaskTimeoutMonitor } from './jobs/taskTimeoutMonitor';
 import { initializeScheduler, shutdownScheduler } from './services/schedulerService';
+import { shutdownTelemetry } from './services/telemetry';
 
 dotenv.config();
 
@@ -361,6 +362,11 @@ const app: express.Express = express();
     } catch (error) {
       console.error('[Scheduler] Error shutting down scheduler:', error);
     }
+
+    // Shutdown telemetry (async but we don't wait)
+    shutdownTelemetry().catch((error) => {
+      console.error('[Telemetry] Error shutting down telemetry:', error);
+    });
 
     // Exit process
     process.exit(0);

@@ -66,3 +66,5 @@ specs/
 .a2a/
 **/.a2a/
 .playwright-mcp/
+# Telemetry data
+backend/.telemetry/

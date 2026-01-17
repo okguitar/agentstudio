@@ -15,7 +15,8 @@ import {
   Zap,
   Package,
   Clock,
-  Key
+  Key,
+  BarChart3
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { ServiceStatusIndicator } from './ServiceStatusIndicator';
@@ -92,6 +93,11 @@ const getNavigationItems = (t: (key: string) => string) => [
         name: t('nav.settingsSubmenu.mcpAdmin'),
         href: '/settings/mcp-admin',
         icon: Key,
+      },
+      {
+        name: t('nav.settingsSubmenu.telemetry'),
+        href: '/settings/telemetry',
+        icon: BarChart3,
       },
     ],
   },
