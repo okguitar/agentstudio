@@ -14,17 +14,41 @@
 const fs = require('fs');
 const path = require('path');
 
-// Data file path (relative to agent directory)
-const DATA_FILE = path.join(__dirname, '../data/todos.json');
+/**
+ * Get project-specific data file path
+ * Priority:
+ * 1. LAVS_PROJECT_PATH env var (passed from backend)
+ * 2. Fallback to agent's data directory
+ */
+function getDataFilePath() {
+  const projectPath = process.env.LAVS_PROJECT_PATH;
+
+  if (projectPath) {
+    // Use project-specific path: <projectPath>/.agentstudio/todo-manager/todos.json
+    return path.join(projectPath, '.agentstudio', 'todo-manager', 'todos.json');
+  } else {
+    // Fallback to agent's data directory (for testing/standalone)
+    return path.join(__dirname, '../data/todos.json');
+  }
+}
+
+// Data file path (project-specific or fallback)
+const DATA_FILE = getDataFilePath();
+
+// Always log which data file is being used (to stderr so it doesn't interfere with JSON output)
+console.error(`[TodoService] LAVS_PROJECT_PATH: ${process.env.LAVS_PROJECT_PATH || '(not set)'}`);
+console.error(`[TodoService] Using data file: ${DATA_FILE}`);
 
 // Ensure data directory exists
 const dataDir = path.dirname(DATA_FILE);
 if (!fs.existsSync(dataDir)) {
+  console.error(`[TodoService] Creating directory: ${dataDir}`);
   fs.mkdirSync(dataDir, { recursive: true });
 }
 
 // Initialize data file if it doesn't exist
 if (!fs.existsSync(DATA_FILE)) {
+  console.error(`[TodoService] Initializing new data file: ${DATA_FILE}`);
   fs.writeFileSync(DATA_FILE, JSON.stringify({ todos: [] }, null, 2));
 }
 

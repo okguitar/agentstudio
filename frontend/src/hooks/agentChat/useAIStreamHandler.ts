@@ -1254,6 +1254,12 @@ export const useAIStreamHandler = ({
                 isError: block.is_error || false,
                 isExecuting: false
               });
+
+              // Notify store about tool execution (for LAVS sync)
+              if (targetTool.toolData.toolName) {
+                useAgentStore.getState().notifyToolExecution(targetTool.toolData.toolName);
+                console.log('📢 Notified tool execution:', targetTool.toolData.toolName);
+              }
             } else {
               console.warn('🔧 No target tool found for tool_use_id:', block.tool_use_id);
               // Log all available tools for debugging

@@ -2,34 +2,46 @@ import React from 'react';
 import { FileText, Folder } from 'lucide-react';
 
 interface FloatingToggleProps {
-  currentView: 'files' | 'custom' | 'lavs';
-  onViewChange: (view: 'files' | 'custom' | 'lavs') => void;
-  hasCustomComponent: boolean;
+  currentView: 'files' | 'lavs';
+  onViewChange: (view: 'files' | 'lavs') => void;
+  hasCustomComponent: boolean; // Kept for backward compatibility, but not used
+  hasLAVS?: boolean;
   className?: string;
 }
 
 export const FloatingToggle: React.FC<FloatingToggleProps> = ({
   currentView,
   onViewChange,
-  hasCustomComponent,
+  hasLAVS = false,
   className = ''
 }) => {
-  // 如果没有自定义组件，不显示切换按钮
-  if (!hasCustomComponent) {
+  // 如果没有 LAVS，不显示切换按钮 (LAVS replaces custom view)
+  if (!hasLAVS) {
     return null;
   }
 
   const toggleView = () => {
-    // Cycle through views: files -> custom/lavs -> files
+    // Toggle between files and LAVS
+    console.log('[FloatingToggle] Current view:', currentView, 'hasLAVS:', hasLAVS);
+
     if (currentView === 'files') {
-      onViewChange('custom');
-    } else if (currentView === 'custom' || currentView === 'lavs') {
+      console.log('[FloatingToggle] Switching files -> LAVS');
+      onViewChange('lavs');
+    } else {
+      console.log('[FloatingToggle] Switching LAVS -> files');
       onViewChange('files');
     }
   };
 
-  const CurrentIcon = currentView === 'files' ? Folder : FileText;
-  const nextViewText = currentView === 'files' ? 'Agent 界面' : '文件浏览器';
+  // Determine the icon and next view text based on current state
+  const getViewInfo = () => {
+    // Simple toggle between LAVS and files
+    return currentView === 'files'
+      ? { icon: FileText, text: 'LAVS 界面' }
+      : { icon: Folder, text: '文件浏览器' };
+  };
+
+  const { icon: CurrentIcon, text: nextViewText } = getViewInfo();
 
   return (
     <button

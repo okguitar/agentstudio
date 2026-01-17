@@ -144,6 +144,13 @@ router.post('/:agentId/lavs/:endpoint', async (req, res) => {
     const { agentId, endpoint: endpointId } = req.params;
     const input = req.body;
 
+    // Get projectPath from headers (for data isolation)
+    const projectPath = req.headers['x-project-path'] as string | undefined;
+    console.log(`[LAVS] POST /${agentId}/lavs/${endpointId}`, {
+      hasProjectPath: !!projectPath,
+      projectPath: projectPath || '(none)'
+    });
+
     // 1. Load manifest
     const manifest = await loadAgentManifest(agentId);
     if (!manifest) {
@@ -177,6 +184,10 @@ router.post('/:agentId/lavs/:endpoint', async (req, res) => {
         ...(manifest.permissions || {}),
         ...(endpoint.permissions || {}),
       },
+      // Pass projectPath as environment variable for data isolation
+      env: projectPath ? {
+        LAVS_PROJECT_PATH: projectPath,
+      } : undefined,
     };
 
     // 5. Execute handler

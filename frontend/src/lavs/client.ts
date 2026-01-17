@@ -12,6 +12,7 @@ import { LAVSManifest, LAVSError } from './types';
 export interface LAVSClientOptions {
   agentId: string;
   baseURL?: string; // Default: window.location.origin
+  projectPath?: string; // Project path for data isolation
 }
 
 /**
@@ -20,11 +21,20 @@ export interface LAVSClientOptions {
 export class LAVSClient {
   private agentId: string;
   private baseURL: string;
+  private projectPath?: string;
   private manifest: LAVSManifest | null = null;
 
   constructor(options: LAVSClientOptions) {
     this.agentId = options.agentId;
     this.baseURL = options.baseURL || window.location.origin;
+    this.projectPath = options.projectPath;
+
+    // Debug logging
+    console.log('[LAVSClient] Initialized:', {
+      agentId: this.agentId,
+      projectPath: this.projectPath,
+      hasProjectPath: !!this.projectPath
+    });
   }
 
   /**
@@ -100,6 +110,14 @@ export class LAVSClient {
 
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      // Add projectPath to headers if available
+      if (this.projectPath) {
+        headers['X-Project-Path'] = this.projectPath;
+        console.log('[LAVSClient] Adding X-Project-Path header:', this.projectPath);
+      } else {
+        console.log('[LAVSClient] No projectPath available');
       }
 
       const response = await fetch(url, {
