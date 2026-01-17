@@ -268,6 +268,19 @@ export class SessionManager {
   }
 
   /**
+   * 检查会话是否正在处理请求（用于并发控制）
+   * @param sessionId 会话ID
+   * @returns 是否正在处理，如果会话不存在返回 false
+   */
+  isSessionBusy(sessionId: string): boolean {
+    const session = this.sessions.get(sessionId);
+    if (!session) {
+      return false;
+    }
+    return session.isCurrentlyProcessing();
+  }
+
+  /**
    * 移除指定会话
    * @param sessionId Claude SDK 返回的 sessionId
    */

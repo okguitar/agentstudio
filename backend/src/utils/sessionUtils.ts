@@ -71,6 +71,11 @@ export async function handleSessionManagement(
     claudeSession = sessionManager.getSession(sessionId);
     
     if (claudeSession) {
+      // 并发控制：检查会话是否正在处理其他请求
+      if (sessionManager.isSessionBusy(sessionId)) {
+        console.warn(`⚠️  Session ${sessionId} is currently busy processing another request`);
+        throw new Error('SESSION_BUSY: This session is currently processing another request. Please wait for the current request to complete or create a new session.');
+      }
       console.log(`♻️  Using existing persistent Claude session: ${sessionId} for agent: ${agentId}`);
     } else {
       console.log(`❌ Session ${sessionId} not found in memory for agent: ${agentId}`);

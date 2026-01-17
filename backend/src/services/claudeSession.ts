@@ -26,6 +26,9 @@ export class ClaudeSession {
   private responseCallbacks: Map<string, (response: SDKMessage) => void> = new Map();
   private nextRequestId = 0;
   private isBackgroundRunning = false;
+  
+  // 并发控制：标记会话是否正在处理请求
+  private isProcessing = false;
 
   constructor(agentId: string, options: Options, resumeSessionId?: string, claudeVersionId?: string, modelId?: string) {
     console.log(`🔧 [DEBUG] ClaudeSession constructor started for agent: ${agentId}, resumeSessionId: ${resumeSessionId}, claudeVersionId: ${claudeVersionId}, modelId: ${modelId}`);
@@ -181,11 +184,19 @@ export class ClaudeSession {
    * @param responseCallback 响应回调函数
    */
   async sendMessage(message: any, responseCallback: (response: SDKMessage) => void): Promise<string> {
-    console.log(`🔧 [DEBUG] sendMessage called for agent: ${this.agentId}, isActive: ${this.isActive}, isBackgroundRunning: ${this.isBackgroundRunning}`);
+    console.log(`🔧 [DEBUG] sendMessage called for agent: ${this.agentId}, isActive: ${this.isActive}, isProcessing: ${this.isProcessing}, isBackgroundRunning: ${this.isBackgroundRunning}`);
 
     if (!this.isActive) {
       throw new Error('Session is not active');
     }
+
+    // 并发控制：检查是否已有请求正在处理
+    if (this.isProcessing) {
+      throw new Error('Session is busy processing another request. Please wait for the current request to complete or create a new session.');
+    }
+
+    // 标记为正在处理
+    this.isProcessing = true;
 
     this.lastActivity = Date.now();
 
@@ -244,6 +255,9 @@ export class ClaudeSession {
           if (sdkMessage.type === 'result') {
             console.log(`✅ Request ${currentRequestId} completed, removing from queue`);
             this.responseCallbacks.delete(currentRequestId);
+            // 清除处理中标记，允许新的请求
+            this.isProcessing = false;
+            console.log(`🔓 Session unlocked for agent: ${this.agentId}, sessionId: ${this.claudeSessionId}`);
           }
         }
       }
@@ -297,8 +311,12 @@ export class ClaudeSession {
       }
       
       this.isActive = false;
+      // 清除处理中标记
+      this.isProcessing = false;
     } finally {
       this.isBackgroundRunning = false;
+      // 确保处理中标记被清除（以防上面的 catch 没有执行到）
+      this.isProcessing = false;
     }
   }
 
@@ -324,6 +342,14 @@ export class ClaudeSession {
    */
   public isSessionActive(): boolean {
     return this.isActive;
+  }
+
+  /**
+   * 检查会话是否正在处理请求
+   * 用于并发控制，防止同一会话同时处理多个请求
+   */
+  public isCurrentlyProcessing(): boolean {
+    return this.isProcessing;
   }
 
   /**
