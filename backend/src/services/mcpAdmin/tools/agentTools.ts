@@ -54,7 +54,7 @@ export const listAgentsTool: ToolDefinition = {
         enabled: a.enabled !== false,
         source: a.source,
         version: a.version,
-        model: a.model,
+        // Note: model field removed - model is now determined by project/provider configuration
         tags: a.tags,
       }));
 
@@ -127,6 +127,7 @@ export const getAgentTool: ToolDefinition = {
       }
 
       // Return full agent config (excluding sensitive data)
+      // Note: model field removed - model is now determined by project/provider configuration
       const agentInfo = {
         id: agent.id,
         name: agent.name,
@@ -134,7 +135,6 @@ export const getAgentTool: ToolDefinition = {
         enabled: agent.enabled !== false,
         source: agent.source,
         version: agent.version,
-        model: agent.model,
         maxTurns: agent.maxTurns,
         permissionMode: agent.permissionMode,
         tags: agent.tags,
@@ -177,7 +177,7 @@ export const getAgentTool: ToolDefinition = {
 export const updateAgentTool: ToolDefinition = {
   tool: {
     name: 'update_agent',
-    description: 'Update agent settings (enabled status, model, etc.)',
+    description: 'Update agent settings (enabled status, maxTurns, etc.). Note: model is determined by project/provider config, not agent config.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -188,10 +188,6 @@ export const updateAgentTool: ToolDefinition = {
         enabled: {
           type: 'boolean',
           description: 'Enable or disable the agent',
-        },
-        model: {
-          type: 'string',
-          description: 'AI model to use (e.g., "sonnet", "opus", "haiku")',
         },
         maxTurns: {
           type: 'number',
@@ -226,13 +222,11 @@ export const updateAgentTool: ToolDefinition = {
       }
 
       // Build update object
+      // Note: model field removed - model is now determined by project/provider configuration
       const updates: Record<string, unknown> = {};
 
       if (params.enabled !== undefined) {
         updates.enabled = params.enabled;
-      }
-      if (params.model !== undefined) {
-        updates.model = params.model;
       }
       if (params.maxTurns !== undefined) {
         updates.maxTurns = params.maxTurns;
@@ -261,7 +255,6 @@ export const updateAgentTool: ToolDefinition = {
                   id: updatedAgent.id,
                   name: updatedAgent.name,
                   enabled: updatedAgent.enabled,
-                  model: updatedAgent.model,
                   updatedAt: updatedAgent.updatedAt,
                 },
               },

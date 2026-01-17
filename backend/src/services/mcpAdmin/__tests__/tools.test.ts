@@ -70,6 +70,24 @@ vi.mock('../../projectMetadataStorage.js', () => ({
     updateProjectInfo: vi.fn(),
     setDefaultAgent: vi.fn(),
     updateProjectTags: vi.fn(),
+    getProjectMetadata: vi.fn().mockImplementation((path: string) => {
+      if (path === '/path/to/project1') {
+        return {
+          id: 'proj_1',
+          path: '/path/to/project1',
+          name: 'project1',
+          defaultAgent: 'claude-code',
+          tags: [],
+          metadata: {},
+          agents: {},
+          skills: {},
+          createdAt: '2024-01-01T00:00:00Z',
+          lastAccessed: '2024-01-01T00:00:00Z',
+        };
+      }
+      return null;
+    }),
+    saveProjectMetadata: vi.fn(),
   })),
 }));
 
@@ -83,7 +101,7 @@ vi.mock('../../agentStorage.js', () => ({
         enabled: true,
         source: 'local',
         version: '1.0.0',
-        model: 'sonnet',
+        // Note: model field removed - model is now determined by project/provider configuration
         tags: ['development'],
         allowedTools: [
           { name: 'Read', enabled: true },
@@ -97,7 +115,7 @@ vi.mock('../../agentStorage.js', () => ({
         enabled: false,
         source: 'plugin',
         version: '1.0.0',
-        model: 'haiku',
+        // Note: model field removed - model is now determined by project/provider configuration
         tags: [],
         allowedTools: [],
       },
@@ -111,7 +129,7 @@ vi.mock('../../agentStorage.js', () => ({
           enabled: true,
           source: 'local',
           version: '1.0.0',
-          model: 'sonnet',
+          // Note: model field removed - model is now determined by project/provider configuration
           maxTurns: 25,
           permissionMode: 'acceptEdits',
           tags: ['development'],

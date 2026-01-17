@@ -630,7 +630,6 @@ router.post('/chat', async (req, res) => {
         console.log('📊 [Chat API] QueryOptions 模型参数:');
         console.log(`   请求中的 model 参数: ${model || '(未指定)'}`);
         console.log(`   请求中的 claudeVersion: ${claudeVersion || '(未指定)'}`);
-        console.log(`   Agent 配置的 model: ${agent.model || '(未指定)'}`);
         console.log(`   最终 queryOptions.model: ${queryOptions.model}`);
         console.log(`   queryOptions.pathToClaudeCodeExecutable: ${queryOptions.pathToClaudeCodeExecutable || '(未指定)'}`);
         console.log(`   queryOptions.cwd: ${queryOptions.cwd}`);

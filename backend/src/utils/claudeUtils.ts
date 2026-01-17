@@ -14,6 +14,7 @@ import { promisify } from 'util';
 import { getDefaultVersionId, getAllVersionsInternal, getVersionByIdInternal } from '../services/claudeVersionStorage.js';
 import { integrateA2AMcpServer } from '../services/a2a/a2aIntegration.js';
 import { integrateAskUserQuestionMcpServer, SessionRef } from '../services/askUserQuestion/askUserQuestionIntegration.js';
+import { resolveConfig } from './configResolver.js';
 
 export type { SessionRef };
 import { MCP_SERVER_CONFIG_FILE } from '../config/paths.js';
@@ -183,14 +184,6 @@ export async function buildQueryOptions(
     finalPermissionMode = agent.permissionMode;
   }
 
-  // Determine model: request > agent config > default (sonnet)
-  let finalModel = 'sonnet';
-  if (model) {
-    finalModel = model;
-  } else if (agent.model) {
-    finalModel = agent.model;
-  }
-
   // Build allowed tools list from agent configuration
   const allowedTools = agent.allowedTools
     .filter((tool: any) => tool.enabled)
@@ -201,80 +194,61 @@ export async function buildQueryOptions(
     allowedTools.push(...mcpTools);
   }
 
-  // Get Claude executable path and environment variables based on version
-  // Note: If no executablePath is explicitly configured, we don't pass pathToClaudeCodeExecutable
-  // to the SDK, allowing it to use its bundled CLI which is always compatible.
+  // Use unified config resolver for provider and model
+  // Priority for provider: channel input > agent config > project config > system default
+  // Priority for model: channel input > project config > provider's first model > system default
   let executablePath: string | null = null;
   let environmentVariables: Record<string, string> = {};
+  let finalModel = 'sonnet';
 
   try {
-    // First check if agent has a specific Claude version
-    const agentClaudeVersion = claudeVersion || agent.claudeVersionId;
-
-    if (agentClaudeVersion) {
-      // Use specified version
-      const selectedVersion = await getVersionByIdInternal(agentClaudeVersion);
-      if (selectedVersion) {
-        // Only use executablePath if explicitly configured in the version
-        if (selectedVersion.executablePath) {
-          executablePath = selectedVersion.executablePath.trim();
-          console.log(`🎯 Using specified Claude version: ${selectedVersion.alias} (custom path: ${executablePath})`);
-        } else {
-          console.log(`🎯 Using specified Claude version: ${selectedVersion.alias} (SDK bundled CLI)`);
-        }
-        environmentVariables = selectedVersion.environmentVariables || {};
-      } else {
-        console.warn(`⚠️ Specified Claude version not found: ${agentClaudeVersion}, using SDK bundled CLI`);
-      }
+    // Special case: if defaultEnv is provided (e.g., Slack integration), use it directly
+    if (defaultEnv) {
+      console.log(`🎯 Using provided default environment variables (SDK bundled CLI)`);
+      environmentVariables = defaultEnv;
+      finalModel = model || 'sonnet';
     } else {
-      // Use default version or provided default environment
-      if (defaultEnv) {
-        // Slack integration or other callers can provide default env
-        console.log(`🎯 Using provided default environment variables (SDK bundled CLI)`);
-        environmentVariables = defaultEnv;
-      } else {
-        // Standard flow: get default version from configuration
-        const defaultVersionId = await getDefaultVersionId();
-        if (defaultVersionId) {
-          const defaultVersion = await getVersionByIdInternal(defaultVersionId);
-          if (defaultVersion) {
-            // Only use executablePath if explicitly configured in the version
-            if (defaultVersion.executablePath) {
-              executablePath = defaultVersion.executablePath;
-              console.log(`🎯 Using default Claude version: ${defaultVersion.alias} (custom path: ${executablePath})`);
-            } else {
-              console.log(`🎯 Using default Claude version: ${defaultVersion.alias} (SDK bundled CLI)`);
-            }
-            environmentVariables = defaultVersion.environmentVariables || {};
+      // Use the unified config resolver
+      const resolvedConfig = await resolveConfig({
+        channelProviderId: claudeVersion,
+        channelModel: model,
+        agent: { claudeVersionId: agent.claudeVersionId },
+        projectPath,
+      });
 
-            // Log environment variables details
-            const envVarKeys = Object.keys(environmentVariables);
-            if (envVarKeys.length > 0) {
-              console.log(`📝 Environment variables loaded from version config:`, envVarKeys);
-              // Log proxy-related variables specifically
-              const proxyVars = ['HTTP_PROXY', 'HTTPS_PROXY', 'http_proxy', 'https_proxy', 'NO_PROXY', 'no_proxy', 'ALL_PROXY', 'all_proxy'];
-              const loadedProxyVars = proxyVars.filter(key => environmentVariables[key]);
-              if (loadedProxyVars.length > 0) {
-                console.log(`🌐 Proxy variables detected:`, loadedProxyVars.reduce((acc, key) => {
-                  acc[key] = environmentVariables[key];
-                  return acc;
-                }, {} as Record<string, string>));
-              } else {
-                console.log(`🌐 No proxy variables found in environment variables`);
-              }
-            } else {
-              console.log(`⚠️ No environment variables configured for this version`);
-            }
-          } else {
-            console.log(`📦 Using SDK bundled CLI (no default version configured)`);
-          }
+      finalModel = resolvedConfig.model;
+
+      // Extract provider details
+      if (resolvedConfig.provider) {
+        // Only use executablePath if explicitly configured in the version
+        if (resolvedConfig.provider.executablePath) {
+          executablePath = resolvedConfig.provider.executablePath.trim();
+          console.log(`🎯 Using Claude version: ${resolvedConfig.provider.alias} (custom path: ${executablePath})`);
         } else {
-          console.log(`📦 Using SDK bundled CLI (no default version configured)`);
+          console.log(`🎯 Using Claude version: ${resolvedConfig.provider.alias} (SDK bundled CLI)`);
         }
+        environmentVariables = resolvedConfig.provider.environmentVariables || {};
+
+        // Log environment variables details
+        const envVarKeys = Object.keys(environmentVariables);
+        if (envVarKeys.length > 0) {
+          console.log(`📝 Environment variables loaded from provider config:`, envVarKeys);
+          // Log proxy-related variables specifically
+          const proxyVars = ['HTTP_PROXY', 'HTTPS_PROXY', 'http_proxy', 'https_proxy', 'NO_PROXY', 'no_proxy', 'ALL_PROXY', 'all_proxy'];
+          const loadedProxyVars = proxyVars.filter(key => environmentVariables[key]);
+          if (loadedProxyVars.length > 0) {
+            console.log(`🌐 Proxy variables detected:`, loadedProxyVars.reduce((acc, key) => {
+              acc[key] = environmentVariables[key];
+              return acc;
+            }, {} as Record<string, string>));
+          }
+        }
+      } else {
+        console.log(`📦 Using SDK bundled CLI (no provider found)`);
       }
     }
   } catch (error) {
-    console.error('Failed to get Claude version config:', error);
+    console.error('Failed to resolve config:', error);
     console.log(`📦 Using SDK bundled CLI (fallback due to error)`);
   }
 

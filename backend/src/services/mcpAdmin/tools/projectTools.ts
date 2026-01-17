@@ -136,10 +136,16 @@ export const getProjectTool: ToolDefinition = {
         // Directory doesn't exist or can't be accessed
       }
 
+      // Get metadata for provider/model settings
+      const metadata = projectStorage.getProjectMetadata(projectPath);
+
       const projectInfo = {
         ...project,
         exists,
         fileCount,
+        // Include provider/model defaults from metadata
+        defaultProviderId: metadata?.defaultProviderId,
+        defaultModel: metadata?.defaultModel,
       };
 
       return {
@@ -275,7 +281,7 @@ export const registerProjectTool: ToolDefinition = {
 export const updateProjectTool: ToolDefinition = {
   tool: {
     name: 'update_project',
-    description: 'Update project settings (name, description, default agent, tags)',
+    description: 'Update project settings (name, description, default agent, tags, default provider/model)',
     inputSchema: {
       type: 'object',
       properties: {
@@ -299,6 +305,14 @@ export const updateProjectTool: ToolDefinition = {
           type: 'array',
           description: 'Tags for the project',
         },
+        defaultProviderId: {
+          type: 'string',
+          description: 'Default provider (Claude version) ID for this project. Pass empty string to clear.',
+        },
+        defaultModel: {
+          type: 'string',
+          description: 'Default model for this project (e.g., "sonnet", "opus"). Pass empty string to clear.',
+        },
       },
       required: ['path'],
     },
@@ -310,6 +324,8 @@ export const updateProjectTool: ToolDefinition = {
       const description = params.description as string | undefined;
       const defaultAgent = params.defaultAgent as string | undefined;
       const tags = params.tags as string[] | undefined;
+      const defaultProviderId = params.defaultProviderId as string | undefined;
+      const defaultModel = params.defaultModel as string | undefined;
 
       if (!projectPath) {
         return {
@@ -338,6 +354,21 @@ export const updateProjectTool: ToolDefinition = {
 
       if (tags !== undefined) {
         projectStorage.updateProjectTags(projectPath, tags);
+      }
+
+      // Update provider/model defaults
+      if (defaultProviderId !== undefined || defaultModel !== undefined) {
+        const metadata = projectStorage.getProjectMetadata(projectPath);
+        if (metadata) {
+          if (defaultProviderId !== undefined) {
+            metadata.defaultProviderId = defaultProviderId || undefined; // empty string clears
+          }
+          if (defaultModel !== undefined) {
+            metadata.defaultModel = defaultModel || undefined; // empty string clears
+          }
+          metadata.lastAccessed = new Date().toISOString();
+          projectStorage.saveProjectMetadata(projectPath, metadata);
+        }
       }
 
       // Get updated project

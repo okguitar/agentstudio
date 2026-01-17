@@ -603,16 +603,16 @@ async function executeAgentTask(
   addLog('info', 'system', `Working directory: ${task.projectPath}`);
   addLog('info', 'system', `Trigger message: ${task.triggerMessage}`);
 
-  // Determine the model to use (override or agent default)
-  let modelToUse = agent.model || 'sonnet';  // Default to sonnet if not specified
-  addLog('info', 'system', `Agent default model: ${agent.model || '(not specified)'}`);
+  // Determine the model to use
+  // Priority: task.modelOverride > project/provider config (handled by buildQueryOptions)
+  let modelToUse: string | undefined = undefined;
   
   if (task.modelOverride?.modelId) {
     modelToUse = task.modelOverride.modelId;
     addLog('info', 'system', `Model override applied: ${modelToUse} (from task config)`);
+  } else {
+    addLog('info', 'system', `No model override, will use project/provider defaults`);
   }
-  
-  addLog('info', 'system', `Final model to use: ${modelToUse}`);
   
   // Determine Claude version to use (from task override)
   // Note: AgentConfig doesn't have claudeVersionId, it's only in AgentSession
@@ -636,36 +636,9 @@ async function executeAgentTask(
   // NOTE: Scheduled tasks run unattended, so we MUST use bypassPermissions mode
   addLog('info', 'system', 'Building query options with MCP and environment support...');
 
-  // Determine permission mode based on model
-  // IMPORTANT: Some models do NOT work in scheduled tasks (unattended mode)
-  // These models require 'default' permission mode with user interaction, but scheduled tasks
-  // run unattended and require 'bypassPermissions' mode
-  const modelLower = modelToUse.toLowerCase();
-  const isGlmModel = modelLower.includes('glm') ||
-                     modelLower.includes('zhipu') ||
-                     modelLower.includes('chatglm') ||
-                     modelLower.startsWith('glm');
-  
-  addLog('info', 'system', `Model compatibility check: model="${modelToUse}", isGlmModel=${isGlmModel}`);
-
-  if (isGlmModel) {
-    // NOTE: GLM models may have limitations with bypassPermissions mode
-    // Previously this was blocked, but now we allow testing with a warning
-    addLog('warn', 'system', `GLM model detected: ${modelToUse}. GLM models may have compatibility issues with scheduled tasks.`);
-    addLog('warn', 'system', `If this task fails, consider using Claude models (Sonnet, Haiku, Opus) instead.`);
-  }
-  
-  // Additional check: some models might not support bypassPermissions mode
-  // Log a warning for unrecognized model names
-  const knownClaudeModels = ['sonnet', 'haiku', 'opus', 'claude'];
-  const isKnownClaudeModel = knownClaudeModels.some(m => modelLower.includes(m));
-  if (!isKnownClaudeModel) {
-    addLog('warn', 'system', `Warning: Model "${modelToUse}" may not support bypassPermissions mode required for scheduled tasks`);
-  }
-
-  // For Claude models, use bypassPermissions mode (unattended execution)
+  // For scheduled tasks, use bypassPermissions mode (unattended execution)
   const permissionMode = 'bypassPermissions';
-  addLog('info', 'system', `Using 'bypassPermissions' mode for Claude model: ${modelToUse}`);
+  addLog('info', 'system', `Using 'bypassPermissions' mode for scheduled task`);
 
   const { queryOptions } = await buildQueryOptions(
     agent,
@@ -683,7 +656,28 @@ async function executeAgentTask(
   // Override maxTurns for scheduled tasks to prevent infinite loops
   queryOptions.maxTurns = agent.maxTurns || 10;
 
-  addLog('info', 'system', `Query options built: permissionMode=bypassPermissions, model=${modelToUse}, maxTurns=${queryOptions.maxTurns}`);
+  // Get the actual resolved model from queryOptions
+  const resolvedModel = queryOptions.model || 'sonnet';
+  addLog('info', 'system', `Query options built: permissionMode=bypassPermissions, model=${resolvedModel}, maxTurns=${queryOptions.maxTurns}`);
+
+  // Model compatibility check
+  // Some models may have limitations with bypassPermissions mode
+  const modelLower = resolvedModel.toLowerCase();
+  const isGlmModel = modelLower.includes('glm') ||
+                     modelLower.includes('zhipu') ||
+                     modelLower.includes('chatglm') ||
+                     modelLower.startsWith('glm');
+  
+  if (isGlmModel) {
+    addLog('warn', 'system', `GLM model detected: ${resolvedModel}. GLM models may have compatibility issues with scheduled tasks.`);
+    addLog('warn', 'system', `If this task fails, consider using Claude models (Sonnet, Haiku, Opus) instead.`);
+  }
+  
+  const knownClaudeModels = ['sonnet', 'haiku', 'opus', 'claude'];
+  const isKnownClaudeModel = knownClaudeModels.some(m => modelLower.includes(m));
+  if (!isKnownClaudeModel && !isGlmModel) {
+    addLog('warn', 'system', `Warning: Model "${resolvedModel}" may not support bypassPermissions mode required for scheduled tasks`);
+  }
 
   // Log MCP servers if configured
   if (queryOptions.mcpServers) {

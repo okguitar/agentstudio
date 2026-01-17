@@ -395,7 +395,7 @@ export class ProjectMetadataStorage {
   /**
    * Save project metadata for a specific path
    */
-  private saveProjectMetadata(projectPath: string, metadata: ProjectMetadata): void {
+  saveProjectMetadata(projectPath: string, metadata: ProjectMetadata): void {
     const allMetadata = this.loadMetadata();
     allMetadata[projectPath] = metadata;
     this.saveMetadata(allMetadata);

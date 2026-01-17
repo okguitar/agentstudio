@@ -30,7 +30,8 @@ export interface AgentConfig {
   systemPrompt: SystemPrompt;
   maxTurns?: number; // undefined 表示不限制
   permissionMode: PermissionMode;  // 使用 SDK 类型
-  model: string;
+  // Note: model field removed - model is now determined by project/provider configuration
+  // See backend configResolver.ts for priority chain
   
   // Available tools
   allowedTools: AgentTool[];

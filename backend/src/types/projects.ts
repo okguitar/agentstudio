@@ -29,6 +29,10 @@ export interface ProjectMetadata {
   // Skill associations
   skills: Record<string, ProjectSkillConfig>;
   
+  // Model/Provider configuration
+  defaultProviderId?: string;  // Default Claude version/provider for this project
+  defaultModel?: string;       // Default model for this project
+  
   // Simplified metadata
   tags: string[];
   metadata: Record<string, any>; // User-defined custom attributes

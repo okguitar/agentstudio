@@ -17,7 +17,7 @@ describe('agentCardService - Agent Card Generation', () => {
     systemPrompt: 'You are a test agent',
     maxTurns: 25,
     permissionMode: 'acceptEdits' as const,
-    model: 'sonnet',
+    // Note: model field removed - model is now determined by project/provider configuration
     allowedTools: [
       { name: 'read_file', enabled: true },
       { name: 'write_file', enabled: true },
