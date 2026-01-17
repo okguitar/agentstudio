@@ -623,7 +623,8 @@ router.post('/chat', async (req, res) => {
         console.log(`🔄 Attempt ${retryCount + 1}/${MAX_RETRIES + 1} for session: ${sessionId || 'new'}`);
         // 构建查询选项（包含 AskUserQuestion MCP 工具）
         // 使用 tempSessionId 作为 MCP 工具的 sessionId（新会话还没有真实 sessionId）
-        const { queryOptions, askUserSessionRef } = await buildQueryOptions(agent, projectPath, mcpTools, permissionMode, model, claudeVersion, undefined, envVars, tempSessionId, agentId);
+        // Enable A2A streaming for web frontend (real-time updates for external agent calls)
+        const { queryOptions, askUserSessionRef } = await buildQueryOptions(agent, projectPath, mcpTools, permissionMode, model, claudeVersion, undefined, envVars, tempSessionId, agentId, true);
 
         // 📊 输出传到 query 中的模型参数
         console.log('📊 [Chat API] QueryOptions 模型参数:');

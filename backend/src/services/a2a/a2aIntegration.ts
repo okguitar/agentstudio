@@ -5,12 +5,13 @@ import { createA2ASdkMcpServer, getA2AToolName } from './a2aSdkMcp.js';
  * 
  * @param queryOptions - The query options object to modify
  * @param projectId - Project identifier
+ * @param streamEnabled - Whether to enable streaming for external agent calls (default: false)
  * @returns The modified query options (same object reference)
  */
-export async function integrateA2AMcpServer(queryOptions: any, projectId: string) {
+export async function integrateA2AMcpServer(queryOptions: any, projectId: string, streamEnabled: boolean = false) {
     try {
         // Create SDK MCP server for A2A (in-process)
-        const { server: a2aServer } = await createA2ASdkMcpServer(projectId);
+        const { server: a2aServer } = await createA2ASdkMcpServer(projectId, streamEnabled);
 
         // Add to mcpServers
         if (a2aServer) {

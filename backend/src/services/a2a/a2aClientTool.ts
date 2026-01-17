@@ -69,8 +69,8 @@ export const CALL_EXTERNAL_AGENT_TOOL = {
       },
       stream: {
         type: 'boolean',
-        description: 'Enable streaming response (default: true for messages)',
-        default: true,
+        description: 'Enable streaming response (default: false, streaming is only useful for web frontend real-time updates)',
+        default: false,
       }
     },
     required: ['agentUrl', 'message'],
@@ -91,7 +91,9 @@ export async function callExternalAgent(
   input: CallExternalAgentInput,
   projectId: string
 ): Promise<CallExternalAgentOutput> {
-  const { agentUrl, message, useTask = false, stream = true, timeout: inputTimeout } = input;
+  // Default stream to false - streaming is only useful for web frontend real-time updates
+  // When called via MCP SDK tool, the caller should explicitly set stream based on channel context
+  const { agentUrl, message, useTask = false, stream = false, timeout: inputTimeout } = input;
   const timeout = inputTimeout || 600000; // Use provided timeout or default to 10 minutes
 
   try {

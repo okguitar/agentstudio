@@ -59,9 +59,10 @@ async function generateToolDescription(projectId: string): Promise<string> {
  * a tool for calling external A2A agents.
  *
  * @param projectId - Project identifier for loading A2A configuration
+ * @param streamEnabled - Whether to enable streaming for external agent calls (default: false)
  * @returns SDK MCP server instance and tool definitions
  */
-export async function createA2ASdkMcpServer(projectId: string) {
+export async function createA2ASdkMcpServer(projectId: string, streamEnabled: boolean = false) {
     // Generate dynamic tool description
     const toolDescription = await generateToolDescription(projectId);
 
@@ -97,11 +98,13 @@ export async function createA2ASdkMcpServer(projectId: string) {
         async (args) => {
             try {
                 // Prepare input for callExternalAgent
+                // Use streamEnabled from server configuration, not user input
                 const input: CallExternalAgentInput = {
                     agentUrl: args.agentUrl,
                     message: args.message,
                     sessionId: args.sessionId,
                     useTask: args.useTask,
+                    stream: streamEnabled,  // Use server-configured stream setting
                 };
 
                 // Call external agent using existing function

@@ -146,6 +146,7 @@ export async function getDefaultClaudeVersionEnv(): Promise<Record<string, strin
  * @param userEnv - Optional user-provided environment variables (from chat interface)
  * @param sessionIdForAskUser - Optional session ID for AskUserQuestion MCP tool（用于路由用户通知）
  * @param agentIdForAskUser - Optional agent ID for AskUserQuestion MCP tool
+ * @param a2aStreamEnabled - Optional flag to enable streaming for A2A external agent calls (default: false)
  * @returns Query options and optional sessionRef for dynamic session ID updates
  */
 export interface BuildQueryOptionsResult {
@@ -163,7 +164,8 @@ export async function buildQueryOptions(
   defaultEnv?: Record<string, string>,
   userEnv?: Record<string, string>,
   sessionIdForAskUser?: string,
-  agentIdForAskUser?: string
+  agentIdForAskUser?: string,
+  a2aStreamEnabled?: boolean
 ): Promise<BuildQueryOptionsResult> {
   // Determine working directory
   let cwd = process.cwd();
@@ -384,7 +386,7 @@ export async function buildQueryOptions(
   // Integrate A2A SDK MCP server
   // We use the determined project path or current working directory
   const currentProjectId = projectPath || cwd;
-  await integrateA2AMcpServer(queryOptions, currentProjectId);
+  await integrateA2AMcpServer(queryOptions, currentProjectId, a2aStreamEnabled ?? false);
 
   // Integrate AskUserQuestion SDK MCP server
   // This provides user interaction capability for web channel

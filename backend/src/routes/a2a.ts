@@ -40,6 +40,26 @@ const agentStorage = new AgentStorage();
 const projectMetadataStorage = new ProjectMetadataStorage();
 
 // ============================================================================
+// Error Response Helper
+// ============================================================================
+
+/**
+ * Format error response with detailed information for debugging
+ */
+function formatErrorResponse(error: unknown, code: string, defaultMessage: string) {
+  const errorMessage = error instanceof Error ? error.message : String(error);
+  const errorType = error instanceof Error ? error.constructor.name : typeof error;
+  
+  return {
+    error: defaultMessage,
+    code,
+    details: errorMessage,
+    errorType,
+    timestamp: new Date().toISOString(),
+  };
+}
+
+// ============================================================================
 // Middleware: Apply authentication and rate limiting to all routes
 // ============================================================================
 
@@ -126,10 +146,9 @@ router.get('/.well-known/agent-card.json', async (req: A2ARequest, res: Response
     res.json(agentCard);
   } catch (error) {
     console.error('[A2A] Error retrieving agent card:', error);
-    res.status(500).json({
-      error: 'Failed to retrieve agent card',
-      code: 'AGENT_CARD_ERROR',
-    });
+    res.status(500).json(
+      formatErrorResponse(error, 'AGENT_CARD_ERROR', 'Failed to retrieve agent card')
+    );
   }
 });
 
@@ -491,10 +510,9 @@ router.post('/messages', async (req: A2ARequest, res: Response) => {
   } catch (error) {
     console.error('[A2A] Error processing message:', error);
     if (!res.headersSent) {
-      res.status(500).json({
-        error: 'Failed to process message',
-        code: 'MESSAGE_PROCESSING_ERROR',
-      });
+      res.status(500).json(
+        formatErrorResponse(error, 'MESSAGE_PROCESSING_ERROR', 'Failed to process message')
+      );
     }
   }
 });
@@ -569,10 +587,9 @@ router.post('/tasks', a2aStrictRateLimiter, async (req: A2ARequest, res: Respons
     });
   } catch (error) {
     console.error('[A2A] Error creating task:', error);
-    res.status(500).json({
-      error: 'Failed to create task',
-      code: 'TASK_CREATION_ERROR',
-    });
+    res.status(500).json(
+      formatErrorResponse(error, 'TASK_CREATION_ERROR', 'Failed to create task')
+    );
   }
 });
 
@@ -660,10 +677,9 @@ router.get('/tasks/:taskId', async (req: A2ARequest, res: Response) => {
     res.json(response);
   } catch (error) {
     console.error('[A2A] Error querying task status:', error);
-    res.status(500).json({
-      error: 'Failed to query task status',
-      code: 'TASK_STATUS_ERROR',
-    });
+    res.status(500).json(
+      formatErrorResponse(error, 'TASK_STATUS_ERROR', 'Failed to query task status')
+    );
   }
 });
 
@@ -731,10 +747,9 @@ router.delete('/tasks/:taskId', async (req: A2ARequest, res: Response) => {
     }
   } catch (error) {
     console.error('[A2A] Error canceling task:', error);
-    res.status(500).json({
-      error: 'Failed to cancel task',
-      code: 'TASK_CANCELLATION_ERROR',
-    });
+    res.status(500).json(
+      formatErrorResponse(error, 'TASK_CANCELLATION_ERROR', 'Failed to cancel task')
+    );
   }
 });
 
