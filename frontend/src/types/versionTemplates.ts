@@ -44,10 +44,16 @@ export const VERSION_TEMPLATES: VersionTemplate[] = [
     ],
     models: [
       {
+        id: 'glm-4.7',
+        name: 'GLM-4.7',
+        isVision: false,
+        description: '智谱AI GLM-4.7 最新版本'
+      },
+      {
         id: 'glm-4.6',
         name: 'GLM-4.6',
         isVision: false,
-        description: '智谱AI GLM-4.6 最新版本'
+        description: '智谱AI GLM-4.6 模型'
       },
       {
         id: 'glm-4.5',
@@ -148,7 +154,7 @@ export const VERSION_TEMPLATES: VersionTemplate[] = [
     envVars: [
       {
         key: 'ANTHROPIC_BASE_URL',
-        value: 'https://api.moonshot.an/anthropic',
+        value: 'https://api.moonshot.cn/anthropic',
         isRequired: true,
         description: 'Kimi的Anthropic兼容端点'
       },

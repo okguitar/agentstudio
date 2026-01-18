@@ -31,20 +31,27 @@ export const ModelConfigSection: React.FC<ModelConfigSectionProps> = ({
         {/* 现有模型 */}
         {models.length > 0 && (
           <div className="space-y-2">
-            {models.map(model => (
-              <div key={model.id} className="flex items-center space-x-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded">
+            {models.map((model, index) => (
+              <div key={`model-${index}`} className="flex items-center space-x-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded">
                 <div className="flex-1 grid grid-cols-3 gap-2">
                   <input
                     type="text"
                     value={model.id}
-                    onChange={(e) => onUpdateModel(model.id, { id: e.target.value })}
+                    onChange={(e) => {
+                      // Find model by index to handle ID changes correctly
+                      const originalId = models[index].id;
+                      onUpdateModel(originalId, { id: e.target.value });
+                    }}
                     className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder={t('settings.supplier.form.modelId')}
                   />
                   <input
                     type="text"
                     value={model.name}
-                    onChange={(e) => onUpdateModel(model.id, { name: e.target.value })}
+                    onChange={(e) => {
+                      const originalId = models[index].id;
+                      onUpdateModel(originalId, { name: e.target.value });
+                    }}
                     className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder={t('settings.supplier.form.modelName')}
                   />
@@ -53,7 +60,10 @@ export const ModelConfigSection: React.FC<ModelConfigSectionProps> = ({
                       <input
                         type="checkbox"
                         checked={model.isVision}
-                        onChange={(e) => onUpdateModel(model.id, { isVision: e.target.checked })}
+                        onChange={(e) => {
+                          const originalId = models[index].id;
+                          onUpdateModel(originalId, { isVision: e.target.checked });
+                        }}
                         className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
                       />
                       <span>{t('settings.supplier.form.visionModel')}</span>
@@ -64,7 +74,10 @@ export const ModelConfigSection: React.FC<ModelConfigSectionProps> = ({
                   </div>
                 </div>
                 <button
-                  onClick={() => onRemoveModel(model.id)}
+                  onClick={() => {
+                    const originalId = models[index].id;
+                    onRemoveModel(originalId);
+                  }}
                   className="p-1 text-red-500 hover:text-red-700 rounded flex-shrink-0"
                 >
                   <X className="w-4 h-4" />

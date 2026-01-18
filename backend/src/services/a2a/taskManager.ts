@@ -15,7 +15,7 @@
 import fs from 'fs/promises';
 import { v4 as uuidv4 } from 'uuid';
 import lockfile from 'proper-lockfile';
-import { A2ATask, TaskStatus, TaskInput, TaskOutput, TaskError } from '../../types/a2a.js';
+import { A2ATask, TaskStatus, TaskInput, TaskOutput, TaskError, PushNotificationConfig } from '../../types/a2a.js';
 import { getProjectTasksDir } from '../../config/paths.js';
 
 // ============================================================================
@@ -43,6 +43,7 @@ interface CreateTaskParams {
   a2aAgentId: string;
   input: TaskInput;
   timeoutMs?: number;
+  pushNotificationConfig?: PushNotificationConfig;
 }
 
 interface UpdateTaskParams {
@@ -123,7 +124,7 @@ export class TaskManager {
    * @throws Error if task creation fails
    */
   async createTask(params: CreateTaskParams): Promise<A2ATask> {
-    const { workingDirectory, projectId, agentId, a2aAgentId, input, timeoutMs = DEFAULT_TIMEOUT_MS } = params;
+    const { workingDirectory, projectId, agentId, a2aAgentId, input, timeoutMs = DEFAULT_TIMEOUT_MS, pushNotificationConfig } = params;
 
     // Generate unique task ID
     const taskId = uuidv4();
@@ -143,6 +144,7 @@ export class TaskManager {
       timeoutMs,
       createdAt: now,
       updatedAt: now,
+      pushNotificationConfig,
     };
 
     // Write task file
@@ -157,6 +159,7 @@ export class TaskManager {
       workingDirectory,
       agentId,
       timeoutMs,
+      hasWebhook: !!pushNotificationConfig?.url,
     });
 
     return task;

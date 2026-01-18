@@ -13,7 +13,6 @@
 
 import cron, { ScheduledTask as CronTask } from 'node-cron';
 import { v4 as uuidv4 } from 'uuid';
-import { query, Options as ClaudeOptions } from '@anthropic-ai/claude-agent-sdk';
 import {
   ScheduledTask,
   TaskExecution,
@@ -30,7 +29,7 @@ import {
   updateTaskExecution,
 } from './scheduledTaskStorage.js';
 import { AgentStorage } from './agentStorage.js';
-import { buildQueryOptions } from '../utils/claudeUtils.js';
+import { getTaskExecutor } from './taskExecutor/index.js';
 
 // ============================================================================
 // Types
@@ -74,9 +73,11 @@ const runningExecutions: Map<string, RunningExecution> = new Map();
  * since the actual execution is lost. Mark them as "error" with a clear message.
  */
 function cleanupOrphanedRunningTasks(): void {
+  const serverStartTime = new Date().toISOString();
   const tasks = loadScheduledTasks();
   let cleanedCount = 0;
 
+  // Clean up task lastRunStatus
   for (const task of tasks) {
     if (task.lastRunStatus === 'running') {
       console.info(`[Scheduler] Cleaning up orphaned running task: ${task.id} (${task.name})`);
@@ -87,6 +88,17 @@ function cleanupOrphanedRunningTasks(): void {
 
   if (cleanedCount > 0) {
     console.info(`[Scheduler] Cleaned up ${cleanedCount} orphaned running tasks`);
+  }
+
+  // Also clean up orphaned execution records
+  try {
+    const { cleanupOrphanedExecutions } = require('./scheduledTaskStorage');
+    const executionsCleanedCount = cleanupOrphanedExecutions(serverStartTime);
+    if (executionsCleanedCount > 0) {
+      console.info(`[Scheduler] Cleaned up ${executionsCleanedCount} orphaned execution records`);
+    }
+  } catch (error) {
+    console.error('[Scheduler] Error cleaning orphaned execution records:', error);
   }
 }
 
@@ -374,6 +386,9 @@ export function rescheduleTask(taskId: string): boolean {
 
 /**
  * Execute a scheduled task
+ *
+ * NOTE: This function now submits the task to the unified task executor
+ * instead of executing it directly in the main process.
  */
 export async function executeTask(taskId: string): Promise<void> {
   const task = getScheduledTask(taskId);
@@ -397,10 +412,7 @@ export async function executeTask(taskId: string): Promise<void> {
   const executionId = `exec_${uuidv4().slice(0, 8)}`;
   const startedAt = new Date().toISOString();
 
-  // Create AbortController for this execution
-  const abortController = new AbortController();
-
-  // Create execution record (include agentId and projectPath for "continue chat" functionality)
+  // Create execution record
   const execution: TaskExecution = {
     id: executionId,
     taskId,
@@ -414,71 +426,59 @@ export async function executeTask(taskId: string): Promise<void> {
   updateTaskRunStatus(taskId, 'running');
   runningTaskCount++;
 
-  // Track running execution
+  // Track running executions (for stop functionality)
   runningExecutions.set(executionId, {
     taskId,
     executionId,
-    abortController,
+    abortController: new AbortController(), // Not used by executor but kept for compatibility
     startedAt,
   });
 
-  console.info(`[Scheduler] Executing task ${taskId} (${task.name}), execution: ${executionId}`);
+  console.info(`[Scheduler] Submitting task ${taskId} (${task.name}) to executor, execution: ${executionId}`);
 
   try {
-    // Execute the agent with abort signal
-    const result = await executeAgentTask(task, abortController.signal);
+    // Get task executor
+    const executor = getTaskExecutor();
 
-    // Update execution record with logs
-    updateTaskExecution(taskId, executionId, {
-      status: 'success',
-      completedAt: new Date().toISOString(),
-      responseSummary: result.summary,
-      sessionId: result.sessionId,
-      logs: result.logs,
+    // Submit task to executor (runs in worker thread, not main process)
+    await executor.submitTask({
+      id: executionId, // Use executionId as the task identifier for executor
+      type: 'scheduled',
+      agentId: task.agentId,
+      projectPath: task.projectPath,
+      message: task.triggerMessage,
+      timeoutMs: task.timeoutMs || 300000,
+      maxTurns: task.maxTurns,
+      modelId: task.modelOverride?.modelId,
+      claudeVersionId: task.modelOverride?.versionId,
+      permissionMode: 'bypassPermissions',
+      createdAt: startedAt,
+      scheduledFor: task.schedule.type === 'once' ? task.schedule.executeAt : undefined,
+      scheduledTaskId: taskId, // Original scheduled task ID for status updates
     });
 
-    updateTaskRunStatus(taskId, 'success');
-    console.info(`[Scheduler] Task ${taskId} completed successfully`);
+    console.info(`[Scheduler] Task ${taskId} submitted to executor successfully`);
+  } catch (executorError) {
+    const errorMessage = executorError instanceof Error ? executorError.message : String(executorError);
 
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    const errorStack = error instanceof Error ? error.stack : undefined;
-
-    // Try to get logs from the error context if available
-    const errorLogs: ExecutionLogEntry[] = [
-      {
-        timestamp: new Date().toISOString(),
-        level: 'error',
-        type: 'system',
-        message: `Execution failed: ${errorMessage}`,
-        data: { stack: errorStack },
-      }
-    ];
-
+    // Update execution record as failed
     updateTaskExecution(taskId, executionId, {
       status: 'error',
       completedAt: new Date().toISOString(),
-      error: errorMessage,
-      errorStack: errorStack,
-      logs: errorLogs,
+      error: `Failed to submit to executor: ${errorMessage}`,
+      logs: [{
+        timestamp: new Date().toISOString(),
+        level: 'error',
+        type: 'system',
+        message: `Executor submission failed: ${errorMessage}`,
+      }],
     });
 
     updateTaskRunStatus(taskId, 'error', errorMessage);
-    console.error(`[Scheduler] Task ${taskId} failed:`, error);
-
-  } finally {
     runningTaskCount--;
-    // Remove from running executions
     runningExecutions.delete(executionId);
 
-    // Update next run time (only for recurring tasks)
-    if (task.schedule.type !== 'once') {
-      const cronExpression = getCronExpression(task);
-      if (cronExpression) {
-        const nextRunAt = getNextRunTime(cronExpression);
-        updateTaskNextRunAt(taskId, nextRunAt);
-      }
-    }
+    console.error(`[Scheduler] Failed to submit task ${taskId} to executor:`, executorError);
   }
 }
 
@@ -540,220 +540,33 @@ export function getRunningExecutions(): Array<{
 }
 
 /**
- * Extract MCP tools from agent's allowedTools configuration
- * Follows the same logic as frontend's useToolSelector.ts
+ * Called by task executor when a scheduled task execution completes
+ * Updates internal tracking counters and cleans up running execution records
+ *
+ * @param executionId - The execution ID that completed (format: exec_XXXXXXXX)
  */
-function extractMcpToolsFromAgent(agent: any): string[] {
-  const mcpTools: string[] = [];
-  
-  if (!agent.allowedTools || !Array.isArray(agent.allowedTools)) {
-    return mcpTools;
-  }
-  
-  for (const tool of agent.allowedTools) {
-    if (!tool.enabled) continue;
-    
-    const toolName = tool.name;
-    
-    if (toolName.includes('.') && !toolName.startsWith('mcp__')) {
-      // MCP tool format: serverName.toolName -> mcp__serverName__toolName
-      const [serverName, ...toolNameParts] = toolName.split('.');
-      const mcpToolId = `mcp__${serverName}__${toolNameParts.join('.')}`;
-      mcpTools.push(mcpToolId);
-    } else if (toolName.startsWith('mcp__')) {
-      // Already formatted MCP tool
-      mcpTools.push(toolName);
-    }
-  }
-  
-  return mcpTools;
-}
+export function onScheduledTaskComplete(executionId: string): void {
+  // Find the running execution by executionId
+  const execution = runningExecutions.get(executionId);
 
-/**
- * Execute agent task using Claude SDK
- */
-async function executeAgentTask(
-  task: ScheduledTask,
-  abortSignal?: AbortSignal
-): Promise<{
-  summary: string;
-  sessionId?: string;
-  logs: ExecutionLogEntry[];
-}> {
-  const logs: ExecutionLogEntry[] = [];
-  
-  const addLog = (level: ExecutionLogEntry['level'], type: string, message: string, data?: Record<string, unknown>) => {
-    logs.push({
-      timestamp: new Date().toISOString(),
-      level,
-      type,
-      message,
-      data,
-    });
-  };
+  if (execution) {
+    runningExecutions.delete(executionId);
+    runningTaskCount--;
 
-  // Get agent configuration
-  const agent = agentStorage.getAgent(task.agentId);
-  if (!agent) {
-    addLog('error', 'system', `Agent not found: ${task.agentId}`);
-    throw new Error(`Agent not found: ${task.agentId}`);
-  }
+    console.debug(`[Scheduler] Task execution completed: ${executionId} (task: ${execution.taskId}), running count: ${runningTaskCount}`);
 
-  addLog('info', 'system', `Using agent: ${agent.name} (${agent.id})`);
-  addLog('info', 'system', `Working directory: ${task.projectPath}`);
-  addLog('info', 'system', `Trigger message: ${task.triggerMessage}`);
-
-  // Determine the model to use
-  // Priority: task.modelOverride > project/provider config (handled by buildQueryOptions)
-  let modelToUse: string | undefined = undefined;
-  
-  if (task.modelOverride?.modelId) {
-    modelToUse = task.modelOverride.modelId;
-    addLog('info', 'system', `Model override applied: ${modelToUse} (from task config)`);
-  } else {
-    addLog('info', 'system', `No model override, will use project/provider defaults`);
-  }
-  
-  // Determine Claude version to use (from task override)
-  // Note: AgentConfig doesn't have claudeVersionId, it's only in AgentSession
-  const claudeVersionToUse = task.modelOverride?.versionId;
-  if (claudeVersionToUse) {
-    addLog('info', 'system', `Using supplier/version: ${claudeVersionToUse}`);
-  } else {
-    addLog('info', 'system', `No supplier/version specified, using default`);
-  }
-
-  // Extract MCP tools from agent configuration
-  const mcpTools = extractMcpToolsFromAgent(agent);
-  if (mcpTools.length > 0) {
-    addLog('info', 'system', `MCP tools extracted from agent config: ${mcpTools.join(', ')}`);
-  } else {
-    addLog('info', 'system', 'No MCP tools configured for this agent');
-  }
-
-  // Build query options using the shared utility function
-  // This handles: MCP tools, environment variables, Claude version, A2A integration
-  // NOTE: Scheduled tasks run unattended, so we MUST use bypassPermissions mode
-  addLog('info', 'system', 'Building query options with MCP and environment support...');
-
-  // For scheduled tasks, use bypassPermissions mode (unattended execution)
-  const permissionMode = 'bypassPermissions';
-  addLog('info', 'system', `Using 'bypassPermissions' mode for scheduled task`);
-
-  const { queryOptions } = await buildQueryOptions(
-    agent,
-    task.projectPath,
-    mcpTools.length > 0 ? mcpTools : undefined,
-    permissionMode,
-    modelToUse,
-    claudeVersionToUse,
-    undefined, // defaultEnv - will be loaded from Claude version config
-    undefined, // userEnv - scheduled tasks don't have user-provided env vars
-    undefined, // sessionIdForAskUser - scheduled tasks don't support user interaction
-    undefined  // agentIdForAskUser
-  );
-
-  // Override maxTurns for scheduled tasks to prevent infinite loops
-  queryOptions.maxTurns = agent.maxTurns || 10;
-
-  // Get the actual resolved model from queryOptions
-  const resolvedModel = queryOptions.model || 'sonnet';
-  addLog('info', 'system', `Query options built: permissionMode=bypassPermissions, model=${resolvedModel}, maxTurns=${queryOptions.maxTurns}`);
-
-  // Model compatibility check
-  // Some models may have limitations with bypassPermissions mode
-  const modelLower = resolvedModel.toLowerCase();
-  const isGlmModel = modelLower.includes('glm') ||
-                     modelLower.includes('zhipu') ||
-                     modelLower.includes('chatglm') ||
-                     modelLower.startsWith('glm');
-  
-  if (isGlmModel) {
-    addLog('warn', 'system', `GLM model detected: ${resolvedModel}. GLM models may have compatibility issues with scheduled tasks.`);
-    addLog('warn', 'system', `If this task fails, consider using Claude models (Sonnet, Haiku, Opus) instead.`);
-  }
-  
-  const knownClaudeModels = ['sonnet', 'haiku', 'opus', 'claude'];
-  const isKnownClaudeModel = knownClaudeModels.some(m => modelLower.includes(m));
-  if (!isKnownClaudeModel && !isGlmModel) {
-    addLog('warn', 'system', `Warning: Model "${resolvedModel}" may not support bypassPermissions mode required for scheduled tasks`);
-  }
-
-  // Log MCP servers if configured
-  if (queryOptions.mcpServers) {
-    const mcpServerNames = Object.keys(queryOptions.mcpServers);
-    addLog('info', 'system', `MCP servers configured: ${mcpServerNames.join(', ')}`);
-
-    // Log detailed MCP server config for debugging
-    for (const [serverName, serverConfig] of Object.entries(queryOptions.mcpServers)) {
-      addLog('info', 'system', `  - ${serverName}: ${JSON.stringify(serverConfig)}`);
-    }
-  } else {
-    addLog('warn', 'system', `No MCP servers configured in queryOptions (mcpTools passed: ${mcpTools.join(', ') || 'none'})`);
-  }
-
-  // Collect response
-  let fullResponse = '';
-  let sessionId: string | undefined;
-
-  addLog('info', 'system', 'Starting Claude Code query...');
-
-  try {
-    for await (const message of query({
-      prompt: task.triggerMessage,
-      options: queryOptions,
-    })) {
-      // Check if execution was aborted
-      if (abortSignal?.aborted) {
-        addLog('warn', 'system', 'Execution aborted by user');
-        throw new Error('Execution aborted by user');
-      }
-
-      // Capture session ID
-      if (message.session_id && !sessionId) {
-        sessionId = message.session_id;
-        addLog('info', 'system', `Session ID: ${sessionId}`);
-      }
-
-      // Log different message types
-      if (message.type === 'assistant' && message.message?.content) {
-        for (const block of message.message.content) {
-          if (block.type === 'text') {
-            fullResponse += block.text;
-            addLog('info', 'assistant', block.text);
-          } else if (block.type === 'tool_use') {
-            addLog('info', 'tool_use', `Tool: ${block.name}`, { 
-              tool: block.name, 
-              input: block.input 
-            });
-          }
-        }
-      } else if (message.type === 'result') {
-        addLog('info', 'result', `Execution completed`, {
-          costUsd: message.total_cost_usd,
-          durationMs: message.duration_ms,
-          numTurns: message.num_turns,
-        });
-      } else if (message.type === 'system') {
-        // System messages might contain error info
-        addLog('info', 'system', `System: ${JSON.stringify(message)}`);
+    // Update next run time for recurring tasks
+    const task = getScheduledTask(execution.taskId);
+    if (task && task.schedule.type !== 'once') {
+      const cronExpression = getCronExpression(task);
+      if (cronExpression) {
+        const nextRunAt = getNextRunTime(cronExpression);
+        updateTaskNextRunAt(execution.taskId, nextRunAt);
       }
     }
-  } catch (queryError) {
-    const errorMessage = queryError instanceof Error ? queryError.message : String(queryError);
-    const errorStack = queryError instanceof Error ? queryError.stack : undefined;
-    addLog('error', 'system', `Query failed: ${errorMessage}`, { stack: errorStack });
-    throw queryError;
+  } else {
+    console.warn(`[Scheduler] onScheduledTaskComplete called for unknown execution: ${executionId}`);
   }
-
-  addLog('info', 'system', 'Query completed successfully');
-
-  // Create summary (first 500 chars)
-  const summary = fullResponse.length > 500
-    ? fullResponse.slice(0, 497) + '...'
-    : fullResponse;
-
-  return { summary, sessionId, logs };
 }
 
 // ============================================================================

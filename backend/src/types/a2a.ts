@@ -122,6 +122,24 @@ export interface TaskError {
 }
 
 /**
+ * Push Notification Authentication Info (A2A Protocol)
+ */
+export interface PushNotificationAuthenticationInfo {
+    schemes: string[];  // e.g., ["Bearer"]
+    credentials?: string;  // The actual credential/token
+}
+
+/**
+ * Push Notification Configuration (A2A Protocol)
+ * Configures webhook callbacks for async task completion
+ */
+export interface PushNotificationConfig {
+    url: string;  // Webhook URL to POST updates to
+    token?: string;  // Client verification token
+    authentication?: PushNotificationAuthenticationInfo;
+}
+
+/**
  * A2A Task - represents a long-running asynchronous task
  */
 export interface A2ATask {
@@ -146,6 +164,9 @@ export interface A2ATask {
     // Configuration
     timeoutMs: number;
     contextId?: string;
+
+    // Push Notification
+    pushNotificationConfig?: PushNotificationConfig;
 }
 
 // ============================================================================
@@ -265,6 +286,7 @@ export interface A2ATaskRequest {
     message: string;
     timeout?: number;
     context?: Record<string, unknown>;
+    pushNotificationConfig?: PushNotificationConfig;
 }
 
 /**

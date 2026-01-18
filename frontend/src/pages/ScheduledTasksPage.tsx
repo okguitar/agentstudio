@@ -11,8 +11,10 @@ import {
   XCircle,
   Loader2,
   History,
-  Settings,
   StopCircle,
+  Activity,
+  Settings,
+  X,
 } from 'lucide-react';
 import {
   Table,
@@ -33,6 +35,9 @@ import {
   useDisableScheduler,
   useStopExecution,
   useRunningExecutions,
+  useTaskExecutorStats,
+  useTaskExecutorConfig,
+  useUpdateTaskExecutorConfig,
   scheduledTasksKeys,
 } from '../hooks/useScheduledTasks';
 import { useAgents } from '../hooks/useAgents';
@@ -58,6 +63,13 @@ export const ScheduledTasksPage: React.FC = () => {
   const [editingTask, setEditingTask] = useState<ScheduledTask | null>(null);
   const [showEditorModal, setShowEditorModal] = useState(false);
   const [showHistory, setShowHistory] = useState<string | null>(null);
+  const [showConfigModal, setShowConfigModal] = useState(false);
+  const [configMaxConcurrent, setConfigMaxConcurrent] = useState(2);
+  
+  // Task executor monitoring
+  const { data: executorStats } = useTaskExecutorStats();
+  const { data: executorConfig } = useTaskExecutorConfig();
+  const updateConfig = useUpdateTaskExecutorConfig();
 
   // Get running execution ID for a task
   const getRunningExecutionId = (taskId: string): string | null => {
@@ -257,7 +269,7 @@ export const ScheduledTasksPage: React.FC = () => {
 
         {/* Actions Bar */}
         <div className="flex items-center justify-between">
-          {/* Scheduler Status */}
+          {/* Scheduler Status with Executor Stats */}
           {schedulerStatus && (
             <div className="flex items-center gap-4 text-sm">
               {/* Scheduler Enabled Status (Clickable) */}
@@ -279,14 +291,37 @@ export const ScheduledTasksPage: React.FC = () => {
                 </span>
               </button>
 
-              {/* Task Count Status */}
-              <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
-                <Settings className="w-4 h-4" />
-                <span>
-                  活跃: {schedulerStatus.activeTaskCount} /
-                  运行中: {schedulerStatus.runningTaskCount}
-                </span>
-              </div>
+              {/* Executor Stats - inline display */}
+              {executorStats && (
+                <div className="flex items-center gap-3 text-gray-500 dark:text-gray-400">
+                  <span className="text-gray-300 dark:text-gray-600">|</span>
+                  <span className={`flex items-center gap-1 ${executorStats.runningTasks > 0 ? 'text-blue-600 dark:text-blue-400' : ''}`}>
+                    <Activity className={`w-4 h-4 ${executorStats.runningTasks > 0 ? 'animate-pulse' : ''}`} />
+                    运行: {executorStats.runningTasks}
+                  </span>
+                  <span className="text-yellow-600 dark:text-yellow-400">
+                    队列: {executorStats.queuedTasks}
+                  </span>
+                  <span className="text-green-600 dark:text-green-400">
+                    完成: {executorStats.completedTasks}
+                  </span>
+                  <span className="text-red-600 dark:text-red-400">
+                    失败: {executorStats.failedTasks}
+                  </span>
+                  <button
+                    onClick={() => {
+                      if (executorConfig) {
+                        setConfigMaxConcurrent(executorConfig.maxConcurrent);
+                      }
+                      setShowConfigModal(true);
+                    }}
+                    className="ml-2 p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                    title="执行器设置"
+                  >
+                    <Settings className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -468,6 +503,69 @@ export const ScheduledTasksPage: React.FC = () => {
           onSave={handleSaveComplete}
           onCancel={handleCancel}
         />
+      )}
+
+      {/* Executor Config Modal */}
+      {showConfigModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md mx-4">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">执行器设置</h2>
+              <button
+                onClick={() => setShowConfigModal(false)}
+                className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            <div className="px-6 py-4 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  最大并发数 (1-10)
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  max={10}
+                  value={configMaxConcurrent}
+                  onChange={(e) => setConfigMaxConcurrent(Math.min(10, Math.max(1, parseInt(e.target.value) || 1)))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  允许同时执行的最大任务数量
+                </p>
+              </div>
+              {executorConfig && (
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  当前配置: 并发 {executorConfig.maxConcurrent}
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => setShowConfigModal(false)}
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+              >
+                取消
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    await updateConfig.mutateAsync({ maxConcurrent: configMaxConcurrent });
+                    showSuccess(`并发数已更新为 ${configMaxConcurrent}`);
+                    setShowConfigModal(false);
+                  } catch (error) {
+                    showError(error instanceof Error ? error.message : '更新失败');
+                  }
+                }}
+                disabled={updateConfig.isPending}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              >
+                {updateConfig.isPending ? '保存中...' : '保存'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
