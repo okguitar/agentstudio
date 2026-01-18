@@ -427,3 +427,57 @@ export const useTaskExecutorHealth = () => {
     refetchInterval: 10000, // Refresh every 10 seconds
   });
 };
+
+/**
+ * Task executor configuration
+ */
+export interface TaskExecutorConfig {
+  maxConcurrent: number;
+  defaultTimeoutMs: number;
+  maxMemoryMb?: number;
+}
+
+/**
+ * Get task executor configuration
+ */
+export const useTaskExecutorConfig = () => {
+  return useQuery<TaskExecutorConfig>({
+    queryKey: [...taskExecutorKeys.all, 'config'] as const,
+    queryFn: async () => {
+      const response = await authFetch(`${API_BASE}/task-executor/config`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch task executor config');
+      }
+      return response.json();
+    },
+  });
+};
+
+/**
+ * Update task executor configuration
+ */
+export const useUpdateTaskExecutorConfig = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (config: Partial<TaskExecutorConfig>): Promise<{ success: boolean; config: TaskExecutorConfig }> => {
+      const response = await authFetch(`${API_BASE}/task-executor/config`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(config),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error || 'Failed to update executor config');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: taskExecutorKeys.all });
+    },
+  });
+};

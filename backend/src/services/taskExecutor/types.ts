@@ -152,6 +152,17 @@ export interface ITaskExecutor {
    * Get executor statistics
    */
   getStats(): TaskExecutorStats;
+
+  /**
+   * Get current executor configuration
+   */
+  getConfig(): TaskExecutorConfig;
+
+  /**
+   * Update executor configuration dynamically
+   * @param config - Partial configuration to update
+   */
+  updateConfig(config: Partial<TaskExecutorConfig>): void;
 }
 
 /**

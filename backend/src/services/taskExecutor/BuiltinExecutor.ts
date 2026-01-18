@@ -235,6 +235,33 @@ export class BuiltinTaskExecutor implements ITaskExecutor {
     return { ...this.stats };
   }
 
+  getConfig(): TaskExecutorConfig {
+    return { ...this.config };
+  }
+
+  updateConfig(newConfig: Partial<TaskExecutorConfig>): void {
+    if (newConfig.maxConcurrent !== undefined) {
+      if (newConfig.maxConcurrent < 1 || newConfig.maxConcurrent > 10) {
+        throw new Error('maxConcurrent must be between 1 and 10');
+      }
+      this.config.maxConcurrent = newConfig.maxConcurrent;
+      console.info(`[TaskExecutor] Updated maxConcurrent to ${newConfig.maxConcurrent}`);
+    }
+    if (newConfig.defaultTimeoutMs !== undefined) {
+      if (newConfig.defaultTimeoutMs < 10000 || newConfig.defaultTimeoutMs > 3600000) {
+        throw new Error('defaultTimeoutMs must be between 10 seconds and 1 hour');
+      }
+      this.config.defaultTimeoutMs = newConfig.defaultTimeoutMs;
+      console.info(`[TaskExecutor] Updated defaultTimeoutMs to ${newConfig.defaultTimeoutMs}`);
+    }
+    if (newConfig.maxMemoryMb !== undefined) {
+      this.config.maxMemoryMb = newConfig.maxMemoryMb;
+      console.info(`[TaskExecutor] Updated maxMemoryMb to ${newConfig.maxMemoryMb}`);
+    }
+    // Trigger queue processing in case new concurrency allows more tasks
+    this.processQueue();
+  }
+
   // ============================================================================
   // Private Methods
   // ============================================================================

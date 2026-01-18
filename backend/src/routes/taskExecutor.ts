@@ -5,6 +5,7 @@
  */
 
 import express, { Router, Response } from 'express';
+import { z } from 'zod';
 import { authMiddleware } from '../middleware/auth';
 import { getTaskExecutor, isTaskExecutorInitialized } from '../services/taskExecutor/index.js';
 
@@ -101,6 +102,105 @@ router.get('/health', async (req: express.Request, res: Response) => {
     res.status(503).json({
       healthy: false,
       reason: 'Health check failed',
+    });
+  }
+});
+
+// ============================================================================
+// GET /api/task-executor/config - Get Executor Configuration
+// ============================================================================
+
+/**
+ * Get current task executor configuration
+ *
+ * @route GET /api/task-executor/config
+ * @access Authenticated
+ * @response 200 - Current configuration
+ * @response 503 - Executor not initialized
+ */
+router.get('/config', async (req: express.Request, res: Response) => {
+  try {
+    if (!isTaskExecutorInitialized()) {
+      return res.status(503).json({
+        error: 'Task executor not initialized',
+        code: 'EXECUTOR_NOT_INITIALIZED',
+      });
+    }
+
+    const executor = getTaskExecutor();
+    const config = executor.getConfig();
+
+    res.json({
+      maxConcurrent: config.maxConcurrent,
+      defaultTimeoutMs: config.defaultTimeoutMs,
+      maxMemoryMb: config.maxMemoryMb,
+    });
+  } catch (error) {
+    console.error('[TaskExecutor API] Error getting config:', error);
+    res.status(500).json({
+      error: 'Failed to get executor configuration',
+      code: 'CONFIG_ERROR',
+    });
+  }
+});
+
+// ============================================================================
+// PATCH /api/task-executor/config - Update Executor Configuration
+// ============================================================================
+
+const UpdateConfigSchema = z.object({
+  maxConcurrent: z.number().int().min(1).max(10).optional(),
+  defaultTimeoutMs: z.number().int().min(10000).max(3600000).optional(),
+  maxMemoryMb: z.number().int().min(128).max(4096).optional(),
+});
+
+/**
+ * Update task executor configuration dynamically
+ *
+ * @route PATCH /api/task-executor/config
+ * @access Authenticated
+ * @body { maxConcurrent?: number, defaultTimeoutMs?: number, maxMemoryMb?: number }
+ * @response 200 - Updated configuration
+ * @response 400 - Invalid request body
+ * @response 503 - Executor not initialized
+ */
+router.patch('/config', async (req: express.Request, res: Response) => {
+  try {
+    if (!isTaskExecutorInitialized()) {
+      return res.status(503).json({
+        error: 'Task executor not initialized',
+        code: 'EXECUTOR_NOT_INITIALIZED',
+      });
+    }
+
+    const validation = UpdateConfigSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({
+        error: 'Invalid configuration',
+        details: validation.error.errors,
+      });
+    }
+
+    const executor = getTaskExecutor();
+    executor.updateConfig(validation.data);
+
+    const newConfig = executor.getConfig();
+
+    res.json({
+      success: true,
+      message: 'Configuration updated successfully',
+      config: {
+        maxConcurrent: newConfig.maxConcurrent,
+        defaultTimeoutMs: newConfig.defaultTimeoutMs,
+        maxMemoryMb: newConfig.maxMemoryMb,
+      },
+    });
+  } catch (error) {
+    console.error('[TaskExecutor API] Error updating config:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    res.status(400).json({
+      error: errorMessage,
+      code: 'CONFIG_UPDATE_ERROR',
     });
   }
 });
