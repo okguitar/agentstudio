@@ -300,3 +300,78 @@ export function updateTaskExecution(
     console.error(`[ScheduledTaskStorage] Error updating execution record:`, error);
   }
 }
+
+/**
+ * Clean up orphaned execution records
+ * 
+ * Marks any "running" executions as "error" if they were started before the current
+ * server startup time. This handles the case where the server was restarted while
+ * tasks were still running.
+ * 
+ * @param serverStartTime - The time the server started (ISO string)
+ * @returns The number of orphaned executions cleaned up
+ */
+export function cleanupOrphanedExecutions(serverStartTime: string): number {
+  const tasks = loadScheduledTasks();
+  let cleanedCount = 0;
+  const serverStartMs = new Date(serverStartTime).getTime();
+
+  console.info(`[ScheduledTaskStorage] Cleaning up orphaned executions (server started at ${serverStartTime})`);
+
+  for (const task of tasks) {
+    const historyFile = path.join(SCHEDULED_TASKS_HISTORY_DIR, `${task.id}.json`);
+    
+    if (!fs.existsSync(historyFile)) {
+      continue;
+    }
+
+    try {
+      const content = fs.readFileSync(historyFile, 'utf-8');
+      const executions: TaskExecution[] = JSON.parse(content);
+      let modified = false;
+
+      for (const execution of executions) {
+        // Check if execution is stuck in "running" state
+        if (execution.status === 'running') {
+          const executionStartMs = new Date(execution.startedAt).getTime();
+          
+          // If the execution started before the server started, it's orphaned
+          if (executionStartMs < serverStartMs) {
+            execution.status = 'error';
+            execution.completedAt = serverStartTime;
+            execution.error = 'Server restarted while task was running';
+            execution.logs = execution.logs || [];
+            execution.logs.push({
+              timestamp: serverStartTime,
+              level: 'error',
+              type: 'system',
+              message: 'Execution marked as failed due to server restart',
+            });
+            modified = true;
+            cleanedCount++;
+
+            console.info(`[ScheduledTaskStorage] Cleaned orphaned execution: ${execution.id} (task: ${task.id})`);
+          }
+        }
+      }
+
+      // Also check and update task's lastRunStatus if it's "running"
+      if (task.lastRunStatus === 'running' && task.lastRunAt) {
+        const lastRunMs = new Date(task.lastRunAt).getTime();
+        if (lastRunMs < serverStartMs) {
+          updateTaskRunStatus(task.id, 'error', 'Server restarted while task was running');
+          console.info(`[ScheduledTaskStorage] Updated task ${task.id} status from 'running' to 'error'`);
+        }
+      }
+
+      if (modified) {
+        fs.writeFileSync(historyFile, JSON.stringify(executions, null, 2), 'utf-8');
+      }
+    } catch (error) {
+      console.error(`[ScheduledTaskStorage] Error cleaning orphaned executions for ${task.id}:`, error);
+    }
+  }
+
+  console.info(`[ScheduledTaskStorage] Orphaned execution cleanup complete. Cleaned ${cleanedCount} executions.`);
+  return cleanedCount;
+}

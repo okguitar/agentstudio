@@ -49,6 +49,7 @@ export interface TaskDefinition {
   // Metadata
   createdAt: string;
   scheduledFor?: string; // For scheduled tasks
+  scheduledTaskId?: string; // Original scheduled task ID (for status updates)
 
   // Push Notification (for A2A async tasks)
   pushNotificationConfig?: TaskPushNotificationConfig;

@@ -73,9 +73,11 @@ const runningExecutions: Map<string, RunningExecution> = new Map();
  * since the actual execution is lost. Mark them as "error" with a clear message.
  */
 function cleanupOrphanedRunningTasks(): void {
+  const serverStartTime = new Date().toISOString();
   const tasks = loadScheduledTasks();
   let cleanedCount = 0;
 
+  // Clean up task lastRunStatus
   for (const task of tasks) {
     if (task.lastRunStatus === 'running') {
       console.info(`[Scheduler] Cleaning up orphaned running task: ${task.id} (${task.name})`);
@@ -86,6 +88,17 @@ function cleanupOrphanedRunningTasks(): void {
 
   if (cleanedCount > 0) {
     console.info(`[Scheduler] Cleaned up ${cleanedCount} orphaned running tasks`);
+  }
+
+  // Also clean up orphaned execution records
+  try {
+    const { cleanupOrphanedExecutions } = require('./scheduledTaskStorage');
+    const executionsCleanedCount = cleanupOrphanedExecutions(serverStartTime);
+    if (executionsCleanedCount > 0) {
+      console.info(`[Scheduler] Cleaned up ${executionsCleanedCount} orphaned execution records`);
+    }
+  } catch (error) {
+    console.error('[Scheduler] Error cleaning orphaned execution records:', error);
   }
 }
 
@@ -441,6 +454,7 @@ export async function executeTask(taskId: string): Promise<void> {
       permissionMode: 'bypassPermissions',
       createdAt: startedAt,
       scheduledFor: task.schedule.type === 'once' ? task.schedule.executeAt : undefined,
+      scheduledTaskId: taskId, // Original scheduled task ID for status updates
     });
 
     console.info(`[Scheduler] Task ${taskId} submitted to executor successfully`);

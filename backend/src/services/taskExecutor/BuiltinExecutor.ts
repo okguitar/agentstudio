@@ -486,7 +486,12 @@ export class BuiltinTaskExecutor implements ITaskExecutor {
         } = await import('../scheduledTaskStorage.js');
         const { onScheduledTaskComplete } = await import('../schedulerService.js');
 
-        await updateTaskExecution(task.id, result.sessionId || task.id, {
+        // Use scheduledTaskId (original task ID) for storage updates
+        // task.id is the executionId, task.scheduledTaskId is the original scheduled task ID
+        const scheduledTaskId = task.scheduledTaskId || task.id;
+        const executionId = task.id;
+
+        await updateTaskExecution(scheduledTaskId, executionId, {
           status: result.status === 'completed' ? 'success' : 'error',
           completedAt: result.completedAt,
           responseSummary: result.output?.substring(0, 500),
@@ -497,14 +502,15 @@ export class BuiltinTaskExecutor implements ITaskExecutor {
         });
 
         await updateTaskRunStatus(
-          task.id,
+          scheduledTaskId,
           result.status === 'completed' ? 'success' : 'error',
           result.error
         );
 
         // Notify scheduler that task execution is complete
         // This updates runningTaskCount and runningExecutions tracking
-        onScheduledTaskComplete(task.id);
+        // Pass executionId (task.id) because that's what's tracked in runningExecutions
+        onScheduledTaskComplete(executionId);
       }
     } catch (error) {
       console.error(`[TaskExecutor] Error storing result:`, error);

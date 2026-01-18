@@ -11,8 +11,8 @@ import {
   XCircle,
   Loader2,
   History,
-  Settings,
   StopCircle,
+  Activity,
 } from 'lucide-react';
 import {
   Table,
@@ -33,6 +33,7 @@ import {
   useDisableScheduler,
   useStopExecution,
   useRunningExecutions,
+  useTaskExecutorStats,
   scheduledTasksKeys,
 } from '../hooks/useScheduledTasks';
 import { useAgents } from '../hooks/useAgents';
@@ -58,6 +59,9 @@ export const ScheduledTasksPage: React.FC = () => {
   const [editingTask, setEditingTask] = useState<ScheduledTask | null>(null);
   const [showEditorModal, setShowEditorModal] = useState(false);
   const [showHistory, setShowHistory] = useState<string | null>(null);
+  
+  // Task executor monitoring
+  const { data: executorStats } = useTaskExecutorStats();
 
   // Get running execution ID for a task
   const getRunningExecutionId = (taskId: string): string | null => {
@@ -257,7 +261,7 @@ export const ScheduledTasksPage: React.FC = () => {
 
         {/* Actions Bar */}
         <div className="flex items-center justify-between">
-          {/* Scheduler Status */}
+          {/* Scheduler Status with Executor Stats */}
           {schedulerStatus && (
             <div className="flex items-center gap-4 text-sm">
               {/* Scheduler Enabled Status (Clickable) */}
@@ -279,14 +283,25 @@ export const ScheduledTasksPage: React.FC = () => {
                 </span>
               </button>
 
-              {/* Task Count Status */}
-              <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
-                <Settings className="w-4 h-4" />
-                <span>
-                  活跃: {schedulerStatus.activeTaskCount} /
-                  运行中: {schedulerStatus.runningTaskCount}
-                </span>
-              </div>
+              {/* Executor Stats - inline display */}
+              {executorStats && (
+                <div className="flex items-center gap-3 text-gray-500 dark:text-gray-400">
+                  <span className="text-gray-300 dark:text-gray-600">|</span>
+                  <span className={`flex items-center gap-1 ${executorStats.runningTasks > 0 ? 'text-blue-600 dark:text-blue-400' : ''}`}>
+                    <Activity className={`w-4 h-4 ${executorStats.runningTasks > 0 ? 'animate-pulse' : ''}`} />
+                    运行: {executorStats.runningTasks}
+                  </span>
+                  <span className="text-yellow-600 dark:text-yellow-400">
+                    队列: {executorStats.queuedTasks}
+                  </span>
+                  <span className="text-green-600 dark:text-green-400">
+                    完成: {executorStats.completedTasks}
+                  </span>
+                  <span className="text-red-600 dark:text-red-400">
+                    失败: {executorStats.failedTasks}
+                  </span>
+                </div>
+              )}
             </div>
           )}
 

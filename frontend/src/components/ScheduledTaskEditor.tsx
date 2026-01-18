@@ -98,6 +98,18 @@ export const ScheduledTaskEditor: React.FC<ScheduledTaskEditorProps> = ({
     return defaultVersion?.models || [];
   }, [claudeVersionsData, selectedVersionId]);
 
+  // Validate version ID when data is loaded - reset to default if invalid
+  useEffect(() => {
+    if (overrideModel && claudeVersionsData?.versions && selectedVersionId) {
+      const versionExists = claudeVersionsData.versions.some(v => v.id === selectedVersionId);
+      if (!versionExists) {
+        // Selected version doesn't exist, reset to default
+        setSelectedVersionId(claudeVersionsData.defaultVersionId || '');
+        setSelectedModelId('');
+      }
+    }
+  }, [claudeVersionsData, selectedVersionId, overrideModel]);
+
   // When version changes, reset model to first available
   useEffect(() => {
     if (overrideModel && availableModels.length > 0) {

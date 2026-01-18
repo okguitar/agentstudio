@@ -26,8 +26,63 @@ import {
   stopExecution,
   getRunningExecutions,
 } from '../services/schedulerService.js';
+import { loadClaudeVersions } from '../services/claudeVersionStorage.js';
 
 const router: IRouter = Router();
+
+// ============================================================================
+// Validation Helpers
+// ============================================================================
+
+/**
+ * Validate modelOverride configuration
+ * Ensures versionId exists and modelId belongs to that version
+ */
+async function validateModelOverride(modelOverride: { versionId?: string; modelId?: string } | undefined): Promise<{ valid: boolean; error?: string }> {
+  if (!modelOverride) {
+    return { valid: true };
+  }
+
+  const { versionId, modelId } = modelOverride;
+  
+  // If neither is set, it's valid (no override)
+  if (!versionId && !modelId) {
+    return { valid: true };
+  }
+
+  // If modelId is set without versionId, we still need to find a matching version
+  const versionsData = await loadClaudeVersions();
+  
+  if (versionId) {
+    // Check if version exists
+    const version = versionsData.versions.find(v => v.id === versionId);
+    if (!version) {
+      return { valid: false, error: `Version '${versionId}' not found` };
+    }
+
+    // If modelId is provided, check it belongs to this version
+    if (modelId && version.models) {
+      const modelExists = version.models.some(m => m.id === modelId);
+      if (!modelExists) {
+        return { valid: false, error: `Model '${modelId}' not found in version '${versionId}'` };
+      }
+    }
+  } else if (modelId) {
+    // modelId without versionId - check if model exists in any version
+    let modelFound = false;
+    for (const version of versionsData.versions) {
+      if (version.models?.some(m => m.id === modelId)) {
+        modelFound = true;
+        break;
+      }
+    }
+    if (!modelFound) {
+      return { valid: false, error: `Model '${modelId}' not found in any version` };
+    }
+  }
+
+  return { valid: true };
+}
 
 // ============================================================================
 // Validation Schemas
@@ -168,7 +223,7 @@ router.get('/:id', (req: Request, res: Response) => {
  * POST /api/scheduled-tasks
  * Create a new scheduled task
  */
-router.post('/', (req: Request, res: Response) => {
+router.post('/', async (req: Request, res: Response) => {
   try {
     const validation = CreateTaskSchema.safeParse(req.body);
     
@@ -176,6 +231,15 @@ router.post('/', (req: Request, res: Response) => {
       return res.status(400).json({
         error: 'Invalid request body',
         details: validation.error.errors,
+      });
+    }
+
+    // Validate model override
+    const modelValidation = await validateModelOverride(validation.data.modelOverride);
+    if (!modelValidation.valid) {
+      return res.status(400).json({
+        error: 'Invalid model override',
+        details: modelValidation.error,
       });
     }
     
@@ -197,7 +261,7 @@ router.post('/', (req: Request, res: Response) => {
  * PUT /api/scheduled-tasks/:id
  * Update a scheduled task
  */
-router.put('/:id', (req: Request, res: Response) => {
+router.put('/:id', async (req: Request, res: Response) => {
   try {
     const validation = UpdateTaskSchema.safeParse(req.body);
     
@@ -206,6 +270,17 @@ router.put('/:id', (req: Request, res: Response) => {
         error: 'Invalid request body',
         details: validation.error.errors,
       });
+    }
+
+    // Validate model override if provided
+    if (validation.data.modelOverride !== undefined) {
+      const modelValidation = await validateModelOverride(validation.data.modelOverride);
+      if (!modelValidation.valid) {
+        return res.status(400).json({
+          error: 'Invalid model override',
+          details: modelValidation.error,
+        });
+      }
     }
     
     const task = updateScheduledTask(req.params.id, validation.data);

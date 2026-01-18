@@ -352,3 +352,78 @@ export const useDisableScheduler = () => {
     },
   });
 };
+
+// ============================================================================
+// Task Executor Monitoring Hooks
+// ============================================================================
+
+/**
+ * Task executor statistics
+ */
+export interface TaskExecutorStats {
+  mode: 'builtin' | 'bullmq';
+  runningTasks: number;
+  queuedTasks: number;
+  completedTasks: number;
+  failedTasks: number;
+  averageExecutionTimeMs: number;
+  tasks: Array<{
+    id: string;
+    type: string;
+    status: string;
+    agentId: string;
+    startedAt: string;
+    elapsedMs: number;
+  }>;
+}
+
+/**
+ * Task executor health status
+ */
+export interface TaskExecutorHealth {
+  healthy: boolean;
+  mode: 'builtin' | 'bullmq';
+  runningTasks: number;
+  queuedTasks: number;
+  timestamp: string;
+}
+
+export const taskExecutorKeys = {
+  all: ['task-executor'] as const,
+  stats: () => [...taskExecutorKeys.all, 'stats'] as const,
+  health: () => [...taskExecutorKeys.all, 'health'] as const,
+};
+
+/**
+ * Get task executor statistics
+ */
+export const useTaskExecutorStats = () => {
+  return useQuery<TaskExecutorStats>({
+    queryKey: taskExecutorKeys.stats(),
+    queryFn: async () => {
+      const response = await authFetch(`${API_BASE}/task-executor/stats`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch task executor stats');
+      }
+      return response.json();
+    },
+    refetchInterval: 5000, // Refresh every 5 seconds
+  });
+};
+
+/**
+ * Get task executor health
+ */
+export const useTaskExecutorHealth = () => {
+  return useQuery<TaskExecutorHealth>({
+    queryKey: taskExecutorKeys.health(),
+    queryFn: async () => {
+      const response = await authFetch(`${API_BASE}/task-executor/health`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch task executor health');
+      }
+      return response.json();
+    },
+    refetchInterval: 10000, // Refresh every 10 seconds
+  });
+};
