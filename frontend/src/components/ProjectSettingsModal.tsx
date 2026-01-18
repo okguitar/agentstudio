@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
 import { X, Settings, Server, Bot } from 'lucide-react';
 import { useClaudeVersions } from '../hooks/useClaudeVersions';
 import { API_BASE } from '../lib/config';
@@ -27,7 +26,6 @@ export const ProjectSettingsModal: React.FC<ProjectSettingsModalProps> = ({
   onClose,
   onSaved,
 }) => {
-  const { t } = useTranslation('pages');
   const { data: claudeVersionsData } = useClaudeVersions();
   
   const [selectedProviderId, setSelectedProviderId] = useState<string>('');

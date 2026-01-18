@@ -147,14 +147,16 @@ vi.mock('../claudeVersionStorage.js', () => ({
 
 vi.mock('../../utils/claudeUtils.js', () => ({
   buildQueryOptions: vi.fn().mockResolvedValue({
-    appendSystemPrompt: 'Test prompt',
-    allowedTools: ['Write', 'Read'],
-    maxTurns: 10,
-    permissionMode: 'acceptEdits',
-    model: 'sonnet',
-    pathToClaudeCodeExecutable: '/usr/local/bin/claude',
-    cwd: './',
-    env: {}
+    queryOptions: {
+      systemPrompt: 'Test prompt',
+      allowedTools: ['Write', 'Read'],
+      maxTurns: 10,
+      permissionMode: 'acceptEdits',
+      model: 'sonnet',
+      cwd: './',
+      env: {}
+    },
+    askUserSessionRef: null
   }),
   getDefaultClaudeVersionEnv: vi.fn().mockResolvedValue({
     ANTHROPIC_API_KEY: 'test-key'

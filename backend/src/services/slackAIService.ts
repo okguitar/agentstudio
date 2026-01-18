@@ -22,6 +22,41 @@ import { getDefaultVersionId, getVersionByIdInternal } from './claudeVersionStor
 import { buildUserMessageContent } from '../utils/sessionUtils.js';
 
 /**
+ * Slack messages - Extracted for easier localization
+ */
+const SLACK_MESSAGES = {
+  // Status messages
+  THINKING: '🤔 正在思考...',
+  THINKING_WITH_AGENT: (agentName: string, projectInfo: string) => 
+    `🤔 ${agentName}${projectInfo} 正在思考...`,
+  THINKING_LABEL: '💭 **思考中...**',
+  COMPLETED: '✅ 完成',
+  SESSION_BUSY: (agentName: string) => 
+    `🚦 ${agentName} 正在处理其他消息，请稍后再试...`,
+  
+  // Error messages
+  ERROR_GENERIC: '❌ 处理请求时发生错误，请稍后重试',
+  ERROR_WITH_MESSAGE: (message: string) => 
+    `❌ 错误: ${message}`,
+  ERROR_PROCESSING: (message: string) => 
+    `❌ 处理消息时发生错误: ${message}`,
+  UNKNOWN_ERROR: '未知错误',
+  
+  // Project messages
+  PROJECT_MULTIPLE_MATCHES: (projectList: string) => 
+    `🎯 **找到多个匹配的项目，请选择：**\n\n${projectList}\n\n📝 **使用方法：**\n• 指定目录名：\`proj:目录名\`\n• 或指定完整路径：\`proj:/完整/路径\``,
+  PROJECT_NOT_FOUND: (identifier: string, sampleProjects: string, moreCount: number) => 
+    `❌ **未找到项目 "${identifier}"**\n\n📂 **可用项目：**\n${sampleProjects}${moreCount > 0 ? `\n... 还有 ${moreCount} 个项目` : ''}\n\n💡 **提示：** 使用项目目录名或完整路径来指定项目`,
+  PROJECT_INFO: (projectName: string) => ` 在项目 ${projectName} 中`,
+  
+  // Agent messages
+  AGENT_NOT_FOUND: (agentId: string) => `❌ Agent **${agentId}** not found.`,
+  AGENT_DISABLED: (agentName: string) => `⚠️ Agent **${agentName}** is currently disabled.`,
+  SELECT_AGENT: (agentsList: string) => 
+    `🤖 **请选择你想要使用的AI助手：**\n\n${agentsList}\n\n📝 **使用方法：**\n• 直接提及：\`@机器人 ppt-editor 请帮我创建幻灯片\`\n• 或使用别名：\`@机器人 ppt 请帮我创建幻灯片\`\n• 通用对话：\`@机器人 general 随便聊聊\``,
+};
+
+/**
  * Parse agent from message text
  * Supports agent mention, agent name, or agent ID
  */
@@ -206,7 +241,7 @@ function createProjectSelectionMessage(matches: ProjectWithAgentInfo[]): string 
     return `${index + 1}. **${project.name}** (\`${project.dirName}\`${pathInfo})`;
   }).join('\n');
 
-  return `🎯 **找到多个匹配的项目，请选择：**\n\n${projectList}\n\n📝 **使用方法：**\n• 指定目录名：\`proj:目录名\`\n• 或指定完整路径：\`proj:/完整/路径\``;
+  return SLACK_MESSAGES.PROJECT_MULTIPLE_MATCHES(projectList);
 }
 
 /**
@@ -216,8 +251,9 @@ function createProjectNotFoundMessage(identifier: string, availableProjects: Pro
   const sampleProjects = availableProjects.slice(0, 5).map(project =>
     `• \`${project.dirName}\` - ${project.name}`
   ).join('\n');
+  const moreCount = availableProjects.length > 5 ? availableProjects.length - 5 : 0;
 
-  return `❌ **未找到项目 "${identifier}"**\n\n📂 **可用项目：**\n${sampleProjects}${availableProjects.length > 5 ? `\n... 还有 ${availableProjects.length - 5} 个项目` : ''}\n\n💡 **提示：** 使用项目目录名或完整路径来指定项目`;
+  return SLACK_MESSAGES.PROJECT_NOT_FOUND(identifier, sampleProjects, moreCount);
 }
 
 /**
@@ -521,7 +557,7 @@ Feel free to organize your files here as needed. This directory is managed by Ag
         const agentsList = getAvailableAgentsList(allAgents);
         await this.slackClient.postMessage({
           channel: event.channel,
-          text: `🤖 **请选择你想要使用的AI助手：**\n\n${agentsList}\n\n📝 **使用方法：**\n• 直接提及：\`@机器人 ppt-editor 请帮我创建幻灯片\`\n• 或使用别名：\`@机器人 ppt 请帮我创建幻灯片\`\n• 通用对话：\`@机器人 general 随便聊聊\``,
+          text: SLACK_MESSAGES.SELECT_AGENT(agentsList),
           thread_ts: threadTs
         });
         return null;
@@ -535,7 +571,7 @@ Feel free to organize your files here as needed. This directory is managed by Ag
     if (!agent) {
       await this.slackClient.postMessage({
         channel: event.channel,
-        text: `❌ Agent **${agentId}** not found.`,
+        text: SLACK_MESSAGES.AGENT_NOT_FOUND(agentId),
         thread_ts: threadTs
       });
       return null;
@@ -544,7 +580,7 @@ Feel free to organize your files here as needed. This directory is managed by Ag
     if (!agent.enabled) {
       await this.slackClient.postMessage({
         channel: event.channel,
-        text: `⚠️ Agent **${agent.name}** is currently disabled.`,
+        text: SLACK_MESSAGES.AGENT_DISABLED(agent.name),
         thread_ts: threadTs
       });
       return null;
@@ -652,7 +688,7 @@ Feel free to organize your files here as needed. This directory is managed by Ag
       await this.slackClient.updateMessage({
         channel: event.channel,
         ts: placeholderTs,
-        text: `🚦 ${agentDisplayName} 正在处理其他消息，请稍后再试...`
+        text: SLACK_MESSAGES.SESSION_BUSY(agentDisplayName)
       });
 
       return false;
@@ -671,7 +707,7 @@ Feel free to organize your files here as needed. This directory is managed by Ag
       await this.slackClient.updateMessage({
         channel: event.channel,
         ts: placeholderTs,
-        text: `🚦 ${agentDisplayName} 正在处理其他消息，请稍后再试...`
+        text: SLACK_MESSAGES.SESSION_BUSY(agentDisplayName)
       });
 
       return false;
@@ -792,7 +828,7 @@ Feel free to organize your files here as needed. This directory is managed by Ag
 
     // If nothing to show yet, keep the thinking message
     if (!statusText.trim()) {
-      statusText = '🤔 正在思考...';
+      statusText = SLACK_MESSAGES.THINKING;
     }
 
     // Debug log
@@ -1184,10 +1220,10 @@ Feel free to organize your files here as needed. This directory is managed by Ag
 
       // Step 2: Send "thinking" placeholder message
       const agentDisplayName = agent.ui.icon ? `${agent.ui.icon} ${agent.name}` : agent.name;
-      const projectInfo = selectedProject ? ` 在项目 ${selectedProject.name} 中` : '';
+      const projectInfo = selectedProject ? SLACK_MESSAGES.PROJECT_INFO(selectedProject.name) : '';
       const placeholderMsg = await this.slackClient.postMessage({
         channel: event.channel,
-        text: `🤔 ${agentDisplayName}${projectInfo} 正在思考...`,
+        text: SLACK_MESSAGES.THINKING_WITH_AGENT(agentDisplayName, projectInfo),
         thread_ts: threadTs
       });
 
@@ -1278,14 +1314,14 @@ Feel free to organize your files here as needed. This directory is managed by Ag
         );
 
         // Step 10: Update Slack message with final response
-        let finalText = fullResponse || '✅ 完成';
+        let finalText = fullResponse || SLACK_MESSAGES.COMPLETED;
 
         if (toolUsageInfo) {
           finalText += `\n\n${toolUsageInfo}`;
         }
 
         if (hasError) {
-          finalText = '❌ 处理请求时发生错误，请稍后重试';
+          finalText = SLACK_MESSAGES.ERROR_GENERIC;
         }
 
         await this.slackClient.updateMessage({
@@ -1302,7 +1338,7 @@ Feel free to organize your files here as needed. This directory is managed by Ag
         await this.slackClient.updateMessage({
           channel: event.channel,
           ts: placeholderMsg.ts,
-          text: `❌ 错误: ${error instanceof Error ? error.message : '未知错误'}`
+          text: SLACK_MESSAGES.ERROR_WITH_MESSAGE(error instanceof Error ? error.message : SLACK_MESSAGES.UNKNOWN_ERROR)
         });
       } finally {
         // Step 11: Release session lock
@@ -1323,7 +1359,7 @@ Feel free to organize your files here as needed. This directory is managed by Ag
       try {
         await this.slackClient.postMessage({
           channel: event.channel,
-          text: `❌ 处理消息时发生错误: ${error instanceof Error ? error.message : '未知错误'}`,
+          text: SLACK_MESSAGES.ERROR_PROCESSING(error instanceof Error ? error.message : SLACK_MESSAGES.UNKNOWN_ERROR),
           thread_ts: event.thread_ts || event.ts
         });
       } catch (sendError) {

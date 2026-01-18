@@ -216,8 +216,9 @@ describe('claudeUtils', () => {
         allowedTools: ['Write', 'Read'],
         maxTurns: 10,
         permissionMode: 'acceptEdits',
-        model: 'sonnet',
-        pathToClaudeCodeExecutable: '/usr/local/bin/claude'
+        model: 'sonnet'
+        // Note: pathToClaudeCodeExecutable is only set when a valid path is configured
+        // by a provider, otherwise SDK uses its bundled CLI
       });
       expect(result.queryOptions.env).toBeDefined();
     });

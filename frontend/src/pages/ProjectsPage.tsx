@@ -266,27 +266,28 @@ export const ProjectsPage: React.FC = () => {
   const agents = agentsData?.agents || [];
   const enabledAgents = agents.filter(agent => agent.enabled);
 
-  // Fetch projects from API
-  useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        setLoading(true);
-        const response = await authFetch(`${API_BASE}/projects`);
-        if (response.ok) {
-          const data = await response.json();
-          setProjects(data.projects || []);
-        } else {
-          console.error('Failed to fetch projects:', response.status);
-          setProjects([]);
-        }
-      } catch (error) {
-        console.error('Failed to fetch projects:', error);
+  // Fetch projects function (extracted for reuse)
+  const fetchProjects = async () => {
+    try {
+      setLoading(true);
+      const response = await authFetch(`${API_BASE}/projects`);
+      if (response.ok) {
+        const data = await response.json();
+        setProjects(data.projects || []);
+      } else {
+        console.error('Failed to fetch projects:', response.status);
         setProjects([]);
-      } finally {
-        setLoading(false);
       }
-    };
+    } catch (error) {
+      console.error('Failed to fetch projects:', error);
+      setProjects([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  // Fetch projects on mount
+  useEffect(() => {
     fetchProjects();
   }, []);
 
@@ -747,7 +748,7 @@ export const ProjectsPage: React.FC = () => {
         isOpen={!!settingsProject}
         project={settingsProject}
         onClose={() => setSettingsProject(null)}
-        onSaved={loadProjects}
+        onSaved={() => fetchProjects()}
       />
 
       {/* Agent Selection Modal */}
