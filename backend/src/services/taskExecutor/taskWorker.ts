@@ -82,7 +82,8 @@ async function executeTask(task: TaskDefinition): Promise<TaskResult> {
     addLog('info', 'system', `Agent loaded: ${agent.name}`);
 
     // Determine model to use
-    const modelToUse = task.modelId || agent.model || 'sonnet';
+    // Model priority: task.modelId > project/provider config (default: sonnet)
+    const modelToUse = task.modelId || 'sonnet';
     addLog('info', 'system', `Model: ${modelToUse}`);
 
     // Determine permission mode

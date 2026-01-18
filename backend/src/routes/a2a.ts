@@ -608,7 +608,7 @@ router.post('/tasks', a2aStrictRateLimiter, async (req: A2ARequest, res: Respons
         projectPath: a2aContext.workingDirectory,
         message,
         timeoutMs: task.timeoutMs,
-        modelId: agent.model,
+        modelId: undefined, // Model determined by project/provider configuration
         maxTurns: agent.maxTurns,
         permissionMode: 'bypassPermissions',
         createdAt: task.createdAt,
