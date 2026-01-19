@@ -17,7 +17,8 @@ import {
   Clock,
   Key,
   BarChart3,
-  Info
+  Info,
+  Globe
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { ServiceStatusIndicator } from './ServiceStatusIndicator';
@@ -105,6 +106,11 @@ const getNavigationItems = (t: (key: string) => string) => [
         name: t('nav.settingsSubmenu.systemInfo'),
         href: '/settings/system-info',
         icon: Info,
+      },
+      {
+        name: t('nav.settingsSubmenu.tunnel'),
+        href: '/settings/tunnel',
+        icon: Globe,
       },
     ],
   },

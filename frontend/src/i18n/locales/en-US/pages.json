@@ -21,7 +21,8 @@
       "mcpAdmin": "MCP Admin",
       "cloudflareTunnel": "Public Access",
       "telemetry": "Telemetry",
-      "systemInfo": "System Info"
+      "systemInfo": "System Info",
+      "tunnel": "Tunnel"
     }
   },
   "version": {

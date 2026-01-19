@@ -29,6 +29,7 @@ const SubagentsPage = lazy(() => import('./pages/settings/SubagentsPage').then(m
 const McpAdminSettingsPage = lazy(() => import('./pages/settings/McpAdminSettingsPage').then(module => ({ default: module.McpAdminSettingsPage })));
 const TelemetrySettingsPage = lazy(() => import('./pages/settings/TelemetrySettingsPage').then(module => ({ default: module.TelemetrySettingsPage })));
 const SystemInfoPage = lazy(() => import('./pages/settings/SystemInfoPage').then(module => ({ default: module.SystemInfoPage })));
+const WebSocketTunnelPage = lazy(() => import('./pages/settings/WebSocketTunnelPage').then(module => ({ default: module.WebSocketTunnelPage })));
 const CommandsPage = lazy(() => import('./pages/CommandsPage').then(module => ({ default: module.CommandsPage })));
 const SkillsPage = lazy(() => import('./pages/SkillsPage').then(module => ({ default: module.SkillsPage })));
 const PluginsPage = lazy(() => import('./pages/PluginsPage').then(module => ({ default: module.PluginsPage })));
@@ -157,6 +158,7 @@ const AppContent: React.FC = () => {
             <Route path="mcp-admin" element={<McpAdminSettingsPage />} />
             <Route path="telemetry" element={<TelemetrySettingsPage />} />
             <Route path="system-info" element={<SystemInfoPage />} />
+            <Route path="tunnel" element={<WebSocketTunnelPage />} />
           </Route>
 
           {/* Toast Test Page */}

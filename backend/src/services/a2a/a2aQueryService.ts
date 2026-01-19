@@ -103,56 +103,82 @@ export async function executeA2AQuery(
     text: message
   });
 
-  // Create the message generator
-  const messageGen = createA2AMessageGenerator(messageContent);
+  // Internal function to execute the query
+  async function executeQuery(queryOptions: A2AQueryOptions): Promise<{ sessionId: string | null; fullResponse: string; tokensUsed: number }> {
+    // Create the message generator (must be created fresh for each attempt)
+    const messageGen = createA2AMessageGenerator(messageContent);
 
-  let sessionId: string | null = null;
-  let fullResponse = '';
-  let tokensUsed = 0;
+    let sessionId: string | null = null;
+    let fullResponse = '';
+    let tokensUsed = 0;
 
-  console.log(`🚀 [A2A Query] Starting one-shot query with resume=${options.resume || 'none'}`);
+    console.log(`🚀 [A2A Query] Starting one-shot query with resume=${queryOptions.resume || 'none'}`);
 
-  // Execute the query
-  const queryResult = query({
-    prompt: messageGen,
-    options: options
-  });
+    // Execute the query
+    const queryResult = query({
+      prompt: messageGen,
+      options: queryOptions
+    });
 
-  // Process responses
-  for await (const sdkMessage of queryResult) {
-    // Capture session ID from system init message
-    if (sdkMessage.type === 'system' && sdkMessage.subtype === 'init' && sdkMessage.session_id) {
-      sessionId = sdkMessage.session_id;
-      console.log(`📝 [A2A Query] Captured sessionId: ${sessionId}`);
-    }
+    // Process responses
+    for await (const sdkMessage of queryResult) {
+      // Capture session ID from system init message
+      if (sdkMessage.type === 'system' && sdkMessage.subtype === 'init' && sdkMessage.session_id) {
+        sessionId = sdkMessage.session_id;
+        console.log(`📝 [A2A Query] Captured sessionId: ${sessionId}`);
+      }
 
-    // Also check for session_id on any message
-    if ((sdkMessage as any).session_id && !sessionId) {
-      sessionId = (sdkMessage as any).session_id;
-    }
+      // Also check for session_id on any message
+      if ((sdkMessage as any).session_id && !sessionId) {
+        sessionId = (sdkMessage as any).session_id;
+      }
 
-    // Extract assistant response text
-    if (sdkMessage.type === 'assistant' && sdkMessage.message?.content) {
-      for (const block of sdkMessage.message.content) {
-        if (block.type === 'text') {
-          fullResponse += block.text;
+      // Extract assistant response text
+      if (sdkMessage.type === 'assistant' && sdkMessage.message?.content) {
+        for (const block of sdkMessage.message.content) {
+          if (block.type === 'text') {
+            fullResponse += block.text;
+          }
         }
       }
+
+      // Extract token usage
+      if (sdkMessage.type === 'assistant' && (sdkMessage as any).usage) {
+        const usage = (sdkMessage as any).usage;
+        tokensUsed = (usage.input_tokens || 0) + (usage.output_tokens || 0);
+      }
+
+      // Call the message callback
+      await onMessage(sdkMessage);
     }
 
-    // Extract token usage
-    if (sdkMessage.type === 'assistant' && (sdkMessage as any).usage) {
-      const usage = (sdkMessage as any).usage;
-      tokensUsed = (usage.input_tokens || 0) + (usage.output_tokens || 0);
-    }
+    console.log(`✅ [A2A Query] Query completed, sessionId=${sessionId}, responseLength=${fullResponse.length}`);
 
-    // Call the message callback
-    await onMessage(sdkMessage);
+    return { sessionId, fullResponse, tokensUsed };
   }
 
-  console.log(`✅ [A2A Query] Query completed, sessionId=${sessionId}, responseLength=${fullResponse.length}`);
-
-  return { sessionId, fullResponse, tokensUsed };
+  // Try with resume first, if it fails due to invalid session, retry without resume
+  try {
+    return await executeQuery(options);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    
+    // Check if the error is due to invalid resume session
+    if (options.resume && (
+      errorMessage.includes('exited with code 1') ||
+      errorMessage.includes('session') ||
+      errorMessage.includes('resume')
+    )) {
+      console.warn(`⚠️ [A2A Query] Resume failed (session may be invalid), retrying without resume...`);
+      
+      // Create new options without resume
+      const { resume, ...optionsWithoutResume } = options;
+      return await executeQuery(optionsWithoutResume);
+    }
+    
+    // Re-throw other errors
+    throw error;
+  }
 }
 
 /**
@@ -192,31 +218,58 @@ export async function executeA2AQueryStreaming(
     text: message
   });
 
-  const messageGen = createA2AMessageGenerator(messageContent);
+  // Internal function to execute the streaming query
+  async function executeStreamingQuery(queryOptions: A2AQueryOptions): Promise<{ sessionId: string | null }> {
+    // Create the message generator (must be created fresh for each attempt)
+    const messageGen = createA2AMessageGenerator(messageContent);
 
-  let sessionId: string | null = null;
+    let sessionId: string | null = null;
 
-  console.log(`🚀 [A2A Query Streaming] Starting one-shot query with resume=${options.resume || 'none'}`);
+    console.log(`🚀 [A2A Query Streaming] Starting one-shot query with resume=${queryOptions.resume || 'none'}`);
 
-  const queryResult = query({
-    prompt: messageGen,
-    options: options
-  });
+    const queryResult = query({
+      prompt: messageGen,
+      options: queryOptions
+    });
 
-  for await (const sdkMessage of queryResult) {
-    // Capture session ID
-    if (sdkMessage.type === 'system' && sdkMessage.subtype === 'init' && sdkMessage.session_id) {
-      sessionId = sdkMessage.session_id;
+    for await (const sdkMessage of queryResult) {
+      // Capture session ID
+      if (sdkMessage.type === 'system' && sdkMessage.subtype === 'init' && sdkMessage.session_id) {
+        sessionId = sdkMessage.session_id;
+      }
+      if ((sdkMessage as any).session_id && !sessionId) {
+        sessionId = (sdkMessage as any).session_id;
+      }
+
+      // Stream the message (synchronous callback for SSE)
+      onMessage(sdkMessage);
     }
-    if ((sdkMessage as any).session_id && !sessionId) {
-      sessionId = (sdkMessage as any).session_id;
-    }
 
-    // Stream the message (synchronous callback for SSE)
-    onMessage(sdkMessage);
+    console.log(`✅ [A2A Query Streaming] Query completed, sessionId=${sessionId}`);
+
+    return { sessionId };
   }
 
-  console.log(`✅ [A2A Query Streaming] Query completed, sessionId=${sessionId}`);
-
-  return { sessionId };
+  // Try with resume first, if it fails due to invalid session, retry without resume
+  try {
+    return await executeStreamingQuery(options);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    
+    // Check if the error is due to invalid resume session
+    if (options.resume && (
+      errorMessage.includes('exited with code 1') ||
+      errorMessage.includes('session') ||
+      errorMessage.includes('resume')
+    )) {
+      console.warn(`⚠️ [A2A Query Streaming] Resume failed (session may be invalid), retrying without resume...`);
+      
+      // Create new options without resume
+      const { resume, ...optionsWithoutResume } = options;
+      return await executeStreamingQuery(optionsWithoutResume);
+    }
+    
+    // Re-throw other errors
+    throw error;
+  }
 }

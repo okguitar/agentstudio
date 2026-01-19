@@ -21,7 +21,8 @@
       "mcpAdmin": "MCP Admin",
       "cloudflareTunnel": "外网访问",
       "telemetry": "遥测与分析",
-      "systemInfo": "系统信息"
+      "systemInfo": "系统信息",
+      "tunnel": "隧道接入"
     }
   },
   "version": {
