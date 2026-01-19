@@ -111,12 +111,16 @@ const app: express.Express = express();
         connectSrc: ["'self'", "ws:", "wss:", "blob:", "data:", "http://localhost:*", "http://127.0.0.1:*", "https://localhost:*", "https://127.0.0.1:*"],
         frameAncestors: ["'self'", "http://localhost:3000", "https://localhost:3000", "http://localhost:3001", "https://agentstudio.cc", "https://*.agentstudio.cc"], // Allow iframe embedding
         workerSrc: ["'self'", "blob:"],
-        childSrc: ["'self'", "blob:"]
+        childSrc: ["'self'", "blob:"],
+        // Disable upgrade-insecure-requests for HTTP environments
+        upgradeInsecureRequests: null
       }
     },
     // Disable problematic headers for non-HTTPS access
     crossOriginOpenerPolicy: false,
-    originAgentCluster: false
+    originAgentCluster: false,
+    // Disable HSTS for HTTP environments (prevents forcing HTTPS)
+    strictTransportSecurity: false
   }));
 
   // Configure CORS origins
