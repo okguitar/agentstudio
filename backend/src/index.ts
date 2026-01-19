@@ -27,6 +27,7 @@ import mcpAdminRouter from './routes/mcpAdmin';
 import mcpAdminManagementRouter from './routes/mcpAdminManagement';
 import cloudflareTunnelRouter from './routes/cloudflareTunnel';
 import taskExecutorRouter from './routes/taskExecutor';
+import versionRouter from './routes/version';
 import { authMiddleware } from './middleware/auth';
 import { httpsOnly } from './middleware/httpsOnly';
 import { loadConfig, getSlidesDir } from './config/index';
@@ -338,6 +339,7 @@ const app: express.Express = express();
   app.use('/api/mcp-admin-management', authMiddleware, mcpAdminManagementRouter); // MCP Admin management with JWT auth
   app.use('/api/cloudflare-tunnel', authMiddleware, cloudflareTunnelRouter); // Cloudflare Tunnel management
   app.use('/api/task-executor', authMiddleware, taskExecutorRouter);
+  app.use('/api/version', authMiddleware, versionRouter);
   app.use('/api/media', mediaAuthRouter); // Media auth endpoints
   app.use('/media', mediaRouter); // Remove authMiddleware - media files are now public
 

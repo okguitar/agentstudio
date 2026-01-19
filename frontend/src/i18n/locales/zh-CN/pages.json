@@ -20,8 +20,17 @@
       "memory": "全局记忆",
       "mcpAdmin": "MCP Admin",
       "cloudflareTunnel": "外网访问",
-      "telemetry": "遥测与分析"
+      "telemetry": "遥测与分析",
+      "systemInfo": "系统信息"
     }
+  },
+  "version": {
+    "newVersionAvailable": "新版本 v{{version}} 已发布",
+    "updateAvailableTitle": "有新版本可用",
+    "currentVersion": "当前版本",
+    "viewUpdate": "查看更新",
+    "dismiss": "忽略",
+    "remindLater": "稍后提醒"
   },
   "footer": {
     "version": "版本 {{version}}",
@@ -921,6 +930,26 @@
         "accept": "是的，我愿意帮助",
         "decline": "不了，谢谢"
       }
+    },
+    "systemInfo": {
+      "title": "系统信息",
+      "subtitle": "查看系统版本和运行时信息",
+      "checkUpdate": "检查更新",
+      "updateAvailable": "有新版本可用！",
+      "versionInfo": "版本信息",
+      "appName": "应用名称",
+      "currentVersion": "当前版本",
+      "latestVersion": "最新版本",
+      "upToDate": "已是最新",
+      "version": "版本",
+      "runtimeInfo": "运行时信息",
+      "platform": "操作系统",
+      "architecture": "架构",
+      "links": "相关链接",
+      "viewSource": "查看源代码",
+      "viewReleases": "查看发布版本",
+      "viewChangelog": "查看更新日志",
+      "viewNpm": "在 npm 查看"
     }
   },
   "analytics": {

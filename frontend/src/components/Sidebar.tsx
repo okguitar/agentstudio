@@ -16,11 +16,13 @@ import {
   Package,
   Clock,
   Key,
-  BarChart3
+  BarChart3,
+  Info
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { ServiceStatusIndicator } from './ServiceStatusIndicator';
 import { ServiceManagementModal } from './ServiceManagementModal';
+import { UpdateNotification } from './UpdateNotification';
 import { useMobileContext } from '../contexts/MobileContext';
 
 const getNavigationItems = (t: (key: string) => string) => [
@@ -98,6 +100,11 @@ const getNavigationItems = (t: (key: string) => string) => [
         name: t('nav.settingsSubmenu.telemetry'),
         href: '/settings/telemetry',
         icon: BarChart3,
+      },
+      {
+        name: t('nav.settingsSubmenu.systemInfo'),
+        href: '/settings/system-info',
+        icon: Info,
       },
     ],
   },
@@ -257,6 +264,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
       {/* Footer */}
       <div className="flex-shrink-0 p-4 border-t border-gray-200 dark:border-gray-700">
         <div className="space-y-3">
+          {/* Update Notification */}
+          <UpdateNotification compact />
           {/* Service Status Indicator */}
           <ServiceStatusIndicator onManageServices={() => setShowServiceManagement(true)} />
         </div>

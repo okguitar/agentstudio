@@ -20,8 +20,17 @@
       "memory": "Memory",
       "mcpAdmin": "MCP Admin",
       "cloudflareTunnel": "Public Access",
-      "telemetry": "Telemetry"
+      "telemetry": "Telemetry",
+      "systemInfo": "System Info"
     }
+  },
+  "version": {
+    "newVersionAvailable": "New version v{{version}} is available",
+    "updateAvailableTitle": "Update Available",
+    "currentVersion": "Current version",
+    "viewUpdate": "View Update",
+    "dismiss": "Dismiss",
+    "remindLater": "Remind Later"
   },
   "footer": {
     "version": "Version {{version}}",
@@ -893,6 +902,26 @@
         "accept": "Yes, I want to help",
         "decline": "No, thanks"
       }
+    },
+    "systemInfo": {
+      "title": "System Info",
+      "subtitle": "View system version and runtime information",
+      "checkUpdate": "Check for Updates",
+      "updateAvailable": "Update Available!",
+      "versionInfo": "Version Info",
+      "appName": "Application Name",
+      "currentVersion": "Current Version",
+      "latestVersion": "Latest Version",
+      "upToDate": "Up to Date",
+      "version": "Version",
+      "runtimeInfo": "Runtime Info",
+      "platform": "Platform",
+      "architecture": "Architecture",
+      "links": "Related Links",
+      "viewSource": "View Source Code",
+      "viewReleases": "View Releases",
+      "viewChangelog": "View Changelog",
+      "viewNpm": "View on npm"
     }
   },
   "analytics": {
