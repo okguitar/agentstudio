@@ -3,6 +3,9 @@
   "version": "0.2.0",
   "description": "Backend API for AgentStudio - AI-powered presentation editor with Claude integration",
   "main": "dist/index.js",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "bin": {
     "agentstudio": "dist/bin/agentstudio.js"
   },

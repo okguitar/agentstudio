@@ -9,7 +9,6 @@
 
 import { Worker } from 'worker_threads';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { existsSync } from 'fs';
 import type {
   ITaskExecutor,
@@ -20,10 +19,9 @@ import type {
   TaskExecutorStats,
 } from './types.js';
 
-// Get current directory using URL
-// @ts-ignore - This will be transpiled correctly
-const _filename = fileURLToPath(import.meta.url);
-const _dirname = path.dirname(_filename);
+// Use __dirname directly in CommonJS environment
+// TypeScript compiles to CommonJS, so __dirname is available at runtime
+const _dirname = __dirname;
 
 // ============================================================================
 // Types
