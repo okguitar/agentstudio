@@ -149,7 +149,7 @@ async function main() {
         'cli',
       ],
       engines: {
-        node: '>=18.0.0',
+        node: '>=20.0.0',
       },
       // Remove devDependencies for npm package
       devDependencies: undefined,
