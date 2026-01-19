@@ -41,7 +41,8 @@ export class LAVSClient {
    * Get auth token from localStorage
    */
   private getAuthToken(): string | null {
-    return localStorage.getItem('authToken');
+    // Try both possible token keys for compatibility
+    return localStorage.getItem('auth_token') || localStorage.getItem('authToken');
   }
 
   /**
