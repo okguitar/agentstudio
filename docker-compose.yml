@@ -5,14 +5,14 @@ services:
     image: agentstudio:latest
     container_name: agentstudio
     ports:
-      - "80:80"        # Frontend (nginx)
-      - "4936:4936"    # Backend API (optional, for direct access)
+      - "${FRONTEND_PORT:-80}:80"        # Frontend (nginx)
+      - "${BACKEND_PORT:-4936}:4936"    # Backend API (optional, for direct access)
     environment:
-      - NODE_ENV=production
-      - PORT=4936
-      # Uncomment and set your API keys
-      # - ANTHROPIC_API_KEY=your_anthropic_key_here
-      # - OPENAI_API_KEY=your_openai_key_here
+      - NODE_ENV=${NODE_ENV:-production}
+      - PORT=${PORT:-4936}
+      # API keys from environment variables
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
     env_file:
       - ./backend/.env  # Optional: use .env file instead
     volumes:
