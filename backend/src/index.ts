@@ -48,7 +48,7 @@ const getVersion = () => {
   const devPackagePath = join(__dirname, '../package.json');
   // Also try root package.json
   const rootPackagePath = join(__dirname, '../../package.json');
-  
+
   for (const packagePath of [npmPackagePath, devPackagePath, rootPackagePath]) {
     try {
       const packageJson = JSON.parse(readFileSync(packagePath, 'utf8'));
@@ -59,7 +59,7 @@ const getVersion = () => {
       // Continue to next path
     }
   }
-  
+
   console.warn('Could not read version from package.json');
   return 'unknown';
 };
@@ -106,13 +106,13 @@ const app: express.Express = express();
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Allow eval for development
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdn.jsdelivr.net", "https://app.posthog.com", "https://us.i.posthog.com"], // Allow eval for development, CDN for Monaco, PostHog
         styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net"],
         fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdn.jsdelivr.net", "data:"],
         imgSrc: ["'self'", "data:", "https:", "http:", "blob:"],
-        connectSrc: ["'self'", "ws:", "wss:", "blob:", "data:", "http://localhost:*", "http://127.0.0.1:*", "https://localhost:*", "https://127.0.0.1:*"],
+        connectSrc: ["'self'", "ws:", "wss:", "blob:", "data:", "http://localhost:*", "http://127.0.0.1:*", "https://localhost:*", "https://127.0.0.1:*", "https://app.posthog.com", "https://us.i.posthog.com"],
         frameAncestors: ["'self'", "http://localhost:3000", "https://localhost:3000", "http://localhost:3001", "https://agentstudio.cc", "https://*.agentstudio.cc"], // Allow iframe embedding
-        workerSrc: ["'self'", "blob:"],
+        workerSrc: ["'self'", "blob:", "https://cdn.jsdelivr.net"],
         childSrc: ["'self'", "blob:"],
         // Disable upgrade-insecure-requests for HTTP environments
         upgradeInsecureRequests: null
@@ -161,7 +161,7 @@ const app: express.Express = express();
 
       // Allow agentstudio.cc and its subdomains (*.agentstudio.cc) - hardcoded
       if (origin === 'https://agentstudio.cc' || origin === 'http://agentstudio.cc' ||
-          origin.endsWith('.agentstudio.cc')) {
+        origin.endsWith('.agentstudio.cc')) {
         return callback(null, true);
       }
 
@@ -195,7 +195,7 @@ const app: express.Express = express();
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'X-Requested-With'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'X-Requested-With', 'X-Project-Path'],
     exposedHeaders: ['Content-Range', 'X-Content-Range']
   }));
   // JSON parser - skip /api/slack (needs raw body for signature verification)
@@ -263,7 +263,7 @@ const app: express.Express = express();
   const fs = await import('fs');
   const npmPublicPath = join(__dirname, 'public');
   const devFrontendPath = join(__dirname, '../../frontend/dist');
-  
+
   // Prefer npm package embedded frontend, fallback to development path
   const frontendDistPath = fs.existsSync(npmPublicPath) ? npmPublicPath : devFrontendPath;
   const hasEmbeddedFrontend = fs.existsSync(join(frontendDistPath, 'index.html'));
@@ -275,9 +275,9 @@ const app: express.Express = express();
     app.get('*', (req, res, next) => {
       // Skip API routes and other specific routes
       if (req.path.startsWith('/api') ||
-          req.path.startsWith('/media') ||
-          req.path.startsWith('/slides') ||
-          req.path.startsWith('/a2a')) {
+        req.path.startsWith('/media') ||
+        req.path.startsWith('/slides') ||
+        req.path.startsWith('/a2a')) {
         return next();
       }
 
@@ -292,7 +292,7 @@ const app: express.Express = express();
     console.log('Frontend build not found, serving API only');
   }
 
-// Routes - Public routes
+  // Routes - Public routes
   app.use('/api/auth', authRouter);
   // MCP Admin - uses its own API key authentication
   app.use('/api/mcp-admin', mcpAdminRouter);
