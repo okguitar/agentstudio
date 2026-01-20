@@ -46,6 +46,93 @@ router.get('/', async (_req, res) => {
   }
 });
 
+// GET /api/projects/claude-md - Get project CLAUDE.md content (via query param)
+// MUST be defined before /:dirName to avoid route matching issues
+router.get('/claude-md', async (req, res) => {
+  try {
+    const projectPath = req.query.path as string;
+    
+    if (!projectPath) {
+      return res.status(400).json({ error: 'Project path is required' });
+    }
+    
+    console.log('[claude-md] Looking for project with path:', projectPath);
+    
+    // Try to read CLAUDE.md directly from the path
+    try {
+      const claudeFilePath = path.join(projectPath, 'CLAUDE.md');
+      const content = await readFile(claudeFilePath, 'utf-8');
+      console.log('[claude-md] Successfully read CLAUDE.md, content length:', content.length);
+      return res.json({ content });
+    } catch (directError: any) {
+      if (directError.code === 'ENOENT') {
+        // Try parent directory
+        const parentClaudeFilePath = path.join(path.dirname(projectPath), 'CLAUDE.md');
+        try {
+          const content = await readFile(parentClaudeFilePath, 'utf-8');
+          console.log('[claude-md] Successfully read CLAUDE.md from parent, content length:', content.length);
+          return res.json({ content });
+        } catch (parentError: any) {
+          if (parentError.code === 'ENOENT') {
+            return res.json({ content: '' });
+          }
+          throw parentError;
+        }
+      }
+      throw directError;
+    }
+  } catch (error) {
+    console.error('Error reading CLAUDE.md:', error);
+    res.status(500).json({ error: 'Failed to read CLAUDE.md file' });
+  }
+});
+
+// PUT /api/projects/claude-md - Update project CLAUDE.md content (via query param)
+// MUST be defined before /:dirName to avoid route matching issues
+router.put('/claude-md', async (req, res) => {
+  try {
+    const projectPath = req.query.path as string;
+    const { content } = req.body;
+
+    if (!projectPath) {
+      return res.status(400).json({ error: 'Project path is required' });
+    }
+
+    if (typeof content !== 'string') {
+      return res.status(400).json({ error: 'Content must be a string' });
+    }
+
+    console.log('[claude-md PUT] Saving to project path:', projectPath);
+
+    // Decide where to save the file - prefer project directory, but check if parent has existing file
+    let claudeFilePath = path.join(projectPath, 'CLAUDE.md');
+    const parentClaudeFilePath = path.join(path.dirname(projectPath), 'CLAUDE.md');
+    
+    // Check if parent directory already has CLAUDE.md
+    try {
+      await stat(parentClaudeFilePath);
+      // Parent file exists, use that location
+      claudeFilePath = parentClaudeFilePath;
+      console.log('Using existing CLAUDE.md in parent directory:', claudeFilePath);
+    } catch (error: any) {
+      // Parent file doesn't exist, use project directory
+      console.log('Using project directory for CLAUDE.md:', claudeFilePath);
+    }
+
+    // Ensure directory exists
+    await ensureDir(path.dirname(claudeFilePath));
+
+    // Write the file
+    await writeFile(claudeFilePath, content, 'utf-8');
+    console.log('Successfully wrote CLAUDE.md to:', claudeFilePath);
+
+    res.json({ success: true, path: claudeFilePath });
+  } catch (error) {
+    console.error('Error writing CLAUDE.md:', error);
+    res.status(500).json({ error: 'Failed to write CLAUDE.md file' });
+  }
+});
+
 // GET /api/projects/:dirName - Get specific project
 router.get('/:dirName', async (req, res) => {
   try {
@@ -324,7 +411,7 @@ router.post('/:dirName/select-agent', async (req, res) => {
   }
 });
 
-// GET /api/projects/:dirName/claude-md - Get project CLAUDE.md content
+// GET /api/projects/:dirName/claude-md - Get project CLAUDE.md content (legacy)
 router.get('/:dirName/claude-md', async (req, res) => {
   try {
     const { dirName } = req.params;

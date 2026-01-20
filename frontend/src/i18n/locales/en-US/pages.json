@@ -8,6 +8,7 @@
     "projects": "Projects",
     "agents": "Agents",
     "scheduledTasks": "Scheduled Tasks",
+    "extensions": "Extensions",
     "skills": "Skills",
     "plugins": "Plugins",
     "mcp": "MCP Services",
@@ -15,13 +16,10 @@
     "subagents": "Subagents",
     "settings": "Settings",
     "settingsSubmenu": {
-      "general": "Look & Feel",
+      "general": "General",
       "suppliers": "Suppliers",
       "memory": "Memory",
       "mcpAdmin": "MCP Admin",
-      "cloudflareTunnel": "Public Access",
-      "telemetry": "Telemetry",
-      "systemInfo": "System Info",
       "tunnel": "Tunnel"
     }
   },
@@ -442,9 +440,9 @@
   "settings": {
     "title": "Settings",
     "general": {
-      "title": "Look and Feel",
-      "description": "Configure interface theme and language",
-      "interfaceSettings": "Look and Feel",
+      "title": "General Settings",
+      "description": "Configure appearance, view system info, and privacy settings",
+      "interfaceSettings": "Appearance",
       "theme": {
         "label": "Theme",
         "description": "Select interface theme mode",

@@ -16,9 +16,8 @@ import {
   Package,
   Clock,
   Key,
-  BarChart3,
-  Info,
-  Globe
+  Globe,
+  Puzzle
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { ServiceStatusIndicator } from './ServiceStatusIndicator';
@@ -43,34 +42,41 @@ const getNavigationItems = (t: (key: string) => string) => [
     icon: Server,
   },
   {
-    name: t('nav.skills'),
-    href: '/skills',
-    icon: Zap,
-  },
-  {
-    name: t('nav.plugins'),
-    href: '/plugins',
-    icon: Package,
-  },
-  {
     name: t('nav.agents'),
     href: '/agents',
-    icon: Bot,
-  },
-  {
-    name: t('nav.commands'),
-    href: '/settings/commands',
-    icon: Command,
-  },
-  {
-    name: t('nav.subagents'),
-    href: '/settings/subagents',
     icon: Bot,
   },
   {
     name: t('nav.scheduledTasks'),
     href: '/scheduled-tasks',
     icon: Clock,
+  },
+  {
+    name: t('nav.extensions'),
+    href: '/plugins',
+    icon: Puzzle,
+    submenu: [
+      {
+        name: t('nav.plugins'),
+        href: '/plugins',
+        icon: Package,
+      },
+      {
+        name: t('nav.commands'),
+        href: '/settings/commands',
+        icon: Command,
+      },
+      {
+        name: t('nav.subagents'),
+        href: '/settings/subagents',
+        icon: Bot,
+      },
+      {
+        name: t('nav.skills'),
+        href: '/skills',
+        icon: Zap,
+      },
+    ],
   },
   {
     name: t('nav.settings'),
@@ -96,16 +102,6 @@ const getNavigationItems = (t: (key: string) => string) => [
         name: t('nav.settingsSubmenu.mcpAdmin'),
         href: '/settings/mcp-admin',
         icon: Key,
-      },
-      {
-        name: t('nav.settingsSubmenu.telemetry'),
-        href: '/settings/telemetry',
-        icon: BarChart3,
-      },
-      {
-        name: t('nav.settingsSubmenu.systemInfo'),
-        href: '/settings/system-info',
-        icon: Info,
       },
       {
         name: t('nav.settingsSubmenu.tunnel'),

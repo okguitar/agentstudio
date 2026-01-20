@@ -27,14 +27,40 @@ const DEFAULT_CONFIG_FILE = path.join(CLAUDE_AGENT_DIR, 'tunnel-config.json');
 export interface TunnelConfig {
   /** Whether tunnel should auto-connect on startup */
   enabled: boolean;
-  /** Tunnel server WebSocket URL */
+  /** Tunnel server base URL (e.g., https://hitl.woa.com) */
   serverUrl: string;
+  /** WebSocket URL for tunnel connection (from server /api/info) */
+  websocketUrl?: string;
   /** Tunnel authentication token */
   token: string;
+  /** Tunnel name (subdomain part, e.g., "my-dev" for my-dev.tunnel) */
+  tunnelName?: string;
+  /** Domain suffix (e.g., ".hitl.woa.com") */
+  domainSuffix?: string;
+  /** Protocol for tunnel domain (https or http) */
+  protocol?: 'https' | 'http';
   /** Reconnect interval in milliseconds */
   reconnectInterval?: number;
   /** Maximum reconnect attempts (0 = infinite) */
   maxReconnectAttempts?: number;
+}
+
+/**
+ * Result of checking tunnel name availability
+ */
+export interface TunnelCheckResult {
+  available: boolean;
+  reason?: string;
+}
+
+/**
+ * Result of creating a tunnel token
+ */
+export interface TunnelCreateResult {
+  success: boolean;
+  token?: string;
+  domain?: string;
+  error?: string;
 }
 
 /**
@@ -64,11 +90,40 @@ export interface TunnelStatus {
  */
 const DEFAULT_CONFIG: TunnelConfig = {
   enabled: false,
-  serverUrl: 'wss://hitl.woa.com/ws/tunnel',
+  serverUrl: 'https://hitl.woa.com',
   token: '',
+  tunnelName: '',
+  protocol: 'https',
   reconnectInterval: 5000,
   maxReconnectAttempts: 0, // Infinite
 };
+
+/**
+ * Get WebSocket URL from base URL
+ * e.g., https://hitl.woa.com -> wss://hitl.woa.com/ws/tunnel
+ */
+function getWebSocketUrl(serverUrl: string): string {
+  const apiBaseUrl = getApiBaseUrl(serverUrl);
+  const url = new URL(apiBaseUrl);
+  const wsProtocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+  return `${wsProtocol}//${url.host}/ws/tunnel`;
+}
+
+/**
+ * Get API base URL for tunnel management
+ * User configures the base URL (e.g., https://hitl.woa.com)
+ * API endpoints are under /api/tunnels/
+ */
+function getApiBaseUrl(serverUrl: string): string {
+  // If it's a WebSocket URL, convert to HTTP
+  if (serverUrl.startsWith('wss://') || serverUrl.startsWith('ws://')) {
+    const url = new URL(serverUrl);
+    const protocol = url.protocol === 'wss:' ? 'https:' : 'http:';
+    return `${protocol}//${url.host}`;
+  }
+  // Otherwise use as-is
+  return serverUrl.replace(/\/+$/, ''); // Remove trailing slashes
+}
 
 /**
  * Tunnel Service singleton
@@ -214,12 +269,15 @@ class TunnelService {
     }
 
     const targetUrl = `http://localhost:${this.localPort}`;
+    // Use websocketUrl from config if available, otherwise generate from serverUrl
+    const wsUrl = this.config.websocketUrl || getWebSocketUrl(this.config.serverUrl);
 
-    console.log(`[Tunnel] Connecting to ${this.config.serverUrl}...`);
+    console.log(`[Tunnel] Connecting to ${wsUrl}...`);
+    console.log(`[Tunnel] Token: ${this.config.token.slice(0, 10)}...`);
     console.log(`[Tunnel] Target: ${targetUrl}`);
 
     const clientConfig: TunnelClientConfig = {
-      serverUrl: this.config.serverUrl,
+      serverUrl: wsUrl,
       token: this.config.token,
       targetUrl,
       reconnectInterval: this.config.reconnectInterval || 5000,
@@ -324,6 +382,127 @@ class TunnelService {
         error: error instanceof Error ? error.message : String(error),
       };
     }
+  }
+
+  /**
+   * Check if a tunnel name is available
+   * @param name The tunnel name to check (e.g., "my-dev")
+   */
+  async checkTunnelName(name: string): Promise<TunnelCheckResult> {
+    if (!name || name.trim() === '') {
+      return { available: false, reason: '隧道名称不能为空' };
+    }
+
+    const apiBaseUrl = getApiBaseUrl(this.config.serverUrl);
+
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/tunnels/check-availability?name=${encodeURIComponent(name)}`);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        return { 
+          available: false, 
+          reason: errorData.reason || errorData.message || errorData.error || `检查失败: HTTP ${response.status}` 
+        };
+      }
+
+      const data = await response.json();
+      return {
+        available: data.available !== false,
+        reason: data.reason || data.message,
+      };
+    } catch (error) {
+      console.error('[Tunnel] Error checking name availability:', error);
+      return {
+        available: false,
+        reason: error instanceof Error ? error.message : '网络请求失败',
+      };
+    }
+  }
+
+  /**
+   * Create a tunnel and get the token
+   * @param name The tunnel name to create (e.g., "my-dev")
+   */
+  async createTunnel(name: string): Promise<TunnelCreateResult> {
+    if (!name || name.trim() === '') {
+      return { success: false, error: '隧道名称不能为空' };
+    }
+
+    const apiBaseUrl = getApiBaseUrl(this.config.serverUrl);
+
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/tunnels`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          domain: name.trim(),
+          name: name.trim(),
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        return { 
+          success: false, 
+          error: errorData.reason || errorData.message || errorData.error || `创建失败: HTTP ${response.status}` 
+        };
+      }
+
+      const data = await response.json();
+      
+      if (data.token) {
+        return {
+          success: true,
+          token: data.token,
+          domain: data.domain || `${name}.tunnel`,
+        };
+      } else {
+        return {
+          success: false,
+          error: data.error || data.message || '未返回 Token',
+        };
+      }
+    } catch (error) {
+      console.error('[Tunnel] Error creating tunnel:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : '网络请求失败',
+      };
+    }
+  }
+
+  /**
+   * Create tunnel and save config in one step
+   * @param name The tunnel name to create
+   * @param autoConnect Whether to enable auto-connect
+   * @param protocol The protocol to use (https or http)
+   * @param websocketUrl The WebSocket URL from server info
+   * @param domainSuffix The domain suffix (e.g., ".hitl.woa.com")
+   */
+  async createAndSave(name: string, autoConnect: boolean = false, protocol: 'https' | 'http' = 'https', websocketUrl?: string, domainSuffix?: string): Promise<TunnelCreateResult> {
+    const result = await this.createTunnel(name);
+    
+    if (result.success && result.token) {
+      // Save the config with the new token
+      await this.saveConfig({
+        enabled: autoConnect,
+        tunnelName: name,
+        token: result.token,
+        protocol,
+        websocketUrl,
+        domainSuffix,
+      });
+
+      // Try to connect
+      if (autoConnect) {
+        await this.connect();
+      }
+    }
+
+    return result;
   }
 }
 

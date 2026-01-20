@@ -28,7 +28,7 @@ export const ProjectMemoryModal: React.FC<ProjectMemoryModalProps> = ({
       try {
         setLoading(true);
         setError(null);
-        const response = await authFetch(`${API_BASE}/projects/${project.id}/claude-md`);
+        const response = await authFetch(`${API_BASE}/projects/claude-md?path=${encodeURIComponent(project.path)}`);
 
         if (response.ok) {
           const data = await response.json();
@@ -55,7 +55,7 @@ export const ProjectMemoryModal: React.FC<ProjectMemoryModalProps> = ({
       setSaving(true);
       setError(null);
 
-      const response = await authFetch(`${API_BASE}/projects/${project.id}/claude-md`, {
+      const response = await authFetch(`${API_BASE}/projects/claude-md?path=${encodeURIComponent(project.path)}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

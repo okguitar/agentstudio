@@ -8,6 +8,7 @@
     "projects": "项目管理",
     "agents": "Agent管理",
     "scheduledTasks": "定时任务",
+    "extensions": "扩展能力",
     "skills": "技能管理",
     "plugins": "插件管理",
     "mcp": "MCP服务",
@@ -15,13 +16,10 @@
     "subagents": "Subagent管理",
     "settings": "系统管理",
     "settingsSubmenu": {
-      "general": "外观设置",
+      "general": "通用设置",
       "suppliers": "供应商管理",
       "memory": "全局记忆",
       "mcpAdmin": "MCP Admin",
-      "cloudflareTunnel": "外网访问",
-      "telemetry": "遥测与分析",
-      "systemInfo": "系统信息",
       "tunnel": "隧道接入"
     }
   },
@@ -469,8 +467,8 @@
   "settings": {
     "title": "设置",
     "general": {
-      "title": "外观设置",
-      "description": "配置界面主题和语言",
+      "title": "通用设置",
+      "description": "配置界面外观、查看系统信息和隐私设置",
       "interfaceSettings": "外观设置",
       "theme": {
         "label": "主题",
