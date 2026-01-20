@@ -250,15 +250,20 @@ router.put('/:dirName', async (req, res) => {
 });
 
 // DELETE /api/projects/:dirName - Delete project metadata
+// Note: dirName is actually the full project path (URL encoded)
 router.delete('/:dirName', async (req, res) => {
   try {
-    const { dirName } = req.params;
+    // dirName is the full project path, needs URL decoding
+    const projectPath = decodeURIComponent(req.params.dirName);
+    console.log(`🗑️ [DELETE] Attempting to delete project: ${projectPath}`);
     
-    const success = projectStorage.deleteProject(dirName);
+    const success = projectStorage.deleteProject(projectPath);
     if (!success) {
+      console.log(`🗑️ [DELETE] Project not found: ${projectPath}`);
       return res.status(404).json({ error: 'Project not found' });
     }
     
+    console.log(`🗑️ [DELETE] Successfully deleted project: ${projectPath}`);
     res.json({ success: true });
   } catch (error) {
     console.error('Error deleting project:', error);

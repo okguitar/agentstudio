@@ -768,19 +768,33 @@ export class ProjectMetadataStorage {
 
   /**
    * Delete a project (remove metadata, claude config entry, and session directory)
+   * Handles both symlink paths and real paths for backward compatibility
    */
   deleteProject(projectPath: string): boolean {
     try {
       const realPath = this.resolveRealPath(projectPath); // Resolve symlinks for deletion
       let deletedSomething = false;
 
+      console.log(`🗑️ [deleteProject] Attempting to delete: ${projectPath}`);
+      console.log(`🗑️ [deleteProject] Resolved real path: ${realPath}`);
+
       // 1. Delete from AgentStudio metadata
+      // Check both the real path and the original path (for backward compatibility with old data)
       const allMetadata = this.loadMetadata();
+      
+      // Try real path first
       if (allMetadata[realPath]) {
         delete allMetadata[realPath];
         this.saveMetadata(allMetadata);
         deletedSomething = true;
-        console.log(`🗑️ Removed project metadata: ${realPath}`);
+        console.log(`🗑️ Removed project metadata (real path): ${realPath}`);
+      }
+      // Also try the original path if different (backward compatibility)
+      else if (projectPath !== realPath && allMetadata[projectPath]) {
+        delete allMetadata[projectPath];
+        this.saveMetadata(allMetadata);
+        deletedSomething = true;
+        console.log(`🗑️ Removed project metadata (original path): ${projectPath}`);
       }
 
       // 2. Remove from Claude's config file (~/.claude.json)
@@ -810,12 +824,22 @@ export class ProjectMetadataStorage {
       }
 
       // 3. Remove Claude session directory
+      // Try both real path and original path for backward compatibility
       try {
-        const sessionDirPath = this.findClaudeSessionDir(realPath);
+        let sessionDirPath = this.findClaudeSessionDir(realPath);
         if (sessionDirPath && fs.existsSync(sessionDirPath)) {
           fs.rmSync(sessionDirPath, { recursive: true, force: true });
           deletedSomething = true;
-          console.log(`🗑️ Removed session directory: ${sessionDirPath}`);
+          console.log(`🗑️ Removed session directory (real path): ${sessionDirPath}`);
+        }
+        // Also try original path if different
+        if (projectPath !== realPath) {
+          sessionDirPath = this.findClaudeSessionDir(projectPath);
+          if (sessionDirPath && fs.existsSync(sessionDirPath)) {
+            fs.rmSync(sessionDirPath, { recursive: true, force: true });
+            deletedSomething = true;
+            console.log(`🗑️ Removed session directory (original path): ${sessionDirPath}`);
+          }
         }
       } catch (error) {
         console.warn(`Failed to remove session directory:`, error);
