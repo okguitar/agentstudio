@@ -184,17 +184,24 @@ export class ProjectMetadataStorage {
 
   /**
    * Get or create metadata for a project path
+   * Always resolves symlinks to use the real path for storage
    */
   private getOrCreateMetadataForPath(projectPath: string): ProjectMetadata {
+    // Resolve symlinks to get the real path
+    const realPath = this.resolveRealPath(projectPath);
+    if (realPath !== projectPath) {
+      console.log(`🔗 [getOrCreateMetadataForPath] Resolved symlink: ${projectPath} -> ${realPath}`);
+    }
+    
     const allMetadata = this.loadMetadata();
 
-    // Check if metadata exists for this path
-    if (allMetadata[projectPath]) {
-      const existing = allMetadata[projectPath];
+    // Check if metadata exists for the real path
+    if (allMetadata[realPath]) {
+      const existing = allMetadata[realPath];
       let shouldUpdate = false;
 
       // Always get fresh timestamps to compare with stored ones
-      const timestamps = this.getProjectTimestamps(projectPath);
+      const timestamps = this.getProjectTimestamps(realPath);
 
       // Check if we need to refresh timestamps
       const refreshConditions = [
@@ -203,7 +210,7 @@ export class ProjectMetadataStorage {
         
         // Condition 2: Session directory is newer than stored lastAccessed
         (() => {
-          const sessionDirPath = this.findClaudeSessionDir(projectPath);
+          const sessionDirPath = this.findClaudeSessionDir(realPath);
           if (sessionDirPath && fs.existsSync(sessionDirPath)) {
             const sessionStats = fs.statSync(sessionDirPath);
             const sessionTime = new Date(sessionStats.mtime).getTime();
@@ -234,9 +241,9 @@ export class ProjectMetadataStorage {
         if (timeDiff > 60000) {
           existing.createdAt = timestamps.createdAt;
           existing.lastAccessed = timestamps.lastAccessed;
-          allMetadata[projectPath] = existing;
+          allMetadata[realPath] = existing;
           this.saveMetadata(allMetadata);
-          console.log(`🔄 Refreshed timestamps for: ${projectPath}`);
+          console.log(`🔄 Refreshed timestamps for: ${realPath}`);
           console.log(`   Created: ${existing.createdAt}`);
           console.log(`   Accessed: ${existing.lastAccessed}`);
         }
@@ -247,14 +254,14 @@ export class ProjectMetadataStorage {
 
     // Create new metadata if not found
     // Try to get real timestamps from filesystem
-    const timestamps = this.getProjectTimestamps(projectPath);
+    const timestamps = this.getProjectTimestamps(realPath);
     const metadataId = `project_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
     const metadata: ProjectMetadata = {
       id: metadataId,
-      name: path.basename(projectPath),
+      name: path.basename(realPath),
       description: '',
-      path: projectPath,
+      path: realPath, // Store the real path (symlinks resolved)
       createdAt: timestamps.createdAt,
       lastAccessed: timestamps.lastAccessed,
       agents: {},
@@ -264,8 +271,8 @@ export class ProjectMetadataStorage {
       metadata: {}
     };
 
-    // Save to store
-    allMetadata[projectPath] = metadata;
+    // Save to store using the real path as key
+    allMetadata[realPath] = metadata;
     this.saveMetadata(allMetadata);
 
     return metadata;
@@ -362,17 +369,41 @@ export class ProjectMetadataStorage {
   }
 
   /**
+   * Resolve a path to its real path (following symlinks)
+   */
+  private resolveRealPath(projectPath: string): string {
+    try {
+      return fs.realpathSync(projectPath);
+    } catch {
+      // If path doesn't exist or can't be resolved, return original
+      return projectPath;
+    }
+  }
+
+  /**
    * Get all projects by reading from both ~/.claude.json and AgentStudio metadata
+   * Deduplicates projects that point to the same real path (symlinks)
    */
   getAllProjects(): ProjectWithAgentInfo[] {
     const claudeProjectPaths = this.getClaudeProjects();
     const allMetadata = this.loadMetadata();
     const projects: ProjectWithAgentInfo[] = [];
     const processedPaths = new Set<string>();
+    // Track real paths to deduplicate symlinks pointing to the same location
+    const processedRealPaths = new Set<string>();
 
     // First, process projects from Claude config (active projects)
     for (const projectPath of claudeProjectPaths) {
       try {
+        // Resolve symlinks to get real path for deduplication
+        const realPath = this.resolveRealPath(projectPath);
+        
+        // Skip if we've already processed a project pointing to the same real path
+        if (processedRealPaths.has(realPath)) {
+          console.log(`🔗 [Dedup] Skipping duplicate project (same real path): ${projectPath} -> ${realPath}`);
+          continue;
+        }
+        
         // Get or create metadata for this project
         const metadata = this.getOrCreateMetadataForPath(projectPath);
 
@@ -380,6 +411,7 @@ export class ProjectMetadataStorage {
         const enriched = this.enrichProjectWithAgentInfo(metadata);
         projects.push(enriched);
         processedPaths.add(projectPath);
+        processedRealPaths.add(realPath);
       } catch (error) {
         console.error(`Failed to process project ${projectPath}:`, error);
       }
@@ -389,12 +421,22 @@ export class ProjectMetadataStorage {
     for (const projectPath of Object.keys(allMetadata)) {
       if (!processedPaths.has(projectPath)) {
         try {
+          // Resolve symlinks to get real path for deduplication
+          const realPath = this.resolveRealPath(projectPath);
+          
+          // Skip if we've already processed a project pointing to the same real path
+          if (processedRealPaths.has(realPath)) {
+            console.log(`🔗 [Dedup] Skipping duplicate AgentStudio project (same real path): ${projectPath} -> ${realPath}`);
+            continue;
+          }
+          
           const metadata = allMetadata[projectPath];
           
           // Only include if the project has agents associated (active projects)
           if (Object.keys(metadata.agents).length > 0) {
             const enriched = this.enrichProjectWithAgentInfo(metadata);
             projects.push(enriched);
+            processedRealPaths.add(realPath);
             console.log(`📋 Added AgentStudio-only project: ${metadata.name}`);
           }
         } catch (error) {
@@ -410,16 +452,18 @@ export class ProjectMetadataStorage {
    * Get project metadata by path
    */
   getProjectMetadata(projectPath: string): ProjectMetadata | null {
+    const realPath = this.resolveRealPath(projectPath); // Resolve symlinks for lookup
     const allMetadata = this.loadMetadata();
-    return allMetadata[projectPath] || null;
+    return allMetadata[realPath] || null;
   }
 
   /**
    * Save project metadata for a specific path
    */
   saveProjectMetadata(projectPath: string, metadata: ProjectMetadata): void {
+    const realPath = this.resolveRealPath(projectPath); // Resolve symlinks for storage
     const allMetadata = this.loadMetadata();
-    allMetadata[projectPath] = metadata;
+    allMetadata[realPath] = metadata;
     this.saveMetadata(allMetadata);
   }
 
@@ -671,7 +715,7 @@ export class ProjectMetadataStorage {
 
   /**
    * Create a new project metadata entry
-   * @param projectPath The real project path (can be anywhere on the filesystem)
+   * @param projectPath The project path (will be resolved to real path if it's a symlink)
    * @param initialData Initial project data including name, description, agentId, etc.
    */
   createProject(projectPath: string, initialData: {
@@ -681,6 +725,12 @@ export class ProjectMetadataStorage {
     tags?: string[];
     metadata?: Record<string, any>;
   }): ProjectMetadata {
+    // Resolve symlinks to always store the real path
+    const realPath = this.resolveRealPath(projectPath);
+    if (realPath !== projectPath) {
+      console.log(`🔗 [createProject] Resolved symlink: ${projectPath} -> ${realPath}`);
+    }
+    
     const now = new Date().toISOString();
 
     // Generate a unique metadata ID
@@ -688,9 +738,9 @@ export class ProjectMetadataStorage {
 
     const metadata: ProjectMetadata = {
       id: metadataId,
-      name: initialData.name || path.basename(projectPath),
+      name: initialData.name || path.basename(realPath),
       description: initialData.description || '',
-      path: projectPath, // Store the real project path
+      path: realPath, // Store the real project path (symlinks resolved)
       createdAt: now,
       lastAccessed: now,
       agents: {},
@@ -711,8 +761,8 @@ export class ProjectMetadataStorage {
       metadata.defaultAgent = initialData.agentId;
     }
 
-    // Save metadata
-    this.saveProjectMetadata(projectPath, metadata);
+    // Save metadata using the real path
+    this.saveProjectMetadata(realPath, metadata);
     return metadata;
   }
 
@@ -721,15 +771,16 @@ export class ProjectMetadataStorage {
    */
   deleteProject(projectPath: string): boolean {
     try {
+      const realPath = this.resolveRealPath(projectPath); // Resolve symlinks for deletion
       let deletedSomething = false;
 
       // 1. Delete from AgentStudio metadata
       const allMetadata = this.loadMetadata();
-      if (allMetadata[projectPath]) {
-        delete allMetadata[projectPath];
+      if (allMetadata[realPath]) {
+        delete allMetadata[realPath];
         this.saveMetadata(allMetadata);
         deletedSomething = true;
-        console.log(`🗑️ Removed project metadata: ${projectPath}`);
+        console.log(`🗑️ Removed project metadata: ${realPath}`);
       }
 
       // 2. Remove from Claude's config file (~/.claude.json)
@@ -738,11 +789,20 @@ export class ProjectMetadataStorage {
           const content = fs.readFileSync(this.claudeConfigPath, 'utf-8');
           const config = JSON.parse(content);
           
-          if (config.projects && config.projects[projectPath]) {
+          // Try to remove both the symlink path and real path from Claude config
+          let removed = false;
+          if (config.projects && config.projects[realPath]) {
+            delete config.projects[realPath];
+            removed = true;
+          }
+          if (config.projects && config.projects[projectPath] && projectPath !== realPath) {
             delete config.projects[projectPath];
+            removed = true;
+          }
+          if (removed) {
             fs.writeFileSync(this.claudeConfigPath, JSON.stringify(config, null, 2));
             deletedSomething = true;
-            console.log(`🗑️ Removed from Claude config: ${projectPath}`);
+            console.log(`🗑️ Removed from Claude config: ${realPath}`);
           }
         }
       } catch (error) {
@@ -751,7 +811,7 @@ export class ProjectMetadataStorage {
 
       // 3. Remove Claude session directory
       try {
-        const sessionDirPath = this.findClaudeSessionDir(projectPath);
+        const sessionDirPath = this.findClaudeSessionDir(realPath);
         if (sessionDirPath && fs.existsSync(sessionDirPath)) {
           fs.rmSync(sessionDirPath, { recursive: true, force: true });
           deletedSomething = true;
