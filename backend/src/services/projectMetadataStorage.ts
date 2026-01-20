@@ -324,13 +324,35 @@ export class ProjectMetadataStorage {
    */
   private findClaudeSessionDir(projectPath: string): string | null {
     try {
+      // First, try to resolve symlinks to get the real path
+      // This is important because Claude CLI stores sessions using the real path
+      let resolvedPath = projectPath;
+      try {
+        resolvedPath = fs.realpathSync(projectPath);
+        if (resolvedPath !== projectPath) {
+          console.log(`🔗 [ProjectMetadata] Resolved symlink: ${projectPath} -> ${resolvedPath}`);
+        }
+      } catch {
+        // If can't resolve, use original path
+      }
+      
       // The session directory name is the encoded project path
-      // For example: /Users/kongjie/projects -> -Users-kongjie-projects
-      const encoded = projectPath.replace(/\//g, '-');
+      // For example: /Users/kongjie/Desktop/.workspace2.nosync -> -Users-kongjie-Desktop--workspace2-nosync
+      // Claude CLI replaces both '/' and '.' with '-'
+      const encoded = resolvedPath.replace(/[\/\.]/g, '-');
       const sessionDir = path.join(this.projectsDir, encoded);
 
       if (fs.existsSync(sessionDir)) {
         return sessionDir;
+      }
+      
+      // Also try the original path in case the symlink resolution changed the result
+      if (resolvedPath !== projectPath) {
+        const originalEncoded = projectPath.replace(/[\/\.]/g, '-');
+        const originalSessionDir = path.join(this.projectsDir, originalEncoded);
+        if (fs.existsSync(originalSessionDir)) {
+          return originalSessionDir;
+        }
       }
     } catch (error) {
       // Ignore errors

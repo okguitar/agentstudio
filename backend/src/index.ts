@@ -106,11 +106,11 @@ const app: express.Express = express();
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdn.jsdelivr.net", "https://app.posthog.com", "https://us.i.posthog.com"], // Allow eval for development, CDN for Monaco, PostHog
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdn.jsdelivr.net", "https://app.posthog.com", "https://us.i.posthog.com", "https://us-assets.i.posthog.com"], // Allow eval for development, CDN for Monaco, PostHog
         styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net"],
         fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdn.jsdelivr.net", "data:"],
         imgSrc: ["'self'", "data:", "https:", "http:", "blob:"],
-        connectSrc: ["'self'", "ws:", "wss:", "blob:", "data:", "http://localhost:*", "http://127.0.0.1:*", "https://localhost:*", "https://127.0.0.1:*", "https://app.posthog.com", "https://us.i.posthog.com"],
+        connectSrc: ["'self'", "ws:", "wss:", "blob:", "data:", "http://localhost:*", "http://127.0.0.1:*", "https://localhost:*", "https://127.0.0.1:*", "https://app.posthog.com", "https://us.i.posthog.com", "https://us-assets.i.posthog.com"],
         frameAncestors: ["'self'", "http://localhost:3000", "https://localhost:3000", "http://localhost:3001", "https://agentstudio.cc", "https://*.agentstudio.cc"], // Allow iframe embedding
         workerSrc: ["'self'", "blob:", "https://cdn.jsdelivr.net"],
         childSrc: ["'self'", "blob:"],

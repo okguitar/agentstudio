@@ -108,9 +108,23 @@ export class SessionManager {
    * 复用sessions.ts中的逻辑
    */
   private convertProjectPathToClaudeFormat(projectPath: string): string {
-    // Convert path like /Users/kongjie/slides/ai-editor
-    // to: -Users-kongjie-slides-ai-editor
-    return projectPath.replace(/\//g, '-');
+    // First, resolve symlinks to get the real path
+    // This is important because Claude CLI stores sessions using the real path
+    let resolvedPath = projectPath;
+    try {
+      resolvedPath = fs.realpathSync(projectPath);
+      if (resolvedPath !== projectPath) {
+        console.log(`🔗 [SessionManager] Resolved symlink: ${projectPath} -> ${resolvedPath}`);
+      }
+    } catch (error) {
+      // If the path doesn't exist or can't be resolved, use the original path
+      console.log(`⚠️ [SessionManager] Could not resolve path: ${projectPath}, using original`);
+    }
+    
+    // Convert path like /Users/kongjie/Desktop/.workspace2.nosync
+    // to: -Users-kongjie-Desktop--workspace2-nosync
+    // Claude CLI replaces both '/' and '.' with '-'
+    return resolvedPath.replace(/[\/\.]/g, '-');
   }
 
   /**
