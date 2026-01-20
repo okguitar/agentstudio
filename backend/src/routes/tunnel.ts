@@ -168,7 +168,7 @@ router.get('/check-name', async (req: Request, res: Response): Promise<any> => {
   try {
     const name = req.query.name as string;
     const serverUrl = req.query.serverUrl as string;
-    
+
     if (!name) {
       return res.status(400).json({
         available: false,
@@ -201,7 +201,7 @@ router.get('/check-name', async (req: Request, res: Response): Promise<any> => {
 router.post('/create-tunnel', async (req: Request, res: Response): Promise<any> => {
   try {
     const { name, serverUrl, autoConnect, protocol, websocketUrl, domainSuffix } = req.body;
-    
+
     if (!name || typeof name !== 'string') {
       return res.status(400).json({
         success: false,
@@ -218,7 +218,7 @@ router.post('/create-tunnel', async (req: Request, res: Response): Promise<any> 
     const validProtocol = protocol === 'http' ? 'http' : 'https';
 
     const result = await tunnelService.createAndSave(name.trim(), autoConnect === true, validProtocol, websocketUrl, domainSuffix);
-    
+
     if (result.success) {
       res.json({
         ...result,
@@ -245,11 +245,11 @@ router.delete('/config', async (_req: Request, res: Response): Promise<any> => {
   try {
     // Disconnect if connected
     tunnelService.disconnect();
-    
+
     // Reset configuration to defaults
     await tunnelService.saveConfig({
       enabled: false,
-      serverUrl: 'https://hitl.woa.com',
+      serverUrl: 'https://agentstudio.woa.com',
       token: '',
       tunnelName: '',
       domainSuffix: '',
@@ -279,7 +279,7 @@ router.delete('/config', async (_req: Request, res: Response): Promise<any> => {
 router.post('/server-info', async (req: Request, res: Response): Promise<any> => {
   try {
     const { serverUrl } = req.body;
-    
+
     if (!serverUrl || typeof serverUrl !== 'string') {
       return res.status(400).json({
         success: false,
@@ -294,13 +294,13 @@ router.post('/server-info', async (req: Request, res: Response): Promise<any> =>
     console.log(`[Tunnel API] Fetching server info from: ${infoUrl}`);
 
     const response = await fetch(infoUrl);
-    
+
     if (!response.ok) {
       throw new Error(`服务器返回错误: HTTP ${response.status}`);
     }
 
     const data = await response.json();
-    
+
     res.json({
       success: true,
       data,

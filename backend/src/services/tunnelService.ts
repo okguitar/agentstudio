@@ -27,7 +27,7 @@ const DEFAULT_CONFIG_FILE = path.join(CLAUDE_AGENT_DIR, 'tunnel-config.json');
 export interface TunnelConfig {
   /** Whether tunnel should auto-connect on startup */
   enabled: boolean;
-  /** Tunnel server base URL (e.g., https://hitl.woa.com) */
+  /** Tunnel server base URL (e.g., https://agentstudio.woa.com) */
   serverUrl: string;
   /** WebSocket URL for tunnel connection (from server /api/info) */
   websocketUrl?: string;
@@ -35,7 +35,7 @@ export interface TunnelConfig {
   token: string;
   /** Tunnel name (subdomain part, e.g., "my-dev" for my-dev.tunnel) */
   tunnelName?: string;
-  /** Domain suffix (e.g., ".hitl.woa.com") */
+  /** Domain suffix (e.g., ".agentstudio.woa.com") */
   domainSuffix?: string;
   /** Protocol for tunnel domain (https or http) */
   protocol?: 'https' | 'http';
@@ -90,7 +90,7 @@ export interface TunnelStatus {
  */
 const DEFAULT_CONFIG: TunnelConfig = {
   enabled: false,
-  serverUrl: 'https://hitl.woa.com',
+  serverUrl: 'https://agentstudio.woa.com',
   token: '',
   tunnelName: '',
   protocol: 'https',
@@ -100,7 +100,7 @@ const DEFAULT_CONFIG: TunnelConfig = {
 
 /**
  * Get WebSocket URL from base URL
- * e.g., https://hitl.woa.com -> wss://hitl.woa.com/ws/tunnel
+ * e.g., https://agentstudio.woa.com -> wss://agentstudio.woa.com/ws/tunnel
  */
 function getWebSocketUrl(serverUrl: string): string {
   const apiBaseUrl = getApiBaseUrl(serverUrl);
@@ -111,7 +111,7 @@ function getWebSocketUrl(serverUrl: string): string {
 
 /**
  * Get API base URL for tunnel management
- * User configures the base URL (e.g., https://hitl.woa.com)
+ * User configures the base URL (e.g., https://agentstudio.woa.com)
  * API endpoints are under /api/tunnels/
  */
 function getApiBaseUrl(serverUrl: string): string {
@@ -177,7 +177,7 @@ class TunnelService {
    */
   async loadConfig(): Promise<TunnelConfig> {
     const portConfigFile = getPortConfigFile(this.localPort);
-    
+
     // Try port-specific config first
     try {
       const data = await fs.readFile(portConfigFile, 'utf-8');
@@ -229,11 +229,11 @@ class TunnelService {
 
     // Save to disk
     await fs.writeFile(portConfigFile, JSON.stringify(this.config, null, 2), 'utf-8');
-    
+
     // Update config source
     this.configSource = 'port-specific';
     this.status.configSource = 'port-specific';
-    
+
     console.log(`[Tunnel] Configuration saved to: ${portConfigFile}`);
   }
 
@@ -397,12 +397,12 @@ class TunnelService {
 
     try {
       const response = await fetch(`${apiBaseUrl}/api/tunnels/check-availability?name=${encodeURIComponent(name)}`);
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        return { 
-          available: false, 
-          reason: errorData.reason || errorData.message || errorData.error || `检查失败: HTTP ${response.status}` 
+        return {
+          available: false,
+          reason: errorData.reason || errorData.message || errorData.error || `检查失败: HTTP ${response.status}`
         };
       }
 
@@ -437,7 +437,7 @@ class TunnelService {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           domain: name.trim(),
           name: name.trim(),
         }),
@@ -445,14 +445,14 @@ class TunnelService {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        return { 
-          success: false, 
-          error: errorData.reason || errorData.message || errorData.error || `创建失败: HTTP ${response.status}` 
+        return {
+          success: false,
+          error: errorData.reason || errorData.message || errorData.error || `创建失败: HTTP ${response.status}`
         };
       }
 
       const data = await response.json();
-      
+
       if (data.token) {
         return {
           success: true,
@@ -480,11 +480,11 @@ class TunnelService {
    * @param autoConnect Whether to enable auto-connect
    * @param protocol The protocol to use (https or http)
    * @param websocketUrl The WebSocket URL from server info
-   * @param domainSuffix The domain suffix (e.g., ".hitl.woa.com")
+   * @param domainSuffix The domain suffix (e.g., ".agentstudio.woa.com")
    */
   async createAndSave(name: string, autoConnect: boolean = false, protocol: 'https' | 'http' = 'https', websocketUrl?: string, domainSuffix?: string): Promise<TunnelCreateResult> {
     const result = await this.createTunnel(name);
-    
+
     if (result.success && result.token) {
       // Save the config with the new token
       await this.saveConfig({

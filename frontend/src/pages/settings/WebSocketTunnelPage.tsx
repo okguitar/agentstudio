@@ -47,12 +47,12 @@ interface TunnelServerInfo {
   name: string;
   version: string;
   domain: {
-    pattern: string;      // e.g., "{subdomain}.hitl.woa.com"
+    pattern: string;      // e.g., "{subdomain}.agentstudio.woa.com"
     customizable: string; // e.g., "subdomain"
-    suffix: string;       // e.g., ".hitl.woa.com"
+    suffix: string;       // e.g., ".agentstudio.woa.com"
   };
   websocket: {
-    url: string;          // e.g., "wss://hitl.woa.com/ws/tunnel"
+    url: string;          // e.g., "wss://agentstudio.woa.com/ws/tunnel"
   };
   protocols: string[];    // e.g., ["https", "http"]
 }
@@ -91,11 +91,11 @@ type CloudflareWizardStep = 'intro' | 'credentials' | 'create' | 'start' | 'done
 export const WebSocketTunnelPage: React.FC = () => {
   // Tab state
   const [activeTab, setActiveTab] = useState<TunnelType>('tunely');
-  
+
   // Tunely state
   const [config, setConfig] = useState<TunnelConfig | null>(null);
   const [status, setStatus] = useState<TunnelStatus | null>(null);
-  const [serverUrl, setServerUrl] = useState('https://hitl.woa.com');
+  const [serverUrl, setServerUrl] = useState('https://agentstudio.woa.com');
   const [tunnelName, setTunnelName] = useState('');
   const [protocol, setProtocol] = useState<'https' | 'http'>('https');
   const [autoConnect, setAutoConnect] = useState(false);
@@ -106,12 +106,12 @@ export const WebSocketTunnelPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [copiedDomain, setCopiedDomain] = useState(false);
-  
+
   // Tunely server info state
   const [tunelyStep, setTunelyStep] = useState<TunelyConfigStep>('server');
   const [serverInfo, setServerInfo] = useState<TunnelServerInfo | null>(null);
   const [fetchingInfo, setFetchingInfo] = useState(false);
-  
+
   // Cloudflare state
   const [cfConfig, setCfConfig] = useState<CloudflareConfig | null>(null);
   const [cfApiToken, setCfApiToken] = useState('');
@@ -139,7 +139,7 @@ export const WebSocketTunnelPage: React.FC = () => {
   // Poll status while connected
   useEffect(() => {
     if (!status?.connected) return;
-    
+
     const interval = setInterval(loadStatus, 5000);
     return () => clearInterval(interval);
   }, [status?.connected]);
@@ -156,11 +156,11 @@ export const WebSocketTunnelPage: React.FC = () => {
 
       const data = await response.json();
       setConfig(data);
-      setServerUrl(data.serverUrl || 'https://hitl.woa.com');
+      setServerUrl(data.serverUrl || 'https://agentstudio.woa.com');
       setTunnelName(data.tunnelName || '');
       setProtocol(data.protocol || 'https');
       setAutoConnect(data.enabled || false);
-      
+
       // Determine step based on config
       if (data.token && data.tunnelName) {
         setTunelyStep('connected');
@@ -178,7 +178,7 @@ export const WebSocketTunnelPage: React.FC = () => {
     if (showFeedback) {
       setError(null);
     }
-    
+
     try {
       // Call backend proxy to fetch server info
       const response = await fetch('/api/tunnel/server-info', {
@@ -189,15 +189,15 @@ export const WebSocketTunnelPage: React.FC = () => {
         },
         body: JSON.stringify({ serverUrl: url })
       });
-      
+
       const result = await response.json();
-      
+
       if (!response.ok || !result.success) {
         throw new Error(result.error || `服务器返回错误: HTTP ${response.status}`);
       }
-      
+
       const data = result.data;
-      
+
       // Map API response to our interface
       const serverInfo: TunnelServerInfo = {
         name: data.name || 'Tunely Server',
@@ -212,7 +212,7 @@ export const WebSocketTunnelPage: React.FC = () => {
         },
         protocols: data.protocols || ['https', 'http']
       };
-      
+
       setServerInfo(serverInfo);
       if (showFeedback) {
         setSuccess(`已连接到 ${serverInfo.name} v${serverInfo.version}`);
@@ -301,7 +301,7 @@ export const WebSocketTunnelPage: React.FC = () => {
       });
 
       const data = await response.json();
-      
+
       if (!response.ok || !data.success) {
         throw new Error(data.error || 'Failed to create tunnel');
       }
@@ -310,7 +310,7 @@ export const WebSocketTunnelPage: React.FC = () => {
       setStatus(data.status);
       setSuccess(`隧道 "${tunnelName}" 创建成功！域名: ${data.domain}`);
       setCheckResult(null);
-      
+
       // Switch to connected step
       setTunelyStep('connected');
 
@@ -344,7 +344,7 @@ export const WebSocketTunnelPage: React.FC = () => {
       const data = await response.json();
       setStatus(data.status);
       setSuccess('隧道连接中...');
-      
+
       // Wait a moment and refresh status
       setTimeout(loadStatus, 2000);
       setTimeout(() => setSuccess(null), 3000);
@@ -386,7 +386,7 @@ export const WebSocketTunnelPage: React.FC = () => {
   // Get full domain with suffix
   const getFullDomain = () => {
     if (!config?.tunnelName) return null;
-    const suffix = config.domainSuffix || serverInfo?.domain?.suffix || '.hitl.woa.com';
+    const suffix = config.domainSuffix || serverInfo?.domain?.suffix || '.agentstudio.woa.com';
     return `${config.tunnelName}${suffix}`;
   };
 
@@ -413,7 +413,7 @@ export const WebSocketTunnelPage: React.FC = () => {
 
       const data = await response.json();
       setCfConfig(data);
-      
+
       // Auto-determine current step based on config
       if (data.activeTunnel) {
         setCfCurrentStep('done');
@@ -570,39 +570,39 @@ export const WebSocketTunnelPage: React.FC = () => {
             <Settings className="w-5 h-5" />
             配置隧道服务
           </h2>
-        
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              隧道服务器地址
-            </label>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={serverUrl}
-                onChange={(e) => setServerUrl(e.target.value)}
-                placeholder="https://hitl.woa.com"
-                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-              <button
-                onClick={() => fetchServerInfo(serverUrl)}
-                disabled={fetchingInfo || !serverUrl.trim()}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg disabled:opacity-50"
-              >
-                {fetchingInfo ? (
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                ) : (
-                  <ChevronRight className="w-4 h-4" />
-                )}
-                连接
-              </button>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                隧道服务器地址
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={serverUrl}
+                  onChange={(e) => setServerUrl(e.target.value)}
+                  placeholder="https://agentstudio.woa.com"
+                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <button
+                  onClick={() => fetchServerInfo(serverUrl)}
+                  disabled={fetchingInfo || !serverUrl.trim()}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg disabled:opacity-50"
+                >
+                  {fetchingInfo ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <ChevronRight className="w-4 h-4" />
+                  )}
+                  连接
+                </button>
+              </div>
+              <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                输入隧道服务的地址，点击"连接"获取服务信息
+              </p>
             </div>
-            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-              输入隧道服务的地址，点击"连接"获取服务信息
-            </p>
           </div>
         </div>
-      </div>
       </>
     );
 
@@ -624,7 +624,7 @@ export const WebSocketTunnelPage: React.FC = () => {
             更换服务器
           </button>
         </div>
-        
+
         {/* Server Info Banner */}
         {serverInfo && (
           <div className="mb-4 p-3 rounded-lg bg-blue-50 border border-blue-200 dark:bg-blue-900/20 dark:border-blue-800">
@@ -634,7 +634,7 @@ export const WebSocketTunnelPage: React.FC = () => {
             </div>
           </div>
         )}
-        
+
         <div className="space-y-4">
           {/* Domain Name Input */}
           <div>
@@ -663,7 +663,7 @@ export const WebSocketTunnelPage: React.FC = () => {
                   className="flex-1 px-3 py-2 border-y border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
                 <span className="px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-l-0 border-gray-300 dark:border-gray-600 rounded-r-lg text-gray-500 dark:text-gray-400 text-sm whitespace-nowrap">
-                  {serverInfo?.domain.suffix || '.hitl.woa.com'}
+                  {serverInfo?.domain.suffix || '.agentstudio.woa.com'}
                 </span>
               </div>
               <button
@@ -679,14 +679,13 @@ export const WebSocketTunnelPage: React.FC = () => {
                 检测
               </button>
             </div>
-            
+
             {/* Check result */}
             {checkResult && (
-              <div className={`mt-2 text-sm flex items-center gap-1 ${
-                checkResult.available 
-                  ? 'text-green-600 dark:text-green-400' 
+              <div className={`mt-2 text-sm flex items-center gap-1 ${checkResult.available
+                  ? 'text-green-600 dark:text-green-400'
                   : 'text-red-600 dark:text-red-400'
-              }`}>
+                }`}>
                 {checkResult.available ? (
                   <>
                     <CheckCircle2 className="w-4 h-4" />
@@ -798,11 +797,10 @@ export const WebSocketTunnelPage: React.FC = () => {
         </div>
 
         {/* Status Card */}
-        <div className={`rounded-lg border p-4 ${
-          status?.connected 
-            ? 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800' 
+        <div className={`rounded-lg border p-4 ${status?.connected
+            ? 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800'
             : 'bg-gray-50 border-gray-200 dark:bg-gray-800/50 dark:border-gray-700'
-        }`}>
+          }`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               {status?.connected ? (
@@ -900,7 +898,7 @@ export const WebSocketTunnelPage: React.FC = () => {
               编辑配置
             </button>
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <span className="text-gray-500 dark:text-gray-400">隧道名称</span>
@@ -999,7 +997,7 @@ export const WebSocketTunnelPage: React.FC = () => {
                   className="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
                 />
                 <span className="px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-500 dark:text-gray-400 text-sm">
-                  {config?.domainSuffix || serverInfo?.domain?.suffix || '.hitl.woa.com'}
+                  {config?.domainSuffix || serverInfo?.domain?.suffix || '.agentstudio.woa.com'}
                 </span>
               </div>
             </div>
@@ -1014,7 +1012,7 @@ export const WebSocketTunnelPage: React.FC = () => {
                 value={serverUrl}
                 onChange={(e) => setServerUrl(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="https://hitl.woa.com"
+                placeholder="https://agentstudio.woa.com"
               />
             </div>
 
@@ -1045,14 +1043,12 @@ export const WebSocketTunnelPage: React.FC = () => {
               </div>
               <button
                 onClick={() => setAutoConnect(!autoConnect)}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  autoConnect ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'
-                }`}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${autoConnect ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'
+                  }`}
               >
                 <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    autoConnect ? 'translate-x-6' : 'translate-x-1'
-                  }`}
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${autoConnect ? 'translate-x-6' : 'translate-x-1'
+                    }`}
                 />
               </button>
             </div>
@@ -1531,22 +1527,20 @@ export const WebSocketTunnelPage: React.FC = () => {
         <nav className="-mb-px flex space-x-8">
           <button
             onClick={() => setActiveTab('tunely')}
-            className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
-              activeTab === 'tunely'
+            className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${activeTab === 'tunely'
                 ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-            }`}
+              }`}
           >
             <Wifi className="w-4 h-4" />
             Tunely (WebSocket)
           </button>
           <button
             onClick={() => setActiveTab('cloudflare')}
-            className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
-              activeTab === 'cloudflare'
+            className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${activeTab === 'cloudflare'
                 ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-            }`}
+              }`}
           >
             <Cloud className="w-4 h-4" />
             Cloudflare Tunnel
