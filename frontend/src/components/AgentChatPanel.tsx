@@ -243,9 +243,17 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
   }, []);
 
   const interruptSessionMutation = useInterruptSession();
-  const { data: sessionsData } = useAgentSessions(agent.id, searchTerm, projectPath);
+  const { data: sessionsData, refetch: refetchSessions } = useAgentSessions(agent.id, searchTerm, projectPath);
   const { data: sessionMessagesData } = useAgentSessionMessages(agent.id, currentSessionId, projectPath);
   const { data: activeSessionsData } = useSessions();
+
+  // 当打开会话历史下拉菜单时，自动刷新会话列表
+  useEffect(() => {
+    if (showSessions) {
+      console.log('📋 [Sessions] Dropdown opened, refreshing sessions list...');
+      refetchSessions();
+    }
+  }, [showSessions, refetchSessions]);
 
   // 会话心跳 - 基于 AI 响应成功状态
   useSessionHeartbeatOnSuccess({
