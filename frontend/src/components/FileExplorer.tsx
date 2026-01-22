@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef, lazy } from 'react';
+import { authFetch } from '../lib/authFetch';
 import { useTranslation } from 'react-i18next';
 import { Tree, NodeApi, TreeApi } from 'react-arborist';
 
@@ -12,7 +13,6 @@ import { VscJson, VscCode } from 'react-icons/vsc';
 import { SiTypescript } from 'react-icons/si';
 import { useFileTree, useFileContent, type FileSystemItem } from '../hooks/useFileSystem';
 import { API_BASE } from '../lib/config';
-import { authFetch } from '../lib/authFetch';
 import { Loader2, ChevronRight, RefreshCw, X, ChevronDown, MoreHorizontal, Eye, EyeOff, PanelLeftClose, PanelLeft } from 'lucide-react';
 import { eventBus, EVENTS } from '../utils/eventBus';
 
@@ -135,11 +135,48 @@ const getLanguageForFile = (fileName: string = ''): string => {
   }
 };
 
-// 简单的图片预览组件
+// 简单的图片预览组件 - 使用 fetch + blob 来支持认证
 const SimpleImagePreview: React.FC<{ imageUrl: string; fileName: string }> = ({ imageUrl, fileName }) => {
   const { t } = useTranslation('components');
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    // 使用 authFetch 加载图片（支持认证）
+    let currentBlobUrl: string | null = null;
+    
+    const loadImage = async () => {
+      try {
+        setIsLoading(true);
+        setHasError(false);
+        
+        const response = await authFetch(imageUrl);
+        if (!response.ok) {
+          throw new Error(`Failed to load image: ${response.status}`);
+        }
+        
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        currentBlobUrl = url;
+        setBlobUrl(url);
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Failed to load image:', error);
+        setIsLoading(false);
+        setHasError(true);
+      }
+    };
+
+    loadImage();
+
+    // 清理 blob URL
+    return () => {
+      if (currentBlobUrl) {
+        URL.revokeObjectURL(currentBlobUrl);
+      }
+    };
+  }, [imageUrl]);
 
   return (
     <div className="flex items-center justify-center h-full p-4">
@@ -156,17 +193,19 @@ const SimpleImagePreview: React.FC<{ imageUrl: string; fileName: string }> = ({ 
               <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
             </div>
           )}
-          <img
-            src={imageUrl}
-            alt={fileName}
-            className="max-w-full max-h-full object-contain bg-white dark:bg-gray-900 rounded shadow-lg"
-            onLoad={() => setIsLoading(false)}
-            onError={() => {
-              setIsLoading(false);
-              setHasError(true);
-            }}
-            style={{ display: hasError ? 'none' : 'block' }}
-          />
+          {blobUrl && (
+            <img
+              src={blobUrl}
+              alt={fileName}
+              className="max-w-full max-h-full object-contain bg-white dark:bg-gray-900 rounded shadow-lg"
+              onLoad={() => setIsLoading(false)}
+              onError={() => {
+                setIsLoading(false);
+                setHasError(true);
+              }}
+              style={{ display: hasError ? 'none' : 'block' }}
+            />
+          )}
         </div>
       )}
     </div>

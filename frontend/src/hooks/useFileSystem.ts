@@ -47,8 +47,20 @@ export const useFileSystemBrowse = (path?: string, showHiddenFiles?: boolean) =>
   });
 };
 
+// 判断文件是否为图片
+const isImageFile = (fileName: string): boolean => {
+  const extension = fileName.split('.').pop()?.toLowerCase() || '';
+  const imageExtensions = [
+    'png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'ico', 'bmp', 'tiff'
+  ];
+  return imageExtensions.includes(extension);
+};
+
 // 读取文件内容
 export const useFileContent = (filePath?: string, projectPath?: string) => {
+  // 如果是图片文件，禁用查询（图片文件使用二进制模式加载）
+  const isImage = filePath ? isImageFile(filePath.split('/').pop() || '') : false;
+  
   return useQuery({
     queryKey: ['file-content', filePath, projectPath],
     queryFn: async (): Promise<FileContent> => {
@@ -74,7 +86,7 @@ export const useFileContent = (filePath?: string, projectPath?: string) => {
       }
       return response.json();
     },
-    enabled: !!filePath,
+    enabled: !!filePath && !isImage, // 图片文件禁用查询
     staleTime: 60000, // 1分钟内认为数据是新鲜的
     retry: false, // 不重试，直接显示错误
   });
