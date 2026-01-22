@@ -81,8 +81,8 @@ importers:
         specifier: ^4.1.2
         version: 4.1.2
       tunely:
-        specifier: ^0.1.0
-        version: 0.1.0
+        specifier: ^0.2.1
+        version: 0.2.1
       undici:
         specifier: ^7.16.0
         version: 7.16.0
@@ -4731,8 +4731,8 @@ packages:
     engines: {node: '>=18.0.0'}
     hasBin: true
 
-  tunely@0.1.0:
-    resolution: {integrity: sha512-hgd/+bqIM7HoYmD+Ju71YXxVriASaFBeXkf9ZfdzXzuS1+l9Cw2dEoW2rXOv9srt2LmEWdyNVskuqNBHlpk55w==}
+  tunely@0.2.1:
+    resolution: {integrity: sha512-JdOG1o458nm2MdD9XjsAik3mxJNS1Yok6IzV2GL3mXzYIPe/oXlFkX92PIRn/oYER8YjSk/bxIuLzIGocXncjA==}
     engines: {node: '>=18.0.0'}
     hasBin: true
 
@@ -10001,7 +10001,7 @@ snapshots:
     optionalDependencies:
       fsevents: 2.3.3
 
-  tunely@0.1.0:
+  tunely@0.2.1:
     dependencies:
       commander: 12.1.0
       ws: 8.18.3

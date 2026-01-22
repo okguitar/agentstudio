@@ -43,6 +43,8 @@ export interface TunnelConfig {
   reconnectInterval?: number;
   /** Maximum reconnect attempts (0 = infinite) */
   maxReconnectAttempts?: number;
+  /** Request timeout in milliseconds (default: 300000 = 5 minutes) */
+  requestTimeout?: number;
 }
 
 /**
@@ -282,7 +284,10 @@ class TunnelService {
       targetUrl,
       reconnectInterval: this.config.reconnectInterval || 5000,
       maxReconnectAttempts: this.config.maxReconnectAttempts || 0,
+      requestTimeout: this.config.requestTimeout || 300000, // Default: 5 minutes
     };
+    
+    console.log(`[Tunnel] Request timeout: ${clientConfig.requestTimeout}ms (${clientConfig.requestTimeout / 1000}s)`);
 
     this.client = new TunnelClient(clientConfig);
 
@@ -307,9 +312,13 @@ class TunnelService {
       this.status.lastError = error.message;
     });
 
-    this.client.on('onRequest', (request) => {
-      // Log incoming requests (optional, for debugging)
-      console.log(`[Tunnel] Request: ${request.method} ${request.path}`);
+    this.client.on('onRequest', (request: any) => {
+      // Log tunnel requests in a concise format
+      const queryStr = request.query && Object.keys(request.query).length > 0 
+        ? '?' + new URLSearchParams(request.query).toString() 
+        : '';
+      
+      console.log(`[Tunnel] ${request.method} ${request.path}${queryStr}`);
     });
 
     // Start the client (runs in background, doesn't block)

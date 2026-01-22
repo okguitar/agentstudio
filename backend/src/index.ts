@@ -198,6 +198,7 @@ const app: express.Express = express();
     allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'X-Requested-With', 'X-Project-Path'],
     exposedHeaders: ['Content-Range', 'X-Content-Range']
   }));
+
   // JSON parser - skip /api/slack (needs raw body for signature verification)
   app.use((req, res, next) => {
     if (req.path.startsWith('/api/slack')) {
