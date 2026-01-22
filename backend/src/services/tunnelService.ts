@@ -278,16 +278,18 @@ class TunnelService {
     console.log(`[Tunnel] Token: ${this.config.token.slice(0, 10)}...`);
     console.log(`[Tunnel] Target: ${targetUrl}`);
 
+    const requestTimeout = this.config.requestTimeout || 300000; // Default: 5 minutes
+    
     const clientConfig: TunnelClientConfig = {
       serverUrl: wsUrl,
       token: this.config.token,
       targetUrl,
       reconnectInterval: this.config.reconnectInterval || 5000,
       maxReconnectAttempts: this.config.maxReconnectAttempts || 0,
-      requestTimeout: this.config.requestTimeout || 300000, // Default: 5 minutes
+      requestTimeout,
     };
     
-    console.log(`[Tunnel] Request timeout: ${clientConfig.requestTimeout}ms (${clientConfig.requestTimeout / 1000}s)`);
+    console.log(`[Tunnel] Request timeout: ${requestTimeout}ms (${requestTimeout / 1000}s)`);
 
     this.client = new TunnelClient(clientConfig);
 
