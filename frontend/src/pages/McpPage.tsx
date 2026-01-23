@@ -762,13 +762,6 @@ export const McpPage: React.FC = () => {
                             <div className="text-sm font-medium text-gray-900 dark:text-white">
                               {server.name}
                             </div>
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                              server.source === 'plugin'
-                                ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300'
-                                : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                            }`}>
-                              {server.source === 'plugin' ? t('mcp.source.plugin') : t('mcp.source.local')}
-                            </span>
                           </div>
                           {server.status === 'error' && server.error && (
                             <div className="text-xs text-red-600 dark:text-red-400 mt-1 max-w-md">
