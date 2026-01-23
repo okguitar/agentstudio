@@ -18,6 +18,7 @@ import {
   ChevronRight,
   Trash2
 } from 'lucide-react';
+import { showSuccess, showError, showInfo } from '../../utils/toast';
 
 // Tunely (WebSocket) tunnel types
 interface TunnelConfig {
@@ -55,6 +56,7 @@ interface TunnelServerInfo {
     url: string;          // e.g., "wss://agentstudio.woa.com/ws/tunnel"
   };
   protocols: string[];    // e.g., ["https", "http"]
+  instruction?: string;   // Optional instruction message from server
 }
 
 type TunelyConfigStep = 'server' | 'domain' | 'connected' | 'edit';
@@ -103,8 +105,6 @@ export const WebSocketTunnelPage: React.FC = () => {
   const [connecting, setConnecting] = useState(false);
   const [checking, setChecking] = useState(false);
   const [checkResult, setCheckResult] = useState<{ available: boolean; reason?: string } | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const [copiedDomain, setCopiedDomain] = useState(false);
 
   // Tunely server info state
@@ -164,6 +164,10 @@ export const WebSocketTunnelPage: React.FC = () => {
       // Determine step based on config
       if (data.token && data.tunnelName) {
         setTunelyStep('connected');
+        // Fetch server info if we have a serverUrl (without showing feedback)
+        if (data.serverUrl) {
+          fetchServerInfo(data.serverUrl, false);
+        }
       } else {
         setTunelyStep('server');
       }
@@ -175,9 +179,6 @@ export const WebSocketTunnelPage: React.FC = () => {
   // Fetch tunnel server info via backend proxy (to avoid CORS issues)
   const fetchServerInfo = async (url: string, showFeedback = true) => {
     setFetchingInfo(true);
-    if (showFeedback) {
-      setError(null);
-    }
 
     try {
       // Call backend proxy to fetch server info
@@ -210,20 +211,20 @@ export const WebSocketTunnelPage: React.FC = () => {
         websocket: {
           url: data.websocket?.url || url.replace(/\/+$/, '').replace('https://', 'wss://').replace('http://', 'ws://') + '/ws/tunnel'
         },
-        protocols: data.protocols || ['https', 'http']
+        protocols: data.protocols || ['https', 'http'],
+        instruction: data.instruction // Save instruction if present
       };
 
       setServerInfo(serverInfo);
       if (showFeedback) {
-        setSuccess(`已连接到 ${serverInfo.name} v${serverInfo.version}`);
-        setTimeout(() => setSuccess(null), 3000);
+        showSuccess(`已连接到 ${serverInfo.name} v${serverInfo.version}`);
         setTunelyStep('domain');
       }
     } catch (err) {
       console.error('Error fetching server info:', err);
       // Only show error if showFeedback is true (user-initiated action)
       if (showFeedback) {
-        setError(err instanceof Error ? err.message : '获取服务器信息失败');
+        showError(err instanceof Error ? err.message : '获取服务器信息失败');
       }
     } finally {
       setFetchingInfo(false);
@@ -255,7 +256,6 @@ export const WebSocketTunnelPage: React.FC = () => {
 
     setChecking(true);
     setCheckResult(null);
-    setError(null);
 
     try {
       const response = await fetch(`/api/tunnel/check-name?name=${encodeURIComponent(tunnelName.trim())}&serverUrl=${encodeURIComponent(serverUrl)}`, {
@@ -275,13 +275,11 @@ export const WebSocketTunnelPage: React.FC = () => {
 
   const saveConfig = async () => {
     if (!tunnelName.trim()) {
-      setError('请输入隧道名称');
+      showError('请输入隧道名称');
       return;
     }
 
     setSaving(true);
-    setError(null);
-    setSuccess(null);
 
     try {
       const response = await fetch('/api/tunnel/create-tunnel', {
@@ -308,17 +306,43 @@ export const WebSocketTunnelPage: React.FC = () => {
 
       setConfig(data.config);
       setStatus(data.status);
-      setSuccess(`隧道 "${tunnelName}" 创建成功！域名: ${data.domain}`);
       setCheckResult(null);
 
       // Switch to connected step
       setTunelyStep('connected');
 
-      // Refresh status after a moment
-      setTimeout(loadStatus, 2000);
-      setTimeout(() => setSuccess(null), 5000);
+      // Show success message
+      showSuccess(`隧道 "${tunnelName}" 创建成功！域名: ${data.domain}`);
+
+      // Auto-connect after tunnel is created
+      if (autoConnect) {
+        showInfo('正在连接隧道...');
+        // Backend will auto-connect if autoConnect is true
+        // Poll status to show real-time connection state
+        let pollCount = 0;
+        const maxPollCount = 15; // Poll for max 15 seconds
+        const pollInterval = setInterval(async () => {
+          pollCount++;
+          await loadStatus();
+
+          // Check current status from state (will be updated by loadStatus)
+          const response = await fetch('/api/tunnel/status', {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('jwt')}`
+            }
+          });
+          const currentStatus = await response.json();
+
+          if (currentStatus?.connected) {
+            showSuccess('隧道已连接！');
+            clearInterval(pollInterval);
+          } else if (pollCount >= maxPollCount) {
+            clearInterval(pollInterval);
+          }
+        }, 1000); // Poll every second
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create tunnel');
+      showError(err instanceof Error ? err.message : 'Failed to create tunnel');
     } finally {
       setSaving(false);
     }
@@ -326,7 +350,6 @@ export const WebSocketTunnelPage: React.FC = () => {
 
   const handleConnect = async () => {
     setConnecting(true);
-    setError(null);
 
     try {
       const response = await fetch('/api/tunnel/connect', {
@@ -343,13 +366,12 @@ export const WebSocketTunnelPage: React.FC = () => {
 
       const data = await response.json();
       setStatus(data.status);
-      setSuccess('隧道连接中...');
+      showInfo('隧道连接中...');
 
       // Wait a moment and refresh status
       setTimeout(loadStatus, 2000);
-      setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to connect');
+      showError(err instanceof Error ? err.message : 'Failed to connect');
     } finally {
       setConnecting(false);
     }
@@ -357,7 +379,6 @@ export const WebSocketTunnelPage: React.FC = () => {
 
   const handleDisconnect = async () => {
     setConnecting(true);
-    setError(null);
 
     try {
       const response = await fetch('/api/tunnel/disconnect', {
@@ -374,10 +395,9 @@ export const WebSocketTunnelPage: React.FC = () => {
 
       const data = await response.json();
       setStatus(data.status);
-      setSuccess('已断开隧道连接');
-      setTimeout(() => setSuccess(null), 3000);
+      showSuccess('已断开隧道连接');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to disconnect');
+      showError(err instanceof Error ? err.message : 'Failed to disconnect');
     } finally {
       setConnecting(false);
     }
@@ -554,17 +574,6 @@ export const WebSocketTunnelPage: React.FC = () => {
     // Step 1: Server URL configuration
     const renderServerStep = () => (
       <>
-        {/* Security Warning */}
-        <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800 p-4">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
-            <div className="text-sm text-amber-700 dark:text-amber-300">
-              <p className="font-medium mb-1">安全提示</p>
-              <p>隧道接入会将本地 Agent Studio 服务暴露到公网，存在一定的安全风险。请确保您了解相关风险后再进行配置。</p>
-            </div>
-          </div>
-        </div>
-
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-4">
             <Settings className="w-5 h-5" />
@@ -631,6 +640,19 @@ export const WebSocketTunnelPage: React.FC = () => {
             <div className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300">
               <CheckCircle2 className="w-4 h-4" />
               <span>已连接到 <strong>{serverInfo.name}</strong> v{serverInfo.version}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Server Instruction (if provided) */}
+        {serverInfo?.instruction && (
+          <div className="mb-4 p-4 rounded-lg bg-blue-50 border border-blue-200 dark:bg-blue-900/20 dark:border-blue-800">
+            <div className="flex items-start gap-3">
+              <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+              <div className="text-sm text-blue-800 dark:text-blue-200">
+                <p className="font-medium mb-1">服务器说明</p>
+                <p className="whitespace-pre-wrap">{serverInfo.instruction}</p>
+              </div>
             </div>
           </div>
         )}
@@ -748,7 +770,6 @@ export const WebSocketTunnelPage: React.FC = () => {
       }
 
       setSaving(true);
-      setError(null);
       try {
         const response = await fetch('/api/tunnel/config', {
           method: 'DELETE',
@@ -768,10 +789,9 @@ export const WebSocketTunnelPage: React.FC = () => {
         setTunnelName('');
         setServerInfo(null);
         setTunelyStep('server');
-        setSuccess('隧道配置已删除');
-        setTimeout(() => setSuccess(null), 3000);
+        showSuccess('隧道配置已删除');
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to delete tunnel');
+        showError(err instanceof Error ? err.message : 'Failed to delete tunnel');
       } finally {
         setSaving(false);
       }
@@ -780,73 +800,72 @@ export const WebSocketTunnelPage: React.FC = () => {
     // Connected state: show status and controls
     const renderConnectedStep = () => (
       <>
-        {/* Security Warning */}
-        <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800 p-4">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
-            <div className="text-sm text-amber-700 dark:text-amber-300">
-              <p className="font-medium mb-1">安全提示</p>
-              <p>隧道功能会将本地服务暴露到公网，请注意以下事项：</p>
-              <ul className="list-disc list-inside mt-1 space-y-0.5 text-amber-600 dark:text-amber-400">
-                <li>仅在需要时开启隧道连接</li>
-                <li>为服务开启密码保护</li>
-                <li>使用完毕后及时断开连接</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
         {/* Status Card */}
         <div className={`rounded-lg border p-4 ${status?.connected
             ? 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800'
             : 'bg-gray-50 border-gray-200 dark:bg-gray-800/50 dark:border-gray-700'
           }`}>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4 flex-1">
+              {/* Status Icon */}
               {status?.connected ? (
-                <Wifi className="w-6 h-6 text-green-500" />
+                <Wifi className="w-6 h-6 text-green-500 flex-shrink-0" />
               ) : (
-                <WifiOff className="w-6 h-6 text-gray-400" />
+                <WifiOff className="w-6 h-6 text-gray-400 flex-shrink-0" />
               )}
-              <div>
+
+              {/* Status Info - Horizontal Layout */}
+              <div className="flex items-center gap-4 flex-wrap">
                 <div className="font-medium text-gray-900 dark:text-white">
                   {status?.connected ? '已连接' : '未连接'}
                 </div>
+
                 {status?.connected && getFullDomain() && (
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-sm text-gray-600 dark:text-gray-300">
-                      {config?.protocol || 'https'}://{getFullDomain()}
-                    </span>
-                    <button
-                      onClick={copyDomain}
-                      className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                      title="复制"
-                    >
-                      {copiedDomain ? (
-                        <Check className="w-4 h-4 text-green-500" />
-                      ) : (
-                        <Copy className="w-4 h-4" />
-                      )}
-                    </button>
-                    <a
-                      href={`${config?.protocol || 'https'}://${getFullDomain()}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                      title="在新窗口打开"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                    </a>
-                  </div>
+                  <>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-600 dark:text-gray-300">
+                        {config?.protocol || 'https'}://{getFullDomain()}
+                      </span>
+                      <button
+                        onClick={copyDomain}
+                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                        title="复制"
+                      >
+                        {copiedDomain ? (
+                          <Check className="w-4 h-4 text-green-500" />
+                        ) : (
+                          <Copy className="w-4 h-4" />
+                        )}
+                      </button>
+                      <a
+                        href={`${config?.protocol || 'https'}://${getFullDomain()}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                        title="在新窗口打开"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                    </div>
+
+                    {status.connectedAt && (
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        连接时间: {new Date(status.connectedAt).toLocaleString()}
+                      </div>
+                    )}
+                  </>
                 )}
+
                 {status?.lastError && (
-                  <div className="text-sm text-red-500 mt-1">
+                  <div className="text-sm text-red-500">
                     {status.lastError}
                   </div>
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-2">
+
+            {/* Action Buttons */}
+            <div className="flex items-center gap-2 flex-shrink-0">
               <button
                 onClick={loadStatus}
                 className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -875,11 +894,6 @@ export const WebSocketTunnelPage: React.FC = () => {
               )}
             </div>
           </div>
-          {status?.connected && status.connectedAt && (
-            <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-              连接时间: {new Date(status.connectedAt).toLocaleString()}
-            </div>
-          )}
         </div>
 
         {/* Current Config Info */}
@@ -918,6 +932,19 @@ export const WebSocketTunnelPage: React.FC = () => {
             </div>
           </div>
 
+          {/* Server Instruction (if available) */}
+          {serverInfo?.instruction && (
+            <div className="mt-4 p-3 rounded-lg bg-blue-50 border border-blue-200 dark:bg-blue-900/20 dark:border-blue-800">
+              <div className="flex items-start gap-2">
+                <Info className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                <div className="text-xs text-blue-800 dark:text-blue-200">
+                  <p className="font-medium mb-1">服务器说明</p>
+                  <p className="whitespace-pre-wrap">{serverInfo.instruction}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Delete Tunnel Button */}
           <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
             <button
@@ -936,7 +963,6 @@ export const WebSocketTunnelPage: React.FC = () => {
     const renderEditStep = () => {
       const handleSaveConfig = async () => {
         setSaving(true);
-        setError(null);
         try {
           const response = await fetch('/api/tunnel/config', {
             method: 'PUT',
@@ -958,11 +984,10 @@ export const WebSocketTunnelPage: React.FC = () => {
 
           const data = await response.json();
           setConfig(data.config);
-          setSuccess('配置已保存');
-          setTimeout(() => setSuccess(null), 3000);
+          showSuccess('配置已保存');
           setTunelyStep('connected');
         } catch (err) {
-          setError(err instanceof Error ? err.message : 'Failed to save config');
+          showError(err instanceof Error ? err.message : 'Failed to save config');
         } finally {
           setSaving(false);
         }
@@ -1083,25 +1108,6 @@ export const WebSocketTunnelPage: React.FC = () => {
 
     return (
       <div className="space-y-6">
-        {/* Alerts */}
-        {error && (
-          <div className="p-4 rounded-lg bg-red-50 border border-red-200 dark:bg-red-900/20 dark:border-red-800">
-            <div className="flex items-start gap-2">
-              <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-              <div className="text-sm">
-                <p className="text-red-600 dark:text-red-400 font-medium">{error}</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {success && (
-          <div className="flex items-center gap-2 p-4 rounded-lg bg-green-50 border border-green-200 text-green-600 dark:bg-green-900/20 dark:border-green-800 dark:text-green-400">
-            <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
-            <span>{success}</span>
-          </div>
-        )}
-
         {/* Step-based content */}
         {tunelyStep === 'server' && renderServerStep()}
         {tunelyStep === 'domain' && renderDomainStep()}
@@ -1510,7 +1516,7 @@ export const WebSocketTunnelPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
@@ -1520,6 +1526,17 @@ export const WebSocketTunnelPage: React.FC = () => {
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           通过隧道让外部网络可以访问本地 Agent Studio
         </p>
+      </div>
+
+      {/* Security Warning - Global */}
+      <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800 p-4">
+        <div className="flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-amber-700 dark:text-amber-300">
+            <p className="font-medium mb-1">安全提示</p>
+            <p>隧道接入会将本地 Agent Studio 服务暴露到公网，存在一定的安全风险。请确保您了解相关风险后再进行配置。</p>
+          </div>
+        </div>
       </div>
 
       {/* Tab Navigation */}
@@ -1535,22 +1552,25 @@ export const WebSocketTunnelPage: React.FC = () => {
             <Wifi className="w-4 h-4" />
             Tunely (WebSocket)
           </button>
-          <button
-            onClick={() => setActiveTab('cloudflare')}
-            className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${activeTab === 'cloudflare'
-                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-              }`}
-          >
-            <Cloud className="w-4 h-4" />
-            Cloudflare Tunnel
-          </button>
+          {/* Hide Cloudflare Tunnel in production */}
+          {!import.meta.env.PROD && (
+            <button
+              onClick={() => setActiveTab('cloudflare')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${activeTab === 'cloudflare'
+                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                }`}
+            >
+              <Cloud className="w-4 h-4" />
+              Cloudflare Tunnel
+            </button>
+          )}
         </nav>
       </div>
 
       {/* Tab Content */}
       {activeTab === 'tunely' && renderTunelyContent()}
-      {activeTab === 'cloudflare' && renderCloudflareContent()}
+      {activeTab === 'cloudflare' && !import.meta.env.PROD && renderCloudflareContent()}
     </div>
   );
 };
