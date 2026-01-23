@@ -1028,15 +1028,15 @@
       "configInvalid": "配置格式不正确，请确保包含必需的 {{fields}} 字段，并且格式正确",
       "configFormatError": "⚠️ 配置格式不正确，请确保包含必需的 {{fields}} 字段",
       "requiredFields": "必需字段：",
-      "requiredFieldsStdio": "type, command 和 args",
-      "requiredFieldsHttp": "type 和 url",
+      "requiredFieldsStdio": "command 和 args",
+      "requiredFieldsHttp": "url",
       "optionalFields": "可选字段：",
-      "typeField": "字符串，MCP 类型（\"stdio\" 或 \"http\"）",
       "commandField": "字符串，执行命令（如 \"npx\", \"uvx\"）",
       "argsField": "数组，命令参数",
       "urlField": "字符串，HTTP MCP 服务器的 URL",
-      "timeoutField": "数字，超时时间（毫秒）",
-      "autoApproveField": "数组，自动批准的操作"
+      "headersField": "对象，HTTP 请求头（如认证信息）",
+      "note": "注意：",
+      "typeAutoAdded": "type 和 source 字段会自动添加，无需在配置中填写。验证超时固定为 60 秒。"
     },
     "errors": {
       "validationFailed": "验证失败",

@@ -20,8 +20,7 @@ interface McpServerConfig {
   // For http type
   url?: string;
   headers?: Record<string, string>;
-  // Common fields
-  timeout?: number;
+  // Common fields (autoApprove is not implemented yet)
   autoApprove?: string[];
   status?: 'active' | 'error' | 'validating';
   error?: string;
@@ -352,34 +351,49 @@ async function validateHttpMcpServer(name: string, serverConfig: any, config: an
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
-    // Parse SSE response
     const responseText = await response.text();
-    console.log('HTTP MCP initialize response text:', responseText);
+    const contentType = response.headers.get('content-type') || '';
+    console.log('HTTP MCP initialize response:', { contentType, textLength: responseText.length });
 
-    // Extract JSON from SSE format
-    // SSE format can have multiple fields: id, event, data, etc.
+    // Detect response format based on Content-Type and content
     let initResult: any = null;
-    const lines = responseText.split('\n');
+    const isSSE = contentType.includes('text/event-stream') || responseText.includes('data:');
 
-    for (const line of lines) {
-      const trimmedLine = line.trim();
-      // Look for data: lines which contain the actual JSON-RPC response
-      if (trimmedLine.startsWith('data:')) {
-        try {
-          // Remove 'data:' prefix and parse JSON
-          const jsonStr = trimmedLine.substring(5).trim();
-          initResult = JSON.parse(jsonStr);
-          console.log('Parsed SSE data:', initResult);
-          break;
-        } catch (e) {
-          console.warn('Failed to parse SSE data line:', trimmedLine, e);
+    if (isSSE) {
+      // Parse SSE format response
+      console.log('Parsing SSE format response');
+      const lines = responseText.split('\n');
+
+      for (const line of lines) {
+        const trimmedLine = line.trim();
+        // Look for data: lines which contain the actual JSON-RPC response
+        if (trimmedLine.startsWith('data:')) {
+          try {
+            // Remove 'data:' prefix and parse JSON
+            const jsonStr = trimmedLine.substring(5).trim();
+            initResult = JSON.parse(jsonStr);
+            console.log('Parsed SSE data:', initResult);
+            break;
+          } catch (e) {
+            console.warn('Failed to parse SSE data line:', trimmedLine, e);
+          }
         }
       }
-    }
 
-    if (!initResult) {
-      console.error('Failed to find valid data line in SSE response');
-      throw new Error('Failed to parse HTTP MCP response');
+      if (!initResult) {
+        console.error('Failed to find valid data line in SSE response');
+        throw new Error('Failed to parse HTTP MCP SSE response');
+      }
+    } else {
+      // Parse plain JSON response
+      console.log('Parsing plain JSON response');
+      try {
+        initResult = JSON.parse(responseText);
+        console.log('Parsed JSON response:', initResult);
+      } catch (e) {
+        console.error('Failed to parse JSON response:', e);
+        throw new Error('Failed to parse HTTP MCP JSON response');
+      }
     }
 
     console.log('HTTP MCP initialize parsed result:', initResult);
@@ -450,7 +464,7 @@ async function validateStdioMcpServer(name: string, serverConfig: any, config: a
 
   const spawnOptions: any = {
     stdio: ['pipe', 'pipe', 'pipe'],
-    timeout: serverConfig.timeout || 15000
+    timeout: 60000  // Fixed 60-second timeout for validation
   };
 
   // Merge environment variables if provided
@@ -580,7 +594,7 @@ async function validateStdioMcpServer(name: string, serverConfig: any, config: a
 
   const timeoutId = setTimeout(() => {
     child.kill('SIGTERM');
-  }, serverConfig.timeout || 10000);
+  }, 60000);  // Fixed 60-second timeout for validation
 
   child.on('close', (code) => {
     clearTimeout(timeoutId);
@@ -674,6 +688,7 @@ async function validateStdioMcpServer(name: string, serverConfig: any, config: a
 /**
  * Get tools from HTTP MCP server using proper session management
  * HTTP MCP requires maintaining session state between initialize and tools/list calls
+ * Supports both SSE and plain JSON response formats
  */
 async function getHttpMcpTools(url: string, userHeaders?: Record<string, string>): Promise<string[]> {
   console.log('Starting HTTP MCP tools discovery for:', url);
@@ -712,22 +727,41 @@ async function getHttpMcpTools(url: string, userHeaders?: Record<string, string>
   }
 
   const initResponseText = await initResponse.text();
-  console.log('HTTP MCP initialize response:', initResponseText);
+  const initContentType = initResponse.headers.get('content-type') || '';
+  console.log('HTTP MCP initialize response:', { contentType: initContentType, textLength: initResponseText.length });
 
-  // Parse initialize response from SSE format
+  // Detect response format
+  const isSSE = initContentType.includes('text/event-stream') || initResponseText.includes('data:');
+
+  // Parse initialize response
   let initResult: any = null;
-  const initLines = initResponseText.split('\n');
-  for (const line of initLines) {
-    const trimmedLine = line.trim();
-    if (trimmedLine.startsWith('data:')) {
-      try {
-        const jsonStr = trimmedLine.substring(5).trim();
-        initResult = JSON.parse(jsonStr);
-        console.log('Parsed init SSE data:', initResult);
-        break;
-      } catch (e) {
-        console.warn('Failed to parse init SSE data line:', trimmedLine, e);
+
+  if (isSSE) {
+    // Parse SSE format
+    console.log('Parsing SSE format initialize response');
+    const initLines = initResponseText.split('\n');
+    for (const line of initLines) {
+      const trimmedLine = line.trim();
+      if (trimmedLine.startsWith('data:')) {
+        try {
+          const jsonStr = trimmedLine.substring(5).trim();
+          initResult = JSON.parse(jsonStr);
+          console.log('Parsed init SSE data:', initResult);
+          break;
+        } catch (e) {
+          console.warn('Failed to parse init SSE data line:', trimmedLine, e);
+        }
       }
+    }
+  } else {
+    // Parse plain JSON format
+    console.log('Parsing plain JSON initialize response');
+    try {
+      initResult = JSON.parse(initResponseText);
+      console.log('Parsed init JSON:', initResult);
+    } catch (e) {
+      console.error('Failed to parse init JSON:', e);
+      throw new Error('Failed to parse initialize response');
     }
   }
 
@@ -775,22 +809,39 @@ async function getHttpMcpTools(url: string, userHeaders?: Record<string, string>
   }
 
   const toolsResponseText = await toolsResponse.text();
-  console.log('HTTP MCP tools/list response:', toolsResponseText);
+  const toolsContentType = toolsResponse.headers.get('content-type') || '';
+  console.log('HTTP MCP tools/list response:', { contentType: toolsContentType, textLength: toolsResponseText.length });
 
-  // Parse tools response from SSE format
+  // Parse tools response
   let toolsResult: any = null;
-  const toolsLines = toolsResponseText.split('\n');
-  for (const line of toolsLines) {
-    const trimmedLine = line.trim();
-    if (trimmedLine.startsWith('data:')) {
-      try {
-        const jsonStr = trimmedLine.substring(5).trim();
-        toolsResult = JSON.parse(jsonStr);
-        console.log('Parsed tools SSE data:', toolsResult);
-        break;
-      } catch (e) {
-        console.warn('Failed to parse tools SSE data line:', trimmedLine, e);
+  const toolsIsSSE = toolsContentType.includes('text/event-stream') || toolsResponseText.includes('data:');
+
+  if (toolsIsSSE) {
+    // Parse SSE format
+    console.log('Parsing SSE format tools/list response');
+    const toolsLines = toolsResponseText.split('\n');
+    for (const line of toolsLines) {
+      const trimmedLine = line.trim();
+      if (trimmedLine.startsWith('data:')) {
+        try {
+          const jsonStr = trimmedLine.substring(5).trim();
+          toolsResult = JSON.parse(jsonStr);
+          console.log('Parsed tools SSE data:', toolsResult);
+          break;
+        } catch (e) {
+          console.warn('Failed to parse tools SSE data line:', trimmedLine, e);
+        }
       }
+    }
+  } else {
+    // Parse plain JSON format
+    console.log('Parsing plain JSON tools/list response');
+    try {
+      toolsResult = JSON.parse(toolsResponseText);
+      console.log('Parsed tools JSON:', toolsResult);
+    } catch (e) {
+      console.error('Failed to parse tools JSON:', e);
+      throw new Error('Failed to parse tools/list response');
     }
   }
 

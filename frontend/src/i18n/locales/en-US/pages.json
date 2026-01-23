@@ -1000,15 +1000,15 @@
       "configInvalid": "Configuration format is incorrect, please ensure required {{fields}} fields are included and properly formatted",
       "configFormatError": "⚠️ Configuration format is incorrect, please ensure required {{fields}} fields are included",
       "requiredFields": "Required fields:",
-      "requiredFieldsStdio": "type, command and args",
-      "requiredFieldsHttp": "type and url",
+      "requiredFieldsStdio": "command and args",
+      "requiredFieldsHttp": "url",
       "optionalFields": "Optional fields:",
-      "typeField": "String, MCP type (\"stdio\" or \"http\")",
       "commandField": "String, execution command (e.g. \"npx\", \"uvx\")",
       "argsField": "Array, command arguments",
       "urlField": "String, HTTP MCP server URL",
-      "timeoutField": "Number, timeout in milliseconds",
-      "autoApproveField": "Array, auto-approve operations"
+      "headersField": "Object, HTTP request headers (e.g. authentication)",
+      "note": "Note:",
+      "typeAutoAdded": "type and source fields are automatically added, no need to include in configuration. Validation timeout is fixed at 60 seconds."
     },
     "errors": {
       "validationFailed": "Validation failed",

@@ -39,8 +39,7 @@ interface McpServerConfig {
   // For http type
   url?: string;
   headers?: Record<string, string>;
-  // Common fields
-  timeout?: number;
+  // Common fields (autoApprove is not implemented yet)
   autoApprove?: string[];
   status?: 'active' | 'error' | 'validating';
   error?: string;
@@ -316,11 +315,6 @@ export const McpPage: React.FC = () => {
     try {
       const parsed = JSON.parse(str);
 
-      // 检查type字段
-      if (!parsed.type || parsed.type !== type) {
-        return false;
-      }
-
       // 根据类型检查必须的字段
       if (type === 'stdio') {
         if (!parsed.command || !Array.isArray(parsed.args)) {
@@ -333,12 +327,21 @@ export const McpPage: React.FC = () => {
       }
 
       // 检查可选字段的类型
-      if (parsed.timeout && typeof parsed.timeout !== 'number') {
-        return false;
-      }
       if (parsed.autoApprove && !Array.isArray(parsed.autoApprove)) {
         return false;
       }
+      
+      // 不应该包含 type, source, timeout 字段（这些由系统自动添加或不使用）
+      if (parsed.type) {
+        console.warn('配置中不应该包含 type 字段，将被忽略');
+      }
+      if (parsed.source) {
+        console.warn('配置中不应该包含 source 字段，将被忽略');
+      }
+      if (parsed.timeout) {
+        console.warn('配置中不应该包含 timeout 字段，将被忽略（验证超时固定为60秒）');
+      }
+      
       return true;
     } catch {
       return false;
@@ -367,23 +370,31 @@ export const McpPage: React.FC = () => {
     try {
       const config = JSON.parse(formData.config);
       
+      // 自动添加 type 和 source 字段，移除用户可能误填的这些字段
+      const { type: _, source: __, ...cleanConfig } = config;
+      const finalConfig = {
+        type: formData.type,      // 从下拉框获取类型
+        source: 'local',          // 用户创建的默认为 local
+        ...cleanConfig
+      };
+      
       let response: Response;
       
       if (editingServer) {
         // Update existing server - only send config data, name comes from URL
-        console.log('Updating existing MCP server:', editingServer.name, 'with config:', config);
+        console.log('Updating existing MCP server:', editingServer.name, 'with config:', finalConfig);
         response = await authFetch(`${API_BASE}/mcp/${editingServer.name}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify(config)
+          body: JSON.stringify(finalConfig)
         });
       } else {
         // Add new server - include name in request body
         const requestData = {
           name: formData.name,
-          ...config
+          ...finalConfig
         };
         response = await authFetch(`${API_BASE}/mcp`, {
           method: 'POST',
@@ -952,25 +963,15 @@ export const McpPage: React.FC = () => {
                           type: newType,
                           config: newType === 'stdio'
                             ? `{
-  "type": "stdio",
   "command": "npx",
   "args": [
     "-y",
     "@playwright/mcp@latest",
     "--extension"
-  ],
-  "timeout": 6000,
-  "autoApprove": [
-    "interactive_feedback"
   ]
 }`
                             : `{
-  "type": "http",
-  "url": "http://127.0.0.1:3845/mcp",
-  "timeout": 6000,
-  "autoApprove": [
-    "interactive_feedback"
-  ]
+  "url": "http://127.0.0.1:3845/mcp"
 }`
                         });
                       }}
@@ -995,25 +996,15 @@ export const McpPage: React.FC = () => {
                       onChange={(e) => setFormData({ ...formData, config: e.target.value })}
                       placeholder={formData.type === 'stdio'
                         ? `{
-  "type": "stdio",
   "command": "npx",
   "args": [
     "-y",
     "@playwright/mcp@latest",
     "--extension"
-  ],
-  "timeout": 6000,
-  "autoApprove": [
-    "interactive_feedback"
   ]
 }`
                         : `{
-  "type": "http",
-  "url": "http://127.0.0.1:3845/mcp",
-  "timeout": 6000,
-  "autoApprove": [
-    "interactive_feedback"
-  ]
+  "url": "http://127.0.0.1:3845/mcp"
 }`}
                       rows={isMobile ? 10 : 15}
                       className={`w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm dark:bg-gray-700 dark:text-white ${isMobile ? 'text-xs' : ''}`}
@@ -1031,7 +1022,6 @@ export const McpPage: React.FC = () => {
                     <div className={`mt-2 text-xs text-gray-500 dark:text-gray-400 ${isMobile ? 'text-xs' : ''}`}>
                       <p><strong>{t('mcp.form.requiredFields')}</strong></p>
                       <ul className="list-disc ml-4 mt-1">
-                        <li><code>type</code>: {t('mcp.form.typeField')}</li>
                         {formData.type === 'stdio' ? (
                           <>
                             <li><code>command</code>: {t('mcp.form.commandField')}</li>
@@ -1041,11 +1031,17 @@ export const McpPage: React.FC = () => {
                           <li><code>url</code>: {t('mcp.form.urlField')}</li>
                         )}
                       </ul>
-                      <p className="mt-2"><strong>{t('mcp.form.optionalFields')}</strong></p>
-                      <ul className="list-disc ml-4 mt-1">
-                        <li><code>timeout</code>: {t('mcp.form.timeoutField')}</li>
-                        <li><code>autoApprove</code>: {t('mcp.form.autoApproveField')}</li>
-                      </ul>
+                      {formData.type === 'http' && (
+                        <>
+                          <p className="mt-2"><strong>{t('mcp.form.optionalFields')}</strong></p>
+                          <ul className="list-disc ml-4 mt-1">
+                            <li><code>headers</code>: {t('mcp.form.headersField')}</li>
+                          </ul>
+                        </>
+                      )}
+                      <p className="mt-2 text-gray-400">
+                        <strong>{t('mcp.form.note')}</strong> {t('mcp.form.typeAutoAdded')}
+                      </p>
                     </div>
                   </div>
 
