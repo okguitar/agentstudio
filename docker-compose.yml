@@ -2,28 +2,37 @@ version: '3.8'
 
 services:
   agentstudio:
-    image: agentstudio:latest
-    container_name: agentstudio
+    build:
+      context: .
+      dockerfile: Dockerfile.npm
+    container_name: agentstudio-npm
     ports:
-      - "80:80"        # Frontend (nginx)
-      - "4936:4936"    # Backend API (optional, for direct access)
+      - "4936:4936"    # Backend API (default port, can be changed)
     environment:
       - NODE_ENV=production
       - PORT=4936
       # Uncomment and set your API keys
       # - ANTHROPIC_API_KEY=your_anthropic_key_here
       # - OPENAI_API_KEY=your_openai_key_here
+      # Proxy settings (uncomment if needed)
+      # - HTTP_PROXY=http://proxy.example.com:8080
+      # - HTTPS_PROXY=http://proxy.example.com:8080
+      # - NO_PROXY=localhost,127.0.0.1,*.woa.com
     env_file:
-      - ./backend/.env  # Optional: use .env file instead
+      - .env  # Optional: use .env file instead (create this file if needed)
     volumes:
-      - agentstudio_data:/app/data  # Persist application data (agents, sessions, etc.)
+      # Mount container's home directory to host for data persistence
+      - ./data/agentstudio-home:/home/agentstudio/.agent-studio
+      # Optional: Mount config directory separately
+      # - ./config:/home/agentstudio/.agent-studio/config
+      # Optional: Mount logs directory separately
+      # - ./logs:/home/agentstudio/.agent-studio/logs
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80/", "&&", "curl", "-f", "http://localhost:4936/api/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:4936/api/health"]
       interval: 30s
       timeout: 3s
       retries: 3
-      start_period: 10s
+      start_period: 15s
 
-volumes:
-  agentstudio_data:
+# No named volumes needed - using bind mounts instead

@@ -1,0 +1,59 @@
+version: '3.8'
+
+# Traefik reverse proxy for dynamic feature branch deployments
+# This allows automatic routing to feature branch containers
+
+services:
+  traefik:
+    image: traefik:v2.11
+    container_name: agentstudio-traefik
+    command:
+      # Enable Docker provider
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      
+      # Define entrypoints
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      
+      # HTTPS redirect
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      
+      # Let's Encrypt
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.letsencrypt.acme.email=okguitar@gmail.com"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      
+      # Enable dashboard (optional)
+      - "--api.dashboard=true"
+      - "--api.insecure=true"  # Remove in production
+      
+      # Logging
+      - "--log.level=INFO"
+      - "--accesslog=true"
+    ports:
+      - "80:80"          # HTTP (will redirect to HTTPS)
+      - "443:443"        # HTTPS
+      - "8080:8080"      # Traefik dashboard
+    volumes:
+      # Mount Docker socket for auto-discovery
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      
+      # Let's Encrypt certificates storage
+      - ./data/letsencrypt:/letsencrypt
+    labels:
+      # Enable Traefik dashboard
+      - "traefik.enable=true"
+      - "traefik.http.routers.dashboard.rule=Host(`traefik.localhost`)"
+      - "traefik.http.routers.dashboard.service=api@internal"
+      - "traefik.http.routers.dashboard.entrypoints=web"
+    restart: unless-stopped
+    networks:
+      - agentstudio-network
+
+networks:
+  agentstudio-network:
+    name: agentstudio-network
+    driver: bridge

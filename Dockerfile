@@ -4,62 +4,39 @@ FROM ubuntu:22.04
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive \
     NODE_VERSION=20 \
-    PNPM_VERSION=10.18.1 \
-    PORT=4936
+    PORT=4936 \
+    HOME=/home/agentstudio
 
-# Install basic dependencies, Node.js, and nginx
+# Install basic dependencies and Node.js
 RUN apt-get update && apt-get install -y \
     curl \
     git \
     ca-certificates \
-    nginx \
     && curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash - \
     && apt-get install -y nodejs \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Install pnpm
-RUN npm install -g pnpm@${PNPM_VERSION}
+# Create non-root user with home directory
+RUN useradd -m -s /bin/bash -d /home/agentstudio agentstudio
 
-# Set working directory
-WORKDIR /app
+# Install agentstudio globally using npm (simpler than pnpm)
+RUN npm install -g agentstudio
 
-# Copy workspace configuration
-COPY pnpm-workspace.yaml package.json pnpm-lock.yaml* ./
+# Create necessary directories and set permissions
+RUN mkdir -p /home/agentstudio/.agent-studio/{logs,data,config,backup} && \
+    chown -R agentstudio:agentstudio /home/agentstudio
 
-# Copy all workspace modules
-COPY shared ./shared
-COPY frontend ./frontend
-COPY backend ./backend
+# Switch to non-root user for running the application
+USER agentstudio
+WORKDIR /home/agentstudio
 
-# Install dependencies (this creates workspace links)
-RUN pnpm install --frozen-lockfile
+# Expose backend port (default 4936, can be changed via environment)
+EXPOSE 4936
 
-# Clean any tsbuildinfo files and build all modules
-RUN find . -name "*.tsbuildinfo" -delete && \
-    pnpm --filter shared run build && \
-    cd /app/frontend && pnpm exec vite build && cd /app && \
-    pnpm --filter backend run build
-
-# Copy frontend build to nginx directory
-RUN cp -r /app/frontend/dist/* /usr/share/nginx/html/
-
-# Copy nginx configuration
-COPY nginx.conf /etc/nginx/nginx.conf
-
-# Copy and set up entrypoint script
-COPY docker-entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
-
-# Create data directory for persistent storage
-RUN mkdir -p /app/data
-
-# Expose ports (nginx on 80, backend on 4936)
-EXPOSE 80 4936
-
-# Health check (check both nginx and backend)
+# Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost:80/ && curl -f http://localhost:4936/api/health || exit 1
+    CMD curl -f http://localhost:${PORT}/api/health || exit 1
 
-# Start both nginx and backend
-ENTRYPOINT ["docker-entrypoint.sh"]
+# Start agentstudio
+CMD ["sh", "-c", "agentstudio start --port ${PORT}"]
