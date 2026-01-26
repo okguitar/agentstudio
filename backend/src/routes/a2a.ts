@@ -369,6 +369,17 @@ router.post('/messages', async (req: A2ARequest, res: Response) => {
       // ============================================================================
       console.log(`♻️ [A2A] Using ClaudeSession reuse mode (sessionMode=reuse)`);
 
+      // 构建配置快照用于检测配置变化
+      const configSnapshot = {
+        model: queryOptions.model,
+        claudeVersionId: undefined, // A2A 不使用 claudeVersion
+        permissionMode: queryOptions.permissionMode,
+        mcpTools: [], // A2A 不使用额外的 MCP 工具
+        allowedTools: agentConfig.allowedTools
+          .filter((tool: any) => tool.enabled)
+          .map((tool: any) => tool.name)
+      };
+
       const { claudeSession, actualSessionId } = await handleSessionManagement(
         a2aContext.agentType,
         sessionId || null,
@@ -376,7 +387,8 @@ router.post('/messages', async (req: A2ARequest, res: Response) => {
         queryOptions,
         undefined,  // claudeVersionId
         undefined,  // modelId
-        'reuse'
+        'reuse',
+        configSnapshot
       );
 
       if (stream) {

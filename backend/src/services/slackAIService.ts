@@ -893,12 +893,13 @@ Feel free to organize your files here as needed. This directory is managed by Ag
     event: SlackMessageEvent | SlackAppMentionEvent,
     threadTs: string,
     agentId: string,
-    selectedProject: ProjectWithAgentInfo | null
+    selectedProject: ProjectWithAgentInfo | null,
+    configSnapshot?: any
   ): void {
     if (sdkMessage.type === 'system' && sdkMessage.subtype === 'init' && sdkMessage.session_id) {
       const newSessionId = sdkMessage.session_id;
       claudeSession.setClaudeSessionId(newSessionId);
-      sessionManager.confirmSessionId(claudeSession, newSessionId);
+      sessionManager.confirmSessionId(claudeSession, newSessionId, configSnapshot);
 
       // Update mapping with project information
       slackThreadMapper.setMapping({
@@ -1071,7 +1072,8 @@ Feel free to organize your files here as needed. This directory is managed by Ag
     threadTs: string,
     agentId: string,
     selectedProject: ProjectWithAgentInfo | null,
-    placeholderTs: string
+    placeholderTs: string,
+    configSnapshot?: any
   ): Promise<{ fullResponse: string; toolUsageInfo: string; hasError: boolean }> {
     const stateRef = {
       fullResponse: '',
@@ -1126,7 +1128,7 @@ Feel free to organize your files here as needed. This directory is managed by Ag
         }, 30000); // 30 second timeout
 
         // Handle init message
-        this.handleInitMessage(sdkMessage, claudeSession, event, threadTs, agentId, selectedProject);
+        this.handleInitMessage(sdkMessage, claudeSession, event, threadTs, agentId, selectedProject, configSnapshot);
 
         // Handle thinking and trigger update if needed
         if (this.handleThinkingMessage(sdkMessage, stateRef)) {
@@ -1252,15 +1254,37 @@ Feel free to organize your files here as needed. This directory is managed by Ag
       // Slack uses block-based streaming (no partial messages)
       queryOptions.includePartialMessages = false;
 
+      // 构建配置快照用于检测配置变化
+      const configSnapshot = {
+        model: claudeConfig.model,
+        claudeVersionId: claudeConfig.versionId,
+        permissionMode: queryOptions.permissionMode,
+        mcpTools: [],
+        allowedTools: agent.allowedTools
+          .filter((tool: any) => tool.enabled)
+          .map((tool: any) => tool.name)
+      };
+
       // Step 5: Get or create Claude session
       const sessionId = slackThreadMapper.getSessionId(threadTs, event.channel);
       let claudeSession = sessionId ? sessionManager.getSession(sessionId) : null;
 
       if (!claudeSession) {
-        claudeSession = sessionManager.createNewSession(agentId, queryOptions);
+        claudeSession = sessionManager.createNewSession(agentId, queryOptions, undefined, claudeConfig.versionId, claudeConfig.model, configSnapshot);
         console.log(`🆕 Created new Claude session for Slack thread: ${threadTs}`);
       } else {
         console.log(`♻️  Reusing existing Claude session: ${sessionId}`);
+        
+        // 检查配置是否变化
+        if (sessionId && configSnapshot) {
+          const configChanged = sessionManager.hasConfigChanged(sessionId, configSnapshot);
+          if (configChanged) {
+            console.log(`🔄 Config changed for Slack session ${sessionId}, removing old session and creating new one`);
+            await sessionManager.removeSession(sessionId);
+            claudeSession = sessionManager.createNewSession(agentId, queryOptions, undefined, claudeConfig.versionId, claudeConfig.model, configSnapshot);
+            console.log(`🆕 Created new Claude session due to config change for Slack thread: ${threadTs}`);
+          }
+        }
       }
 
       // Step 6: Acquire session lock
@@ -1310,7 +1334,8 @@ Feel free to organize your files here as needed. This directory is managed by Ag
           threadTs,
           agentId,
           selectedProject,
-          placeholderMsg.ts // Pass placeholder message timestamp for real-time updates
+          placeholderMsg.ts, // Pass placeholder message timestamp for real-time updates
+          configSnapshot // Pass config snapshot for session confirmation
         );
 
         // Step 10: Update Slack message with final response

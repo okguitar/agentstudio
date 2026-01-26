@@ -205,6 +205,29 @@ async function validateAgentUrl(
 }
 
 /**
+ * Build messages endpoint URL with smart format detection
+ * 
+ * Supports both standard A2A format and non-standard formats:
+ * - Standard: `http://host/agent-id` → `http://host/agent-id/messages`
+ * - Non-standard: `http://host/messages/project-id` → `http://host/messages/project-id` (no change)
+ * 
+ * @param agentUrl - Base agent URL
+ * @param stream - Whether to add stream query parameter
+ * @returns Complete messages endpoint URL
+ */
+function buildMessagesUrl(agentUrl: string, stream: boolean): string {
+  // Check if URL already contains /messages path
+  if (agentUrl.includes('/messages/') || agentUrl.endsWith('/messages')) {
+    // Already a complete messages endpoint (non-standard format), use as-is
+    return stream ? `${agentUrl}?stream=true` : agentUrl;
+  }
+  
+  // Standard A2A format: append /messages
+  const base = agentUrl.endsWith('/') ? agentUrl.slice(0, -1) : agentUrl;
+  return stream ? `${base}/messages?stream=true` : `${base}/messages`;
+}
+
+/**
  * Call external agent with message using A2A SDK (message/send or message/stream)
  * 
  * Uses A2A standard protocol:
@@ -308,8 +331,8 @@ async function callExternalAgentStreamFetch(
   });
 
   try {
-    // A2A protocol requires posting to /messages endpoint with stream=true query param
-    const messagesUrl = agentUrl.endsWith('/') ? `${agentUrl}messages?stream=true` : `${agentUrl}/messages?stream=true`;
+    // Build messages URL with smart format detection
+    const messagesUrl = buildMessagesUrl(agentUrl, true);
 
     const response = await fetch(messagesUrl, {
       method: 'POST',
@@ -552,8 +575,8 @@ async function callExternalAgentSyncFetch(
   };
 
   try {
-    // A2A protocol requires posting to /messages endpoint (no stream param for sync)
-    const messagesUrl = agentUrl.endsWith('/') ? `${agentUrl}messages` : `${agentUrl}/messages`;
+    // Build messages URL with smart format detection
+    const messagesUrl = buildMessagesUrl(agentUrl, false);
 
     const response = await fetch(messagesUrl, {
       method: 'POST',

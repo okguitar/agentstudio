@@ -421,6 +421,224 @@ describe('a2aClientTool - MCP Tool for Calling External Agents', () => {
     });
   });
 
+  describe('URL format compatibility', () => {
+    it('should handle standard A2A URL format (append /messages)', async () => {
+      vi.mocked(a2aConfigService.loadA2AConfig).mockResolvedValue({
+        allowedAgents: [
+          {
+            name: 'Standard Agent',
+            url: 'http://localhost:4936/a2a/agent-123',
+            apiKey: 'test-key',
+            enabled: true,
+          },
+        ],
+        taskTimeout: 300000,
+        maxConcurrentTasks: 5,
+      });
+
+      vi.mocked(global.fetch).mockResolvedValue(
+        new Response(JSON.stringify({ message: 'Success' }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      );
+
+      const input: CallExternalAgentInput = {
+        agentUrl: 'http://localhost:4936/a2a/agent-123',
+        message: 'Test message',
+      };
+
+      await callExternalAgent(input, 'proj-123');
+
+      // Verify that fetch was called with /messages appended
+      const fetchCall = vi.mocked(global.fetch).mock.calls[0];
+      expect(fetchCall[0]).toBe('http://localhost:4936/a2a/agent-123/messages');
+    });
+
+    it('should handle non-standard URL format with /messages/ in path (no append)', async () => {
+      vi.mocked(a2aConfigService.loadA2AConfig).mockResolvedValue({
+        allowedAgents: [
+          {
+            name: 'Non-standard Agent',
+            url: 'http://localhost:4300/messages/project-123',
+            apiKey: 'test-key',
+            enabled: true,
+          },
+        ],
+        taskTimeout: 300000,
+        maxConcurrentTasks: 5,
+      });
+
+      vi.mocked(global.fetch).mockResolvedValue(
+        new Response(JSON.stringify({ message: 'Success' }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      );
+
+      const input: CallExternalAgentInput = {
+        agentUrl: 'http://localhost:4300/messages/project-123',
+        message: 'Test message',
+      };
+
+      await callExternalAgent(input, 'proj-123');
+
+      // Verify that fetch was called with original URL (no /messages appended)
+      const fetchCall = vi.mocked(global.fetch).mock.calls[0];
+      expect(fetchCall[0]).toBe('http://localhost:4300/messages/project-123');
+    });
+
+    it('should handle URL ending with /messages (no append)', async () => {
+      vi.mocked(a2aConfigService.loadA2AConfig).mockResolvedValue({
+        allowedAgents: [
+          {
+            name: 'Complete Endpoint Agent',
+            url: 'http://localhost:5000/agent/messages',
+            apiKey: 'test-key',
+            enabled: true,
+          },
+        ],
+        taskTimeout: 300000,
+        maxConcurrentTasks: 5,
+      });
+
+      vi.mocked(global.fetch).mockResolvedValue(
+        new Response(JSON.stringify({ message: 'Success' }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      );
+
+      const input: CallExternalAgentInput = {
+        agentUrl: 'http://localhost:5000/agent/messages',
+        message: 'Test message',
+      };
+
+      await callExternalAgent(input, 'proj-123');
+
+      // Verify that fetch was called with original URL (no /messages appended)
+      const fetchCall = vi.mocked(global.fetch).mock.calls[0];
+      expect(fetchCall[0]).toBe('http://localhost:5000/agent/messages');
+    });
+
+    it('should handle URL with trailing slash (standard format)', async () => {
+      vi.mocked(a2aConfigService.loadA2AConfig).mockResolvedValue({
+        allowedAgents: [
+          {
+            name: 'Trailing Slash Agent',
+            url: 'http://localhost:4936/a2a/agent-123/',
+            apiKey: 'test-key',
+            enabled: true,
+          },
+        ],
+        taskTimeout: 300000,
+        maxConcurrentTasks: 5,
+      });
+
+      vi.mocked(global.fetch).mockResolvedValue(
+        new Response(JSON.stringify({ message: 'Success' }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      );
+
+      const input: CallExternalAgentInput = {
+        agentUrl: 'http://localhost:4936/a2a/agent-123/',
+        message: 'Test message',
+      };
+
+      await callExternalAgent(input, 'proj-123');
+
+      // Verify that trailing slash is handled correctly
+      const fetchCall = vi.mocked(global.fetch).mock.calls[0];
+      expect(fetchCall[0]).toBe('http://localhost:4936/a2a/agent-123/messages');
+    });
+
+    it('should handle streaming URL with standard format', async () => {
+      vi.mocked(a2aConfigService.loadA2AConfig).mockResolvedValue({
+        allowedAgents: [
+          {
+            name: 'Stream Agent',
+            url: 'http://localhost:4936/a2a/agent-123',
+            apiKey: 'test-key',
+            enabled: true,
+          },
+        ],
+        taskTimeout: 300000,
+        maxConcurrentTasks: 5,
+      });
+
+      // Mock streaming response
+      const mockBody = new ReadableStream({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode('data: {"type":"done"}\n\n'));
+          controller.close();
+        },
+      });
+
+      vi.mocked(global.fetch).mockResolvedValue(
+        new Response(mockBody, {
+          status: 200,
+          headers: { 'Content-Type': 'text/event-stream' },
+        })
+      );
+
+      const input: CallExternalAgentInput = {
+        agentUrl: 'http://localhost:4936/a2a/agent-123',
+        message: 'Test message',
+        stream: true,
+      };
+
+      await callExternalAgent(input, 'proj-123');
+
+      // Verify that fetch was called with /messages and ?stream=true appended
+      const fetchCall = vi.mocked(global.fetch).mock.calls[0];
+      expect(fetchCall[0]).toBe('http://localhost:4936/a2a/agent-123/messages?stream=true');
+    });
+
+    it('should handle streaming URL with non-standard format', async () => {
+      vi.mocked(a2aConfigService.loadA2AConfig).mockResolvedValue({
+        allowedAgents: [
+          {
+            name: 'Non-standard Stream Agent',
+            url: 'http://localhost:4300/messages/project-123',
+            apiKey: 'test-key',
+            enabled: true,
+          },
+        ],
+        taskTimeout: 300000,
+        maxConcurrentTasks: 5,
+      });
+
+      // Mock streaming response
+      const mockBody = new ReadableStream({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode('data: {"type":"done"}\n\n'));
+          controller.close();
+        },
+      });
+
+      vi.mocked(global.fetch).mockResolvedValue(
+        new Response(mockBody, {
+          status: 200,
+          headers: { 'Content-Type': 'text/event-stream' },
+        })
+      );
+
+      const input: CallExternalAgentInput = {
+        agentUrl: 'http://localhost:4300/messages/project-123',
+        message: 'Test message',
+        stream: true,
+      };
+
+      await callExternalAgent(input, 'proj-123');
+
+      // Verify that fetch was called with original URL + ?stream=true (no /messages appended)
+      const fetchCall = vi.mocked(global.fetch).mock.calls[0];
+      expect(fetchCall[0]).toBe('http://localhost:4300/messages/project-123?stream=true');
+    });
+  });
+
   describe('error handling', () => {
     it('should provide clear error message for missing config', async () => {
       vi.mocked(a2aConfigService.loadA2AConfig).mockResolvedValue(null);

@@ -5,6 +5,18 @@ import * as path from 'path';
 import * as os from 'os';
 
 /**
+ * 会话配置快照
+ * 用于检测会话配置是否发生变化
+ */
+export interface SessionConfigSnapshot {
+  model?: string;
+  claudeVersionId?: string;
+  permissionMode?: string;
+  mcpTools?: string[];
+  allowedTools?: string[];
+}
+
+/**
  * Claude 会话管理器
  * 负责管理所有 Claude 会话的生命周期
  */
@@ -17,6 +29,8 @@ export class SessionManager {
   private tempSessions: Map<string, ClaudeSession> = new Map();
   // 心跳记录：sessionId -> lastHeartbeatTime
   private sessionHeartbeats: Map<string, number> = new Map();
+  // 配置快照：sessionId -> SessionConfigSnapshot，用于检测配置变化
+  private sessionConfigs: Map<string, SessionConfigSnapshot> = new Map();
   
   private cleanupInterval: NodeJS.Timeout;
   private readonly cleanupIntervalMs = 1 * 60 * 1000; // 1 分钟检查一次
@@ -134,8 +148,9 @@ export class SessionManager {
    * @param resumeSessionId 可选的恢复会话ID
    * @param claudeVersionId 可选的 Claude 版本ID
    * @param modelId 可选的模型ID
+   * @param configSnapshot 可选的配置快照，用于后续检测配置变化
    */
-  createNewSession(agentId: string, options: Options, resumeSessionId?: string, claudeVersionId?: string, modelId?: string): ClaudeSession {
+  createNewSession(agentId: string, options: Options, resumeSessionId?: string, claudeVersionId?: string, modelId?: string, configSnapshot?: SessionConfigSnapshot): ClaudeSession {
     const session = new ClaudeSession(agentId, options, resumeSessionId, claudeVersionId, modelId);
     if (resumeSessionId) {
       this.sessions.set(resumeSessionId, session);
@@ -144,6 +159,12 @@ export class SessionManager {
         sessionForAgent.add(resumeSessionId);
       } else {
         this.agentSessions.set(agentId, new Set([resumeSessionId]));
+      }
+
+      // 存储配置快照
+      if (configSnapshot) {
+        this.sessionConfigs.set(resumeSessionId, configSnapshot);
+        console.log(`📸 Stored config snapshot for session: ${resumeSessionId}`, configSnapshot);
       }
 
       console.log(`✅ Resumed persistent Claude session for agent: ${agentId} (sessionId: ${resumeSessionId}, claudeVersionId: ${claudeVersionId}, modelId: ${modelId})`);
@@ -160,8 +181,9 @@ export class SessionManager {
    * 确认会话的真实 sessionId，更新索引
    * @param session 会话实例
    * @param sessionId Claude SDK 返回的真实 sessionId
+   * @param configSnapshot 可选的配置快照
    */
-  confirmSessionId(session: ClaudeSession, sessionId: string): void {
+  confirmSessionId(session: ClaudeSession, sessionId: string, configSnapshot?: SessionConfigSnapshot): void {
     // 从临时会话中移除
     let tempKey: string | null = null;
     for (const [key, sess] of this.tempSessions.entries()) {
@@ -179,6 +201,12 @@ export class SessionManager {
       
       // 初始化心跳记录
       this.sessionHeartbeats.set(sessionId, Date.now());
+      
+      // 存储配置快照
+      if (configSnapshot) {
+        this.sessionConfigs.set(sessionId, configSnapshot);
+        console.log(`📸 Stored config snapshot for confirmed session: ${sessionId}`, configSnapshot);
+      }
       
       // 更新 agent 会话索引
       const agentId = session.getAgentId();
@@ -216,6 +244,14 @@ export class SessionManager {
     } else {
       // 如果没有旧的心跳记录，则初始化新的
       this.sessionHeartbeats.set(newSessionId, Date.now());
+    }
+    
+    // 转移配置快照
+    const oldConfig = this.sessionConfigs.get(oldSessionId);
+    if (oldConfig) {
+      this.sessionConfigs.delete(oldSessionId);
+      this.sessionConfigs.set(newSessionId, oldConfig);
+      console.log(`📸 Transferred config snapshot: ${oldSessionId} -> ${newSessionId}`);
     }
     
     // 从agent会话索引中移除原始sessionId
@@ -314,6 +350,9 @@ export class SessionManager {
     
     // 从心跳记录移除
     this.sessionHeartbeats.delete(sessionId);
+    
+    // 从配置快照移除
+    this.sessionConfigs.delete(sessionId);
     
     // 从 agent 会话索引移除
     if (this.agentSessions.has(agentId)) {
@@ -595,9 +634,78 @@ export class SessionManager {
     this.tempSessions.clear();
     this.agentSessions.clear();
     this.sessionHeartbeats.clear();
+    this.sessionConfigs.clear();
     
     console.log(`✅ Cleared ${totalSessions} sessions`);
     return totalSessions;
+  }
+
+  /**
+   * 比较两个配置快照是否相同
+   */
+  private compareConfigSnapshots(config1: SessionConfigSnapshot, config2: SessionConfigSnapshot): boolean {
+    // 比较基本字段
+    if (config1.model !== config2.model ||
+        config1.claudeVersionId !== config2.claudeVersionId ||
+        config1.permissionMode !== config2.permissionMode) {
+      return false;
+    }
+
+    // 比较 mcpTools 数组
+    const mcpTools1 = config1.mcpTools || [];
+    const mcpTools2 = config2.mcpTools || [];
+    if (mcpTools1.length !== mcpTools2.length) {
+      return false;
+    }
+    const sortedMcp1 = [...mcpTools1].sort();
+    const sortedMcp2 = [...mcpTools2].sort();
+    if (!sortedMcp1.every((tool, idx) => tool === sortedMcp2[idx])) {
+      return false;
+    }
+
+    // 比较 allowedTools 数组
+    const allowedTools1 = config1.allowedTools || [];
+    const allowedTools2 = config2.allowedTools || [];
+    if (allowedTools1.length !== allowedTools2.length) {
+      return false;
+    }
+    const sortedAllowed1 = [...allowedTools1].sort();
+    const sortedAllowed2 = [...allowedTools2].sort();
+    if (!sortedAllowed1.every((tool, idx) => tool === sortedAllowed2[idx])) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * 检查会话配置是否发生变化
+   * @param sessionId 会话ID
+   * @param newConfig 新的配置快照
+   * @returns 是否发生变化
+   */
+  hasConfigChanged(sessionId: string, newConfig: SessionConfigSnapshot): boolean {
+    const oldConfig = this.sessionConfigs.get(sessionId);
+    if (!oldConfig) {
+      // 没有旧配置，认为是新会话，不算变化
+      return false;
+    }
+
+    const changed = !this.compareConfigSnapshots(oldConfig, newConfig);
+    if (changed) {
+      console.log(`🔍 Config changed for session ${sessionId}:`);
+      console.log(`   Old config:`, oldConfig);
+      console.log(`   New config:`, newConfig);
+    }
+    return changed;
+  }
+
+  /**
+   * 获取会话的配置快照
+   * @param sessionId 会话ID
+   */
+  getSessionConfig(sessionId: string): SessionConfigSnapshot | undefined {
+    return this.sessionConfigs.get(sessionId);
   }
 
   /**
@@ -620,6 +728,7 @@ export class SessionManager {
     this.tempSessions.clear();
     this.agentSessions.clear();
     this.sessionHeartbeats.clear();
+    this.sessionConfigs.clear();
     
     console.log('✅ SessionManager shutdown complete');
   }

@@ -640,8 +640,29 @@ router.post('/chat', async (req, res) => {
         // uses these options to configure the Claude SDK query
         queryOptions.includePartialMessages = includePartialMessages;
 
-        // 处理会话管理
-        const { claudeSession, actualSessionId: initialSessionId } = await handleSessionManagement(agentId, sessionId || null, projectPath, queryOptions, claudeVersion, model);
+        // 构建配置快照，用于检测配置变化
+        const configSnapshot = {
+          model: queryOptions.model,
+          claudeVersionId: claudeVersion,
+          permissionMode: queryOptions.permissionMode,
+          mcpTools: mcpTools || [],
+          allowedTools: agent.allowedTools
+            .filter((tool: any) => tool.enabled)
+            .map((tool: any) => tool.name)
+        };
+        console.log('📸 [Chat API] Config snapshot:', configSnapshot);
+
+        // 处理会话管理（传入配置快照）
+        const { claudeSession, actualSessionId: initialSessionId } = await handleSessionManagement(
+          agentId, 
+          sessionId || null, 
+          projectPath, 
+          queryOptions, 
+          claudeVersion, 
+          model,
+          'reuse', // session mode
+          configSnapshot
+        );
         let actualSessionId = initialSessionId;
 
         // 📊 输出 Session 初始化后的信息
@@ -859,7 +880,7 @@ router.post('/chat', async (req, res) => {
             if (!actualSessionId || !currentSessionId) {
               // 新会话：保存session ID
               claudeSession.setClaudeSessionId(responseSessionId);
-              sessionManager.confirmSessionId(claudeSession, responseSessionId);
+              sessionManager.confirmSessionId(claudeSession, responseSessionId, configSnapshot);
               console.log(`✅ Confirmed session ${responseSessionId} for agent: ${agentId}`);
 
               // 🎤 更新 NotificationChannel、UserInputRegistry 和 MCP Server 的 sessionId
