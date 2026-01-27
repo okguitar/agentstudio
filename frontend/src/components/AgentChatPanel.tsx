@@ -52,6 +52,8 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
   // 基础状态
   const [inputMessage, setInputMessage] = useState('');
   const [hasProcessedInitialMessage, setHasProcessedInitialMessage] = useState(false);
+  const [projectDefaultProvider, setProjectDefaultProvider] = useState<string | undefined>(undefined);
+  const [projectDefaultModel, setProjectDefaultModel] = useState<string | undefined>(undefined);
 
   // Agent store状态 - 需要在其他hooks之前
   const {
@@ -160,7 +162,8 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
   });
 
   const claudeVersionManager = useClaudeVersionManager({
-    initialModel: 'sonnet'
+    initialModel: projectDefaultModel || 'sonnet',
+    initialVersion: projectDefaultProvider
   });
 
   // 从hooks中解构需要的状态和方法
@@ -201,6 +204,38 @@ export const AgentChatPanel: React.FC<AgentChatPanelProps> = ({ agent, projectPa
     setSelectedClaudeVersion,
     setIsVersionLocked
   } = claudeVersionManager;
+
+  // 获取项目默认供应商和模型设置，并应用到版本管理器
+  useEffect(() => {
+    if (projectPath) {
+      const fetchProjectSettings = async () => {
+        try {
+          const response = await authFetch(`${API_BASE}/projects/${encodeURIComponent(projectPath)}`);
+          if (response.ok) {
+            const data = await response.json();
+            console.log('🔧 Project settings loaded:', data.project);
+            
+            // 应用项目的默认供应商
+            if (data.project.defaultProviderId) {
+              console.log('🔧 Setting provider to:', data.project.defaultProviderId);
+              setProjectDefaultProvider(data.project.defaultProviderId);
+              setSelectedClaudeVersion(data.project.defaultProviderId);
+            }
+            
+            // 应用项目的默认模型
+            if (data.project.defaultModel) {
+              console.log('🔧 Setting model to:', data.project.defaultModel);
+              setProjectDefaultModel(data.project.defaultModel);
+              setSelectedModel(data.project.defaultModel);
+            }
+          }
+        } catch (error) {
+          console.error('Failed to fetch project settings:', error);
+        }
+      };
+      fetchProjectSettings();
+    }
+  }, [projectPath, setSelectedClaudeVersion, setSelectedModel]);
 
   const {
     showToolSelector,

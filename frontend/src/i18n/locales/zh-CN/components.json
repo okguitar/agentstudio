@@ -1061,7 +1061,8 @@
       "overview": "概览",
       "apiKeys": "API密钥",
       "external": "外部Agent",
-      "tasks": "任务"
+      "tasks": "任务",
+      "im": "IM 接入"
     },
     "actions": {
       "copy": "复制",
@@ -1149,6 +1150,25 @@
       "createdAt": "创建时间",
       "startedAt": "开始时间",
       "completedAt": "完成时间"
+    },
+    "im": {
+      "title": "IM 接入",
+      "description": "为企业微信机器人生成一键接入命令",
+      "refresh": "刷新",
+      "networkStatus": "网络状态",
+      "tunnelStatus": "隧道状态",
+      "connected": "已连接",
+      "notConnected": "未连接",
+      "localNetwork": "本地网络",
+      "available": "可用",
+      "unavailable": "不可用",
+      "noAccessWarning": "无法确定外部访问地址。如需通过企业微信访问，请先配置隧道服务或确保本地网络可被外部访问。",
+      "commandGenerator": "命令生成器",
+      "generateCommand": "生成接入命令",
+      "generating": "生成中...",
+      "generateHint": "点击按钮将自动创建新的 API 密钥并生成企微机器人接入命令",
+      "usage": "使用方法",
+      "usageDetail": "将生成的命令发送到企业微信机器人聊天中执行即可完成接入"
     },
     "modals": {
       "createKey": {

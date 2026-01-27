@@ -564,6 +564,8 @@ export class ProjectMetadataStorage {
       defaultAgent,
       defaultAgentName,
       defaultAgentIcon,
+      defaultProviderId: metadata.defaultProviderId,
+      defaultModel: metadata.defaultModel,
       tags: metadata.tags,
       metadata: metadata.metadata
     };

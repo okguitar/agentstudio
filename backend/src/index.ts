@@ -29,6 +29,7 @@ import cloudflareTunnelRouter from './routes/cloudflareTunnel';
 import taskExecutorRouter from './routes/taskExecutor';
 import versionRouter from './routes/version';
 import tunnelRouter from './routes/tunnel';
+import networkRouter from './routes/network';
 import { authMiddleware } from './middleware/auth';
 import { httpsOnly } from './middleware/httpsOnly';
 import { loadConfig, getSlidesDir } from './config/index';
@@ -357,6 +358,7 @@ const app: express.Express = express();
   app.use('/api/task-executor', authMiddleware, taskExecutorRouter);
   app.use('/api/version', authMiddleware, versionRouter);
   app.use('/api/tunnel', authMiddleware, tunnelRouter); // Tunnel management
+  app.use('/api/network-info', authMiddleware, networkRouter); // Network information
   app.use('/api/media', mediaAuthRouter); // Media auth endpoints
   app.use('/media', mediaRouter); // Remove authMiddleware - media files are now public
 

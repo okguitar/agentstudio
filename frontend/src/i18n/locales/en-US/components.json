@@ -1059,7 +1059,8 @@
       "overview": "Overview",
       "apiKeys": "API Keys",
       "external": "External Agents",
-      "tasks": "Tasks"
+      "tasks": "Tasks",
+      "im": "IM Integration"
     },
     "actions": {
       "copy": "Copy",
@@ -1147,6 +1148,25 @@
       "createdAt": "Created",
       "startedAt": "Started",
       "completedAt": "Completed"
+    },
+    "im": {
+      "title": "IM Integration",
+      "description": "Generate one-click integration commands for WeChat Work bots",
+      "refresh": "Refresh",
+      "networkStatus": "Network Status",
+      "tunnelStatus": "Tunnel Status",
+      "connected": "Connected",
+      "notConnected": "Not Connected",
+      "localNetwork": "Local Network",
+      "available": "Available",
+      "unavailable": "Unavailable",
+      "noAccessWarning": "Unable to determine external access address. To access via WeChat Work, please configure tunnel service first or ensure local network is externally accessible.",
+      "commandGenerator": "Command Generator",
+      "generateCommand": "Generate Integration Command",
+      "generating": "Generating...",
+      "generateHint": "Click the button to automatically create a new API key and generate WeChat Work bot integration command",
+      "usage": "Usage",
+      "usageDetail": "Send the generated command to WeChat Work bot chat to complete integration"
     },
     "modals": {
       "createKey": {

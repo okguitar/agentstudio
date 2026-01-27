@@ -226,6 +226,8 @@ router.post('/messages', async (req: A2ARequest, res: Response) => {
 
     // Build query options for Claude using the shared utility
     // This automatically handles A2A SDK MCP server integration
+    // Model and provider will be resolved by buildQueryOptions using resolveConfig
+    // which prioritizes: channel > agent > project > system default
     const { queryOptions } = await buildQueryOptions(
       {
         systemPrompt: agentConfig.systemPrompt || undefined,
@@ -233,13 +235,12 @@ router.post('/messages', async (req: A2ARequest, res: Response) => {
         maxTurns: 30,
         workingDirectory: a2aContext.workingDirectory,
         permissionMode: 'default',
-        model: 'sonnet', // Default model
       },
       a2aContext.workingDirectory,
       undefined, // mcpTools
       undefined, // permissionMode
-      undefined, // model
-      undefined, // claudeVersion
+      undefined, // model - let resolveConfig determine from project/system defaults
+      undefined, // claudeVersion - let resolveConfig determine from agent/project/system
       undefined  // defaultEnv
     );
 

@@ -146,6 +146,8 @@ class TunnelService {
   private localPort: number = 4936; // Default Agent Studio port
   private initialized = false;
   private configSource: 'port-specific' | 'default' | 'none' = 'none';
+  private healthCheckInterval: NodeJS.Timeout | null = null;
+  private reconnecting = false;
 
   /**
    * Initialize the tunnel service
@@ -171,6 +173,11 @@ class TunnelService {
     } else {
       console.log('[Tunnel] Not auto-connecting (disabled or no token)');
     }
+    
+    // Note: We don't start periodic health check here because:
+    // 1. Tunely client has its own heartbeat mechanism
+    // 2. Health check from local to public domain doesn't work reliably
+    // 3. We rely on tunely's onConnect/onDisconnect events instead
   }
 
   /**
@@ -307,6 +314,10 @@ class TunnelService {
       console.log('[Tunnel] Disconnected');
       this.status.connected = false;
       this.status.reconnectCount++;
+      
+      // Note: Tunely client has its own auto-reconnect mechanism
+      // (configured via reconnectInterval and maxReconnectAttempts)
+      // So we don't need to manually reconnect here
     });
 
     this.client.on('onError', (error: Error) => {
@@ -514,6 +525,88 @@ class TunnelService {
     }
 
     return result;
+  }
+
+  /**
+   * Perform health check on tunnel connection
+   * @returns true if tunnel is actually reachable, false otherwise
+   */
+  async performHealthCheck(): Promise<boolean> {
+    if (!this.status.connected || !this.status.domain) {
+      return false;
+    }
+
+    try {
+      const protocol = this.config.protocol || 'https';
+      const fullDomain = this.config.domainSuffix 
+        ? `${this.status.domain}${this.config.domainSuffix}`
+        : this.status.domain;
+      
+      const testUrl = `${protocol}://${fullDomain}/api/version`;
+      
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 3000);
+      
+      const response = await fetch(testUrl, {
+        method: 'HEAD',
+        signal: controller.signal,
+      });
+      
+      clearTimeout(timeout);
+      
+      // 200 or 401 both indicate the tunnel is working
+      // (401 just means auth is required, but the tunnel itself is up)
+      return response.ok || response.status === 401;
+    } catch (error) {
+      console.warn('[Tunnel] Health check failed:', error instanceof Error ? error.message : String(error));
+      return false;
+    }
+  }
+
+  /**
+   * Start periodic health check
+   */
+  private startHealthCheck(): void {
+    // Clear existing interval if any
+    if (this.healthCheckInterval) {
+      clearInterval(this.healthCheckInterval);
+    }
+
+    // Check every 30 seconds
+    this.healthCheckInterval = setInterval(async () => {
+      // Only check if we think we're connected and tunnel is enabled
+      if (!this.status.connected || !this.config.enabled) {
+        return;
+      }
+
+      const isHealthy = await this.performHealthCheck();
+      
+      if (!isHealthy && !this.reconnecting) {
+        console.warn('[Tunnel] Health check failed - connection appears to be dead. Auto-reconnecting...');
+        this.status.connected = false;
+        this.reconnecting = true;
+        
+        try {
+          await this.disconnect();
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+          await this.connect();
+        } catch (error) {
+          console.error('[Tunnel] Auto-reconnect after health check failure failed:', error);
+        } finally {
+          this.reconnecting = false;
+        }
+      }
+    }, 30000); // 30 seconds
+  }
+
+  /**
+   * Stop health check
+   */
+  private stopHealthCheck(): void {
+    if (this.healthCheckInterval) {
+      clearInterval(this.healthCheckInterval);
+      this.healthCheckInterval = null;
+    }
   }
 }
 

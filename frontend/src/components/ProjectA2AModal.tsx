@@ -17,11 +17,17 @@ import {
   ToggleRight,
   Eye,
   EyeOff,
-  FolderInput
+  FolderInput,
+  MessageSquare,
+  AlertTriangle,
+  CheckCircle2,
+  RefreshCw
 } from 'lucide-react';
 import { useA2AManagement } from '../hooks/useA2AManagement';
 import { useProjects } from '../hooks/useProjects';
 import { showError } from '../utils/toast';
+import { API_BASE } from '../lib/config';
+import { authFetch } from '../lib/authFetch';
 
 interface Project {
   id: string;
@@ -36,7 +42,7 @@ interface ProjectA2AModalProps {
 
 export const ProjectA2AModal: React.FC<ProjectA2AModalProps> = ({ project, onClose }) => {
   const { t } = useTranslation('components');
-  const [activeTab, setActiveTab] = useState<'overview' | 'keys' | 'external' | 'tasks'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'keys' | 'external' | 'tasks' | 'im'>('overview');
 
   // Use A2A management hook
   const {
@@ -73,6 +79,35 @@ export const ProjectA2AModal: React.FC<ProjectA2AModalProps> = ({ project, onClo
   const [showNewKeyModal, setShowNewKeyModal] = useState(false);
   const [newlyCreatedKey, setNewlyCreatedKey] = useState<string>('');
   const [visibleKeys, setVisibleKeys] = useState<Set<string>>(new Set());
+  
+  // IM integration states
+  const [networkInfo, setNetworkInfo] = useState<any>(null);
+  const [loadingNetworkInfo, setLoadingNetworkInfo] = useState(false);
+  const [generatedCommand, setGeneratedCommand] = useState<string>('');
+  const [generatingCommand, setGeneratingCommand] = useState(false);
+
+  // Load network info function
+  const loadNetworkInfo = React.useCallback(async () => {
+    setLoadingNetworkInfo(true);
+    try {
+      const response = await authFetch(`${API_BASE}/network-info`);
+      if (!response.ok) throw new Error('Failed to load network info');
+      const data = await response.json();
+      setNetworkInfo(data);
+    } catch (error) {
+      console.error('Error loading network info:', error);
+      showError('获取网络信息失败');
+    } finally {
+      setLoadingNetworkInfo(false);
+    }
+  }, []);
+
+  // Load network info when IM tab is activated
+  React.useEffect(() => {
+    if (activeTab === 'im' && !networkInfo && !loadingNetworkInfo) {
+      loadNetworkInfo();
+    }
+  }, [activeTab, networkInfo, loadingNetworkInfo, loadNetworkInfo]);
 
   // Toggle key visibility
   const toggleKeyVisibility = (keyId: string) => {
@@ -304,7 +339,8 @@ export const ProjectA2AModal: React.FC<ProjectA2AModalProps> = ({ project, onClo
           { id: 'overview', label: t('a2aManagement.tabs.overview'), icon: Shield },
           { id: 'keys', label: t('a2aManagement.tabs.apiKeys'), icon: Key },
           { id: 'external', label: t('a2aManagement.tabs.external'), icon: Bot },
-          { id: 'tasks', label: t('a2aManagement.tabs.tasks'), icon: Activity }
+          { id: 'tasks', label: t('a2aManagement.tabs.tasks'), icon: Activity },
+          { id: 'im', label: t('a2aManagement.tabs.im'), icon: MessageSquare }
         ].map(({ id, label, icon: Icon }) => (
           <button
             key={id}
@@ -1146,6 +1182,212 @@ export const ProjectA2AModal: React.FC<ProjectA2AModalProps> = ({ project, onClo
     </div>
   );
 
+  // Generate IM integration command
+  const handleGenerateCommand = async () => {
+    if (!agentCard?.context?.a2aAgentId) {
+      showError('无法获取 A2A Agent ID');
+      return;
+    }
+
+    setGeneratingCommand(true);
+    try {
+      // Check if "企微调用" API key already exists
+      const existingKey = apiKeys.find(k => k.description === '企微调用');
+      let apiKey: string;
+      
+      if (existingKey && existingKey.key) {
+        // Use existing key
+        apiKey = existingKey.key;
+      } else {
+        // Create new API key for WeChat integration
+        const result = await createApiKey('企微调用');
+        if (!result || !result.key) {
+          showError('创建 API 密钥失败');
+          return;
+        }
+        apiKey = result.key;
+      }
+
+      // Reload network info to get latest status
+      await loadNetworkInfo();
+
+      // Determine the best URL
+      let baseUrl: string;
+      if (networkInfo?.tunnel?.connected && networkInfo.tunnel.url) {
+        baseUrl = networkInfo.tunnel.url;
+      } else if (networkInfo?.network?.bestLocalIP) {
+        const port = networkInfo.network.port || 4936;
+        baseUrl = `http://${networkInfo.network.bestLocalIP}:${port}`;
+      } else {
+        showError('无法确定访问地址，请先配置隧道服务');
+        return;
+      }
+
+      const a2aEndpoint = `${baseUrl}/a2a/${agentCard.context.a2aAgentId}/messages`;
+      const command = `/ap ${project.name} ${a2aEndpoint} --api-key ${apiKey}`;
+      
+      setGeneratedCommand(command);
+    } catch (error) {
+      console.error('Error generating command:', error);
+      showError('生成命令失败');
+    } finally {
+      setGeneratingCommand(false);
+    }
+  };
+
+  // Render IM integration tab
+  const renderIMIntegration = () => (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
+              <MessageSquare className="w-5 h-5" />
+              {t('a2aManagement.im.title')}
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              {t('a2aManagement.im.description')}
+            </p>
+          </div>
+          <button
+            onClick={loadNetworkInfo}
+            disabled={loadingNetworkInfo}
+            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 ${loadingNetworkInfo ? 'animate-spin' : ''}`} />
+            {t('a2aManagement.im.refresh')}
+          </button>
+        </div>
+
+        {/* Network Status */}
+        {loadingNetworkInfo ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader className="w-6 h-6 animate-spin text-blue-500" />
+          </div>
+        ) : networkInfo && (
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+            <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-4">
+              {t('a2aManagement.im.networkStatus')}
+            </h4>
+            
+            {/* Tunnel Status */}
+            <div className="mb-4 p-3 rounded-lg bg-gray-50 dark:bg-gray-900">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t('a2aManagement.im.tunnelStatus')}
+                </span>
+                {networkInfo.tunnel?.connected ? (
+                  <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                    <CheckCircle2 className="w-3 h-3" />
+                    {t('a2aManagement.im.connected')}
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                    <AlertTriangle className="w-3 h-3" />
+                    {t('a2aManagement.im.notConnected')}
+                  </span>
+                )}
+              </div>
+              {networkInfo.tunnel?.connected && networkInfo.tunnel.url && (
+                <div className="text-xs text-gray-600 dark:text-gray-400 break-all">
+                  {networkInfo.tunnel.url}
+                </div>
+              )}
+            </div>
+
+            {/* Local Network */}
+            <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-900">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t('a2aManagement.im.localNetwork')}
+                </span>
+                {networkInfo.network?.bestLocalIP ? (
+                  <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                    <CheckCircle2 className="w-3 h-3" />
+                    {t('a2aManagement.im.available')}
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                    <AlertTriangle className="w-3 h-3" />
+                    {t('a2aManagement.im.unavailable')}
+                  </span>
+                )}
+              </div>
+              {networkInfo.network?.bestLocalIP && (
+                <div className="text-xs text-gray-600 dark:text-gray-400">
+                  http://{networkInfo.network.bestLocalIP}:{networkInfo.network.port || 4936}
+                </div>
+              )}
+            </div>
+
+            {/* Warning if no tunnel and no local IP */}
+            {!networkInfo.tunnel?.connected && !networkInfo.network?.bestLocalIP && (
+              <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-yellow-800 dark:text-yellow-200">
+                    {t('a2aManagement.im.noAccessWarning')}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Command Generator */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+          <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-4">
+            {t('a2aManagement.im.commandGenerator')}
+          </h4>
+          
+          <div className="mb-4">
+            <button
+              onClick={handleGenerateCommand}
+              disabled={generatingCommand || !agentCard?.context?.a2aAgentId || loadingNetworkInfo}
+              className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {generatingCommand ? (
+                <>
+                  <Loader className="w-4 h-4 animate-spin" />
+                  {t('a2aManagement.im.generating')}
+                </>
+              ) : (
+                <>
+                  <Plus className="w-4 h-4" />
+                  {t('a2aManagement.im.generateCommand')}
+                </>
+              )}
+            </button>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+              {t('a2aManagement.im.generateHint')}
+            </p>
+          </div>
+
+          {generatedCommand && (
+            <div className="space-y-3">
+              <div className="relative">
+                <div className="p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg font-mono text-sm break-all">
+                  {generatedCommand}
+                </div>
+                <button
+                  onClick={() => copyToClipboard(generatedCommand)}
+                  className="absolute top-2 right-2 p-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
+                  title={t('a2aManagement.actions.copy')}
+                >
+                  <Copy className="w-4 h-4" />
+                </button>
+              </div>
+              
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                <p className="text-sm text-blue-800 dark:text-blue-200">
+                  <strong>{t('a2aManagement.im.usage')}:</strong> {t('a2aManagement.im.usageDetail')}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-6xl mx-4 h-[90vh] flex flex-col">
@@ -1179,6 +1421,7 @@ export const ProjectA2AModal: React.FC<ProjectA2AModalProps> = ({ project, onClo
             {activeTab === 'keys' && renderKeys()}
             {activeTab === 'external' && renderExternal()}
             {activeTab === 'tasks' && renderTasks()}
+            {activeTab === 'im' && renderIMIntegration()}
           </div>
         </div>
       </div>
