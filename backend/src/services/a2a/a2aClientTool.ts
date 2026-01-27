@@ -608,19 +608,19 @@ async function callExternalAgentSyncFetch(
       };
     }
 
-    // Server returns: { sessionId, message, duration_ms }
+    // Server returns: { response, sessionId, metadata } (A2A standard format)
     // Store in history as a simple message event
     const historyEvent = {
       kind: 'message' as const,
       role: 'assistant' as const,
       messageId: sessionId,
-      parts: [{ kind: 'text' as const, text: responseData.message || '' }],
+      parts: [{ kind: 'text' as const, text: responseData.response || responseData.message || '' }],
     };
     await a2aHistoryService.appendEvent(workingDirectory, sessionId, historyEvent);
 
     return {
       success: true,
-      data: responseData.message || 'Message processed',
+      data: responseData.response || responseData.message || 'Message processed',
       sessionId: responseData.sessionId || sessionId,
     };
 
