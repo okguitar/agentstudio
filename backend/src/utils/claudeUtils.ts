@@ -335,7 +335,8 @@ export async function buildQueryOptions(
           if (serverConfig.type === 'http') {
             mcpServers[serverName] = {
               type: 'http',
-              url: serverConfig.url
+              url: serverConfig.url,
+              headers: serverConfig.headers || {}
             };
           } else if (serverConfig.type === 'stdio') {
             mcpServers[serverName] = {
