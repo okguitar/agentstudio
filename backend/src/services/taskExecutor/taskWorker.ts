@@ -85,7 +85,7 @@ async function executeTask(task: TaskDefinition): Promise<TaskResult> {
     // Model priority: task.modelId > project/provider config (resolved by buildQueryOptions)
     // If task.modelId is not specified, let resolveConfig determine from project/system defaults
     const modelToUse = task.modelId;
-    addLog('info', 'system', `Model: ${modelToUse || 'auto (from project/system)'`}`);
+    addLog('info', 'system', `Model: ${modelToUse || 'auto (from project/system)'}`);
 
     // Determine permission mode
     const permissionMode = task.permissionMode || 'bypassPermissions';

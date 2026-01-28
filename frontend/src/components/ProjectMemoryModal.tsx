@@ -21,6 +21,7 @@ export const ProjectMemoryModal: React.FC<ProjectMemoryModalProps> = ({
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -54,6 +55,7 @@ export const ProjectMemoryModal: React.FC<ProjectMemoryModalProps> = ({
     try {
       setSaving(true);
       setError(null);
+      setSaved(false);
 
       const response = await authFetch(`${API_BASE}/projects/claude-md?path=${encodeURIComponent(project.path)}`, {
         method: 'PUT',
@@ -67,17 +69,11 @@ export const ProjectMemoryModal: React.FC<ProjectMemoryModalProps> = ({
         throw new Error('保存 CLAUDE.md 文件失败');
       }
 
-      // Success feedback
-      const saveButton = document.getElementById('save-button');
-      if (saveButton) {
-        const originalText = saveButton.textContent;
-        saveButton.textContent = '已保存';
-        setTimeout(() => {
-          if (saveButton.textContent === '已保存') {
-            saveButton.textContent = originalText;
-          }
-        }, 2000);
-      }
+      // Success feedback using state
+      setSaved(true);
+      setTimeout(() => {
+        setSaved(false);
+      }, 2000);
     } catch (error) {
       console.error('Failed to save CLAUDE.md:', error);
       setError(error instanceof Error ? error.message : '保存失败');
@@ -163,9 +159,8 @@ export const ProjectMemoryModal: React.FC<ProjectMemoryModalProps> = ({
               取消
             </button>
             <button
-              id="save-button"
               onClick={handleSave}
-              disabled={saving}
+              disabled={saving || saved}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
             >
               {saving ? (
@@ -173,7 +168,7 @@ export const ProjectMemoryModal: React.FC<ProjectMemoryModalProps> = ({
               ) : (
                 <Save className="w-4 h-4" />
               )}
-              <span>{saving ? '保存中...' : '保存'}</span>
+              <span>{saving ? '保存中...' : saved ? '已保存' : '保存'}</span>
             </button>
           </div>
         )}
