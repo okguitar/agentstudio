@@ -32,9 +32,16 @@ export const BackendOnboardingWizard: React.FC<BackendOnboardingWizardProps> = (
   }, [step]);
 
   const detectLocalBackend = async () => {
+    // Get current port from window location
+    // If we're on default frontend dev ports (3000, 5173, etc.), use 4936
+    // Otherwise, use the current port (assuming backend is on same port)
+    const currentPort = window.location.port;
+    const frontendDevPorts = ['3000', '5173', '5174', '8080'];
+    const backendPort = currentPort && !frontendDevPorts.includes(currentPort) ? currentPort : '4936';
+    
     const candidateUrls = [
-      'http://127.0.0.1:4936',
-      'http://localhost:4936'
+      `http://127.0.0.1:${backendPort}`,
+      `http://localhost:${backendPort}`
     ];
 
     for (const url of candidateUrls) {
