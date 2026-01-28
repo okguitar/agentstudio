@@ -14,6 +14,7 @@ import lockfile from 'proper-lockfile';
 import type { A2AConfig } from '../../types/a2a.js';
 import { DEFAULT_A2A_CONFIG } from '../../types/a2a.js';
 import { isIPAddress } from '../../middleware/httpsOnly.js';
+import { getProjectsDir } from '../../config/sdkConfig.js';
 
 const LOCK_OPTIONS = {
   retries: { retries: 5, minTimeout: 100, maxTimeout: 500 },
@@ -31,8 +32,8 @@ function getConfigPath(projectId: string): string {
     return path.join(projectId, '.a2a', 'config.json');
   }
 
-  // Projects are stored in ~/.claude/projects/
-  const projectsDir = path.join(process.env.HOME || process.cwd(), '.claude', 'projects');
+  // Projects are stored in SDK projects directory (e.g., ~/.claude/projects/)
+  const projectsDir = getProjectsDir();
   return path.join(projectsDir, projectId, '.a2a', 'config.json');
 }
 

@@ -4,6 +4,7 @@ import path from 'path';
 import { promisify } from 'util';
 import matter from 'gray-matter';
 import { SlashCommand, SlashCommandCreate, SlashCommandUpdate, SlashCommandFilter } from '../types/commands';
+import { getCommandsDir, getSdkDirName } from '../config/sdkConfig.js';
 
 const router: Router = express.Router();
 const readdir = promisify(fs.readdir);
@@ -15,16 +16,17 @@ const stat = promisify(fs.stat);
 const lstat = promisify(fs.lstat);
 const readlink = promisify(fs.readlink);
 
-// Get project commands directory (.claude/commands)
+// Get project commands directory (.claude/commands or .claude-internal/commands)
 const getProjectCommandsDir = (projectPath?: string) => {
+  const sdkDirName = getSdkDirName();
   if (projectPath) {
-    return path.join(projectPath, '.claude', 'commands');
+    return path.join(projectPath, sdkDirName, 'commands');
   }
-  return path.join(process.cwd(), '..', '.claude', 'commands');
+  return path.join(process.cwd(), '..', sdkDirName, 'commands');
 };
 
-// Get user commands directory (~/.claude/commands)
-const getUserCommandsDir = () => path.join(process.env.HOME || process.env.USERPROFILE || '', '.claude', 'commands');
+// Get user commands directory (e.g., ~/.claude/commands)
+const getUserCommandsDir = () => getCommandsDir();
 
 // Ensure directory exists
 async function ensureDir(dirPath: string) {

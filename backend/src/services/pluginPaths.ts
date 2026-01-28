@@ -1,35 +1,39 @@
 import * as path from 'path';
 import * as os from 'os';
 import * as fs from 'fs';
+import { getSdkDir, getPluginsDir, getCommandsDir, getAgentsDir, getSkillsDir, getHooksDir, getMcpDir } from '../config/sdkConfig.js';
 
 /**
  * Plugin Paths Service
- * Manages paths according to Claude Code's standard structure
+ * Manages paths according to Agent SDK's standard structure
+ * 
+ * Supports multiple SDK engines (claude-code, claude-internal, code-buddy)
+ * configured via AGENT_SDK environment variable
  */
 class PluginPaths {
   private claudeDir: string;
 
   constructor() {
-    this.claudeDir = path.join(os.homedir(), '.claude');
+    this.claudeDir = getSdkDir();
     this.ensureDirectories();
   }
 
   /**
-   * Get base .claude directory
+   * Get base SDK directory (e.g., ~/.claude, ~/.claude-internal)
    */
   getClaudeDir(): string {
     return this.claudeDir;
   }
 
   /**
-   * Get plugins base directory (~/.claude/plugins)
+   * Get plugins base directory (e.g., ~/.claude/plugins)
    */
   getPluginsDir(): string {
-    return path.join(this.claudeDir, 'plugins');
+    return getPluginsDir();
   }
 
   /**
-   * Get marketplaces directory (~/.claude/plugins/marketplaces)
+   * Get marketplaces directory (e.g., ~/.claude/plugins/marketplaces)
    */
   getMarketplacesDir(): string {
     return path.join(this.getPluginsDir(), 'marketplaces');
@@ -87,38 +91,38 @@ class PluginPaths {
   }
 
   /**
-   * Get commands symlink directory (~/.claude/commands)
+   * Get commands symlink directory (e.g., ~/.claude/commands)
    */
   getCommandsDir(): string {
-    return path.join(this.claudeDir, 'commands');
+    return getCommandsDir();
   }
 
   /**
-   * Get agents symlink directory (~/.claude/agents)
+   * Get agents symlink directory (e.g., ~/.claude/agents)
    */
   getAgentsDir(): string {
-    return path.join(this.claudeDir, 'agents');
+    return getAgentsDir();
   }
 
   /**
-   * Get skills symlink directory (~/.claude/skills)
+   * Get skills symlink directory (e.g., ~/.claude/skills)
    */
   getSkillsDir(): string {
-    return path.join(this.claudeDir, 'skills');
+    return getSkillsDir();
   }
 
   /**
-   * Get hooks directory (~/.claude/hooks)
+   * Get hooks directory (e.g., ~/.claude/hooks)
    */
   getHooksDir(): string {
-    return path.join(this.claudeDir, 'hooks');
+    return getHooksDir();
   }
 
   /**
-   * Get MCP servers directory (~/.claude/mcp)
+   * Get MCP servers directory (e.g., ~/.claude/mcp)
    */
   getMcpDir(): string {
-    return path.join(this.claudeDir, 'mcp');
+    return getMcpDir();
   }
 
   /**

@@ -16,6 +16,7 @@ import {
 } from '../services/claudeVersionStorage';
 import { ClaudeVersionCreate, ClaudeVersionUpdate } from '../types/claude-versions';
 import { loadConfig } from '../config';
+import { getSdkDir } from '../config/sdkConfig.js';
 
 const router: Router = express.Router();
 const execAsync = promisify(exec);
@@ -226,7 +227,7 @@ const getPackageManagerVersion = async (manager: string) => {
 
 // Get user's home directory
 const getUserHomeDir = () => homedir();
-const getGlobalMemoryPath = () => join(getUserHomeDir(), '.claude', 'CLAUDE.md');
+const getGlobalMemoryPath = () => join(getSdkDir(), 'CLAUDE.md');
 
 // GET /api/settings/global-memory - Read global memory file
 router.get('/global-memory', async (req, res) => {

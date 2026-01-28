@@ -5,6 +5,7 @@ import * as os from 'os';
 import { spawn, exec } from 'child_process';
 import { promisify } from 'util';
 import { MCP_SERVER_CONFIG_FILE, CLAUDE_AGENT_DIR } from '../config/paths.js';
+import { getSdkConfigPath } from '../config/sdkConfig.js';
 
 const router: express.Router = express.Router();
 const execAsync = promisify(exec);
@@ -251,11 +252,11 @@ router.post('/:name/validate', async (req, res) => {
 
 
 
-// Get MCP configurations from Claude Code's ~/.claude.json file
+// Get MCP configurations from Agent SDK config file
 router.get('/claude-code', async (req, res) => {
   try {
-    // Read ~/.claude.json file
-    const claudeJsonPath = path.join(os.homedir(), '.claude.json');
+    // Read SDK config file (e.g., ~/.claude.json or ~/.claude-internal.json)
+    const claudeJsonPath = getSdkConfigPath();
 
     if (!fs.existsSync(claudeJsonPath)) {
       return res.json({ servers: [] });

@@ -41,6 +41,7 @@ program
   .description('Start AgentStudio server')
   .option('-p, --port <port>', 'server port', '4936')
   .option('-H, --host <host>', 'server host', '0.0.0.0')
+  .option('--sdk <engine>', 'agent SDK engine (claude-code, claude-internal)', 'claude-code')
   .option('--api-only', 'start API server only (no frontend)')
   .option('--env <path>', 'path to .env file')
   .option('--data-dir <path>', 'data directory for agents, sessions, etc.')
@@ -52,6 +53,7 @@ program
     // Set environment variables
     process.env.PORT = options.port;
     process.env.HOST = options.host;
+    process.env.AGENT_SDK = options.sdk;
 
     if (options.env) {
       process.env.ENV_PATH = path.resolve(options.env);
@@ -66,6 +68,10 @@ program
     if (options.noAuth) {
       process.env.NO_AUTH = 'true';
       console.log('   Auth: disabled');
+    }
+
+    if (options.sdk !== 'claude-code') {
+      console.log(`   SDK: ${options.sdk}`);
     }
 
     if (options.apiOnly) {
