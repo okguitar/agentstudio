@@ -4,6 +4,7 @@ import path from 'path';
 import { promisify } from 'util';
 import matter from 'gray-matter';
 import { Subagent, SubagentCreate, SubagentUpdate, SubagentFilter } from '../types/subagents';
+import { getAgentsDir, getSdkDirName } from '../config/sdkConfig.js';
 
 const router: Router = express.Router();
 const readdir = promisify(fs.readdir);
@@ -13,15 +14,16 @@ const mkdir = promisify(fs.mkdir);
 const unlink = promisify(fs.unlink);
 const stat = promisify(fs.stat);
 
-// Get user subagents directory (~/.claude/agents)
-const getUserSubagentsDir = () => path.join(process.env.HOME || process.env.USERPROFILE || '', '.claude', 'agents');
+// Get user subagents directory (e.g., ~/.claude/agents)
+const getUserSubagentsDir = () => getAgentsDir();
 
-// Get project subagents directory (.claude/agents)
+// Get project subagents directory (.claude/agents or .claude-internal/agents)
 const getProjectSubagentsDir = (projectPath?: string) => {
+  const sdkDirName = getSdkDirName();
   if (projectPath) {
-    return path.join(projectPath, '.claude', 'agents');
+    return path.join(projectPath, sdkDirName, 'agents');
   }
-  return path.join(process.cwd(), '..', '.claude', 'agents');
+  return path.join(process.cwd(), '..', sdkDirName, 'agents');
 };
 
 // Ensure directory exists

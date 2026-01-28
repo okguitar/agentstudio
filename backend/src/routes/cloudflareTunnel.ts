@@ -5,12 +5,13 @@ import { readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { homedir } from 'os';
 import { existsSync } from 'fs';
+import { getSdkDir } from '../config/sdkConfig.js';
 
 const router: Router = express.Router();
 const execAsync = promisify(exec);
 
 // Tunnel configuration storage path
-const getTunnelConfigPath = () => join(homedir(), '.claude', 'cloudflare-tunnel.json');
+const getTunnelConfigPath = () => join(getSdkDir(), 'cloudflare-tunnel.json');
 
 interface TunnelConfig {
   apiToken?: string;

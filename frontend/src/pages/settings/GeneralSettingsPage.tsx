@@ -258,6 +258,33 @@ export const GeneralSettingsPage: React.FC = () => {
             </div>
           </div>
 
+          {/* SDK Info */}
+          {systemInfo?.sdk && (
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+              <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-3 flex items-center gap-2">
+                <Settings className="w-4 h-4" />
+                Agent SDK Configuration
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <div className="text-xs text-blue-700 dark:text-blue-300 mb-1">SDK Engine</div>
+                  <div className="font-mono text-sm text-blue-900 dark:text-blue-100 font-medium">
+                    {systemInfo.sdk.engine === 'claude-code' && '🤖 Claude Code (Default)'}
+                    {systemInfo.sdk.engine === 'claude-internal' && '🔒 Claude Internal'}
+                    {systemInfo.sdk.engine === 'code-buddy' && '🤝 Code Buddy (Coming Soon)'}
+                    {!['claude-code', 'claude-internal', 'code-buddy'].includes(systemInfo.sdk.engine) && systemInfo.sdk.engine}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-blue-700 dark:text-blue-300 mb-1">SDK Directory</div>
+                  <div className="font-mono text-xs text-blue-900 dark:text-blue-100 break-all">
+                    {systemInfo.sdk.directory}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Links */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             <a

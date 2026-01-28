@@ -38,8 +38,12 @@ import { initializeScheduler, shutdownScheduler } from './services/schedulerServ
 import { shutdownTelemetry } from './services/telemetry';
 import { initializeTaskExecutor, shutdownTaskExecutor } from './services/taskExecutor/index.js';
 import { tunnelService } from './services/tunnelService.js';
+import { logSdkConfig } from './config/sdkConfig.js';
 
 dotenv.config();
+
+// Log SDK configuration at startup
+logSdkConfig();
 
 // Get version from package.json (works in both dev and npm package mode)
 const getVersion = () => {

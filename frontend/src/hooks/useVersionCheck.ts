@@ -22,6 +22,11 @@ interface SystemInfo {
     platform: string;
     arch: string;
   };
+  sdk: {
+    engine: string;
+    directory: string;
+    dirName: string;
+  };
   links: {
     npm: string;
     github: string;

@@ -3,6 +3,7 @@ import { ClaudeSession } from './claudeSession';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
+import { getProjectsDir } from '../config/sdkConfig.js';
 
 /**
  * 会话配置快照
@@ -95,8 +96,7 @@ export class SessionManager {
     try {
       // 使用与sessions.ts相同的路径转换逻辑
       const claudeProjectPath = this.convertProjectPathToClaudeFormat(projectPath);
-      const homeDir = os.homedir();
-      const historyDir = path.join(homeDir, '.claude', 'projects', claudeProjectPath);
+      const historyDir = path.join(getProjectsDir(), claudeProjectPath);
       
       // 检查会话文件是否存在（Claude存储为.jsonl格式）
       const sessionFile = path.join(historyDir, `${sessionId}.jsonl`);

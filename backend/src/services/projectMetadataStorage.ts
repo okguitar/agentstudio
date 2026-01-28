@@ -4,6 +4,7 @@ import * as os from 'os';
 import { ProjectMetadata, ProjectWithAgentInfo } from '../types/projects';
 import { AgentStorage } from './agentStorage';
 import { CLAUDE_AGENT_DIR, PROJECTS_METADATA_FILE } from '../config/paths.js';
+import { getProjectsDir, getSdkConfigPath } from '../config/sdkConfig.js';
 
 interface ProjectMetadataStore {
   [projectPath: string]: ProjectMetadata;
@@ -11,15 +12,15 @@ interface ProjectMetadataStore {
 
 export class ProjectMetadataStorage {
   private metadataFilePath: string;  // ~/.claude-agent/projects.json
-  private projectsDir: string;       // ~/.claude/projects/
-  private claudeConfigPath: string;  // ~/.claude.json
+  private projectsDir: string;       // e.g., ~/.claude/projects/ or ~/.claude-internal/projects/
+  private claudeConfigPath: string;  // e.g., ~/.claude.json or ~/.claude-internal.json
   private agentStorage: AgentStorage;
   private metadataCache: ProjectMetadataStore | null = null;
 
   constructor() {
     this.metadataFilePath = PROJECTS_METADATA_FILE;
-    this.projectsDir = path.join(os.homedir(), '.claude', 'projects');
-    this.claudeConfigPath = path.join(os.homedir(), '.claude.json');
+    this.projectsDir = getProjectsDir();
+    this.claudeConfigPath = getSdkConfigPath();
     this.agentStorage = new AgentStorage();
 
     // Ensure directories exist

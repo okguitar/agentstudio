@@ -5,13 +5,14 @@ import * as os from 'os';
 import { AgentStorage } from '../services/agentStorage';
 import { ClaudeHistoryMessage, ClaudeHistorySession } from '../types/claude-history';
 import { sessionManager } from '../services/sessionManager';
+import { getProjectsDir } from '../config/sdkConfig.js';
 
 const router: express.Router = express.Router();
 
 // Storage instances
 const globalAgentStorage = new AgentStorage();
 
-// Helper functions for reading Claude Code history from ~/.claude/projects
+// Helper functions for reading Agent SDK history from projects directory
 function convertProjectPathToClaudeFormat(projectPath: string): string {
   // First, resolve symlinks to get the real path
   // This is important because Claude CLI stores sessions using the real path
@@ -59,7 +60,7 @@ interface SubAgentMessage {
 function readSubAgentMessageFlow(projectPath: string, agentId: string): SubAgentMessage[] {
   try {
     const claudeProjectPath = convertProjectPathToClaudeFormat(projectPath);
-    const historyDir = path.join(os.homedir(), '.claude', 'projects', claudeProjectPath);
+    const historyDir = path.join(getProjectsDir(), claudeProjectPath);
     const agentFilePath = path.join(historyDir, `agent-${agentId}.jsonl`);
     
     console.log(`📂 [SUBAGENT] Reading sub-agent message flow: ${agentFilePath}`);
@@ -330,9 +331,9 @@ function processCompactContextMessages(messages: ClaudeHistoryMessage[]): Claude
 function readClaudeHistorySessions(projectPath: string): ClaudeHistorySession[] {
   try {
     const claudeProjectPath = convertProjectPathToClaudeFormat(projectPath);
-    const historyDir = path.join(os.homedir(), '.claude', 'projects', claudeProjectPath);
+    const historyDir = path.join(getProjectsDir(), claudeProjectPath);
     
-    console.log(`📂 [DEBUG] Claude history directory: ${historyDir}`);
+    console.log(`📂 [DEBUG] Agent SDK history directory: ${historyDir}`);
     
     if (!fs.existsSync(historyDir)) {
       console.log('❌ [DEBUG] Claude history directory not found:', historyDir);
