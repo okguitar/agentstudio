@@ -316,6 +316,22 @@ export default router;
 
 // Validate HTTP MCP server
 async function validateHttpMcpServer(name: string, serverConfig: any, config: any, res: any) {
+  let responseSent = false;
+
+  // Helper function to send response only once
+  const sendResponse = (statusCode: number, data: any) => {
+    if (responseSent) {
+      console.log('Response already sent, skipping duplicate response');
+      return;
+    }
+    responseSent = true;
+    if (statusCode === 200) {
+      res.json(data);
+    } else {
+      res.status(statusCode).json(data);
+    }
+  };
+
   try {
     console.log('Validating HTTP MCP server:', serverConfig.url);
 
@@ -424,7 +440,7 @@ async function validateHttpMcpServer(name: string, serverConfig: any, config: an
       writeMcpConfig(config);
     }
 
-    res.json({
+    sendResponse(200, {
       success: true,
       tools,
       message: `HTTP MCP server validated successfully. Found ${tools.length} tools.`
@@ -446,7 +462,7 @@ async function validateHttpMcpServer(name: string, serverConfig: any, config: an
       writeMcpConfig(config);
     }
 
-    res.status(400).json({
+    sendResponse(400, {
       error: 'HTTP MCP server validation failed',
       details: error instanceof Error ? error.message : String(error)
     });
@@ -481,6 +497,21 @@ async function validateStdioMcpServer(name: string, serverConfig: any, config: a
   let stdout = '';
   let stderr = '';
   let tools: string[] = [];
+  let responseSent = false; // Track if response has been sent
+
+  // Helper function to send response only once
+  const sendResponse = (statusCode: number, data: any) => {
+    if (responseSent) {
+      console.log('Response already sent, skipping duplicate response');
+      return;
+    }
+    responseSent = true;
+    if (statusCode === 200) {
+      res.json(data);
+    } else {
+      res.status(statusCode).json(data);
+    }
+  };
 
   child.stderr?.on('data', (data) => {
     const errorStr = data.toString();
@@ -617,7 +648,7 @@ async function validateStdioMcpServer(name: string, serverConfig: any, config: a
           writeMcpConfig(config);
         }
 
-        res.json({
+        sendResponse(200, {
           success: true,
           tools,
           message: `MCP server validated successfully. Found ${tools.length} tools.`
@@ -636,7 +667,7 @@ async function validateStdioMcpServer(name: string, serverConfig: any, config: a
           writeMcpConfig(config);
         }
 
-        res.status(400).json({
+        sendResponse(400, {
           error: errorMessage,
           details: stderr || 'No error details available'
         });
@@ -646,13 +677,13 @@ async function validateStdioMcpServer(name: string, serverConfig: any, config: a
 
       // Still return the validation result even if config update fails
       if (code === 0 || tools.length > 0) {
-        res.json({
+        sendResponse(200, {
           success: true,
           tools,
           message: `MCP server validated successfully. Found ${tools.length} tools.`
         });
       } else {
-        res.status(400).json({
+        sendResponse(400, {
           error: `MCP server validation failed with exit code ${code}`,
           details: stderr || 'No error details available'
         });
@@ -679,7 +710,7 @@ async function validateStdioMcpServer(name: string, serverConfig: any, config: a
       console.error('Failed to update config with error status:', configError);
     }
 
-    res.status(500).json({
+    sendResponse(500, {
       error: 'Failed to start MCP server',
       details: error.message
     });

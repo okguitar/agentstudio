@@ -42,6 +42,34 @@ import { logSdkConfig } from './config/sdkConfig.js';
 
 dotenv.config();
 
+// ============================================================================
+// Global Error Handlers - Prevent process crashes
+// ============================================================================
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error: Error) => {
+  console.error('[Fatal] Uncaught Exception:', error);
+  console.error('[Fatal] Stack:', error.stack);
+  // Don't exit the process - log and continue
+  // This prevents the entire server from crashing due to a single unhandled error
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
+  console.error('[Fatal] Unhandled Promise Rejection at:', promise);
+  console.error('[Fatal] Reason:', reason);
+  // Don't exit the process - log and continue
+  // This is especially important for MCP fetch operations and other async code
+});
+
+// Handle uncaught exceptions in async functions
+process.on('uncaughtExceptionMonitor', (error: Error, origin: string) => {
+  console.error('[Monitor] Uncaught Exception Monitor triggered');
+  console.error('[Monitor] Origin:', origin);
+  console.error('[Monitor] Error:', error);
+  console.error('[Monitor] Stack:', error.stack);
+});
+
 // Log SDK configuration at startup
 logSdkConfig();
 
