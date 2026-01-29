@@ -88,6 +88,50 @@ describe('claudeUtils', () => {
       const result = await getClaudeExecutablePath();
       expect(result).toBeNull();
     });
+
+    it('should handle Windows .cmd files and return null for bundled CLI', async () => {
+      // Save original platform
+      const originalPlatform = process.platform;
+      // Mock Windows platform
+      Object.defineProperty(process, 'platform', { value: 'win32' });
+
+      vi.mocked(exec).mockImplementation((cmd, callback: any) => {
+        callback(null, { stdout: 'C:\\Users\\test\\AppData\\Roaming\\npm\\claude.cmd\n', stderr: '' });
+        return {} as any;
+      });
+
+      // Mock fs.existsSync to return true for .cmd file
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+
+      const result = await getClaudeExecutablePath();
+      // Should return null to use SDK bundled CLI
+      expect(result).toBeNull();
+
+      // Restore platform
+      Object.defineProperty(process, 'platform', { value: originalPlatform });
+    });
+
+    it('should return null if Windows path does not exist', async () => {
+      // Save original platform
+      const originalPlatform = process.platform;
+      // Mock Windows platform
+      Object.defineProperty(process, 'platform', { value: 'win32' });
+
+      vi.mocked(exec).mockImplementation((cmd, callback: any) => {
+        callback(null, { stdout: 'C:\\Users\\test\\AppData\\Roaming\\npm\\claude-internal\n', stderr: '' });
+        return {} as any;
+      });
+
+      // Mock fs.existsSync to return false
+      vi.mocked(fs.existsSync).mockReturnValue(false);
+
+      const result = await getClaudeExecutablePath();
+      // Should return null because path doesn't exist
+      expect(result).toBeNull();
+
+      // Restore platform
+      Object.defineProperty(process, 'platform', { value: originalPlatform });
+    });
   });
 
   describe('readMcpConfig', () => {
@@ -306,6 +350,65 @@ describe('claudeUtils', () => {
 
       expect(result.queryOptions.permissionMode).toBe('bypassPermissions');
       expect(result.queryOptions.model).toBe('opus');
+    });
+
+    it('should fallback to bundled CLI when configured path does not exist', async () => {
+      const mockVersion = {
+        id: 'invalid-version',
+        name: 'Invalid Claude',
+        alias: 'invalid',
+        executablePath: 'C:\\Users\\test\\AppData\\Roaming\\npm\\claude-internal',
+        environmentVariables: {
+          ANTHROPIC_API_KEY: 'test-key'
+        }
+      };
+
+      const { getVersionByIdInternal } = await import('../../services/claudeVersionStorage');
+      vi.mocked(getVersionByIdInternal).mockResolvedValue(mockVersion as any);
+
+      // Mock fs.existsSync to return false for the invalid path
+      vi.mocked(fs.existsSync).mockImplementation((path: any) => {
+        if (path === 'C:\\Users\\test\\AppData\\Roaming\\npm\\claude-internal') {
+          return false;
+        }
+        return true;
+      });
+
+      const result = await buildQueryOptions(mockAgent, undefined, undefined, undefined, undefined, 'invalid-version');
+
+      // Should not set pathToClaudeCodeExecutable (let SDK use bundled CLI)
+      expect(result.queryOptions.pathToClaudeCodeExecutable).toBeUndefined();
+      // But should still use the environment variables
+      expect(result.queryOptions.env?.ANTHROPIC_API_KEY).toBe('test-key');
+    });
+
+    it('should use valid executable path when it exists', async () => {
+      const mockVersion = {
+        id: 'valid-version',
+        name: 'Valid Claude',
+        alias: 'valid',
+        executablePath: '/usr/local/bin/claude',
+        environmentVariables: {
+          ANTHROPIC_API_KEY: 'test-key'
+        }
+      };
+
+      const { getVersionByIdInternal } = await import('../../services/claudeVersionStorage');
+      vi.mocked(getVersionByIdInternal).mockResolvedValue(mockVersion as any);
+
+      // Mock fs.existsSync to return true for the valid path
+      vi.mocked(fs.existsSync).mockImplementation((path: any) => {
+        if (path === '/usr/local/bin/claude') {
+          return true;
+        }
+        return false;
+      });
+
+      const result = await buildQueryOptions(mockAgent, undefined, undefined, undefined, undefined, 'valid-version');
+
+      // Should use the valid path
+      expect(result.queryOptions.pathToClaudeCodeExecutable).toBe('/usr/local/bin/claude');
+      expect(result.queryOptions.env?.ANTHROPIC_API_KEY).toBe('test-key');
     });
   });
 });

@@ -24,31 +24,54 @@ const execAsync = promisify(exec);
 /**
  * Get the path to the system-installed Claude executable
  * Only used when user explicitly wants to use system installation
- * 
+ *
  * Note: When no executable path is specified, SDK will automatically
  * use its bundled CLI which is always compatible with the SDK version.
  */
 export async function getSystemClaudeExecutablePath(): Promise<string | null> {
   try {
-    const { stdout: claudePath } = await execAsync('which claude');
+    const isWindows = process.platform === 'win32';
+    const command = isWindows ? 'where claude' : 'which claude';
+
+    const { stdout: claudePath } = await execAsync(command);
     if (!claudePath) return null;
 
     const cleanPath = claudePath.trim();
 
     // Skip local node_modules paths - we want global installation
-    if (cleanPath.includes('node_modules/.bin')) {
+    if (cleanPath.includes('node_modules/.bin') || cleanPath.includes('node_modules\\.bin')) {
       try {
-        const { stdout: allClaudes } = await execAsync('which -a claude');
+        const allCommand = isWindows ? 'where claude' : 'which -a claude';
+        const { stdout: allClaudes } = await execAsync(allCommand);
         const claudes = allClaudes.trim().split('\n');
 
         // Find the first non-local installation
         for (const claudePathOption of claudes) {
-          if (!claudePathOption.includes('node_modules/.bin')) {
+          if (!claudePathOption.includes('node_modules/.bin') &&
+              !claudePathOption.includes('node_modules\\.bin')) {
             return claudePathOption.trim();
           }
         }
       } catch (error) {
         // Fallback to the first path found
+      }
+    }
+
+    // On Windows, if path ends with .cmd, verify it exists
+    // Otherwise SDK might try to use claude-internal which doesn't exist
+    if (isWindows) {
+      if (!fs.existsSync(cleanPath)) {
+        console.warn(`⚠️  Claude executable not found at: ${cleanPath}`);
+        console.warn(`   SDK will use bundled CLI instead`);
+        return null;
+      }
+
+      // If the path points to a .cmd file, SDK should use Node.js to run bundled CLI
+      // Return null to let SDK use its bundled version
+      if (cleanPath.endsWith('.cmd')) {
+        console.log(`📦 Found Windows .cmd wrapper at: ${cleanPath}`);
+        console.log(`   Using SDK bundled CLI for better compatibility`);
+        return null;
       }
     }
 
@@ -222,8 +245,18 @@ export async function buildQueryOptions(
       if (resolvedConfig.provider) {
         // Only use executablePath if explicitly configured in the version
         if (resolvedConfig.provider.executablePath) {
-          executablePath = resolvedConfig.provider.executablePath.trim();
-          console.log(`🎯 Using Claude version: ${resolvedConfig.provider.alias} (custom path: ${executablePath})`);
+          const configuredPath = resolvedConfig.provider.executablePath.trim();
+
+          // Validate the path exists before using it
+          if (fs.existsSync(configuredPath)) {
+            executablePath = configuredPath;
+            console.log(`🎯 Using Claude version: ${resolvedConfig.provider.alias} (custom path: ${executablePath})`);
+          } else {
+            console.warn(`⚠️  Configured Claude path not found: ${configuredPath}`);
+            console.warn(`   This often happens on Windows when npm's claude wrapper (.cmd) is detected`);
+            console.warn(`   SDK will use bundled CLI for better compatibility`);
+            // Leave executablePath as null to use SDK bundled CLI
+          }
         } else {
           console.log(`🎯 Using Claude version: ${resolvedConfig.provider.alias} (SDK bundled CLI)`);
         }
