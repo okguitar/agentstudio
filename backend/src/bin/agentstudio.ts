@@ -3,8 +3,12 @@ import { program } from 'commander';
 import path from 'path';
 import { readFileSync, existsSync } from 'fs';
 import { execSync, spawn } from 'child_process';
-import { homedir } from 'os';
+import { homedir, platform } from 'os';
 import { installService, uninstallService, serviceAction, isServiceInstalled } from './serviceManager.js';
+
+// Service configuration constants
+const SERVICE_NAME = 'agentstudio';
+const DEFAULT_PORT = 4936;
 
 // Read version from package.json (works in both dev and npm package mode)
 const getVersion = (): string => {
@@ -160,6 +164,12 @@ program
         return;
       }
 
+      // Check if service is installed before upgrade
+      const wasServiceInstalled = isServiceInstalled();
+      if (wasServiceInstalled) {
+        console.log('ℹ️  Detected system service installation');
+      }
+
       console.log('\n📦 Upgrading to the latest version...');
       
       // Detect package manager and upgrade
@@ -184,7 +194,96 @@ program
       child.on('close', (code) => {
         if (code === 0) {
           console.log('\n✅ Upgrade completed successfully!');
-          console.log('   Run `agentstudio start` to start the new version.');
+          
+          // Verify the command is still available
+          console.log('\n🔍 Verifying installation...');
+          try {
+            const verifyResult = execSync('which agentstudio', { encoding: 'utf8' });
+            const agentStudioPath = verifyResult.trim();
+            
+            if (!agentStudioPath) {
+              console.log('⚠️  Warning: agentstudio command not found in PATH');
+              console.log('   You may need to:');
+              console.log('   1. Restart your terminal');
+              console.log('   2. Or check your npm global bin path: npm config get prefix');
+            } else {
+              console.log(`   Command location: ${agentStudioPath}`);
+              
+              // Try to get new version
+              try {
+                const newVersionOutput = execSync('agentstudio --version', { encoding: 'utf8' });
+                const newVersion = newVersionOutput.trim();
+                console.log(`   New version: ${newVersion}`);
+              } catch {
+                console.log('   Version check skipped (may require terminal restart)');
+              }
+            }
+          } catch (error) {
+            console.log('⚠️  Warning: Could not verify installation');
+            console.log('   Please restart your terminal and run: agentstudio --version');
+          }
+
+          // Handle service restart if it was installed
+          if (wasServiceInstalled) {
+            console.log('\n🔄 Service detected, reloading...');
+            try {
+              // First, get service config to preserve settings
+              let servicePort = DEFAULT_PORT;
+              let serviceDataDir = path.join(homedir(), '.agentstudio');
+
+              const os = platform();
+              if (os === 'darwin') {
+                const plistPath = path.join(homedir(), 'Library', 'LaunchAgents', `cc.${SERVICE_NAME}.plist`);
+                if (existsSync(plistPath)) {
+                  const plistContent = readFileSync(plistPath, 'utf8');
+                  // Try to extract port from plist
+                  const portMatch = plistContent.match(/<string>--port<\/string>\s*<string>(\d+)<\/string>/);
+                  if (portMatch) {
+                    servicePort = parseInt(portMatch[1]);
+                  }
+                  // Try to extract data-dir from plist
+                  const dataDirMatch = plistContent.match(/<string>--data-dir<\/string>\s*<string>(.+?)<\/string>/);
+                  if (dataDirMatch) {
+                    serviceDataDir = dataDirMatch[1];
+                  }
+                }
+              } else if (os === 'linux') {
+                const servicePath = path.join(homedir(), '.config', 'systemd', 'user', `${SERVICE_NAME}.service`);
+                if (existsSync(servicePath)) {
+                  const serviceContent = readFileSync(servicePath, 'utf8');
+                  // Try to extract port and data-dir
+                  const portMatch = serviceContent.match(/--port\s+(\d+)/);
+                  if (portMatch) {
+                    servicePort = parseInt(portMatch[1]);
+                  }
+                  const dataDirMatch = serviceContent.match(/--data-dir\s+([^\s]+)/);
+                  if (dataDirMatch) {
+                    serviceDataDir = dataDirMatch[1];
+                  }
+                }
+              }
+
+              console.log(`   Port: ${servicePort}`);
+              console.log(`   Data directory: ${serviceDataDir}`);
+              
+              // Reinstall service with same config to update executable path
+              installService({
+                port: servicePort,
+                dataDir: serviceDataDir,
+              });
+
+              console.log('\n🎉 Service has been updated and restarted!');
+              console.log(`   Access AgentStudio at: http://localhost:${servicePort}`);
+              console.log('\n   Check service status: agentstudio service status');
+              console.log('   View logs: agentstudio service logs');
+            } catch (error) {
+              console.error('\n❌ Failed to restart service:', error);
+              console.log('\n   Please manually restart the service:');
+              console.log('     agentstudio service restart');
+            }
+          } else {
+            console.log('\n   Run `agentstudio start` to start the new version.');
+          }
         } else {
           console.log('\n❌ Upgrade failed. Please try manually:');
           console.log(`   ${upgradeCommand}`);
